@@ -13,7 +13,9 @@ import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
 import { useSidebar } from '@/app/contexts/SidebarContext'
 import { CopilotIcon } from '@/design-system/components'
+import { ThemeModeToggle } from '@/design-system/components/layout/ThemeModeToggle'
 import { layoutTokens } from '@/design-system/tokens/layout'
+import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { moreMenuItems, visibleAppShellNavItems } from '@/design-system/tokens/navigation'
 
 type AppSidebarProps = {
@@ -39,10 +41,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        bgcolor: (theme) => theme.figmaPalette.grey[50],
+        bgcolor: (theme) => getFigmaColors(theme.palette.mode).background.grey,
       }}
     >
-      <List component="nav" sx={{ px: 0.5, py: 1.5 }}>
+      <List component="nav" sx={{ px: 0.5, py: 1.5, flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {visibleAppShellNavItems.map((item) => {
           const Icon = item.icon
           const isPanelActive = item.panel ? secondaryPanel === item.panel : false
@@ -153,6 +155,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </Box>
       </List>
 
+      <ThemeModeToggle />
+
       <Menu
         anchorEl={moreAnchor}
         open={Boolean(moreAnchor)}
@@ -210,7 +214,7 @@ export function AppSidebar({ mobileOpen, onMobileClose }: AppSidebarProps) {
         minHeight: 0,
         borderRight: 1,
         borderColor: 'divider',
-        bgcolor: (theme) => theme.figmaPalette.grey[50],
+        bgcolor: (theme) => getFigmaColors(theme.palette.mode).background.grey,
         overflow: 'hidden',
         display: { xs: 'none', md: 'block' },
       }}

@@ -48,7 +48,13 @@ export function PoliciesListPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<PoliciesListFilters>(emptyPoliciesListFilters)
 
-  usePoliciesLookupFromUrl(setAppliedFilters)
+  const handleLookupApplied = useCallback(() => {
+    setFilterOpen(true)
+    setCopilotOpen(false)
+    setCopilotPolicyFocus(null)
+  }, [])
+
+  usePoliciesLookupFromUrl(setAppliedFilters, handleLookupApplied)
 
   const filteredRows = useMemo(() => {
     const withFilters = applyPoliciesListFilters(policiesListMock, appliedFilters)

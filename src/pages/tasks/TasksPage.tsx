@@ -40,7 +40,11 @@ export function TasksPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<TasksFilters>(emptyTasksFilters)
 
-  useTasksLookupFromUrl(setAppliedFilters)
+  useTasksLookupFromUrl(setAppliedFilters, useCallback(() => {
+    setFilterOpen(true)
+    setCopilotOpen(false)
+    setCopilotTaskFocus(null)
+  }, []))
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
 
   const filteredRows = useMemo(() => {

@@ -38,7 +38,7 @@ const sectionLabelSx = {
 } as const
 
 export function GlobalSearchDropdown({ query, onSelect }: GlobalSearchDropdownProps) {
-  const { runQuickLookup, runAgenticSearch, runAgenticSearchPrompt } = useGlobalSearch()
+  const { runQuickLookup, runAgenticSearch, runGlobalSearch } = useGlobalSearch()
 
   const normalizedQuery = query.trim().toLowerCase()
 
@@ -65,12 +65,7 @@ export function GlobalSearchDropdown({ query, onSelect }: GlobalSearchDropdownPr
   }
 
   const handleRecent = (label: string) => {
-    const agenticMatch = AGENTIC_SEARCHES.find((item) => item.label === label)
-    if (agenticMatch) {
-      runAgenticSearch(agenticMatch.id)
-    } else {
-      runAgenticSearchPrompt(label)
-    }
+    runGlobalSearch(label)
     onSelect()
   }
 

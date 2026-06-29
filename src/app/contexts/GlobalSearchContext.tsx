@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import {
   AGENTIC_SEARCHES,
   QUICK_LOOKUPS,
+  resolveGlobalSearchInput,
   type AgenticSearchId,
   type QuickLookupId,
 } from '@/app/navigation/globalSearchConfig'
@@ -16,6 +17,8 @@ type GlobalSearchContextValue = {
   runQuickLookup: (id: QuickLookupId) => void
   runAgenticSearch: (id: AgenticSearchId) => void
   runAgenticSearchPrompt: (prompt: string) => void
+  runGlobalSearch: (query: string) => void
+  navigateToPolicy: (policyNumber: string) => void
   openDailySummary: () => void
   closeCopilot: () => void
   toggleCopilot: () => void
@@ -63,6 +66,36 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
     [navigate],
   )
 
+  const navigateToPolicy = useCallback(
+    (policyNumber: string) => {
+      navigate(`/policies/${encodeURIComponent(policyNumber.trim())}`)
+    },
+    [navigate],
+  )
+
+  const runGlobalSearch = useCallback(
+    (query: string) => {
+      const action = resolveGlobalSearchInput(query)
+      if (!action) return
+
+      switch (action.type) {
+        case 'policy':
+          navigateToPolicy(action.policyNumber)
+          break
+        case 'lookup':
+          runQuickLookup(action.id)
+          break
+        case 'agentic':
+          runAgenticSearch(action.id)
+          break
+        case 'agentic-prompt':
+          runAgenticSearchPrompt(action.prompt)
+          break
+      }
+    },
+    [navigateToPolicy, runAgenticSearch, runAgenticSearchPrompt, runQuickLookup],
+  )
+
   const openDailySummary = useCallback(() => {
     setAgenticPrompt(null)
     setCopilotView('daily-summary')
@@ -100,6 +133,8 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
       runQuickLookup,
       runAgenticSearch,
       runAgenticSearchPrompt,
+      runGlobalSearch,
+      navigateToPolicy,
       openDailySummary,
       closeCopilot,
       toggleCopilot,
@@ -114,7 +149,9 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
       openHomeCopilotDefault,
       runAgenticSearch,
       runAgenticSearchPrompt,
+      runGlobalSearch,
       runQuickLookup,
+      navigateToPolicy,
       toggleCopilot,
     ],
   )

@@ -18,7 +18,7 @@ export function GlobalSearchField({
   placeholder = 'Search P&C Policy',
   autoFocus,
 }: GlobalSearchFieldProps) {
-  const { runAgenticSearchPrompt } = useGlobalSearch()
+  const { runGlobalSearch } = useGlobalSearch()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
 
@@ -27,9 +27,9 @@ export function GlobalSearchField({
   const handleSubmit = useCallback(() => {
     const trimmed = query.trim()
     if (!trimmed) return
-    runAgenticSearchPrompt(trimmed)
+    runGlobalSearch(trimmed)
     setOpen(false)
-  }, [query, runAgenticSearchPrompt])
+  }, [query, runGlobalSearch])
 
   return (
     <ClickAwayListener onClickAway={handleClose}>

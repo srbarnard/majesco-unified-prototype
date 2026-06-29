@@ -91,6 +91,56 @@ export const RECENT_SEARCHES = [
   '01-CA-000100005-0',
 ] as const
 
+export const POLICY_NUMBER_PATTERN = /^\d{2}-[A-Z]{2,3}-\d+-\d$/
+
+export type GlobalSearchAction =
+  | { type: 'policy'; policyNumber: string }
+  | { type: 'lookup'; id: QuickLookupId }
+  | { type: 'agentic'; id: AgenticSearchId }
+  | { type: 'agentic-prompt'; prompt: string }
+
+const RECENT_LOOKUP_ALIASES: Record<string, QuickLookupId> = {
+  'policies expiring next 30 days': 'policies-expiring-30',
+  'policies expiring in next 30 days': 'policies-expiring-30',
+}
+
+export function isPolicyNumber(value: string) {
+  return POLICY_NUMBER_PATTERN.test(value.trim())
+}
+
+export function resolveGlobalSearchInput(query: string): GlobalSearchAction | null {
+  const trimmed = query.trim()
+  if (!trimmed) return null
+
+  if (isPolicyNumber(trimmed)) {
+    return { type: 'policy', policyNumber: trimmed }
+  }
+
+  const normalized = trimmed.toLowerCase()
+
+  const aliasLookup = RECENT_LOOKUP_ALIASES[normalized]
+  if (aliasLookup) {
+    return { type: 'lookup', id: aliasLookup }
+  }
+
+  const quickLookup = QUICK_LOOKUPS.find(
+    (item) =>
+      item.label.toLowerCase() === normalized ||
+      item.label.toLowerCase().includes(normalized) ||
+      item.description.toLowerCase().includes(normalized),
+  )
+  if (quickLookup) {
+    return { type: 'lookup', id: quickLookup.id }
+  }
+
+  const agentic = AGENTIC_SEARCHES.find((item) => item.label.toLowerCase() === normalized)
+  if (agentic) {
+    return { type: 'agentic', id: agentic.id }
+  }
+
+  return { type: 'agentic-prompt', prompt: trimmed }
+}
+
 export function resolvePoliciesLookup(id: QuickLookupId): Partial<PoliciesListFilters> | null {
   switch (id) {
     case 'policies-expiring-30':

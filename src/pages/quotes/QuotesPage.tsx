@@ -38,7 +38,11 @@ export function QuotesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<QuotesListFilters>(emptyQuotesListFilters)
 
-  useQuotesLookupFromUrl(setAppliedFilters)
+  useQuotesLookupFromUrl(setAppliedFilters, useCallback(() => {
+    setFilterOpen(true)
+    setCopilotOpen(false)
+    setCopilotQuoteFocus(null)
+  }, []))
 
   const filteredRows = useMemo(() => {
     const withFilters = applyQuotesListFilters(quotesMock, appliedFilters)
