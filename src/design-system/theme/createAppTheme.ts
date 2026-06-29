@@ -225,6 +225,19 @@ declare module '@mui/material/styles' {
     figmaPalette: typeof figmaPalette
     figmaBreakpoints: typeof figmaBreakpoints
   }
+
+  interface ThemeOptions {
+    majesco?: typeof majescoTokens
+    majescoDark?: typeof majescoTokensDark
+    figma?: typeof figmaColorsLight
+    figmaDark?: typeof figmaColorsDark
+    figmaTypography?: typeof figmaTypographyDesktop
+    figmaTypographyMobile?: typeof figmaTypographyMobile
+    figmaSpacing?: typeof figmaSpacing
+    figmaBorderRadius?: typeof figmaBorderRadius
+    figmaPalette?: typeof figmaPalette
+    figmaBreakpoints?: typeof figmaBreakpoints
+  }
 }
 
 export type AppTheme = typeof theme
