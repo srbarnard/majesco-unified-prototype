@@ -1,10 +1,11 @@
+import '@mui/x-data-grid/themeAugmentation'
 import type { Theme } from '@mui/material/styles'
 import type { ThemeOptions } from '@mui/material/styles'
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { figmaFontFamilyStack, figmaFontWeights } from '@/design-system/tokens/figma-typography'
 import { borderRadius } from '@/design-system/tokens/shape'
 import { shadows } from '@/design-system/tokens/shadows'
-import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { dataGridPinnedBodyCellSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 
 function primaryFocusColor(theme: Theme) {
   return getFigmaColors(theme.palette.mode).primary.main
@@ -488,6 +489,11 @@ export const componentOverrides: ThemeOptions['components'] = {
       gutterBottom: {
         marginBottom: 8,
       },
+    },
+  },
+  MuiDataGrid: {
+    styleOverrides: {
+      root: ({ theme }) => dataGridPinnedBodyCellSx(theme),
     },
   },
 }

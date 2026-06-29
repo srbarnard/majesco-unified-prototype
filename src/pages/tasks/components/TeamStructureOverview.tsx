@@ -2,6 +2,7 @@ import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import type { SxProps, Theme } from '@mui/material/styles'
 import { DataGridPremium, type GridColDef } from '@mui/x-data-grid-premium'
 import { useMemo } from 'react'
 import { dataGridInteractionSx } from '@/design-system/components'
@@ -132,36 +133,38 @@ export function TeamStructureOverview({ searchQuery }: TeamStructureOverviewProp
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          height: '100%',
-          border: 'none',
-          borderRadius: 0,
-          bgcolor: 'background.paper',
-          '& .MuiDataGrid-columnHeaders': {
-            bgcolor: (theme) => surfaceMuted(theme),
-            borderBottom: 1,
-            borderColor: 'divider',
+        sx={[
+          {
+            flex: 1,
+            minHeight: 0,
+            height: '100%',
+            border: 'none',
+            borderRadius: 0,
+            bgcolor: 'background.paper',
+            '& .MuiDataGrid-columnHeaders': {
+              bgcolor: (theme) => surfaceMuted(theme),
+              borderBottom: 1,
+              borderColor: 'divider',
+            },
+            '& .MuiDataGrid-columnHeaderTitle': {
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              color: 'text.secondary',
+            },
+            '& .MuiDataGrid-cell': {
+              px: 1.5,
+              py: 1,
+              display: 'flex',
+              alignItems: 'center',
+              borderColor: 'divider',
+            },
+            '& .MuiDataGrid-footerContainer': {
+              borderTop: 1,
+              borderColor: 'divider',
+            },
           },
-          '& .MuiDataGrid-columnHeaderTitle': {
-            fontWeight: 600,
-            fontSize: '0.75rem',
-            color: 'text.secondary',
-          },
-          '& .MuiDataGrid-cell': {
-            px: 1.5,
-            py: 1,
-            display: 'flex',
-            alignItems: 'center',
-            borderColor: 'divider',
-          },
-          '& .MuiDataGrid-footerContainer': {
-            borderTop: 1,
-            borderColor: 'divider',
-          },
-          ...dataGridInteractionSx,
-        }}
+          dataGridInteractionSx,
+        ] as SxProps<Theme>}
       />
     </Box>
   )

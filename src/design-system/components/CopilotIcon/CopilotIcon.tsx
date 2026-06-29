@@ -18,6 +18,7 @@ const COPILOT_ICONS = {
 } as const
 
 function resolveCopilotIconSrc(active: boolean, useWhiteMark: boolean) {
+  if (active && useWhiteMark) return COPILOT_ICONS.white
   if (active) return COPILOT_ICONS.active
   if (useWhiteMark) return COPILOT_ICONS.white
   return COPILOT_ICONS.default

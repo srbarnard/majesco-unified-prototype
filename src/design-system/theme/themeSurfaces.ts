@@ -76,6 +76,34 @@ export function dataGridPinnedShadow(theme: Theme, side: 'left' | 'right' = 'lef
   return isDarkMode(theme) ? `${offset} rgba(0, 0, 0, 0.55)` : `${offset} rgba(0, 0, 0, 0.08)`
 }
 
+/** Opaque paper fill for pinned body cells — masks horizontal scroll bleed. */
+export function dataGridPinnedBodyCellBackground(theme: Theme) {
+  return theme.palette.background.paper
+}
+
+function dataGridPinnedBodyCellImportantSx(theme: Theme) {
+  const paper = dataGridPinnedBodyCellBackground(theme)
+  return {
+    bgcolor: `${paper} !important`,
+    backgroundColor: `${paper} !important`,
+    background: `${paper} !important`,
+  } as const
+}
+
+/** Overrides MUI default grey pinned background + blended row hover on pinned cells. */
+export function dataGridPinnedBodyCellSx(theme: Theme) {
+  const pinned = dataGridPinnedBodyCellImportantSx(theme)
+  const paper = dataGridPinnedBodyCellBackground(theme)
+  return {
+    '--DataGrid-pinnedBackground': paper,
+    '& .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-cell--pinnedRight': pinned,
+    '& .MuiDataGrid-virtualScrollerContent .MuiDataGrid-row:hover:not(.Mui-selected):not(.task-row-active) .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-virtualScrollerContent .MuiDataGrid-row:hover:not(.Mui-selected):not(.task-row-active) .MuiDataGrid-cell--pinnedRight':
+      pinned,
+    '& .MuiDataGrid-virtualScrollerContent .MuiDataGrid-row.Mui-hovered:not(.Mui-selected):not(.task-row-active) .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-virtualScrollerContent .MuiDataGrid-row.Mui-hovered:not(.Mui-selected):not(.task-row-active) .MuiDataGrid-cell--pinnedRight':
+      pinned,
+  }
+}
+
 export function chartAxisFill(theme: Theme) {
   return isDarkMode(theme) ? theme.figmaPalette.grey[400] : theme.figmaPalette.grey[600]
 }
@@ -118,16 +146,16 @@ const dataGridShellBaseSx = {
     '&:focus, &:focus-within': { outline: 'none' },
   },
   '& .MuiDataGrid-cell--pinnedLeft': {
-    bgcolor: 'background.paper',
+    bgcolor: (theme: Theme) => `${dataGridPinnedBodyCellBackground(theme)} !important`,
     boxShadow: (theme: Theme) => dataGridPinnedShadow(theme, 'left'),
+  },
+  '& .MuiDataGrid-cell--pinnedRight': {
+    bgcolor: (theme: Theme) => `${dataGridPinnedBodyCellBackground(theme)} !important`,
+    boxShadow: (theme: Theme) => dataGridPinnedShadow(theme, 'right'),
   },
   '& .MuiDataGrid-columnHeader--pinnedLeft': {
     bgcolor: (theme: Theme) => surfaceMuted(theme),
     boxShadow: (theme: Theme) => dataGridPinnedShadow(theme, 'left'),
-  },
-  '& .MuiDataGrid-cell--pinnedRight': {
-    bgcolor: 'background.paper',
-    boxShadow: (theme: Theme) => dataGridPinnedShadow(theme, 'right'),
   },
   '& .MuiDataGrid-columnHeader--pinnedRight': {
     bgcolor: (theme: Theme) => surfaceMuted(theme),
@@ -138,6 +166,12 @@ const dataGridShellBaseSx = {
     '&:hover': {
       bgcolor: (theme: Theme) => accentSubtleHover(theme),
     },
+  },
+  '& .MuiDataGrid-row.Mui-selected .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-row.Mui-selected .MuiDataGrid-cell--pinnedRight': {
+    bgcolor: (theme: Theme) => `${accentSubtle(theme)} !important`,
+  },
+  '& .MuiDataGrid-row.Mui-selected:hover .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-row.Mui-selected:hover .MuiDataGrid-cell--pinnedRight': {
+    bgcolor: (theme: Theme) => `${accentSubtleHover(theme)} !important`,
   },
   '& .MuiDataGrid-filler': {
     bgcolor: (theme: Theme) => surfaceMuted(theme),

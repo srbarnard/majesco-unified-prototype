@@ -413,14 +413,12 @@ export function TasksDataGrid({
               '&:focus, &:focus-within': { outline: 'none' },
             },
             '& .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-columnHeader--pinnedLeft': {
-              bgcolor: 'background.paper',
               boxShadow: (theme) => dataGridPinnedShadow(theme, 'left'),
             },
             '& .MuiDataGrid-columnHeader--pinnedLeft': {
               bgcolor: (theme) => surfaceMuted(theme),
             },
             '& .MuiDataGrid-cell--pinnedRight, & .MuiDataGrid-columnHeader--pinnedRight': {
-              bgcolor: 'background.paper',
               boxShadow: (theme) => dataGridPinnedShadow(theme, 'right'),
             },
             '& .MuiDataGrid-columnHeader--pinnedRight': {
@@ -431,11 +429,23 @@ export function TasksDataGrid({
               '&:hover': {
                 bgcolor: (theme) => accentSubtle(theme),
               },
+              '& .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-cell--pinnedRight': {
+                bgcolor: (theme) => accentSubtle(theme),
+              },
+              '&:hover .MuiDataGrid-cell--pinnedLeft, &:hover .MuiDataGrid-cell--pinnedRight': {
+                bgcolor: (theme) => `${accentSubtle(theme)} !important`,
+              },
             },
             '& .MuiDataGrid-row.task-row-active': {
               bgcolor: (theme) => accentSubtle(theme),
               '&:hover': {
                 bgcolor: (theme) => accentSubtle(theme),
+              },
+              '& .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-cell--pinnedRight': {
+                bgcolor: (theme) => accentSubtle(theme),
+              },
+              '&:hover .MuiDataGrid-cell--pinnedLeft, &:hover .MuiDataGrid-cell--pinnedRight': {
+                bgcolor: (theme) => `${accentSubtle(theme)} !important`,
               },
             },
             '& .MuiDataGrid-footerContainer': {

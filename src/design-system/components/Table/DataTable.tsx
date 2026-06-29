@@ -55,10 +55,10 @@ const linkCellHoverSx = {
   background: (theme: Theme) => `${accentLinkHover(theme)} !important`,
 } as const
 
-const pinnedCellPaperSx = {
-  bgcolor: 'background.paper !important',
-  backgroundColor: 'background.paper !important',
-  background: 'background.paper !important',
+const transparentCellSx = {
+  bgcolor: 'transparent !important',
+  backgroundColor: 'transparent !important',
+  background: 'transparent !important',
 } as const
 
 /** MUI Table — no row/icon hovers; linked cells fill light blue on link hover. */
@@ -81,19 +81,14 @@ export const tableInteractionSx: SxProps<Theme> = {
   '& .MuiTableCell-root:has(.MuiLink-root:hover)': linkCellHoverSx,
 }
 
-/** MUI DataGrid — no row/icon hovers; linked cells fill light blue on link hover. */
+/** MUI DataGrid — no row hover fill on scrollable cells. Pinned cell paper is handled by MuiDataGrid theme overrides. */
 export const dataGridInteractionSx: SxProps<Theme> = {
   '& .MuiDataGrid-row:hover, & .MuiDataGrid-row.Mui-hovered': {
     bgcolor: 'transparent !important',
     backgroundColor: 'transparent !important',
   },
-  '& .MuiDataGrid-row:hover .MuiDataGrid-cell, & .MuiDataGrid-row.Mui-hovered .MuiDataGrid-cell': {
-    bgcolor: 'transparent',
-    backgroundColor: 'transparent',
-  },
-  '& .MuiDataGrid-row:hover .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-row:hover .MuiDataGrid-cell--pinnedRight, & .MuiDataGrid-row.Mui-hovered .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-row.Mui-hovered .MuiDataGrid-cell--pinnedRight':
-    pinnedCellPaperSx,
-  '& .MuiDataGrid-cell--pinnedLeft:hover, & .MuiDataGrid-cell--pinnedRight:hover': pinnedCellPaperSx,
+  '& .MuiDataGrid-row:hover .MuiDataGrid-cell:not(.MuiDataGrid-cell--pinnedLeft):not(.MuiDataGrid-cell--pinnedRight), & .MuiDataGrid-row.Mui-hovered .MuiDataGrid-cell:not(.MuiDataGrid-cell--pinnedLeft):not(.MuiDataGrid-cell--pinnedRight)':
+    transparentCellSx,
   '& .MuiDataGrid-cell:has(.MuiLink-root:hover)': linkCellHoverSx,
   '& .MuiDataGrid-cell--pinnedLeft:has(.MuiLink-root:hover), & .MuiDataGrid-cell--pinnedRight:has(.MuiLink-root:hover)':
     linkCellHoverSx,

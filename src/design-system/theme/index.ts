@@ -10,6 +10,8 @@ export {
   accentSubtleHover,
   chartAxisFill,
   chartGridStroke,
+  dataGridPinnedBodyCellBackground,
+  dataGridPinnedBodyCellSx,
   dataGridPinnedShadow,
   dataGridShellSx,
   isDarkMode,
