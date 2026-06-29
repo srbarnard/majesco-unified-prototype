@@ -1,5 +1,6 @@
-import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
+import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
@@ -10,79 +11,154 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import {
   DataGridPremium,
+  type GridApi,
   type GridColDef,
   type GridRowSelectionModel,
 } from '@mui/x-data-grid-premium'
 import { useMemo, useState } from 'react'
+import type { MutableRefObject } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
+import { Link as RouterLink } from 'react-router'
 import {
   CopilotIcon,
   copilotActiveIconSx,
   dataGridInteractionSx,
+  getListDataGridSlotProps,
+  listDataGridActionColumnProps,
+  listDataGridFilterProps,
   tableActionIconButtonSx,
   tableLinkSx,
 } from '@/design-system/components'
 import { accentSubtle, dataGridPinnedShadow, dataGridShellSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
-import { formatRelativeListDate, formatTaskDueDate } from '@/design-system/utils/formatListDate'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { TaskPriorityIndicator } from '@/pages/tasks/components/TaskPriorityIndicator'
+import { TaskStatusChip } from '@/pages/tasks/components/TaskStatusChip'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
+import { getTaskPolicyRoute, getTaskRelatedEntityRoute, getTaskRelatedSummary } from '@/pages/tasks/data/mockTasks'
+import { getTaskSlaTone, isTaskSlaUrgent } from '@/pages/tasks/utils/taskDisplayUtils'
 
 const CHECKBOX_COLUMN_WIDTH = 50
 
+const taskRowMenuItemSx = {
+  fontFamily: figmaFontFamilyStack.body,
+  fontSize: '0.875rem',
+  fontWeight: 400,
+  py: 1,
+  border: 'none',
+} as const
+
 type TasksDataGridProps = {
+  apiRef: MutableRefObject<GridApi>
   rows: TaskRecord[]
   rowSelectionModel: GridRowSelectionModel
   onRowSelectionModelChange: (model: GridRowSelectionModel) => void
+  onTaskOpen?: (task: TaskRecord) => void
   onTaskCopilot?: (task: TaskRecord) => void
+  onTaskComplete?: (task: TaskRecord) => void
   activeCopilotTaskId?: string | null
+  activeTaskId?: string | null
 }
 
-const priorityColors = {
-  High: '#E53935',
-  Medium: '#FB8C00',
-  Low: '#43A047',
-} as const
-
-function PriorityCell({ priority }: { priority: TaskRecord['priority'] }) {
+function TaskNameCell({
+  row,
+  onTaskOpen,
+  isActive,
+}: {
+  row: TaskRecord
+  onTaskOpen?: (task: TaskRecord) => void
+  isActive?: boolean
+}) {
   return (
-    <Stack direction="row" spacing={0.75} alignItems="center" sx={{ py: 0.25 }}>
-      <Box
+    <Stack spacing={0.25} sx={{ py: 0.25, minWidth: 0, alignItems: 'flex-start' }}>
+      <Link
+        component="button"
+        variant="body2"
+        underline="hover"
+        onClick={() => onTaskOpen?.(row)}
         sx={{
-          width: 8,
-          height: 8,
-          borderRadius: '50%',
-          bgcolor: priorityColors[priority],
-          flexShrink: 0,
+          fontWeight: 400,
+          textAlign: 'left',
+          color: isActive ? 'primary.main' : undefined,
+          ...tableLinkSx,
         }}
-      />
-      <Typography variant="body2" sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem' }}>
-        {priority}
+      >
+        {row.taskName}
+      </Link>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        noWrap
+        sx={{
+          fontFamily: figmaFontFamilyStack.body,
+          fontSize: '0.6875rem',
+          maxWidth: '100%',
+          display: 'block',
+        }}
+      >
+        {row.nextAction}
       </Typography>
     </Stack>
   )
 }
 
-function copilotActionIconSx(active?: boolean) {
-  return copilotActiveIconSx(active)
+function RelatedCell({ row }: { row: TaskRecord }) {
+  const related = getTaskRelatedSummary(row)
+  const policyRoute = getTaskPolicyRoute(row)
+
+  return (
+    <Stack spacing={0.125} sx={{ py: 0.25, minWidth: 0 }}>
+      <Typography
+        variant="body2"
+        noWrap
+        sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem', fontWeight: 400 }}
+      >
+        {related.primary}
+      </Typography>
+      {policyRoute ? (
+        <Link
+          component={RouterLink}
+          to={policyRoute}
+          variant="caption"
+          underline="hover"
+          onClick={(event) => event.stopPropagation()}
+          sx={{ fontFamily: figmaFontFamilyStack.body, ...tableLinkSx }}
+        >
+          {related.secondary}
+        </Link>
+      ) : (
+        <Typography variant="caption" color="text.secondary" noWrap sx={{ fontFamily: figmaFontFamilyStack.body }}>
+          {related.secondary}
+        </Typography>
+      )}
+    </Stack>
+  )
 }
 
 function RowActionsMenu({
   row,
   onTaskCopilot,
+  onTaskComplete,
   isCopilotActive,
 }: {
   row: TaskRecord
   onTaskCopilot?: (task: TaskRecord) => void
+  onTaskComplete?: (task: TaskRecord) => void
   isCopilotActive?: boolean
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const relatedRoute = getTaskRelatedEntityRoute(row)
 
   return (
     <>
       <Stack direction="row" spacing={0.25} justifyContent="flex-end" alignItems="center" sx={{ width: '100%' }}>
-        <Tooltip title="Notifications">
-          <IconButton size="small" aria-label={`Notifications for ${row.taskName}`} sx={tableActionIconButtonSx}>
-            <NotificationsNoneOutlinedIcon fontSize="small" />
+        <Tooltip title="Mark complete">
+          <IconButton
+            size="small"
+            aria-label={`Mark ${row.taskName} complete`}
+            onClick={() => onTaskComplete?.(row)}
+            sx={tableActionIconButtonSx}
+          >
+            <CheckCircleOutlineIcon fontSize="small" />
           </IconButton>
         </Tooltip>
         <Tooltip title="Ask Copilot about this task">
@@ -91,7 +167,7 @@ function RowActionsMenu({
             aria-label={`Ask Copilot about ${row.taskName}`}
             aria-pressed={isCopilotActive}
             onClick={() => onTaskCopilot?.(row)}
-            sx={copilotActionIconSx(isCopilotActive)}
+            sx={copilotActiveIconSx(isCopilotActive)}
           >
             <CopilotIcon size={18} active={isCopilotActive} />
           </IconButton>
@@ -107,53 +183,79 @@ function RowActionsMenu({
           </IconButton>
         </Tooltip>
       </Stack>
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-        <MenuItem onClick={() => setAnchorEl(null)}>Edit</MenuItem>
-        <MenuItem onClick={() => setAnchorEl(null)}>Discard</MenuItem>
-        <MenuItem onClick={() => setAnchorEl(null)}>Reassign</MenuItem>
-        <MenuItem onClick={() => setAnchorEl(null)}>Mark as complete</MenuItem>
-        <MenuItem onClick={() => setAnchorEl(null)}>Ask Copilot</MenuItem>
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => setAnchorEl(null)}
+        slotProps={{ paper: { sx: { minWidth: 200 } } }}
+      >
+        <MenuItem
+          onClick={() => {
+            onTaskComplete?.(row)
+            setAnchorEl(null)
+          }}
+          sx={taskRowMenuItemSx}
+        >
+          Mark as complete
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            onTaskCopilot?.(row)
+            setAnchorEl(null)
+          }}
+          sx={taskRowMenuItemSx}
+        >
+          Ask Copilot
+        </MenuItem>
+        {relatedRoute ? (
+          <MenuItem
+            component={RouterLink}
+            to={relatedRoute.to}
+            onClick={() => setAnchorEl(null)}
+            sx={taskRowMenuItemSx}
+          >
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              <OpenInNewOutlinedIcon sx={{ fontSize: 16 }} />
+              <span>{relatedRoute.label}</span>
+            </Stack>
+          </MenuItem>
+        ) : (
+          <MenuItem disabled sx={taskRowMenuItemSx}>
+            View related record
+          </MenuItem>
+        )}
+        <MenuItem onClick={() => setAnchorEl(null)} sx={taskRowMenuItemSx}>
+          Reassign
+        </MenuItem>
+        <MenuItem onClick={() => setAnchorEl(null)} sx={taskRowMenuItemSx}>
+          Discard
+        </MenuItem>
       </Menu>
     </>
   )
 }
 
 export function TasksDataGrid({
+  apiRef,
   rows,
   rowSelectionModel,
   onRowSelectionModelChange,
+  onTaskOpen,
   onTaskCopilot,
+  onTaskComplete,
   activeCopilotTaskId,
+  activeTaskId,
 }: TasksDataGridProps) {
   const columns = useMemo<GridColDef<TaskRecord>[]>(
     () => [
       {
         field: 'taskName',
-        headerName: 'Task name',
-        flex: 1.2,
-        minWidth: 180,
+        headerName: 'Task',
+        flex: 1.35,
+        minWidth: 240,
         sortable: true,
         renderCell: ({ row }) => (
-          <Link
-            component="button"
-            variant="body2"
-            underline="hover"
-            sx={{ fontWeight: 600, textAlign: 'left', py: 0.25, ...tableLinkSx }}
-          >
-            {row.taskName}
-          </Link>
-        ),
-      },
-      {
-        field: 'assigner',
-        headerName: 'Assigner',
-        flex: 1,
-        minWidth: 150,
-        sortable: true,
-        renderCell: ({ row }) => (
-          <Typography variant="body2" sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem', py: 0.25 }}>
-            {row.assigner}
-          </Typography>
+          <TaskNameCell row={row} onTaskOpen={onTaskOpen} isActive={activeTaskId === row.id} />
         ),
       },
       {
@@ -162,58 +264,67 @@ export function TasksDataGrid({
         flex: 0.75,
         minWidth: 100,
         sortable: true,
-        renderCell: ({ row }) => <PriorityCell priority={row.priority} />,
+        valueGetter: (_, row) => row.priority,
+        renderCell: ({ row }) => <TaskPriorityIndicator priority={row.priority} />,
       },
       {
-        field: 'assignedDate',
-        headerName: 'Assigned date',
-        flex: 0.85,
-        minWidth: 120,
+        field: 'ageIndicator',
+        headerName: 'SLA / Age',
+        flex: 0.95,
+        minWidth: 130,
         sortable: true,
-        valueGetter: (_, row) => new Date(row.assignedDate),
+        valueGetter: (_, row) => row.dueDate,
         renderCell: ({ row }) => (
-          <Typography variant="body2" sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem', py: 0.25 }}>
-            {formatRelativeListDate(row.assignedDate)}
-          </Typography>
-        ),
-      },
-      {
-        field: 'dueDate',
-        headerName: 'Due date',
-        flex: 0.85,
-        minWidth: 120,
-        sortable: true,
-        valueGetter: (_, row) => new Date(row.dueDate),
-        renderCell: ({ row }) => {
-          const label = formatTaskDueDate(row.dueDate)
-          const isPastDue = label === 'Past due'
-
-          return (
+          <Stack spacing={0.125} sx={{ py: 0.25 }}>
             <Typography
               variant="body2"
               sx={{
                 fontFamily: figmaFontFamilyStack.body,
                 fontSize: '0.8125rem',
-                py: 0.25,
-                color: isPastDue ? 'error.main' : 'text.primary',
-                fontWeight: isPastDue ? 600 : 400,
+                color: getTaskSlaTone(row),
+                fontWeight: isTaskSlaUrgent(row) ? 600 : 400,
               }}
             >
-              {label}
+              {row.ageIndicator}
             </Typography>
-          )
-        },
+            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
+              {row.agingDays}d open
+            </Typography>
+          </Stack>
+        ),
       },
       {
-        field: 'refNumber',
-        headerName: 'Ref. #',
-        flex: 0.9,
-        minWidth: 120,
+        field: 'displayStatus',
+        headerName: 'Status',
+        flex: 0.95,
+        minWidth: 130,
+        sortable: true,
+        renderCell: ({ row }) => <TaskStatusChip displayStatus={row.displayStatus} />,
+      },
+      {
+        field: 'relatedSummary',
+        headerName: 'Related policy / Insured',
+        flex: 1.2,
+        minWidth: 180,
+        sortable: true,
+        valueGetter: (_, row) => getTaskRelatedSummary(row).primary,
+        renderCell: ({ row }) => <RelatedCell row={row} />,
+      },
+      {
+        field: 'assignedTo',
+        headerName: 'Assigned',
+        flex: 1,
+        minWidth: 150,
         sortable: true,
         renderCell: ({ row }) => (
-          <Typography variant="body2" sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem', py: 0.25 }}>
-            {row.refNumber}
-          </Typography>
+          <Stack spacing={0.125} sx={{ py: 0.25, minWidth: 0 }}>
+            <Typography variant="body2" sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem' }} noWrap>
+              {row.assignedTo}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap sx={{ fontFamily: figmaFontFamilyStack.body }}>
+              {row.team}
+            </Typography>
+          </Stack>
         ),
       },
       {
@@ -223,26 +334,27 @@ export function TasksDataGrid({
         minWidth: 120,
         maxWidth: 120,
         sortable: false,
-        filterable: false,
-        disableColumnMenu: true,
         resizable: false,
         align: 'right',
         headerAlign: 'right',
+        ...listDataGridActionColumnProps,
         renderCell: ({ row }) => (
           <RowActionsMenu
             row={row}
             onTaskCopilot={onTaskCopilot}
+            onTaskComplete={onTaskComplete}
             isCopilotActive={activeCopilotTaskId === row.id}
           />
         ),
       },
     ],
-    [activeCopilotTaskId, onTaskCopilot],
+    [activeCopilotTaskId, activeTaskId, onTaskComplete, onTaskCopilot, onTaskOpen],
   )
 
   return (
     <Box sx={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column' }}>
       <DataGridPremium
+        apiRef={apiRef}
         rows={rows}
         columns={columns}
         getRowId={(row) => row.id}
@@ -252,7 +364,7 @@ export function TasksDataGrid({
         onRowSelectionModelChange={onRowSelectionModelChange}
         sortingOrder={['asc', 'desc']}
         initialState={{
-          sorting: { sortModel: [{ field: 'dueDate', sort: 'asc' }] },
+          sorting: { sortModel: [{ field: 'ageIndicator', sort: 'asc' }] },
           pagination: { paginationModel: { pageSize: 10, page: 0 } },
         }}
         pageSizeOptions={[10, 25, 50]}
@@ -260,6 +372,9 @@ export function TasksDataGrid({
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}
+        getRowClassName={({ id }) => (activeTaskId === id ? 'task-row-active' : '')}
+        slotProps={getListDataGridSlotProps()}
+        {...listDataGridFilterProps}
         sx={[...dataGridShellSx({
             '& .MuiDataGrid-columnHeader:not(.MuiDataGrid-columnHeaderCheckbox)': {
               px: 1.5,
@@ -312,6 +427,12 @@ export function TasksDataGrid({
               bgcolor: (theme) => surfaceMuted(theme),
             },
             '& .MuiDataGrid-row.Mui-selected': {
+              bgcolor: (theme) => accentSubtle(theme),
+              '&:hover': {
+                bgcolor: (theme) => accentSubtle(theme),
+              },
+            },
+            '& .MuiDataGrid-row.task-row-active': {
               bgcolor: (theme) => accentSubtle(theme),
               '&:hover': {
                 bgcolor: (theme) => accentSubtle(theme),

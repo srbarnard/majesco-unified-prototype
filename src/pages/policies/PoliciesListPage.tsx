@@ -1,6 +1,8 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
+import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useMemo, useState } from 'react'
+import { ListDataGridToolbar } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { usePoliciesLookupFromUrl } from '@/hooks/useLookupFromUrl'
@@ -9,7 +11,6 @@ import { FilterPanel } from '@/pages/policies/components/FilterPanel'
 import { PoliciesListAnalyticsDashboard } from '@/pages/policies/components/PoliciesListAnalyticsDashboard'
 import { PoliciesListDataGrid } from '@/pages/policies/components/PoliciesListDataGrid'
 import { PoliciesListHeader } from '@/pages/policies/components/PoliciesListHeader'
-import { PoliciesListToolbar } from '@/pages/policies/components/PoliciesListToolbar'
 import type { PoliciesListTab } from '@/pages/policies/components/PoliciesListTabs'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import {
@@ -24,7 +25,7 @@ import {
   type PoliciesListFilters,
 } from '@/pages/policies/filters/policiesListFilterTypes'
 
-const GUTTER = layoutTokens.contentPaddingX / 8
+const LIST_SECTION_GAP = layoutTokens.listSectionVerticalGap
 
 function matchesSearch(row: PolicyListRecord, query: string) {
   const normalized = query.trim().toLowerCase()
@@ -41,6 +42,7 @@ function matchesSearch(row: PolicyListRecord, query: string) {
 }
 
 export function PoliciesListPage() {
+  const apiRef = useGridApiRef()
   const [activeTab, setActiveTab] = useState<PoliciesListTab>('all')
   const [copilotOpen, setCopilotOpen] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
@@ -157,7 +159,7 @@ export function PoliciesListPage() {
             flexDirection: 'column',
             overflow: isAllPoliciesTab ? 'hidden' : 'auto',
             px: contentPx,
-            pt: 1,
+            pt: LIST_SECTION_GAP,
             pb: contentPx,
             width: '100%',
             bgcolor: 'background.paper',
@@ -171,11 +173,18 @@ export function PoliciesListPage() {
                 height: '100%',
                 minHeight: 0,
                 width: '100%',
-                gap: GUTTER,
+                gap: LIST_SECTION_GAP,
               }}
             >
               <Box sx={{ flexShrink: 0 }}>
-                <PoliciesListToolbar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+                <ListDataGridToolbar
+                  apiRef={apiRef}
+                  exportFileName="policies"
+                  exportAriaLabel="Download policies"
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  searchPlaceholder="Search policies"
+                />
               </Box>
               <Box
                 sx={{
@@ -187,6 +196,7 @@ export function PoliciesListPage() {
                 }}
               >
                 <PoliciesListDataGrid
+                  apiRef={apiRef}
                   rows={filteredRows}
                   onPolicyCopilot={handlePolicyCopilot}
                   activeCopilotPolicyId={copilotPolicyFocus?.id ?? null}

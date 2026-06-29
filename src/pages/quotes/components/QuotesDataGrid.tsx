@@ -11,11 +11,22 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import {
   DataGridPremium,
+  type GridApi,
   type GridColDef,
 } from '@mui/x-data-grid-premium'
 import { useMemo, useState } from 'react'
+import type { MutableRefObject } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
-import { CopilotIcon, copilotActiveIconSx, dataGridInteractionSx, tableActionIconButtonSx, tableLinkSx } from '@/design-system/components'
+import {
+  CopilotIcon,
+  copilotActiveIconSx,
+  dataGridInteractionSx,
+  getListDataGridSlotProps,
+  listDataGridActionColumnProps,
+  listDataGridFilterProps,
+  tableActionIconButtonSx,
+  tableLinkSx,
+} from '@/design-system/components'
 import { accentSubtle, dataGridShellSx, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -23,6 +34,7 @@ import { QuoteStatusChip } from '@/pages/quotes/components/QuoteStatusChip'
 import type { Quote } from '@/pages/quotes/data/mockQuotes'
 
 type QuotesDataGridProps = {
+  apiRef: MutableRefObject<GridApi>
   rows: Quote[]
   onQuoteCopilot?: (quote: Quote) => void
   activeCopilotQuoteId?: string | null
@@ -46,7 +58,7 @@ function QuoteNumberCell({ row }: { row: Quote }) {
       component="button"
       variant="body2"
       underline="hover"
-      sx={{ fontWeight: 600, textAlign: 'left', py: 0.25, ...tableLinkSx }}
+      sx={{ fontWeight: 400, textAlign: 'left', py: 0.25, ...tableLinkSx }}
     >
       {row.quoteNumber}
     </Link>
@@ -195,6 +207,7 @@ function RowActionsMenu({
 }
 
 export function QuotesDataGrid({
+  apiRef,
   rows,
   onQuoteCopilot,
   activeCopilotQuoteId,
@@ -274,6 +287,7 @@ export function QuotesDataGrid({
         sortable: true,
         align: 'center',
         headerAlign: 'center',
+        valueGetter: (_, row) => row.status,
         renderCell: ({ row }) => (
           <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
             <QuoteStatusChip status={row.status} />
@@ -285,6 +299,7 @@ export function QuotesDataGrid({
         headerName: 'Premium',
         flex: 0.85,
         minWidth: 120,
+        type: 'number',
         sortable: true,
         align: 'right',
         headerAlign: 'right',
@@ -320,11 +335,10 @@ export function QuotesDataGrid({
         minWidth: 96,
         maxWidth: 96,
         sortable: false,
-        filterable: false,
-        disableColumnMenu: true,
         resizable: false,
         align: 'right',
         headerAlign: 'right',
+        ...listDataGridActionColumnProps,
         renderCell: ({ row }) => (
           <RowActionsMenu
             row={row}
@@ -340,6 +354,7 @@ export function QuotesDataGrid({
   return (
     <Box sx={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column' }}>
       <DataGridPremium
+        apiRef={apiRef}
         rows={rows}
         columns={columns}
         getRowId={(row) => row.id}
@@ -352,6 +367,8 @@ export function QuotesDataGrid({
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}
         hideFooter
+        slotProps={getListDataGridSlotProps()}
+        {...listDataGridFilterProps}
         sx={[...dataGridShellSx({
             '& .MuiDataGrid-columnHeader[data-field="status"] .MuiDataGrid-columnHeaderTitleContainer': {
               justifyContent: 'center',

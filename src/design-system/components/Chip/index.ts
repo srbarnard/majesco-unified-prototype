@@ -1,1 +1,1 @@
-export { Chip, StatusChip, type ChipProps, type StatusChipProps } from './Chip'
+export { Chip, StatusChip, statusChipSx, type ChipProps, type StatusChipProps } from './Chip'

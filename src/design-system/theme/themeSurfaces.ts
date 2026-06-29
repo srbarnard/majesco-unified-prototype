@@ -59,6 +59,13 @@ export function panelToggleButtonSx(active: boolean): SxProps<Theme> {
   return (theme) => getPanelToggleButtonStyles(theme, active)
 }
 
+/** Full-width divider under section tab rows (Policies, Quotes, Tasks, Policy detail). */
+export const sectionTabRowBorderSx: SxProps<Theme> = {
+  borderBottom: 1,
+  borderColor: 'divider',
+  width: '100%',
+}
+
 /** Link cell hover in tables. */
 export function accentLinkHover(theme: Theme) {
   return accentSubtle(theme)
@@ -134,6 +141,91 @@ const dataGridShellBaseSx = {
   },
   '& .MuiDataGrid-filler': {
     bgcolor: (theme: Theme) => surfaceMuted(theme),
+  },
+  '& .MuiDataGrid-headerFilterRow': {
+    bgcolor: (theme: Theme) => surfaceMuted(theme),
+    minHeight: 'unset !important',
+  },
+  '& .MuiDataGrid-headerFilterRow .MuiDataGrid-columnHeader': {
+    px: 1.25,
+    py: 0.5,
+    minHeight: 'unset !important',
+    alignItems: 'flex-end',
+  },
+  '& .MuiDataGrid-headerFilterRow .MuiFormControl-root': {
+    width: '100%',
+    my: 0,
+    pt: 0.5,
+  },
+  '& .MuiDataGrid-headerFilterRow .MuiInputBase-root': {
+    fontSize: '0.75rem',
+    lineHeight: 1.3,
+    mt: 0,
+    mb: 0,
+    color: 'text.secondary',
+    outline: 'none',
+    boxShadow: 'none',
+    '&.Mui-focused': {
+      outline: 'none',
+      boxShadow: 'none',
+    },
+  },
+  '& .MuiDataGrid-headerFilterRow .MuiOutlinedInput-root': {
+    '& .MuiOutlinedInput-notchedOutline': {
+      border: 'none',
+    },
+    '&.Mui-focused': {
+      outline: 'none',
+      boxShadow: 'none',
+    },
+  },
+  '& .MuiDataGrid-headerFilterRow .MuiInputLabel-root, & .MuiDataGrid-headerFilterRow .MuiFormLabel-root': {
+    fontSize: '0.8125rem',
+    lineHeight: 1.3,
+    letterSpacing: 0,
+    color: 'text.disabled',
+    transform: 'translate(2px, 12px) scale(1)',
+  },
+  '& .MuiDataGrid-headerFilterRow .MuiInputLabel-root.Mui-focused': {
+    color: 'text.secondary',
+  },
+  '& .MuiDataGrid-headerFilterRow .MuiInputLabel-root.MuiInputLabel-shrink': {
+    transform: 'translate(2px, -5px) scale(1)',
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    color: 'text.secondary',
+  },
+  '& .MuiDataGrid-headerFilterRow .MuiInputBase-input': {
+    py: 0.375,
+    px: 0.5,
+    height: 22,
+    minHeight: 22,
+  },
+  '& .MuiDataGrid-headerFilterRow .MuiInputBase-input::placeholder': {
+    fontSize: '0.75rem',
+    opacity: 0.55,
+  },
+  '& .MuiDataGrid-headerFilterRow input[type="date"], & .MuiDataGrid-headerFilterRow input[type="datetime-local"]': {
+    fontSize: '0.75rem',
+  },
+  '& .MuiDataGrid-headerFilterRow .MuiInput-underline:before': {
+    borderBottomColor: 'divider',
+  },
+  '& .MuiDataGrid-headerFilterRow .MuiInput-underline:hover:not(.Mui-disabled):before': {
+    borderBottomColor: 'action.hover',
+  },
+  '& .MuiDataGrid-headerFilterRow .MuiInput-underline:after': {
+    borderBottomWidth: 2,
+  },
+  '& .MuiDataGrid-headerFilterRow .MuiInputBase-root.Mui-focused .MuiInput-underline:after': {
+    borderBottomColor: 'primary.main',
+  },
+  '& .MuiDataGrid-headerFilterRow .MuiIconButton-root': {
+    p: 0.375,
+    color: 'text.disabled',
+    '& .MuiSvgIcon-root': {
+      fontSize: '0.875rem',
+    },
   },
 } as const
 

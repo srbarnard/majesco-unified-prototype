@@ -176,15 +176,18 @@ const policiesListWorkspaceInsights = [
 const policyListQuickActions = ['Renewal summary', 'Billing status', 'Endorsement history', 'Coverage overview']
 
 function taskInsights(task: TaskRecord): string[] {
+  if (task.copilotInsights.length > 0) {
+    return task.copilotInsights.slice(0, 3)
+  }
   return [
-    `${task.priority} priority · ${task.status}`,
-    `Assigned by ${task.assigner}`,
-    `Due ${task.dueLabel} · Ref #${task.refNumber}`,
+    `${task.priority} priority · ${task.displayStatus}`,
+    `Assigned to ${task.assignedTo} · ${task.team}`,
+    `${task.ageIndicator} · Ref ${task.refNumber}`,
   ]
 }
 
 function buildTaskSummary(task: TaskRecord) {
-  return `**${task.taskName}** — ${task.priority} priority task assigned by **${task.assigner}**, due **${task.dueLabel}**. Reference type is **${task.referenceType}** (${task.refNumber}).`
+  return `**${task.taskName}** — ${task.priority} priority task for **${task.relatedEntities.insuredName ?? 'related account'}**, due **${task.dueLabel}**. ${task.nextAction}`
 }
 
 const tasksWorkspaceSummary =

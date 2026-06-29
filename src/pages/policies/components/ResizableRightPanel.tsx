@@ -3,10 +3,14 @@ import Drawer from '@mui/material/Drawer'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useTheme } from '@mui/material/styles'
 import type { ReactNode } from 'react'
-import { useCopilotWidth } from '@/pages/policies/hooks/useCopilotWidth'
+import {
+  useRightPanelWidth,
+  type RightPanelVariant,
+} from '@/pages/policies/hooks/useCopilotWidth'
 
 type ResizableRightPanelProps = {
   open: boolean
+  variant?: RightPanelVariant
   children: ReactNode
 }
 
@@ -18,10 +22,10 @@ function PanelContent({ children }: { children: ReactNode }) {
   )
 }
 
-export function ResizableRightPanel({ open, children }: ResizableRightPanelProps) {
+export function ResizableRightPanel({ open, variant = 'standard', children }: ResizableRightPanelProps) {
   const theme = useTheme()
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
-  const { width, startResize } = useCopilotWidth()
+  const { width, startResize } = useRightPanelWidth(variant)
 
   if (!open) return null
 
@@ -35,7 +39,7 @@ export function ResizableRightPanel({ open, children }: ResizableRightPanelProps
         sx={{
           display: { xs: 'block', lg: 'none' },
           '& .MuiDrawer-paper': {
-            width: 'min(100%, 400px)',
+            width: variant === 'wide' ? 'min(100%, 92vw)' : 'min(100%, 400px)',
             boxSizing: 'border-box',
           },
         }}

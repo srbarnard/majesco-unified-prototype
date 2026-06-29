@@ -1,6 +1,8 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
+import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useMemo, useState } from 'react'
+import { ListDataGridToolbar } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { useQuotesLookupFromUrl } from '@/hooks/useLookupFromUrl'
@@ -10,7 +12,6 @@ import { QuotesAnalyticsTab } from '@/pages/quotes/components/QuotesAnalyticsTab
 import { QuotesDataGrid } from '@/pages/quotes/components/QuotesDataGrid'
 import { QuotesFilterPanel } from '@/pages/quotes/components/QuotesFilterPanel'
 import { QuotesHeader } from '@/pages/quotes/components/QuotesHeader'
-import { QuotesToolbar } from '@/pages/quotes/components/QuotesToolbar'
 import type { QuotesTab } from '@/pages/quotes/components/QuotesTabs'
 import { QUOTES_TOTAL_ROWS, quotesMock, type Quote } from '@/pages/quotes/data/mockQuotes'
 import { applyQuotesListFilters } from '@/pages/quotes/filters/applyQuotesListFilters'
@@ -20,7 +21,7 @@ import {
   type QuotesListFilters,
 } from '@/pages/quotes/filters/quotesListFilterTypes'
 
-const GUTTER = layoutTokens.contentPaddingX / 8
+const LIST_SECTION_GAP = layoutTokens.listSectionVerticalGap
 
 function matchesSearch(row: Quote, query: string) {
   const normalized = query.trim().toLowerCase()
@@ -31,6 +32,7 @@ function matchesSearch(row: Quote, query: string) {
 }
 
 export function QuotesPage() {
+  const apiRef = useGridApiRef()
   const [activeTab, setActiveTab] = useState<QuotesTab>('all')
   const [copilotOpen, setCopilotOpen] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
@@ -145,7 +147,7 @@ export function QuotesPage() {
             flexDirection: 'column',
             overflow: isAllQuotesTab ? 'hidden' : 'auto',
             px: contentPx,
-            pt: 1,
+            pt: LIST_SECTION_GAP,
             pb: contentPx,
             width: '100%',
             bgcolor: 'background.paper',
@@ -159,11 +161,18 @@ export function QuotesPage() {
                 height: '100%',
                 minHeight: 0,
                 width: '100%',
-                gap: GUTTER,
+                gap: LIST_SECTION_GAP,
               }}
             >
               <Box sx={{ flexShrink: 0 }}>
-                <QuotesToolbar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+                <ListDataGridToolbar
+                  apiRef={apiRef}
+                  exportFileName="quotes"
+                  exportAriaLabel="Download quotes"
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  searchPlaceholder="Search quotes"
+                />
               </Box>
               <Box
                 sx={{
@@ -175,6 +184,7 @@ export function QuotesPage() {
                 }}
               >
                 <QuotesDataGrid
+                  apiRef={apiRef}
                   rows={filteredRows}
                   onQuoteCopilot={handleQuoteCopilot}
                   activeCopilotQuoteId={copilotQuoteFocus?.id ?? null}

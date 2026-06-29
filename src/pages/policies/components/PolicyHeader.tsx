@@ -12,7 +12,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
 import { CopilotIcon, EmergencyHomeIcon } from '@/design-system/components'
-import { getPanelToggleButtonStyles } from '@/design-system/theme/themeSurfaces'
+import { getPanelToggleButtonStyles, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { PolicyTabs, type PolicyTab } from './PolicyTabs'
@@ -182,35 +182,37 @@ export function PolicyHeader({
         </Typography>
       </Box>
 
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{
-          px: contentPx,
-          minHeight: 44,
-          gap: 1,
-        }}
-      >
-        <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
-          <PolicyTabs value={activeTab} onChange={onTabChange} />
-        </Box>
-        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexShrink: 0 }}>
-          <PanelToggleButton
-            label="Parties"
-            icon={<GroupsOutlinedIcon sx={{ fontSize: 18 }} />}
-            active={activeRightPanel === 'parties'}
-            onClick={() => onToggleRightPanel('parties')}
-            hideLabelOnMobile
-          />
-          <PanelToggleButton
-            label="Copilot"
-            icon={<CopilotIcon size={18} active={activeRightPanel === 'copilot'} />}
-            active={activeRightPanel === 'copilot'}
-            onClick={() => onToggleRightPanel('copilot')}
-          />
+      <Box sx={sectionTabRowBorderSx}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{
+            px: contentPx,
+            minHeight: 44,
+            gap: 1,
+          }}
+        >
+          <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+            <PolicyTabs value={activeTab} onChange={onTabChange} />
+          </Box>
+          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexShrink: 0 }}>
+            <PanelToggleButton
+              label="Parties"
+              icon={<GroupsOutlinedIcon sx={{ fontSize: 18 }} />}
+              active={activeRightPanel === 'parties'}
+              onClick={() => onToggleRightPanel('parties')}
+              hideLabelOnMobile
+            />
+            <PanelToggleButton
+              label="Copilot"
+              icon={<CopilotIcon size={18} active={activeRightPanel === 'copilot'} />}
+              active={activeRightPanel === 'copilot'}
+              onClick={() => onToggleRightPanel('copilot')}
+            />
+          </Stack>
         </Stack>
-      </Stack>
+      </Box>
     </Box>
   )
 }

@@ -1,14 +1,6 @@
-import { Chip, StatusChip, type StatusChipProps } from '@/design-system/components'
+import { Chip, StatusChip, statusChipSx, type StatusChipProps } from '@/design-system/components'
 import { surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import type { QuoteStatus } from '@/pages/quotes/data/mockQuotes'
-
-const chipSx = {
-  borderRadius: '30px',
-  fontWeight: 500,
-  fontSize: '0.75rem',
-  height: 24,
-  border: 'none',
-} as const
 
 const quoteStatusToneMap: Record<QuoteStatus, StatusChipProps['status']> = {
   Quoted: 'success',
@@ -48,7 +40,7 @@ export function QuoteStatusChip({ status }: { status: QuoteStatus | string }) {
   const mappedTone = quoteStatusToneMap[status as QuoteStatus] ?? inferStatusTone(status)
 
   if (mappedTone) {
-    return <StatusChip status={mappedTone} label={status} sx={chipSx} />
+    return <StatusChip status={mappedTone} label={status} />
   }
 
   return (
@@ -57,7 +49,7 @@ export function QuoteStatusChip({ status }: { status: QuoteStatus | string }) {
       size="small"
       variant="filled"
       sx={(theme) => ({
-        ...chipSx,
+        ...statusChipSx,
         bgcolor: surfaceSubtle(theme),
         color: 'text.secondary',
       })}

@@ -10,17 +10,29 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import {
   DataGridPremium,
+  type GridApi,
   type GridColDef,
 } from '@mui/x-data-grid-premium'
 import { useMemo, useState } from 'react'
+import type { MutableRefObject } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { Link as RouterLink } from 'react-router'
-import { CopilotIcon, copilotActiveIconSx, dataGridInteractionSx, tableActionIconButtonSx, tableLinkSx } from '@/design-system/components'
+import {
+  CopilotIcon,
+  copilotActiveIconSx,
+  dataGridInteractionSx,
+  getListDataGridSlotProps,
+  listDataGridActionColumnProps,
+  listDataGridFilterProps,
+  tableActionIconButtonSx,
+  tableLinkSx,
+} from '@/design-system/components'
 import { dataGridShellSx } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import type { PolicyListRecord } from '@/pages/policies/data/mockPoliciesList'
 
 type PoliciesListDataGridProps = {
+  apiRef: MutableRefObject<GridApi>
   rows: PolicyListRecord[]
   onPolicyCopilot?: (policy: PolicyListRecord) => void
   activeCopilotPolicyId?: string | null
@@ -49,7 +61,7 @@ function PolicyNumberCell({ row }: { row: PolicyListRecord }) {
       to={`/policies/${encodeURIComponent(row.policyNumber)}`}
       variant="body2"
       underline="hover"
-      sx={{ fontWeight: 600, textAlign: 'left', py: 0.25, ...tableLinkSx }}
+      sx={{ fontWeight: 400, textAlign: 'left', py: 0.25, ...tableLinkSx }}
     >
       {row.policyNumber}
     </Link>
@@ -119,6 +131,7 @@ function RowActionsMenu({
 }
 
 export function PoliciesListDataGrid({
+  apiRef,
   rows,
   onPolicyCopilot,
   activeCopilotPolicyId,
@@ -210,6 +223,7 @@ export function PoliciesListDataGrid({
         headerName: 'TWP',
         flex: 0.8,
         minWidth: 112,
+        type: 'number',
         sortable: true,
         align: 'right',
         headerAlign: 'right',
@@ -227,6 +241,7 @@ export function PoliciesListDataGrid({
         headerName: 'FTP',
         flex: 0.8,
         minWidth: 112,
+        type: 'number',
         sortable: true,
         align: 'right',
         headerAlign: 'right',
@@ -246,11 +261,10 @@ export function PoliciesListDataGrid({
         minWidth: 96,
         maxWidth: 96,
         sortable: false,
-        filterable: false,
-        disableColumnMenu: true,
         resizable: false,
         align: 'right',
         headerAlign: 'right',
+        ...listDataGridActionColumnProps,
         renderCell: ({ row }) => (
           <RowActionsMenu
             row={row}
@@ -266,6 +280,7 @@ export function PoliciesListDataGrid({
   return (
     <Box sx={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column' }}>
       <DataGridPremium
+        apiRef={apiRef}
         rows={rows}
         columns={columns}
         getRowId={(row) => row.id}
@@ -278,6 +293,8 @@ export function PoliciesListDataGrid({
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}
         hideFooter
+        slotProps={getListDataGridSlotProps()}
+        {...listDataGridFilterProps}
         sx={[...dataGridShellSx(), dataGridInteractionSx] as SxProps<Theme>}
       />
     </Box>

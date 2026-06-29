@@ -1,5 +1,6 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
+import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useMemo, useState } from 'react'
 import type { GridRowSelectionModel } from '@mui/x-data-grid-premium'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -7,6 +8,7 @@ import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { useTasksLookupFromUrl } from '@/hooks/useLookupFromUrl'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
+import { TaskDetailsPanel } from '@/pages/tasks/components/TaskDetailsPanel'
 import { TasksActionBar } from '@/pages/tasks/components/TasksActionBar'
 import { TasksAnalyticsTab } from '@/pages/tasks/components/TasksAnalyticsTab'
 import { TasksDataGrid } from '@/pages/tasks/components/TasksDataGrid'
@@ -22,21 +24,36 @@ import {
   type TasksFilters,
 } from '@/pages/tasks/filters/tasksFilterTypes'
 
-const GUTTER = layoutTokens.contentPaddingX / 8
+const LIST_SECTION_GAP = layoutTokens.listSectionVerticalGap
 
 function matchesSearch(row: TaskRecord, query: string) {
   const normalized = query.trim().toLowerCase()
   if (!normalized) return true
 
-  const fields = [row.taskName, row.assigner, row.refNumber, row.assignedTo, row.priority, row.status]
-  return fields.some((value) => value.toLowerCase().includes(normalized))
+  const fields = [
+    row.taskName,
+    row.assigner,
+    row.refNumber,
+    row.assignedTo,
+    row.team,
+    row.priority,
+    row.status,
+    row.displayStatus,
+    row.relatedEntities.insuredName,
+    row.relatedEntities.policyNumber,
+    row.relatedEntities.quoteNumber,
+  ]
+  return fields.some((value) => value && String(value).toLowerCase().includes(normalized))
 }
 
 export function TasksPage() {
+  const apiRef = useGridApiRef()
   const [activeTab, setActiveTab] = useState<TasksTab>('all')
   const [copilotOpen, setCopilotOpen] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
   const [copilotTaskFocus, setCopilotTaskFocus] = useState<TaskRecord | null>(null)
+  const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
+  const [taskDetailOpen, setTaskDetailOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<TasksFilters>(emptyTasksFilters)
 
@@ -60,6 +77,7 @@ export function TasksPage() {
       if (!current) {
         setCopilotOpen(false)
         setCopilotTaskFocus(null)
+        setTaskDetailOpen(false)
       }
       return !current
     })
@@ -80,6 +98,7 @@ export function TasksPage() {
         return false
       }
       setFilterOpen(false)
+      setTaskDetailOpen(false)
       return true
     })
   }, [])
@@ -92,7 +111,25 @@ export function TasksPage() {
   const handleTaskCopilot = useCallback((task: TaskRecord) => {
     setCopilotTaskFocus(task)
     setFilterOpen(false)
+    setTaskDetailOpen(false)
     setCopilotOpen(true)
+  }, [])
+
+  const handleTaskOpen = useCallback((task: TaskRecord) => {
+    setSelectedTask(task)
+    setFilterOpen(false)
+    setCopilotOpen(false)
+    setCopilotTaskFocus(null)
+    setTaskDetailOpen(true)
+  }, [])
+
+  const handleCloseTaskDetail = useCallback(() => {
+    setTaskDetailOpen(false)
+    setSelectedTask(null)
+  }, [])
+
+  const handleTaskComplete = useCallback((task: TaskRecord) => {
+    void task
   }, [])
 
   const handleTabChange = useCallback((tab: TasksTab) => {
@@ -101,6 +138,8 @@ export function TasksPage() {
       setCopilotOpen(false)
       setFilterOpen(false)
       setCopilotTaskFocus(null)
+      setTaskDetailOpen(false)
+      setSelectedTask(null)
     }
   }, [])
 
@@ -150,7 +189,7 @@ export function TasksPage() {
             flexDirection: 'column',
             overflow: isAllTasksTab || isTeamTab ? 'hidden' : 'auto',
             px: contentPx,
-            pt: 1,
+            pt: LIST_SECTION_GAP,
             pb: contentPx,
             width: '100%',
             bgcolor: 'background.paper',
@@ -164,11 +203,12 @@ export function TasksPage() {
                 height: '100%',
                 minHeight: 0,
                 width: '100%',
-                gap: GUTTER,
+                gap: LIST_SECTION_GAP,
               }}
             >
               <Box sx={{ flexShrink: 0 }}>
                 <TasksActionBar
+                  apiRef={apiRef}
                   searchQuery={searchQuery}
                   onSearchChange={setSearchQuery}
                   hasSelection={hasSelection}
@@ -184,11 +224,15 @@ export function TasksPage() {
                 }}
               >
                 <TasksDataGrid
+                  apiRef={apiRef}
                   rows={filteredRows}
                   rowSelectionModel={rowSelectionModel}
                   onRowSelectionModelChange={setRowSelectionModel}
+                  onTaskOpen={handleTaskOpen}
                   onTaskCopilot={handleTaskCopilot}
+                  onTaskComplete={handleTaskComplete}
                   activeCopilotTaskId={copilotTaskFocus?.id ?? null}
+                  activeTaskId={selectedTask?.id ?? null}
                 />
               </Box>
               <Typography
@@ -209,12 +253,20 @@ export function TasksPage() {
         </Box>
       </Box>
 
-      <ResizableRightPanel open={filterOpen || copilotOpen}>
+      <ResizableRightPanel open={filterOpen || copilotOpen || taskDetailOpen} variant={taskDetailOpen ? 'wide' : 'standard'}>
         {filterOpen && (
           <TasksFilterPanel
             appliedFilters={appliedFilters}
             onApply={handleApplyFilters}
             onClose={handleCloseFilter}
+          />
+        )}
+        {taskDetailOpen && selectedTask && (
+          <TaskDetailsPanel
+            task={selectedTask}
+            onClose={handleCloseTaskDetail}
+            onMarkComplete={handleTaskComplete}
+            onAskCopilot={handleTaskCopilot}
           />
         )}
         {copilotOpen && (

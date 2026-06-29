@@ -6,7 +6,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
 import { Button, CopilotIcon } from '@/design-system/components'
-import { getPanelToggleButtonStyles } from '@/design-system/theme/themeSurfaces'
+import { getPanelToggleButtonStyles, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { TasksTabs, type TasksTab } from './TasksTabs'
@@ -95,39 +95,41 @@ export function TasksHeader({
         </Button>
       </Stack>
 
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{
-          px: contentPx,
-          minHeight: 44,
-          gap: 1,
-        }}
-      >
-        <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
-          <TasksTabs value={activeTab} onChange={onTabChange} />
-        </Box>
-        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexShrink: 0 }}>
-          {showPanels && (
-            <>
-              <PanelToggleButton
-                label="Filter"
-                icon={<FilterListOutlinedIcon sx={{ fontSize: 18 }} />}
-                active={filterOpen}
-                onClick={onToggleFilter}
-                hideLabelOnMobile
-              />
-              <PanelToggleButton
-                label="Copilot"
-                icon={<CopilotIcon size={18} active={copilotOpen} />}
-                active={copilotOpen}
-                onClick={onToggleCopilot}
-              />
-            </>
-          )}
+      <Box sx={sectionTabRowBorderSx}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{
+            px: contentPx,
+            minHeight: 44,
+            gap: 1,
+          }}
+        >
+          <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+            <TasksTabs value={activeTab} onChange={onTabChange} />
+          </Box>
+          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexShrink: 0 }}>
+            {showPanels && (
+              <>
+                <PanelToggleButton
+                  label="Filter"
+                  icon={<FilterListOutlinedIcon sx={{ fontSize: 18 }} />}
+                  active={filterOpen}
+                  onClick={onToggleFilter}
+                  hideLabelOnMobile
+                />
+                <PanelToggleButton
+                  label="Copilot"
+                  icon={<CopilotIcon size={18} active={copilotOpen} />}
+                  active={copilotOpen}
+                  onClick={onToggleCopilot}
+                />
+              </>
+            )}
+          </Stack>
         </Stack>
-      </Stack>
+      </Box>
     </Box>
   )
 }
