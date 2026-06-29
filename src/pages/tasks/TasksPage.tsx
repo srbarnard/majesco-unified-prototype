@@ -1,54 +1,58 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useCallback, useMemo, useState } from 'react'
+import type { GridRowSelectionModel } from '@mui/x-data-grid-premium'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
-import { QuotesAnalyticsTab } from '@/pages/quotes/components/QuotesAnalyticsTab'
-import { QuotesDataGrid } from '@/pages/quotes/components/QuotesDataGrid'
-import { QuotesFilterPanel } from '@/pages/quotes/components/QuotesFilterPanel'
-import { QuotesHeader } from '@/pages/quotes/components/QuotesHeader'
-import { QuotesToolbar } from '@/pages/quotes/components/QuotesToolbar'
-import type { QuotesTab } from '@/pages/quotes/components/QuotesTabs'
-import { QUOTES_TOTAL_ROWS, quotesMock, type Quote } from '@/pages/quotes/data/mockQuotes'
-import { applyQuotesListFilters } from '@/pages/quotes/filters/applyQuotesListFilters'
+import { TasksActionBar } from '@/pages/tasks/components/TasksActionBar'
+import { TasksAnalyticsTab } from '@/pages/tasks/components/TasksAnalyticsTab'
+import { TasksDataGrid } from '@/pages/tasks/components/TasksDataGrid'
+import { TasksFilterPanel } from '@/pages/tasks/components/TasksFilterPanel'
+import { TasksHeader } from '@/pages/tasks/components/TasksHeader'
+import { TeamStructureTab } from '@/pages/tasks/components/TeamStructureTab'
+import type { TasksTab } from '@/pages/tasks/components/TasksTabs'
+import { TASKS_TOTAL_ROWS, tasksMock, type TaskRecord } from '@/pages/tasks/data/mockTasks'
+import { applyTasksFilters } from '@/pages/tasks/filters/applyTasksFilters'
 import {
-  emptyQuotesListFilters,
-  hasActiveQuotesFilters,
-  type QuotesListFilters,
-} from '@/pages/quotes/filters/quotesListFilterTypes'
+  emptyTasksFilters,
+  hasActiveTasksFilters,
+  type TasksFilters,
+} from '@/pages/tasks/filters/tasksFilterTypes'
 
 const GUTTER = layoutTokens.contentPaddingX / 8
 
-function matchesSearch(row: Quote, query: string) {
+function matchesSearch(row: TaskRecord, query: string) {
   const normalized = query.trim().toLowerCase()
   if (!normalized) return true
 
-  const fields = [row.quoteNumber, row.insured, row.producer, row.status, row.updatedLabel, ...row.products]
+  const fields = [row.taskName, row.assigner, row.refNumber, row.assignedTo, row.priority, row.status]
   return fields.some((value) => value.toLowerCase().includes(normalized))
 }
 
-export function QuotesPage() {
-  const [activeTab, setActiveTab] = useState<QuotesTab>('all')
+export function TasksPage() {
+  const [activeTab, setActiveTab] = useState<TasksTab>('all')
   const [copilotOpen, setCopilotOpen] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
-  const [copilotQuoteFocus, setCopilotQuoteFocus] = useState<Quote | null>(null)
+  const [copilotTaskFocus, setCopilotTaskFocus] = useState<TaskRecord | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [appliedFilters, setAppliedFilters] = useState<QuotesListFilters>(emptyQuotesListFilters)
+  const [appliedFilters, setAppliedFilters] = useState<TasksFilters>(emptyTasksFilters)
+  const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
 
   const filteredRows = useMemo(() => {
-    const withFilters = applyQuotesListFilters(quotesMock, appliedFilters)
+    const withFilters = applyTasksFilters(tasksMock, appliedFilters)
     return withFilters.filter((row) => matchesSearch(row, searchQuery))
   }, [appliedFilters, searchQuery])
 
-  const filtersActive = hasActiveQuotesFilters(appliedFilters)
+  const filtersActive = hasActiveTasksFilters(appliedFilters)
+  const hasSelection = rowSelectionModel.length > 0
 
   const handleToggleFilter = useCallback(() => {
     setFilterOpen((current) => {
       if (!current) {
         setCopilotOpen(false)
-        setCopilotQuoteFocus(null)
+        setCopilotTaskFocus(null)
       }
       return !current
     })
@@ -58,14 +62,14 @@ export function QuotesPage() {
     setFilterOpen(false)
   }, [])
 
-  const handleApplyFilters = useCallback((filters: QuotesListFilters) => {
+  const handleApplyFilters = useCallback((filters: TasksFilters) => {
     setAppliedFilters(filters)
   }, [])
 
   const handleToggleCopilot = useCallback(() => {
     setCopilotOpen((current) => {
       if (current) {
-        setCopilotQuoteFocus(null)
+        setCopilotTaskFocus(null)
         return false
       }
       setFilterOpen(false)
@@ -75,25 +79,26 @@ export function QuotesPage() {
 
   const handleCloseCopilot = useCallback(() => {
     setCopilotOpen(false)
-    setCopilotQuoteFocus(null)
+    setCopilotTaskFocus(null)
   }, [])
 
-  const handleQuoteCopilot = useCallback((quote: Quote) => {
-    setCopilotQuoteFocus(quote)
+  const handleTaskCopilot = useCallback((task: TaskRecord) => {
+    setCopilotTaskFocus(task)
     setFilterOpen(false)
     setCopilotOpen(true)
   }, [])
 
-  const handleTabChange = useCallback((tab: QuotesTab) => {
+  const handleTabChange = useCallback((tab: TasksTab) => {
     setActiveTab(tab)
     if (tab === 'analytics') {
       setCopilotOpen(false)
       setFilterOpen(false)
-      setCopilotQuoteFocus(null)
+      setCopilotTaskFocus(null)
     }
   }, [])
 
-  const isAllQuotesTab = activeTab === 'all'
+  const isAllTasksTab = activeTab === 'all'
+  const isTeamTab = activeTab === 'team'
   const contentPx = `${layoutTokens.contentPaddingX}px`
 
   return (
@@ -120,7 +125,7 @@ export function QuotesPage() {
         }}
       >
         <Box sx={{ flexShrink: 0 }}>
-          <QuotesHeader
+          <TasksHeader
             activeTab={activeTab}
             onTabChange={handleTabChange}
             filterOpen={filterOpen}
@@ -136,7 +141,7 @@ export function QuotesPage() {
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            overflow: isAllQuotesTab ? 'hidden' : 'auto',
+            overflow: isAllTasksTab || isTeamTab ? 'hidden' : 'auto',
             px: contentPx,
             pt: 1,
             pb: contentPx,
@@ -144,7 +149,7 @@ export function QuotesPage() {
             bgcolor: 'background.paper',
           }}
         >
-          {isAllQuotesTab ? (
+          {isAllTasksTab ? (
             <Box
               sx={{
                 display: 'flex',
@@ -156,7 +161,11 @@ export function QuotesPage() {
               }}
             >
               <Box sx={{ flexShrink: 0 }}>
-                <QuotesToolbar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+                <TasksActionBar
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  hasSelection={hasSelection}
+                />
               </Box>
               <Box
                 sx={{
@@ -167,10 +176,12 @@ export function QuotesPage() {
                   overflow: 'hidden',
                 }}
               >
-                <QuotesDataGrid
+                <TasksDataGrid
                   rows={filteredRows}
-                  onQuoteCopilot={handleQuoteCopilot}
-                  activeCopilotQuoteId={copilotQuoteFocus?.id ?? null}
+                  rowSelectionModel={rowSelectionModel}
+                  onRowSelectionModelChange={setRowSelectionModel}
+                  onTaskCopilot={handleTaskCopilot}
+                  activeCopilotTaskId={copilotTaskFocus?.id ?? null}
                 />
               </Box>
               <Typography
@@ -178,18 +189,22 @@ export function QuotesPage() {
                 color="text.secondary"
                 sx={{ fontFamily: figmaFontFamilyStack.body, textAlign: 'right', flexShrink: 0 }}
               >
-                Total Rows: {filtersActive || searchQuery.trim() ? filteredRows.length : QUOTES_TOTAL_ROWS}
+                Total Rows: {filtersActive || searchQuery.trim() ? filteredRows.length : TASKS_TOTAL_ROWS}
               </Typography>
             </Box>
+          ) : isTeamTab ? (
+            <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <TeamStructureTab />
+            </Box>
           ) : (
-            <QuotesAnalyticsTab />
+            <TasksAnalyticsTab />
           )}
         </Box>
       </Box>
 
       <ResizableRightPanel open={filterOpen || copilotOpen}>
         {filterOpen && (
-          <QuotesFilterPanel
+          <TasksFilterPanel
             appliedFilters={appliedFilters}
             onApply={handleApplyFilters}
             onClose={handleCloseFilter}
@@ -197,8 +212,8 @@ export function QuotesPage() {
         )}
         {copilotOpen && (
           <CopilotPanel
-            context="quotes"
-            focusedQuote={copilotQuoteFocus}
+            context="tasks"
+            focusedTask={copilotTaskFocus}
             onClose={handleCloseCopilot}
           />
         )}
@@ -207,4 +222,4 @@ export function QuotesPage() {
   )
 }
 
-export default QuotesPage
+export default TasksPage

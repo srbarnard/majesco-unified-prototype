@@ -365,6 +365,9 @@ export const componentOverrides: ThemeOptions['components'] = {
       root: ({ theme }) => ({
         borderRadius: borderRadius.default,
         backgroundColor: theme.palette.background.paper,
+        '& .MuiOutlinedInput-notchedOutline': {
+          borderWidth: 1,
+        },
         '&:hover .MuiOutlinedInput-notchedOutline': {
           borderColor: primaryFocusColor(theme),
         },
@@ -378,6 +381,7 @@ export const componentOverrides: ThemeOptions['components'] = {
       }),
       notchedOutline: ({ theme }) => ({
         borderColor: theme.palette.divider,
+        borderWidth: 1,
       }),
     },
   },

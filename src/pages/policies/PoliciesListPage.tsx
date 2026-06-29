@@ -1,10 +1,11 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useCallback, useMemo, useState } from 'react'
-import { Card } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
+import { FilterPanel } from '@/pages/policies/components/FilterPanel'
+import { PoliciesListAnalyticsDashboard } from '@/pages/policies/components/PoliciesListAnalyticsDashboard'
 import { PoliciesListDataGrid } from '@/pages/policies/components/PoliciesListDataGrid'
 import { PoliciesListHeader } from '@/pages/policies/components/PoliciesListHeader'
 import { PoliciesListToolbar } from '@/pages/policies/components/PoliciesListToolbar'
@@ -15,6 +16,12 @@ import {
   policiesListMock,
   type PolicyListRecord,
 } from '@/pages/policies/data/mockPoliciesList'
+import { applyPoliciesListFilters } from '@/pages/policies/filters/applyPoliciesListFilters'
+import {
+  emptyPoliciesListFilters,
+  hasActiveFilters,
+  type PoliciesListFilters,
+} from '@/pages/policies/filters/policiesListFilterTypes'
 
 const GUTTER = layoutTokens.contentPaddingX / 8
 
@@ -35,20 +42,44 @@ function matchesSearch(row: PolicyListRecord, query: string) {
 export function PoliciesListPage() {
   const [activeTab, setActiveTab] = useState<PoliciesListTab>('all')
   const [copilotOpen, setCopilotOpen] = useState(false)
+  const [filterOpen, setFilterOpen] = useState(false)
   const [copilotPolicyFocus, setCopilotPolicyFocus] = useState<PolicyListRecord | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [appliedFilters, setAppliedFilters] = useState<PoliciesListFilters>(emptyPoliciesListFilters)
 
-  const filteredRows = useMemo(
-    () => policiesListMock.filter((row) => matchesSearch(row, searchQuery)),
-    [searchQuery],
-  )
+  const filteredRows = useMemo(() => {
+    const withFilters = applyPoliciesListFilters(policiesListMock, appliedFilters)
+    return withFilters.filter((row) => matchesSearch(row, searchQuery))
+  }, [appliedFilters, searchQuery])
+
+  const filtersActive = hasActiveFilters(appliedFilters)
+
+  const handleToggleFilter = useCallback(() => {
+    setFilterOpen((current) => {
+      if (!current) {
+        setCopilotOpen(false)
+        setCopilotPolicyFocus(null)
+      }
+      return !current
+    })
+  }, [])
+
+  const handleCloseFilter = useCallback(() => {
+    setFilterOpen(false)
+  }, [])
+
+  const handleApplyFilters = useCallback((filters: PoliciesListFilters) => {
+    setAppliedFilters(filters)
+  }, [])
 
   const handleToggleCopilot = useCallback(() => {
     setCopilotOpen((current) => {
       if (current) {
         setCopilotPolicyFocus(null)
+        return false
       }
-      return !current
+      setFilterOpen(false)
+      return true
     })
   }, [])
 
@@ -59,6 +90,7 @@ export function PoliciesListPage() {
 
   const handlePolicyCopilot = useCallback((policy: PolicyListRecord) => {
     setCopilotPolicyFocus(policy)
+    setFilterOpen(false)
     setCopilotOpen(true)
   }, [])
 
@@ -66,6 +98,7 @@ export function PoliciesListPage() {
     setActiveTab(tab)
     if (tab === 'analytics') {
       setCopilotOpen(false)
+      setFilterOpen(false)
       setCopilotPolicyFocus(null)
     }
   }, [])
@@ -100,6 +133,8 @@ export function PoliciesListPage() {
           <PoliciesListHeader
             activeTab={activeTab}
             onTabChange={handleTabChange}
+            filterOpen={filterOpen}
+            onToggleFilter={handleToggleFilter}
             copilotOpen={copilotOpen}
             onToggleCopilot={handleToggleCopilot}
           />
@@ -153,25 +188,30 @@ export function PoliciesListPage() {
                 color="text.secondary"
                 sx={{ fontFamily: figmaFontFamilyStack.body, textAlign: 'right', flexShrink: 0 }}
               >
-                Total Rows: {POLICIES_TOTAL_ROWS}
+                Total Rows: {filtersActive || searchQuery.trim() ? filteredRows.length : POLICIES_TOTAL_ROWS}
               </Typography>
             </Box>
           ) : (
-            <Card title="Analytics">
-              <Typography variant="body2" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
-                Policy portfolio analytics and renewal metrics will appear here.
-              </Typography>
-            </Card>
+            <PoliciesListAnalyticsDashboard />
           )}
         </Box>
       </Box>
 
-      <ResizableRightPanel open={copilotOpen}>
-        <CopilotPanel
-          context="policies-list"
-          focusedPolicyList={copilotPolicyFocus}
-          onClose={handleCloseCopilot}
-        />
+      <ResizableRightPanel open={filterOpen || copilotOpen}>
+        {filterOpen && (
+          <FilterPanel
+            appliedFilters={appliedFilters}
+            onApply={handleApplyFilters}
+            onClose={handleCloseFilter}
+          />
+        )}
+        {copilotOpen && (
+          <CopilotPanel
+            context="policies-list"
+            focusedPolicyList={copilotPolicyFocus}
+            onClose={handleCloseCopilot}
+          />
+        )}
       </ResizableRightPanel>
     </Box>
   )

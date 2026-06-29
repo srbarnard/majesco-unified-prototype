@@ -16,6 +16,7 @@ function AppLayoutContent() {
 
   const isFullBleedPage =
     location.pathname === '/quotes' ||
+    location.pathname === '/tasks' ||
     location.pathname === '/policies' ||
     /\/policies\/[^/]+/.test(location.pathname)
 

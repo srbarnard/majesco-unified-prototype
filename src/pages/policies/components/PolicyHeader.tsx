@@ -51,7 +51,7 @@ function PanelToggleButton({
       disableRipple
       startIcon={icon}
       onClick={onClick}
-      sx={{
+      sx={(theme) => ({
         textTransform: 'none',
         fontWeight: 400,
         fontSize: '0.8125rem',
@@ -63,11 +63,9 @@ function PanelToggleButton({
         borderRadius: '30px',
         boxShadow: 'none',
         color: active ? 'primary.main' : 'text.secondary',
-        bgcolor: active ? (theme) => theme.figmaPalette.blue[50] : 'transparent',
+        bgcolor: active ? theme.figmaPalette.blue[50] : 'transparent',
         '&:hover': {
-          bgcolor: active
-            ? (theme) => theme.figmaPalette.blue[100]
-            : (theme) => theme.figmaPalette.grey[100],
+          bgcolor: active ? theme.figmaPalette.blue[100] : theme.figmaPalette.grey[100],
           boxShadow: 'none',
         },
         '& .MuiButton-startIcon': {
@@ -78,7 +76,7 @@ function PanelToggleButton({
         '& .panel-toggle-label': {
           display: hideLabelOnMobile ? { xs: 'none', sm: 'inline' } : 'inline',
         },
-      }}
+      })}
     >
       <span className="panel-toggle-label">{label}</span>
     </Button>

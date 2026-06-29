@@ -29,13 +29,16 @@ import type { PolicyListRecord } from '@/pages/policies/data/mockPoliciesList'
 import { POLICIES_TOTAL_ROWS } from '@/pages/policies/data/mockPoliciesList'
 import type { Quote } from '@/pages/quotes/data/mockQuotes'
 import { QUOTES_TOTAL_ROWS } from '@/pages/quotes/data/mockQuotes'
+import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
+import { TASKS_TOTAL_ROWS } from '@/pages/tasks/data/mockTasks'
 
 type CopilotPanelProps = {
   activePolicyTab?: PolicyTab
-  context?: 'policy' | 'quotes' | 'policies-list'
+  context?: 'policy' | 'quotes' | 'policies-list' | 'tasks'
   focusedDocument?: PolicyDocument | null
   focusedQuote?: Quote | null
   focusedPolicyList?: PolicyListRecord | null
+  focusedTask?: TaskRecord | null
   onClose?: () => void
 }
 
@@ -160,6 +163,36 @@ const policiesListWorkspaceInsights = [
 ]
 
 const policyListQuickActions = ['Renewal summary', 'Billing status', 'Endorsement history', 'Coverage overview']
+
+function taskInsights(task: TaskRecord): string[] {
+  return [
+    `${task.priority} priority · ${task.status}`,
+    `Assigned by ${task.assigner}`,
+    `Due ${task.dueLabel} · Ref #${task.refNumber}`,
+  ]
+}
+
+function buildTaskSummary(task: TaskRecord) {
+  return `**${task.taskName}** — ${task.priority} priority task assigned by **${task.assigner}**, due **${task.dueLabel}**. Reference type is **${task.referenceType}** (${task.refNumber}).`
+}
+
+const tasksWorkspaceSummary =
+  `You have **${TASKS_TOTAL_ROWS} open tasks** across your team. **12 are high priority** and **3 are past due**. Focus on finalizing proposals and group underwriting items due this week.`
+
+const tasksWorkspaceInsights = [
+  '18 high-priority tasks across quotes and policies',
+  '3 tasks past due requiring immediate attention',
+  '8 tasks assigned to you due this week',
+]
+
+const tasksNextSteps = [
+  'Review past-due loss run analysis',
+  'Complete finalize proposal for Acme Corp',
+  'Reassign suspended inspection follow-up',
+]
+
+const taskQuickActions = ['Show high priority', 'Show past due']
+const focusedTaskQuickActions = ['Summarize task', 'Reassign', 'Mark complete', 'Ask about ref #']
 
 const modeOptions = [
   {
@@ -428,82 +461,106 @@ export function CopilotPanel({
   focusedDocument,
   focusedQuote,
   focusedPolicyList,
+  focusedTask,
   onClose,
 }: CopilotPanelProps) {
   const [copilotTab, setCopilotTab] = useState<'chat' | 'history'>('chat')
   const isDocumentsTab = activePolicyTab === 'documents'
   const isQuotesContext = context === 'quotes'
   const isPoliciesListContext = context === 'policies-list'
+  const isTasksContext = context === 'tasks'
 
   useEffect(() => {
-    if (focusedDocument || focusedQuote || focusedPolicyList) {
+    if (focusedDocument || focusedQuote || focusedPolicyList || focusedTask) {
       setCopilotTab('chat')
     }
-  }, [focusedDocument, focusedQuote, focusedPolicyList])
+  }, [focusedDocument, focusedQuote, focusedPolicyList, focusedTask])
 
-  const quickActions = focusedPolicyList
-    ? policyListQuickActions
-    : focusedQuote
-      ? quoteQuickActions
-      : isDocumentsTab
-        ? ['Summary', 'Add Note', 'Send Email', 'Explanation to Underwriters']
-        : isQuotesContext
-          ? ['Pipeline summary', 'Quotes needing action', 'Compare premiums']
-          : isPoliciesListContext
-            ? ['Renewals due', 'Billing exceptions', 'Portfolio summary']
-            : ['See endorsements', 'Review documents']
+  const quickActions = focusedTask
+    ? focusedTaskQuickActions
+    : focusedPolicyList
+      ? policyListQuickActions
+      : focusedQuote
+        ? quoteQuickActions
+        : isDocumentsTab
+          ? ['Summary', 'Add Note', 'Send Email', 'Explanation to Underwriters']
+          : isTasksContext
+            ? taskQuickActions
+            : isQuotesContext
+              ? ['Pipeline summary', 'Quotes needing action', 'Compare premiums']
+              : isPoliciesListContext
+                ? ['Renewals due', 'Billing exceptions', 'Portfolio summary']
+                : ['See endorsements', 'Review documents']
 
   const summaryTitle = focusedDocument
     ? 'Document summary'
-    : focusedPolicyList
-      ? 'Policy summary'
-      : focusedQuote
-        ? 'Quote summary'
-        : isQuotesContext
-          ? 'Quotes workspace'
-          : isPoliciesListContext
-            ? 'Policies workspace'
-            : 'Policy summary'
+    : focusedTask
+      ? 'Task summary'
+      : focusedPolicyList
+        ? 'Policy summary'
+        : focusedQuote
+          ? 'Quote summary'
+          : isTasksContext
+            ? 'Summarize'
+            : isQuotesContext
+              ? 'Quotes workspace'
+              : isPoliciesListContext
+                ? 'Policies workspace'
+                : 'Policy summary'
 
   const summaryText = focusedDocument
     ? buildDocumentSummary(focusedDocument)
-    : focusedPolicyList
-      ? buildPolicyListSummary(focusedPolicyList)
-      : focusedQuote
-        ? buildQuoteSummary(focusedQuote)
-        : isQuotesContext
-          ? quotesWorkspaceSummary
-          : isPoliciesListContext
-            ? policiesListWorkspaceSummary
-            : policyDetailsMock.copilotSummary
+    : focusedTask
+      ? buildTaskSummary(focusedTask)
+      : focusedPolicyList
+        ? buildPolicyListSummary(focusedPolicyList)
+        : focusedQuote
+          ? buildQuoteSummary(focusedQuote)
+          : isTasksContext
+            ? tasksWorkspaceSummary
+            : isQuotesContext
+              ? quotesWorkspaceSummary
+              : isPoliciesListContext
+                ? policiesListWorkspaceSummary
+                : policyDetailsMock.copilotSummary
 
   const insights = focusedDocument
     ? documentInsights(focusedDocument)
+    : focusedTask
+      ? taskInsights(focusedTask)
+      : focusedPolicyList
+        ? policyListInsights(focusedPolicyList)
+        : focusedQuote
+          ? quoteInsights(focusedQuote)
+          : isTasksContext
+            ? tasksWorkspaceInsights
+            : isQuotesContext
+              ? quotesWorkspaceInsights
+              : isPoliciesListContext
+                ? policiesListWorkspaceInsights
+                : policyDetailsMock.copilotInsights
+
+  const historyEmptyText = isTasksContext
+    ? 'Your Copilot conversations for tasks will appear here.'
+    : isQuotesContext
+      ? 'Your Copilot conversations for quotes will appear here.'
+      : isPoliciesListContext
+        ? 'Your Copilot conversations for policies will appear here.'
+        : 'Your Copilot conversations for this policy will appear here.'
+
+  const composerPlaceholder = focusedTask
+    ? 'Ask about this task…'
     : focusedPolicyList
-      ? policyListInsights(focusedPolicyList)
+      ? 'Ask about this policy…'
       : focusedQuote
-        ? quoteInsights(focusedQuote)
-        : isQuotesContext
-          ? quotesWorkspaceInsights
-          : isPoliciesListContext
-            ? policiesListWorkspaceInsights
-            : policyDetailsMock.copilotInsights
-
-  const historyEmptyText = isQuotesContext
-    ? 'Your Copilot conversations for quotes will appear here.'
-    : isPoliciesListContext
-      ? 'Your Copilot conversations for policies will appear here.'
-      : 'Your Copilot conversations for this policy will appear here.'
-
-  const composerPlaceholder = focusedPolicyList
-    ? 'Ask about this policy…'
-    : focusedQuote
-      ? 'Ask about this quote…'
-      : isQuotesContext
-        ? 'Ask about your quotes pipeline…'
-        : isPoliciesListContext
-          ? 'Ask about your policies book…'
-          : 'Select a prompt or ask me anything'
+        ? 'Ask about this quote…'
+        : isTasksContext
+          ? 'Ask more…'
+          : isQuotesContext
+            ? 'Ask about your quotes pipeline…'
+            : isPoliciesListContext
+              ? 'Ask about your policies book…'
+              : 'Select a prompt or ask me anything'
 
   return (
     <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', overflow: 'hidden' }}>
@@ -602,19 +659,39 @@ export function CopilotPanel({
                 {focusedPolicyList.policyNumber}
               </Typography>
             )}
+            {focusedTask && (
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
+                {focusedTask.refNumber}
+              </Typography>
+            )}
             <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2 }}>
               {renderSummaryText(summaryText)}
             </Typography>
             <Typography variant="subtitle2" sx={{ ...headingSx, mb: 1 }}>
-              Key insights
+              {isTasksContext && !focusedTask ? 'At a glance' : 'Key insights'}
             </Typography>
-            <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }}>
+            <Box component="ul" sx={{ m: 0, pl: 2.5, mb: isTasksContext && !focusedTask ? 2 : 2 }}>
               {insights.map((insight) => (
                 <Typography component="li" variant="body2" color="text.secondary" key={insight} sx={{ ...bodySx, mb: 0.5 }}>
                   {insight}
                 </Typography>
               ))}
             </Box>
+
+            {isTasksContext && !focusedTask && (
+              <>
+                <Typography variant="subtitle2" sx={{ ...headingSx, mb: 1 }}>
+                  Next steps
+                </Typography>
+                <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }}>
+                  {tasksNextSteps.map((step) => (
+                    <Typography component="li" variant="body2" color="text.secondary" key={step} sx={{ ...bodySx, mb: 0.5 }}>
+                      {step}
+                    </Typography>
+                  ))}
+                </Box>
+              </>
+            )}
 
             <Divider sx={{ mb: 2 }} />
 

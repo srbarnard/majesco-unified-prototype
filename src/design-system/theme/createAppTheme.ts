@@ -178,43 +178,39 @@ function createDarkPalette() {
   }
 }
 
-export const theme = createTheme(
-  {
-    cssVariables: {
-      colorSchemeSelector: 'data',
-    },
-    colorSchemes: {
-      light: {
-        palette: createLightPalette(),
-      },
-      dark: {
-        palette: createDarkPalette(),
-      },
-    },
-    typography: createMuiTypography(),
-    breakpoints: {
-      values: figmaBreakpoints,
-    },
-    spacing: spacingUnit,
-    shape: {
-      borderRadius: borderRadius.default,
-    },
-    shadows: [...shadows],
-    components: componentOverrides,
+export const theme = createTheme({
+  cssVariables: {
+    colorSchemeSelector: 'data',
   },
-  {
-    majesco: majescoTokens,
-    majescoDark: majescoTokensDark,
-    figma: figmaColorsLight,
-    figmaDark: figmaColorsDark,
-    figmaTypography: figmaTypographyDesktop,
-    figmaTypographyMobile,
-    figmaSpacing,
-    figmaBorderRadius,
-    figmaPalette,
-    figmaBreakpoints,
+  colorSchemes: {
+    light: {
+      palette: createLightPalette(),
+    },
+    dark: {
+      palette: createDarkPalette(),
+    },
   },
-)
+  typography: createMuiTypography(),
+  breakpoints: {
+    values: figmaBreakpoints,
+  },
+  spacing: spacingUnit,
+  shape: {
+    borderRadius: borderRadius.default,
+  },
+  shadows: [...shadows],
+  components: componentOverrides,
+  majesco: majescoTokens,
+  majescoDark: majescoTokensDark,
+  figma: figmaColorsLight,
+  figmaDark: figmaColorsDark,
+  figmaTypography: figmaTypographyDesktop,
+  figmaTypographyMobile,
+  figmaSpacing,
+  figmaBorderRadius,
+  figmaPalette,
+  figmaBreakpoints,
+})
 
 declare module '@mui/material/styles' {
   interface Theme {

@@ -1,13 +1,18 @@
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined'
 import Box from '@mui/material/Box'
+import FormControl from '@mui/material/FormControl'
+import Grid from '@mui/material/Grid2'
 import MenuItem from '@mui/material/MenuItem'
+import Select from '@mui/material/Select'
 import Slider from '@mui/material/Slider'
 import Stack from '@mui/material/Stack'
-import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import { analyticsBodySx } from '@/design-system/components/analytics/analyticsStyles'
-import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-
+import {
+  analyticsBodySx,
+  analyticsFilterInputSx,
+  analyticsFilterLabelSx,
+  analyticsMenuItemSx,
+} from '@/design-system/components/analytics/analyticsStyles'
 import type { AnalyticsFilterBarConfig } from '@/design-system/components/analytics/types'
 
 type AnalyticsFilterBarProps = {
@@ -28,7 +33,7 @@ export function AnalyticsFilterBar({ config }: AnalyticsFilterBarProps) {
                 px: 1.25,
                 py: 0.5,
                 borderRadius: 1,
-                fontFamily: figmaFontFamilyStack.body,
+                fontFamily: analyticsFilterLabelSx.fontFamily,
                 fontSize: '0.75rem',
                 fontWeight: active ? 600 : 400,
                 color: active ? 'primary.main' : 'text.secondary',
@@ -42,44 +47,56 @@ export function AnalyticsFilterBar({ config }: AnalyticsFilterBarProps) {
         })}
       </Stack>
 
-      <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} alignItems={{ lg: 'center' }}>
-        <Box sx={{ flex: 1, minWidth: 240 }}>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
-            <Typography variant="caption" color="text.secondary" sx={analyticsBodySx}>
-              {config.dateRangeLabel}
-            </Typography>
-            <CalendarTodayOutlinedIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-          </Stack>
-          <Slider
-            size="small"
-            defaultValue={[25, 75]}
-            sx={{
-              color: 'primary.main',
-              '& .MuiSlider-thumb': { width: 12, height: 12 },
-            }}
-          />
-        </Box>
-
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ width: { xs: '100%', lg: 'auto' } }}>
-          {config.filters.map((filter) => (
-            <TextField
-              key={filter.id}
-              select
-              size="small"
-              label={filter.label}
-              value={filter.value}
-              sx={{ minWidth: 160 }}
-              InputLabelProps={{ sx: { fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem' } }}
-            >
-              {filter.options.map((option) => (
-                <MenuItem key={option} value={option} sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem' }}>
-                  {option}
-                </MenuItem>
-              ))}
-            </TextField>
-          ))}
+      <Box>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
+          <Typography variant="caption" color="text.secondary" sx={analyticsBodySx}>
+            {config.dateRangeLabel}
+          </Typography>
+          <CalendarTodayOutlinedIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
         </Stack>
-      </Stack>
+        <Slider
+          size="small"
+          defaultValue={[25, 75]}
+          sx={{
+            color: 'primary.main',
+            '& .MuiSlider-thumb': { width: 12, height: 12 },
+          }}
+        />
+      </Box>
+
+      <Grid container spacing={2}>
+        {config.filters.map((filter) => (
+          <Grid key={filter.id} size={{ xs: 12, md: 4 }}>
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <Typography
+                component="label"
+                htmlFor={`analytics-filter-${filter.id}`}
+                sx={{
+                  ...analyticsFilterLabelSx,
+                  flexShrink: 0,
+                  width: { xs: 88, sm: 96 },
+                }}
+              >
+                {filter.label}:
+              </Typography>
+              <FormControl fullWidth size="small" sx={(theme) => analyticsFilterInputSx(theme)}>
+                <Select
+                  id={`analytics-filter-${filter.id}`}
+                  value={filter.value}
+                  displayEmpty
+                  inputProps={{ 'aria-label': filter.label }}
+                >
+                  {filter.options.map((option) => (
+                    <MenuItem key={option} value={option} sx={analyticsMenuItemSx}>
+                      {option}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+          </Grid>
+        ))}
+      </Grid>
     </Stack>
   )
 }

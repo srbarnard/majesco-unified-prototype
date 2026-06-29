@@ -8,6 +8,7 @@ import { PoliciesListPage } from '@/pages/policies/PoliciesListPage'
 import { SettingsPage } from '@/app/pages/SettingsPage'
 import { PolicyDetails } from '@/pages/policies/PolicyDetails'
 import { QuotesPage } from '@/pages/quotes/QuotesPage'
+import { TasksPage } from '@/pages/tasks/TasksPage'
 
 export const router = createBrowserRouter([
   {
@@ -17,7 +18,7 @@ export const router = createBrowserRouter([
       { index: true, element: <DashboardPage /> },
       { path: 'activity', element: <PlaceholderPage title="Activity" description="Recent policy and submission activity will appear here." /> },
       { path: 'favorites', element: <PlaceholderPage title="Favorites" description="Saved policies, insureds, and watchlists will appear here." /> },
-      { path: 'tasks', element: <PlaceholderPage title="Tasks" description="Assigned tasks and workflow items will appear here." /> },
+      { path: 'tasks', element: <TasksPage /> },
       { path: 'quotes', element: <QuotesPage /> },
       { path: 'submissions', element: <PlaceholderPage title="Submissions" description="New business and endorsement submissions will appear here." /> },
       { path: 'insureds', element: <PlaceholderPage title="Insureds" description="Search and manage insured accounts." /> },

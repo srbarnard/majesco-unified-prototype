@@ -12,6 +12,8 @@ import { PoliciesListTabs, type PoliciesListTab } from '@/pages/policies/compone
 type PoliciesListHeaderProps = {
   activeTab: PoliciesListTab
   onTabChange: (tab: PoliciesListTab) => void
+  filterOpen: boolean
+  onToggleFilter: () => void
   copilotOpen: boolean
   onToggleCopilot: () => void
 }
@@ -36,7 +38,7 @@ function PanelToggleButton({
       disableRipple
       startIcon={icon}
       onClick={onClick}
-      sx={{
+      sx={(theme) => ({
         textTransform: 'none',
         fontWeight: 400,
         fontSize: '0.8125rem',
@@ -48,11 +50,9 @@ function PanelToggleButton({
         borderRadius: '30px',
         boxShadow: 'none',
         color: active ? 'primary.main' : 'text.secondary',
-        bgcolor: active ? (theme) => theme.figmaPalette.blue[50] : 'transparent',
+        bgcolor: active ? theme.figmaPalette.blue[50] : 'transparent',
         '&:hover': {
-          bgcolor: active
-            ? (theme) => theme.figmaPalette.blue[100]
-            : (theme) => theme.figmaPalette.grey[100],
+          bgcolor: active ? theme.figmaPalette.blue[100] : theme.figmaPalette.grey[100],
           boxShadow: 'none',
         },
         '& .MuiButton-startIcon': {
@@ -63,14 +63,21 @@ function PanelToggleButton({
         '& .panel-toggle-label': {
           display: hideLabelOnMobile ? { xs: 'none', sm: 'inline' } : 'inline',
         },
-      }}
+      })}
     >
       <span className="panel-toggle-label">{label}</span>
     </MuiButton>
   )
 }
 
-export function PoliciesListHeader({ activeTab, onTabChange, copilotOpen, onToggleCopilot }: PoliciesListHeaderProps) {
+export function PoliciesListHeader({
+  activeTab,
+  onTabChange,
+  filterOpen,
+  onToggleFilter,
+  copilotOpen,
+  onToggleCopilot,
+}: PoliciesListHeaderProps) {
   const contentPx = `${layoutTokens.contentPaddingX}px`
 
   return (
@@ -110,19 +117,23 @@ export function PoliciesListHeader({ activeTab, onTabChange, copilotOpen, onTogg
           <PoliciesListTabs value={activeTab} onChange={onTabChange} />
         </Box>
         <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexShrink: 0 }}>
-          <PanelToggleButton
-            label="Filter"
-            icon={<FilterListOutlinedIcon sx={{ fontSize: 18 }} />}
-            active={false}
-            onClick={() => undefined}
-            hideLabelOnMobile
-          />
-          <PanelToggleButton
-            label="Copilot"
-            icon={<CopilotIcon size={18} active={copilotOpen} />}
-            active={copilotOpen}
-            onClick={onToggleCopilot}
-          />
+          {activeTab === 'all' && (
+            <>
+              <PanelToggleButton
+                label="Filter"
+                icon={<FilterListOutlinedIcon sx={{ fontSize: 18 }} />}
+                active={filterOpen}
+                onClick={onToggleFilter}
+                hideLabelOnMobile
+              />
+              <PanelToggleButton
+                label="Copilot"
+                icon={<CopilotIcon size={18} active={copilotOpen} />}
+                active={copilotOpen}
+                onClick={onToggleCopilot}
+              />
+            </>
+          )}
         </Stack>
       </Stack>
     </Box>

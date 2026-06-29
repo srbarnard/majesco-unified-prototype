@@ -8,11 +8,11 @@ import type { ReactNode } from 'react'
 import { Button, CopilotIcon } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { QuotesTabs, type QuotesTab } from './QuotesTabs'
+import { TasksTabs, type TasksTab } from './TasksTabs'
 
-type QuotesHeaderProps = {
-  activeTab: QuotesTab
-  onTabChange: (tab: QuotesTab) => void
+type TasksHeaderProps = {
+  activeTab: TasksTab
+  onTabChange: (tab: TasksTab) => void
   filterOpen: boolean
   onToggleFilter: () => void
   copilotOpen: boolean
@@ -71,15 +71,16 @@ function PanelToggleButton({
   )
 }
 
-export function QuotesHeader({
+export function TasksHeader({
   activeTab,
   onTabChange,
   filterOpen,
   onToggleFilter,
   copilotOpen,
   onToggleCopilot,
-}: QuotesHeaderProps) {
+}: TasksHeaderProps) {
   const contentPx = `${layoutTokens.contentPaddingX}px`
+  const showPanels = activeTab === 'all' || activeTab === 'team'
 
   return (
     <Box sx={{ bgcolor: 'background.paper', width: '100%', flexShrink: 0 }}>
@@ -100,15 +101,10 @@ export function QuotesHeader({
             lineHeight: 1.3,
           }}
         >
-          Quotes
+          Tasks
         </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          sx={{ flexShrink: 0 }}
-        >
-          Create quote
+        <Button variant="contained" color="primary" startIcon={<AddIcon />} sx={{ flexShrink: 0 }}>
+          Add task
         </Button>
       </Stack>
 
@@ -123,10 +119,10 @@ export function QuotesHeader({
         }}
       >
         <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
-          <QuotesTabs value={activeTab} onChange={onTabChange} />
+          <TasksTabs value={activeTab} onChange={onTabChange} />
         </Box>
         <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexShrink: 0 }}>
-          {activeTab === 'all' && (
+          {showPanels && (
             <>
               <PanelToggleButton
                 label="Filter"

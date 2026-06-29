@@ -76,6 +76,10 @@ export function resolvePolicyContext(policyId: string): PolicyContext {
       agency: 'Agency',
       agencyNumber: '9000000000',
       underwriter: 'Underwriter',
+      product: 'Commercial Auto',
+      producer: 'Harborview Agency',
+      status: 'Open',
+      lastUpdated: '2026-06-01',
       twp: 500000,
       ftp: 480000,
     }
