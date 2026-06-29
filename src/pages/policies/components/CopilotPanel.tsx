@@ -22,6 +22,13 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import {
+  accentSubtle,
+  accentSubtleHover,
+  isDarkMode,
+  surfaceMuted,
+  surfaceSubtle,
+} from '@/design-system/theme/themeSurfaces'
 import type { PolicyTab } from '@/pages/policies/components/PolicyTabs'
 import type { GlobalCopilotView } from '@/app/contexts/GlobalSearchContext'
 import { AgenticSearchResults, DailySummaryContent } from '@/pages/policies/components/AgenticSearchResults'
@@ -73,12 +80,12 @@ const quickActionChipSx = {
   border: 'none',
   boxShadow: 'none',
   color: 'primary.main',
-  bgcolor: (theme: { figmaPalette: { blue: Record<number, string> } }) => theme.figmaPalette.blue[50],
+  bgcolor: (theme) => accentSubtle(theme),
   px: 1.25,
   py: 0.5,
   minHeight: 'auto',
   '&:hover': {
-    bgcolor: (theme: { figmaPalette: { blue: Record<number, string> } }) => theme.figmaPalette.blue[100],
+    bgcolor: (theme) => accentSubtleHover(theme),
     boxShadow: 'none',
   },
 } as const
@@ -247,7 +254,7 @@ function ModePopover({
           fontSize: '0.8125rem',
           lineHeight: 1.2,
           '&:hover': {
-            bgcolor: (theme) => theme.figmaPalette.grey[100],
+            bgcolor: (theme) => surfaceSubtle(theme),
           },
         }}
       >
@@ -267,7 +274,8 @@ function ModePopover({
               width: 280,
               borderRadius: `${layoutTokens.cardRadius}px`,
               border: `1px solid ${theme.palette.divider}`,
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+              boxShadow: (theme) =>
+                isDarkMode(theme) ? '0 8px 24px rgba(0, 0, 0, 0.45)' : '0 8px 24px rgba(0, 0, 0, 0.12)',
               mt: -1,
               overflow: 'hidden',
             }),
@@ -300,7 +308,7 @@ function ModePopover({
                     bgcolor: 'background.paper',
                     textAlign: 'left',
                     '&:hover': {
-                      bgcolor: (theme) => theme.figmaPalette.grey[50],
+                      bgcolor: (theme) => surfaceMuted(theme),
                     },
                   }}
                 >
@@ -334,7 +342,7 @@ function ModePopover({
               bgcolor: 'background.paper',
               textAlign: 'left',
               '&:hover': {
-                bgcolor: (theme) => theme.figmaPalette.grey[50],
+                bgcolor: (theme) => surfaceMuted(theme),
               },
             }}
           >
@@ -367,7 +375,7 @@ function CopilotComposer({ placeholder }: { placeholder: string }) {
           border: `1px solid ${theme.palette.divider}`,
           borderRadius: `${layoutTokens.cardRadius}px`,
           bgcolor: 'background.paper',
-          boxShadow: layoutTokens.cardShadow,
+          boxShadow: (theme) => (isDarkMode(theme) ? 'none' : layoutTokens.cardShadow),
           overflow: 'hidden',
           '&:focus-within': {
             borderColor: 'primary.main',
@@ -431,14 +439,14 @@ function CopilotComposer({ placeholder }: { placeholder: string }) {
               sx={(theme) => ({
                 width: 34,
                 height: 34,
-                bgcolor: canSubmit ? theme.figmaPalette.blue[50] : theme.figmaPalette.grey[100],
-                color: canSubmit ? 'primary.main' : theme.figmaPalette.grey[400],
+                bgcolor: canSubmit ? accentSubtle(theme) : surfaceSubtle(theme),
+                color: canSubmit ? 'primary.main' : 'text.disabled',
                 '&:hover': {
-                  bgcolor: canSubmit ? theme.figmaPalette.blue[100] : theme.figmaPalette.grey[100],
+                  bgcolor: canSubmit ? accentSubtleHover(theme) : surfaceSubtle(theme),
                 },
                 '&.Mui-disabled': {
-                  bgcolor: theme.figmaPalette.grey[100],
-                  color: theme.figmaPalette.grey[400],
+                  bgcolor: surfaceSubtle(theme),
+                  color: 'text.disabled',
                 },
               })}
             >

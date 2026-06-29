@@ -25,6 +25,7 @@ import { useMemo, useState } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { Chip, tableInteractionSx } from '@/design-system/components'
 import type { AppTheme } from '@/design-system/theme'
+import { accentSubtle, accentSubtleHover, isDarkMode, surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import type {
@@ -59,19 +60,19 @@ const bodySx = {
   fontWeight: 400,
 } as const
 
-function whiteCardSurfaceSx(theme: { palette: { divider: string } }) {
+function whiteCardSurfaceSx(theme: Theme) {
   return {
     borderRadius: `${layoutTokens.cardRadius}px`,
     bgcolor: 'background.paper',
     border: `1px solid ${theme.palette.divider}`,
-    boxShadow: layoutTokens.cardShadow,
+    boxShadow: isDarkMode(theme) ? 'none' : layoutTokens.cardShadow,
   }
 }
 
-function greySurfaceSx(theme: { figmaPalette: { grey: Record<number, string> } }) {
+function greySurfaceSx(theme: Theme) {
   return {
     borderRadius: `${layoutTokens.cardRadius}px`,
-    bgcolor: theme.figmaPalette.grey[50],
+    bgcolor: surfaceMuted(theme),
   }
 }
 
@@ -80,7 +81,7 @@ const tableHeadCellSx = {
   fontSize: '0.75rem',
   py: 1.5,
   border: 0,
-  bgcolor: (theme: { figmaPalette: { grey: Record<number, string> } }) => theme.figmaPalette.grey[50],
+  bgcolor: (theme: Theme) => surfaceMuted(theme),
 } as const
 
 function DashboardCard({
@@ -145,11 +146,24 @@ function DashboardCard({
 
 function getStatToneStyles(tone: OverviewStatTone, theme: AppTheme) {
   const palette = theme.figmaPalette
+  const isDark = theme.palette.mode === 'dark'
   const toneMap = {
-    success: { accent: palette.green[100], value: palette.green[800] },
-    info: { accent: palette.lightBlue[100], value: palette.lightBlue[900] },
-    warning: { accent: palette.amber[100], value: palette.amber[900] },
-    error: { accent: palette.red[100], value: palette.red[800] },
+    success: {
+      accent: isDark ? palette.green[900] : palette.green[100],
+      value: isDark ? palette.green[200] : palette.green[800],
+    },
+    info: {
+      accent: isDark ? palette.lightBlue[900] : palette.lightBlue[100],
+      value: isDark ? palette.lightBlue[200] : palette.lightBlue[900],
+    },
+    warning: {
+      accent: isDark ? palette.amber[900] : palette.amber[100],
+      value: isDark ? palette.amber[200] : palette.amber[900],
+    },
+    error: {
+      accent: isDark ? palette.red[900] : palette.red[100],
+      value: isDark ? palette.red[200] : palette.red[800],
+    },
   } as const
   return toneMap[tone]
 }
@@ -567,7 +581,7 @@ function QuickActionsPanel({ actions }: { actions: OverviewQuickAction[] }) {
                 textAlign: 'left',
                 transition: 'background-color 0.15s ease',
                 '&:hover': {
-                  bgcolor: theme.figmaPalette.blue[50],
+                  bgcolor: accentSubtleHover(theme),
                 },
               })}
             >
@@ -580,7 +594,7 @@ function QuickActionsPanel({ actions }: { actions: OverviewQuickAction[] }) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
-                  bgcolor: isPrimary ? theme.figmaPalette.blue[50] : theme.figmaPalette.grey[100],
+                  bgcolor: isPrimary ? accentSubtle(theme) : surfaceSubtle(theme),
                   color: isPrimary ? 'primary.main' : 'text.secondary',
                 })}
               >

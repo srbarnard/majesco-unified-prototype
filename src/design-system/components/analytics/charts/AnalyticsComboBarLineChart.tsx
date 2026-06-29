@@ -13,11 +13,12 @@ import {
 } from 'recharts'
 import {
   analyticsBodySx,
-  analyticsChartAxisStyle,
-  analyticsChartGridStroke,
+  getAnalyticsChartAxisStyle,
+  getAnalyticsChartGridStroke,
   type AnalyticsComboPoint,
 } from '@/design-system/components/analytics/analyticsStyles'
 import { figmaPalette } from '@/design-system/tokens/figma-palette'
+import { useTheme } from '@mui/material/styles'
 
 type AnalyticsComboBarLineChartProps = {
   data: AnalyticsComboPoint[]
@@ -77,6 +78,9 @@ export function AnalyticsComboBarLineChart({
   lineLabel = 'Rate',
   lineValueFormatter = (value) => `${value}%`,
 }: AnalyticsComboBarLineChartProps) {
+  const theme = useTheme()
+  const axisStyle = getAnalyticsChartAxisStyle(theme)
+  const gridStroke = getAnalyticsChartGridStroke(theme)
   const barColor = figmaPalette.teal[500]
   const lineColor = figmaPalette.purple[700]
 
@@ -99,18 +103,18 @@ export function AnalyticsComboBarLineChart({
       <Box sx={{ width: '100%', height, minHeight: height }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 12, right: 12, left: 4, bottom: 4 }}>
-            <CartesianGrid stroke={analyticsChartGridStroke} strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="label"
-              tick={analyticsChartAxisStyle}
+              tick={axisStyle}
               tickLine={false}
-              axisLine={{ stroke: analyticsChartGridStroke }}
+              axisLine={{ stroke: gridStroke }}
               interval="preserveStartEnd"
               minTickGap={24}
             />
             <YAxis
               yAxisId="left"
-              tick={analyticsChartAxisStyle}
+              tick={axisStyle}
               tickLine={false}
               axisLine={false}
               width={44}
@@ -118,13 +122,13 @@ export function AnalyticsComboBarLineChart({
                 value: barLabel,
                 angle: -90,
                 position: 'insideLeft',
-                style: { ...analyticsChartAxisStyle, textAnchor: 'middle' },
+                style: { ...axisStyle, textAnchor: 'middle' },
               }}
             />
             <YAxis
               yAxisId="right"
               orientation="right"
-              tick={analyticsChartAxisStyle}
+              tick={axisStyle}
               tickLine={false}
               axisLine={false}
               width={44}
@@ -133,7 +137,7 @@ export function AnalyticsComboBarLineChart({
                 value: lineLabel,
                 angle: 90,
                 position: 'insideRight',
-                style: { ...analyticsChartAxisStyle, textAnchor: 'middle' },
+                style: { ...axisStyle, textAnchor: 'middle' },
               }}
             />
             <Tooltip

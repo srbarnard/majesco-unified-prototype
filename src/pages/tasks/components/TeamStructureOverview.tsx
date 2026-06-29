@@ -6,6 +6,7 @@ import { DataGridPremium, type GridColDef } from '@mui/x-data-grid-premium'
 import { useMemo } from 'react'
 import { dataGridInteractionSx } from '@/design-system/components'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { teamMembersMock, type TeamMemberRecord } from '@/pages/tasks/data/mockTasks'
 
 type TeamStructureOverviewProps = {
@@ -139,7 +140,7 @@ export function TeamStructureOverview({ searchQuery }: TeamStructureOverviewProp
           borderRadius: 0,
           bgcolor: 'background.paper',
           '& .MuiDataGrid-columnHeaders': {
-            bgcolor: (theme) => theme.figmaPalette.grey[50],
+            bgcolor: (theme) => surfaceMuted(theme),
             borderBottom: 1,
             borderColor: 'divider',
           },

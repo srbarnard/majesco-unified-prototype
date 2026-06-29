@@ -5,6 +5,7 @@ import Typography from '@mui/material/Typography'
 import { Link } from 'react-router'
 import { agenticActivityMock } from '@/app/data/homeMock'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
 
 export function AgenticActivityFeed() {
   return (
@@ -40,7 +41,7 @@ export function AgenticActivityFeed() {
               px: 0.5,
               cursor: 'pointer',
               borderRadius: 1,
-              '&:hover': { bgcolor: (theme) => theme.figmaPalette.grey[50] },
+              '&:hover': { bgcolor: (theme) => surfaceMuted(theme) },
             }}
           >
             <Box

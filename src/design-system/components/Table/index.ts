@@ -1,5 +1,6 @@
 export {
   DataTable,
+  copilotActiveIconSx,
   dataGridInteractionSx,
   filterDataTableRows,
   sortDataTableRows,

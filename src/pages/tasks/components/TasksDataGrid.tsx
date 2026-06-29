@@ -14,12 +14,15 @@ import {
   type GridRowSelectionModel,
 } from '@mui/x-data-grid-premium'
 import { useMemo, useState } from 'react'
+import type { SxProps, Theme } from '@mui/material/styles'
 import {
   CopilotIcon,
+  copilotActiveIconSx,
   dataGridInteractionSx,
   tableActionIconButtonSx,
   tableLinkSx,
 } from '@/design-system/components'
+import { accentSubtle, dataGridPinnedShadow, dataGridShellSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { formatRelativeListDate, formatTaskDueDate } from '@/design-system/utils/formatListDate'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
@@ -60,15 +63,7 @@ function PriorityCell({ priority }: { priority: TaskRecord['priority'] }) {
 }
 
 function copilotActionIconSx(active?: boolean) {
-  return {
-    ...tableActionIconButtonSx,
-    ...(active && {
-      bgcolor: (theme: { figmaPalette: { blue: Record<number, string> } }) => theme.figmaPalette.blue[50],
-      '&:hover': {
-        bgcolor: (theme: { figmaPalette: { blue: Record<number, string> } }) => theme.figmaPalette.blue[50],
-      },
-    }),
-  }
+  return copilotActiveIconSx(active)
 }
 
 function RowActionsMenu({
@@ -265,87 +260,69 @@ export function TasksDataGrid({
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          height: '100%',
-          width: '100%',
-          border: 'none',
-          borderRadius: 0,
-          bgcolor: 'background.paper',
-          '& .MuiDataGrid-columnHeaders': {
-            bgcolor: (theme) => theme.figmaPalette.grey[50],
-            borderBottom: 1,
-            borderColor: 'divider',
-          },
-          '& .MuiDataGrid-columnHeaderTitle': {
-            fontWeight: 600,
-            fontSize: '0.75rem',
-            color: 'text.secondary',
-          },
-          '& .MuiDataGrid-columnHeader:not(.MuiDataGrid-columnHeaderCheckbox)': {
-            px: 1.5,
-            '&:focus, &:focus-within': { outline: 'none' },
-          },
-          '& .MuiDataGrid-columnHeaderCheckbox, & .MuiDataGrid-cellCheckbox': {
-            width: CHECKBOX_COLUMN_WIDTH,
-            minWidth: CHECKBOX_COLUMN_WIDTH,
-            maxWidth: CHECKBOX_COLUMN_WIDTH,
-            p: 0,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-          },
-          '& .MuiDataGrid-columnHeaderCheckbox .MuiDataGrid-columnHeaderDraggableContainer': {
-            width: '100%',
-            justifyContent: 'center',
-          },
-          '& .MuiDataGrid-columnHeaderCheckbox .MuiDataGrid-columnHeaderTitleContainer': {
-            flex: '0 0 auto',
-            width: 'auto',
-            minWidth: 0,
-            justifyContent: 'center',
-          },
-          '& .MuiDataGrid-columnHeaderCheckbox .MuiCheckbox-root, & .MuiDataGrid-cellCheckbox .MuiCheckbox-root': {
-            p: 0.5,
-          },
-          '& .MuiDataGrid-cell:not(.MuiDataGrid-cellCheckbox)': {
-            px: 1.5,
-            py: 1,
-            display: 'flex',
-            alignItems: 'center',
-            borderColor: 'divider',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            '&:focus, &:focus-within': { outline: 'none' },
-          },
-          '& .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-columnHeader--pinnedLeft': {
-            bgcolor: 'background.paper',
-            boxShadow: '4px 0 8px -4px rgba(0, 0, 0, 0.08)',
-          },
-          '& .MuiDataGrid-columnHeader--pinnedLeft': {
-            bgcolor: (theme) => theme.figmaPalette.grey[50],
-          },
-          '& .MuiDataGrid-cell--pinnedRight, & .MuiDataGrid-columnHeader--pinnedRight': {
-            bgcolor: 'background.paper',
-            boxShadow: '-4px 0 8px -4px rgba(0, 0, 0, 0.08)',
-          },
-          '& .MuiDataGrid-columnHeader--pinnedRight': {
-            bgcolor: (theme) => theme.figmaPalette.grey[50],
-          },
-          '& .MuiDataGrid-row.Mui-selected': {
-            bgcolor: (theme) => theme.figmaPalette.blue[50],
-            '&:hover': {
-              bgcolor: (theme) => theme.figmaPalette.blue[50],
+        sx={[...dataGridShellSx({
+            '& .MuiDataGrid-columnHeader:not(.MuiDataGrid-columnHeaderCheckbox)': {
+              px: 1.5,
+              '&:focus, &:focus-within': { outline: 'none' },
             },
-          },
-          '& .MuiDataGrid-footerContainer': {
-            borderTop: 1,
-            borderColor: 'divider',
-            minHeight: 52,
-          },
-          ...dataGridInteractionSx,
-        }}
+            '& .MuiDataGrid-columnHeaderCheckbox, & .MuiDataGrid-cellCheckbox': {
+              width: CHECKBOX_COLUMN_WIDTH,
+              minWidth: CHECKBOX_COLUMN_WIDTH,
+              maxWidth: CHECKBOX_COLUMN_WIDTH,
+              p: 0,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+            },
+            '& .MuiDataGrid-columnHeaderCheckbox .MuiDataGrid-columnHeaderDraggableContainer': {
+              width: '100%',
+              justifyContent: 'center',
+            },
+            '& .MuiDataGrid-columnHeaderCheckbox .MuiDataGrid-columnHeaderTitleContainer': {
+              flex: '0 0 auto',
+              width: 'auto',
+              minWidth: 0,
+              justifyContent: 'center',
+            },
+            '& .MuiDataGrid-columnHeaderCheckbox .MuiCheckbox-root, & .MuiDataGrid-cellCheckbox .MuiCheckbox-root': {
+              p: 0.5,
+            },
+            '& .MuiDataGrid-cell:not(.MuiDataGrid-cellCheckbox)': {
+              px: 1.5,
+              py: 1,
+              display: 'flex',
+              alignItems: 'center',
+              borderColor: 'divider',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              '&:focus, &:focus-within': { outline: 'none' },
+            },
+            '& .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-columnHeader--pinnedLeft': {
+              bgcolor: 'background.paper',
+              boxShadow: (theme) => dataGridPinnedShadow(theme, 'left'),
+            },
+            '& .MuiDataGrid-columnHeader--pinnedLeft': {
+              bgcolor: (theme) => surfaceMuted(theme),
+            },
+            '& .MuiDataGrid-cell--pinnedRight, & .MuiDataGrid-columnHeader--pinnedRight': {
+              bgcolor: 'background.paper',
+              boxShadow: (theme) => dataGridPinnedShadow(theme, 'right'),
+            },
+            '& .MuiDataGrid-columnHeader--pinnedRight': {
+              bgcolor: (theme) => surfaceMuted(theme),
+            },
+            '& .MuiDataGrid-row.Mui-selected': {
+              bgcolor: (theme) => accentSubtle(theme),
+              '&:hover': {
+                bgcolor: (theme) => accentSubtle(theme),
+              },
+            },
+            '& .MuiDataGrid-footerContainer': {
+              borderTop: 1,
+              borderColor: 'divider',
+              minHeight: 52,
+            },
+          }), dataGridInteractionSx] as SxProps<Theme>}
       />
     </Box>
   )

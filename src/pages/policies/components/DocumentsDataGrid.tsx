@@ -13,6 +13,7 @@ import { useMemo, useState } from 'react'
 import {
   Chip,
   CopilotIcon,
+  copilotActiveIconSx,
   DataTable,
   sortDataTableRows,
   tableActionIconButtonSx,
@@ -21,6 +22,7 @@ import {
   type DataTableSort,
 } from '@/design-system/components'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
 
 type DocumentRow = PolicyDocument & Record<string, unknown>
@@ -69,7 +71,7 @@ function TagCell({ row }: { row: PolicyDocument }) {
           icon={tag === 'Package' ? <EditOutlinedIcon sx={{ fontSize: '14px !important' }} /> : undefined}
           sx={{
             ...(tag === '2026 Renewal' && {
-              bgcolor: (theme) => theme.figmaPalette.grey[100],
+              bgcolor: (theme) => surfaceSubtle(theme),
               border: 'none',
             }),
           }}
@@ -114,15 +116,7 @@ function RowActionsMenu({
             aria-label={`Summarize ${row.fileName} with Copilot`}
             aria-pressed={isCopilotActive}
             onClick={() => onDocumentCopilot?.(row)}
-            sx={{
-              ...tableActionIconButtonSx,
-              ...(isCopilotActive && {
-                bgcolor: (theme) => theme.figmaPalette.blue[50],
-                '&:hover': {
-                  bgcolor: (theme) => theme.figmaPalette.blue[50],
-                },
-              }),
-            }}
+            sx={copilotActiveIconSx(isCopilotActive)}
           >
             <CopilotIcon size={18} active={isCopilotActive} />
           </IconButton>

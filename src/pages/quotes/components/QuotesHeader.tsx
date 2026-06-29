@@ -6,6 +6,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
 import { Button, CopilotIcon } from '@/design-system/components'
+import { getPanelToggleButtonStyles } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { QuotesTabs, type QuotesTab } from './QuotesTabs'
@@ -40,22 +41,8 @@ function PanelToggleButton({
       startIcon={icon}
       onClick={onClick}
       sx={(theme) => ({
-        textTransform: 'none',
-        fontWeight: 400,
-        fontSize: '0.8125rem',
+        ...getPanelToggleButtonStyles(theme, active),
         fontFamily: figmaFontFamilyStack.body,
-        minWidth: 'auto',
-        px: { xs: 1, sm: 1.25 },
-        py: 0.75,
-        border: 'none',
-        borderRadius: '30px',
-        boxShadow: 'none',
-        color: active ? 'primary.main' : 'text.secondary',
-        bgcolor: active ? theme.figmaPalette.blue[50] : 'transparent',
-        '&:hover': {
-          bgcolor: active ? theme.figmaPalette.blue[100] : theme.figmaPalette.grey[100],
-          boxShadow: 'none',
-        },
         '& .MuiButton-startIcon': {
           marginRight: { xs: 0, sm: 0.75 },
           overflow: 'visible',

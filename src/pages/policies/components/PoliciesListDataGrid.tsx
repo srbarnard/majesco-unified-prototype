@@ -13,8 +13,10 @@ import {
   type GridColDef,
 } from '@mui/x-data-grid-premium'
 import { useMemo, useState } from 'react'
+import type { SxProps, Theme } from '@mui/material/styles'
 import { Link as RouterLink } from 'react-router'
-import { CopilotIcon, dataGridInteractionSx, tableActionIconButtonSx, tableLinkSx } from '@/design-system/components'
+import { CopilotIcon, copilotActiveIconSx, dataGridInteractionSx, tableActionIconButtonSx, tableLinkSx } from '@/design-system/components'
+import { dataGridShellSx } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import type { PolicyListRecord } from '@/pages/policies/data/mockPoliciesList'
 
@@ -37,15 +39,7 @@ function formatDate(value: string) {
 }
 
 function copilotActionIconSx(active?: boolean) {
-  return {
-    ...tableActionIconButtonSx,
-    ...(active && {
-      bgcolor: (theme: { figmaPalette: { blue: Record<number, string> } }) => theme.figmaPalette.blue[50],
-      '&:hover': {
-        bgcolor: (theme: { figmaPalette: { blue: Record<number, string> } }) => theme.figmaPalette.blue[50],
-      },
-    }),
-  }
+  return copilotActiveIconSx(active)
 }
 
 function PolicyNumberCell({ row }: { row: PolicyListRecord }) {
@@ -284,56 +278,7 @@ export function PoliciesListDataGrid({
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}
         hideFooter
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          height: '100%',
-          width: '100%',
-          border: 'none',
-          borderRadius: 0,
-          bgcolor: 'background.paper',
-          '& .MuiDataGrid-columnHeaders': {
-            bgcolor: (theme) => theme.figmaPalette.grey[50],
-            borderBottom: 1,
-            borderColor: 'divider',
-          },
-          '& .MuiDataGrid-columnHeaderTitle': {
-            fontWeight: 600,
-            fontSize: '0.75rem',
-            color: 'text.secondary',
-          },
-          '& .MuiDataGrid-columnHeader': {
-            px: 1.5,
-            '&:focus, &:focus-within': { outline: 'none' },
-          },
-          '& .MuiDataGrid-cell': {
-            px: 1.5,
-            py: 1,
-            display: 'flex',
-            alignItems: 'center',
-            borderColor: 'divider',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            '&:focus, &:focus-within': { outline: 'none' },
-          },
-          '& .MuiDataGrid-cell--pinnedLeft': {
-            bgcolor: 'background.paper',
-            boxShadow: '4px 0 8px -4px rgba(0, 0, 0, 0.08)',
-          },
-          '& .MuiDataGrid-columnHeader--pinnedLeft': {
-            bgcolor: (theme) => theme.figmaPalette.grey[50],
-            boxShadow: '4px 0 8px -4px rgba(0, 0, 0, 0.08)',
-          },
-          '& .MuiDataGrid-cell--pinnedRight': {
-            bgcolor: 'background.paper',
-            boxShadow: '-4px 0 8px -4px rgba(0, 0, 0, 0.08)',
-          },
-          '& .MuiDataGrid-columnHeader--pinnedRight': {
-            bgcolor: (theme) => theme.figmaPalette.grey[50],
-            boxShadow: '-4px 0 8px -4px rgba(0, 0, 0, 0.08)',
-          },
-          ...dataGridInteractionSx,
-        }}
+        sx={[...dataGridShellSx(), dataGridInteractionSx] as SxProps<Theme>}
       />
     </Box>
   )

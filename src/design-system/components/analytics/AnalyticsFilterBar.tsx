@@ -13,6 +13,7 @@ import {
   analyticsFilterLabelSx,
   analyticsMenuItemSx,
 } from '@/design-system/components/analytics/analyticsStyles'
+import { accentSubtle } from '@/design-system/theme/themeSurfaces'
 import type { AnalyticsFilterBarConfig } from '@/design-system/components/analytics/types'
 
 type AnalyticsFilterBarProps = {
@@ -37,8 +38,8 @@ export function AnalyticsFilterBar({ config }: AnalyticsFilterBarProps) {
                 fontSize: '0.75rem',
                 fontWeight: active ? 600 : 400,
                 color: active ? 'primary.main' : 'text.secondary',
-                bgcolor: active ? theme.figmaPalette.blue[50] : 'transparent',
-                border: `1px solid ${active ? theme.figmaPalette.blue[200] : theme.palette.divider}`,
+                bgcolor: active ? accentSubtle(theme) : 'transparent',
+                border: `1px solid ${active ? theme.palette.primary.main : theme.palette.divider}`,
               })}
             >
               {chip}

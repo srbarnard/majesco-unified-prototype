@@ -1,47 +1,13 @@
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined'
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined'
 import Box from '@mui/material/Box'
-import ListItemButton from '@mui/material/ListItemButton'
-import ListItemIcon from '@mui/material/ListItemIcon'
-import ListItemText from '@mui/material/ListItemText'
 import { useColorScheme } from '@mui/material/styles'
+import { accentSubtle, isDarkMode, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 
 const options = [
-  { value: 'light' as const, label: 'Light', Icon: LightModeOutlinedIcon },
-  { value: 'dark' as const, label: 'Dark', Icon: DarkModeOutlinedIcon },
+  { value: 'light' as const, label: 'Light mode', Icon: LightModeOutlinedIcon },
+  { value: 'dark' as const, label: 'Dark mode', Icon: DarkModeOutlinedIcon },
 ]
-
-const itemSx = (active: boolean) =>
-  ({
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    py: 1,
-    px: 0.5,
-    borderRadius: 1,
-    minHeight: 56,
-    position: 'relative',
-    color: active ? 'primary.main' : 'text.secondary',
-    '&.Mui-selected': {
-      bgcolor: (theme) =>
-        theme.palette.mode === 'dark'
-          ? theme.figmaPalette.blue[900]
-          : theme.figmaPalette.blue[50],
-      color: 'primary.main',
-    },
-    '&::before': active
-      ? {
-          content: '""',
-          position: 'absolute',
-          left: 0,
-          top: 8,
-          bottom: 8,
-          width: 3,
-          borderRadius: '0 2px 2px 0',
-          bgcolor: 'primary.main',
-        }
-      : undefined,
-  }) as const
 
 export function ThemeModeToggle() {
   const { mode, setMode } = useColorScheme()
@@ -53,39 +19,66 @@ export function ThemeModeToggle() {
         flexShrink: 0,
         borderTop: 1,
         borderColor: 'divider',
-        px: 0.5,
-        py: 1,
+        px: 1,
+        py: 1.25,
         mt: 'auto',
+        display: 'flex',
+        justifyContent: 'center',
       }}
     >
-      {options.map(({ value, label, Icon }) => {
-        const active = currentMode === value
-        return (
-          <ListItemButton
-            key={value}
-            selected={active}
-            onClick={() => setMode(value)}
-            aria-label={`${label} theme`}
-            aria-pressed={active}
-            sx={itemSx(active)}
-          >
-            <ListItemIcon sx={{ minWidth: 0, mb: 0.25, color: 'inherit' }}>
-              <Icon sx={{ fontSize: 20 }} />
-            </ListItemIcon>
-            <ListItemText
-              primary={label}
-              primaryTypographyProps={{
-                variant: 'caption',
-                fontWeight: active ? 600 : 500,
-                fontSize: '0.6875rem',
-                textAlign: 'center',
-                lineHeight: 1.2,
-              }}
-              sx={{ m: 0 }}
-            />
-          </ListItemButton>
-        )
-      })}
+      <Box
+        role="group"
+        aria-label="Theme"
+        sx={(theme) => ({
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 0.375,
+          p: 0.375,
+          width: '100%',
+          maxWidth: 72,
+          borderRadius: '999px',
+          bgcolor: surfaceSubtle(theme),
+          border: `1px solid ${theme.palette.divider}`,
+        })}
+      >
+        {options.map(({ value, label, Icon }) => {
+          const active = currentMode === value
+          return (
+            <Box
+              key={value}
+              component="button"
+              type="button"
+              onClick={() => setMode(value)}
+              aria-label={label}
+              aria-pressed={active}
+              sx={(theme) => ({
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                py: 0.75,
+                border: 'none',
+                borderRadius: '999px',
+                cursor: 'pointer',
+                bgcolor: active ? 'background.paper' : 'transparent',
+                color: active ? 'primary.main' : 'text.secondary',
+                boxShadow: active && !isDarkMode(theme) ? '0 1px 2px rgba(0, 0, 0, 0.08)' : 'none',
+                outline: active ? `1px solid ${theme.palette.divider}` : 'none',
+                transition: 'background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease',
+                '&:hover': {
+                  color: active ? 'primary.main' : 'text.primary',
+                  bgcolor: active ? undefined : accentSubtle(theme),
+                },
+                '&:focus-visible': {
+                  outline: `2px solid ${theme.palette.primary.main}`,
+                  outlineOffset: 1,
+                },
+              })}
+            >
+              <Icon sx={{ fontSize: 18 }} />
+            </Box>
+          )
+        })}
+      </Box>
     </Box>
   )
 }

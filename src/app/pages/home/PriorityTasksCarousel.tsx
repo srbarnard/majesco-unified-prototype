@@ -8,6 +8,7 @@ import Typography from '@mui/material/Typography'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { priorityTasksMock, type PriorityTaskCard } from '@/app/data/homeMock'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
 
 const CARD_WIDTH = 272
 const CARD_GAP = 12
@@ -27,7 +28,7 @@ function TaskCard({ task }: { task: PriorityTaskCard }) {
         flex: `0 0 ${CARD_WIDTH}px`,
         p: 2,
         borderRadius: 2,
-        bgcolor: (theme) => theme.figmaPalette.grey[50],
+        bgcolor: (theme) => surfaceMuted(theme),
         border: 1,
         borderColor: 'divider',
       }}

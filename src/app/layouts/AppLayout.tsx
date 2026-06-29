@@ -9,6 +9,7 @@ import {
   SecondaryNavPanel,
 } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
+import { surfaceApp } from '@/design-system/theme/themeSurfaces'
 
 function AppLayoutContent() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -29,7 +30,7 @@ function AppLayoutContent() {
         height: '100vh',
         maxHeight: '100vh',
         overflow: 'hidden',
-        bgcolor: (theme) => theme.figmaPalette.grey[50],
+        bgcolor: (theme) => surfaceApp(theme),
       }}
     >
       <AppTopNavbar onMobileMenuClick={() => setMobileOpen(true)} />

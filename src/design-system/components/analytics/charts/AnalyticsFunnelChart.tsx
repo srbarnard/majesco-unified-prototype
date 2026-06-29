@@ -2,7 +2,7 @@ import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { analyticsBodySx, analyticsChartColors, analyticsHeadingSx } from '@/design-system/components/analytics/analyticsStyles'
-import { figmaPalette } from '@/design-system/tokens/figma-palette'
+import { useTheme } from '@mui/material/styles'
 
 export type AnalyticsFunnelStage = {
   id: string
@@ -17,6 +17,7 @@ type AnalyticsFunnelChartProps = {
 }
 
 export function AnalyticsFunnelChart({ stages, height = 220 }: AnalyticsFunnelChartProps) {
+  const theme = useTheme()
   const maxValue = Math.max(...stages.map((stage) => stage.value), 1)
 
   return (
@@ -49,7 +50,7 @@ export function AnalyticsFunnelChart({ stages, height = 220 }: AnalyticsFunnelCh
                 borderRadius: '30px',
                 bgcolor: color,
                 opacity: 0.92,
-                boxShadow: `inset 0 0 0 1px ${figmaPalette.grey[100]}`,
+                boxShadow: `inset 0 0 0 1px ${theme.palette.divider}`,
                 transition: 'width 0.3s ease',
               }}
             />

@@ -4,6 +4,7 @@ import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { figmaFontFamilyStack, figmaFontWeights } from '@/design-system/tokens/figma-typography'
 import { borderRadius } from '@/design-system/tokens/shape'
 import { shadows } from '@/design-system/tokens/shadows'
+import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
 
 function primaryFocusColor(theme: Theme) {
   return getFigmaColors(theme.palette.mode).primary.main
@@ -20,6 +21,9 @@ function inputFocusRing(theme: Theme) {
 export const componentOverrides: ThemeOptions['components'] = {
   MuiCssBaseline: {
     styleOverrides: {
+      html: ({ theme }) => ({
+        colorScheme: theme.palette.mode,
+      }),
       body: ({ theme }) => ({
         margin: 0,
         backgroundColor: theme.palette.background.default,
@@ -182,12 +186,12 @@ export const componentOverrides: ThemeOptions['components'] = {
         border: `1px solid ${theme.palette.divider}`,
         borderRadius: borderRadius.default,
       }),
-      elevation1: {
-        boxShadow: shadows[2],
-      },
-      elevation2: {
-        boxShadow: shadows[3],
-      },
+      elevation1: ({ theme }) => ({
+        boxShadow: theme.palette.mode === 'dark' ? 'none' : shadows[2],
+      }),
+      elevation2: ({ theme }) => ({
+        boxShadow: theme.palette.mode === 'dark' ? 'none' : shadows[3],
+      }),
     },
   },
   MuiCard: {
@@ -245,10 +249,7 @@ export const componentOverrides: ThemeOptions['components'] = {
   MuiTableHead: {
     styleOverrides: {
       root: ({ theme }) => ({
-        backgroundColor:
-          theme.palette.mode === 'light'
-            ? theme.figmaPalette.grey[50]
-            : theme.figmaDark.paper.elevation1,
+        backgroundColor: surfaceMuted(theme),
         '& .MuiTableCell-root': {
           fontWeight: 600,
           color: theme.palette.text.primary,
@@ -449,6 +450,36 @@ export const componentOverrides: ThemeOptions['components'] = {
     styleOverrides: {
       root: ({ theme }) => ({
         borderColor: theme.palette.divider,
+      }),
+    },
+  },
+  MuiMenu: {
+    styleOverrides: {
+      paper: ({ theme }) => ({
+        backgroundColor: theme.palette.background.paper,
+        backgroundImage: 'none',
+        border: `1px solid ${theme.palette.divider}`,
+      }),
+    },
+  },
+  MuiPopover: {
+    styleOverrides: {
+      paper: ({ theme }) => ({
+        backgroundColor: theme.palette.background.paper,
+        backgroundImage: 'none',
+        border: `1px solid ${theme.palette.divider}`,
+      }),
+    },
+  },
+  MuiAutocomplete: {
+    styleOverrides: {
+      paper: ({ theme }) => ({
+        backgroundColor: theme.palette.background.paper,
+        backgroundImage: 'none',
+        border: `1px solid ${theme.palette.divider}`,
+      }),
+      listbox: ({ theme }) => ({
+        backgroundColor: theme.palette.background.paper,
       }),
     },
   },

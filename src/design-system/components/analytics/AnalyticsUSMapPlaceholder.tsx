@@ -3,6 +3,8 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { analyticsBodySx, type AnalyticsStateValue } from '@/design-system/components/analytics/analyticsStyles'
 import { figmaPalette } from '@/design-system/tokens/figma-palette'
+import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { useTheme } from '@mui/material/styles'
 
 type AnalyticsUSMapPlaceholderProps = {
   states: AnalyticsStateValue[]
@@ -43,6 +45,8 @@ const stateBlocks: Array<{ code: string; x: number; y: number; w: number; h: num
 ]
 
 export function AnalyticsUSMapPlaceholder({ states, height = 280, ariaLabel = 'Geographic map' }: AnalyticsUSMapPlaceholderProps) {
+  const theme = useTheme()
+  const mapBackground = surfaceMuted(theme)
   const valueByCode = Object.fromEntries(states.map((state) => [state.code, state.value]))
   const maxValue = Math.max(...states.map((state) => state.value), 1)
 
@@ -72,7 +76,7 @@ export function AnalyticsUSMapPlaceholder({ states, height = 280, ariaLabel = 'G
         role="img"
         aria-label={ariaLabel}
       >
-        <rect x="0" y="0" width="360" height="220" fill={figmaPalette.grey[50]} rx="8" />
+        <rect x="0" y="0" width="360" height="220" fill={mapBackground} rx="8" />
         {stateBlocks.map((block) => {
           const value = valueByCode[block.code] ?? 0
           return (

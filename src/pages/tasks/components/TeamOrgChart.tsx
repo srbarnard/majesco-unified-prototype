@@ -3,6 +3,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useMemo, useState } from 'react'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { teamMembersMock, type TeamMemberRecord } from '@/pages/tasks/data/mockTasks'
 
@@ -92,7 +93,7 @@ function MemberCard({
         sx={{
           px: 1.25,
           py: 0.75,
-          bgcolor: (theme) => theme.figmaPalette.grey[50],
+          bgcolor: (theme) => surfaceMuted(theme),
           borderTop: 1,
           borderColor: 'divider',
         }}

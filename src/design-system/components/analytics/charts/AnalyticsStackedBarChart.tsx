@@ -12,11 +12,12 @@ import {
 } from 'recharts'
 import {
   analyticsBodySx,
-  analyticsChartAxisStyle,
-  analyticsChartGridStroke,
+  getAnalyticsChartAxisStyle,
+  getAnalyticsChartGridStroke,
   type AnalyticsStackedPoint,
   type AnalyticsStackedSeries,
 } from '@/design-system/components/analytics/analyticsStyles'
+import { useTheme } from '@mui/material/styles'
 
 type AnalyticsStackedBarChartProps = {
   data: AnalyticsStackedPoint[]
@@ -67,6 +68,10 @@ export function AnalyticsStackedBarChart({
   height = 260,
   yAxisFormatter = (value) => `$${Math.round(value / 1000)}K`,
 }: AnalyticsStackedBarChartProps) {
+  const theme = useTheme()
+  const axisStyle = getAnalyticsChartAxisStyle(theme)
+  const gridStroke = getAnalyticsChartGridStroke(theme)
+
   return (
     <Stack spacing={1.5} sx={{ height: '100%' }}>
       <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
@@ -82,17 +87,17 @@ export function AnalyticsStackedBarChart({
       <Box sx={{ width: '100%', height, minHeight: height }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 12, right: 12, left: 4, bottom: 4 }}>
-            <CartesianGrid stroke={analyticsChartGridStroke} strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="label"
-              tick={analyticsChartAxisStyle}
+              tick={axisStyle}
               tickLine={false}
               axisLine={false}
               interval="preserveStartEnd"
               minTickGap={28}
             />
             <YAxis
-              tick={analyticsChartAxisStyle}
+              tick={axisStyle}
               tickLine={false}
               axisLine={false}
               width={48}

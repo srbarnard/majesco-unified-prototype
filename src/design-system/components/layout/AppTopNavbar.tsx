@@ -17,6 +17,7 @@ import Toolbar from '@mui/material/Toolbar'
 import { useState } from 'react'
 import { GlobalSearchField } from '@/design-system/components/GlobalSearch/GlobalSearchField'
 import { layoutTokens } from '@/design-system/tokens/layout'
+import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
 
 type AppTopNavbarProps = {
   userInitials?: string
@@ -38,7 +39,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
         borderBottom: 1,
         borderColor: 'divider',
         borderRadius: 0,
-        bgcolor: (theme) => theme.figmaPalette.grey[50],
+        bgcolor: (theme) => surfaceMuted(theme),
         zIndex: (theme) => theme.zIndex.appBar,
       }}
     >
@@ -152,7 +153,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
       </Toolbar>
 
       <Collapse in={mobileSearchOpen} sx={{ display: { xs: 'block', md: 'none' } }}>
-        <Box sx={{ px: 1.5, pb: 1.5, bgcolor: (theme) => theme.figmaPalette.grey[50] }}>
+        <Box sx={{ px: 1.5, pb: 1.5, bgcolor: (theme) => surfaceMuted(theme) }}>
           <GlobalSearchField fullWidth autoFocus={mobileSearchOpen} />
         </Box>
       </Collapse>

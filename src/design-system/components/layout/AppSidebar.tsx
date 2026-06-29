@@ -16,6 +16,7 @@ import { CopilotIcon } from '@/design-system/components'
 import { ThemeModeToggle } from '@/design-system/components/layout/ThemeModeToggle'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
+import { accentSubtle, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import { moreMenuItems, visibleAppShellNavItems } from '@/design-system/tokens/navigation'
 
 type AppSidebarProps = {
@@ -65,8 +66,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             position: 'relative' as const,
             color: active ? 'primary.main' : 'text.secondary',
             '&.active, &.Mui-selected': {
-              bgcolor: (theme: { figmaPalette: { blue: Record<number, string> } }) =>
-                theme.figmaPalette.blue[50],
+              bgcolor: (theme) => accentSubtle(theme),
               color: 'primary.main',
             },
             '&::before': active
@@ -146,8 +146,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             sx={{
               color: 'text.secondary',
               borderRadius: 1,
-              bgcolor: (theme) => theme.figmaPalette.grey[100],
-              '&:hover': { bgcolor: (theme) => theme.figmaPalette.grey[200] },
+              bgcolor: (theme) => surfaceSubtle(theme),
+              '&:hover': { bgcolor: (theme) => theme.palette.action.hover },
             }}
           >
             <MoreHorizIcon sx={{ fontSize: 28 }} />

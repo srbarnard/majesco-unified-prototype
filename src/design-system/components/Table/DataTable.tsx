@@ -10,6 +10,11 @@ import TableRow from '@mui/material/TableRow'
 import TableSortLabel from '@mui/material/TableSortLabel'
 import type { SxProps, Theme } from '@mui/material/styles'
 import type { ReactNode } from 'react'
+import {
+  accentLinkHover,
+  accentSubtle,
+  surfaceMuted,
+} from '@/design-system/theme/themeSurfaces'
 
 export type SortDirection = 'asc' | 'desc'
 
@@ -23,6 +28,19 @@ export const tableActionIconButtonSx = {
   },
 } as const
 
+/** Copilot icon in data grid action columns — subtle fill when active. */
+export function copilotActiveIconSx(active?: boolean) {
+  return {
+    ...tableActionIconButtonSx,
+    ...(active && {
+      bgcolor: (theme: Theme) => accentSubtle(theme),
+      '&:hover': {
+        bgcolor: (theme: Theme) => accentSubtle(theme),
+      },
+    }),
+  }
+}
+
 /** Link styling inside tables — cell hover fill is handled by tableInteractionSx / dataGridInteractionSx. */
 export const tableLinkSx: SxProps<Theme> = {
   '&:hover': {
@@ -32,9 +50,9 @@ export const tableLinkSx: SxProps<Theme> = {
 }
 
 const linkCellHoverSx = {
-  bgcolor: (theme: Theme) => `${theme.figmaPalette.blue[50]} !important`,
-  backgroundColor: (theme: Theme) => `${theme.figmaPalette.blue[50]} !important`,
-  background: (theme: Theme) => `${theme.figmaPalette.blue[50]} !important`,
+  bgcolor: (theme: Theme) => `${accentLinkHover(theme)} !important`,
+  backgroundColor: (theme: Theme) => `${accentLinkHover(theme)} !important`,
+  background: (theme: Theme) => `${accentLinkHover(theme)} !important`,
 } as const
 
 const pinnedCellPaperSx = {
@@ -54,8 +72,8 @@ export const tableInteractionSx: SxProps<Theme> = {
     backgroundColor: 'transparent',
   },
   '& .MuiTableRow-root.Mui-selected:hover': {
-    bgcolor: (theme) => theme.figmaPalette.blue[50],
-    backgroundColor: (theme) => theme.figmaPalette.blue[50],
+    bgcolor: (theme) => accentSubtle(theme),
+    backgroundColor: (theme) => accentSubtle(theme),
   },
   '& .MuiIconButton-root:not([aria-pressed="true"])': {
     ...tableActionIconButtonSx,
@@ -208,7 +226,7 @@ export function DataTable<T extends Record<string, unknown>>({
         <TableHead>
           <TableRow
             sx={{
-              bgcolor: (theme) => theme.figmaPalette.grey[50],
+              bgcolor: (theme) => surfaceMuted(theme),
               '& .MuiTableCell-head': {
                 fontWeight: 600,
                 color: 'text.secondary',
@@ -283,7 +301,7 @@ export function DataTable<T extends Record<string, unknown>>({
                   sx={{
                     '&:last-child td': { borderBottom: 0 },
                     '&.Mui-selected': {
-                      bgcolor: (theme) => theme.figmaPalette.blue[50],
+                      bgcolor: (theme) => accentSubtle(theme),
                     },
                   }}
                 >

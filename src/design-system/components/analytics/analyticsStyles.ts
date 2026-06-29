@@ -2,6 +2,7 @@ import type { SxProps, Theme } from '@mui/material/styles'
 import { figmaPalette } from '@/design-system/tokens/figma-palette'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack, figmaFontWeights } from '@/design-system/tokens/figma-typography'
+import { chartAxisFill, chartGridStroke, isDarkMode } from '@/design-system/theme/themeSurfaces'
 
 export const ANALYTICS_GUTTER = 3.125 // 25px at 8px spacing unit
 
@@ -78,7 +79,7 @@ export function analyticsCardSx(theme: Theme): SxProps<Theme> {
     borderRadius: `${layoutTokens.cardRadius}px`,
     bgcolor: 'background.paper',
     border: `1px solid ${theme.palette.divider}`,
-    boxShadow: layoutTokens.cardShadow,
+    boxShadow: isDarkMode(theme) ? 'none' : layoutTokens.cardShadow,
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
@@ -86,12 +87,26 @@ export function analyticsCardSx(theme: Theme): SxProps<Theme> {
   }
 }
 
+export function getAnalyticsChartAxisStyle(theme: Theme) {
+  return {
+    fontFamily: figmaFontFamilyStack.body,
+    fontSize: 11,
+    fill: chartAxisFill(theme),
+  }
+}
+
+export function getAnalyticsChartGridStroke(theme: Theme) {
+  return chartGridStroke(theme)
+}
+
+/** @deprecated Use getAnalyticsChartAxisStyle(theme) */
 export const analyticsChartAxisStyle = {
   fontFamily: figmaFontFamilyStack.body,
   fontSize: 11,
   fill: figmaPalette.grey[600],
 }
 
+/** @deprecated Use getAnalyticsChartGridStroke(theme) */
 export const analyticsChartGridStroke = figmaPalette.grey[200]
 
 export type AnalyticsTrendDirection = 'up' | 'down' | 'neutral'

@@ -11,11 +11,12 @@ import {
 } from 'recharts'
 import {
   analyticsBodySx,
-  analyticsChartAxisStyle,
-  analyticsChartGridStroke,
+  getAnalyticsChartAxisStyle,
+  getAnalyticsChartGridStroke,
   type AnalyticsTimeSeriesPoint,
 } from '@/design-system/components/analytics/analyticsStyles'
 import { figmaPalette } from '@/design-system/tokens/figma-palette'
+import { useTheme } from '@mui/material/styles'
 
 type AnalyticsAreaLineChartProps = {
   data: AnalyticsTimeSeriesPoint[]
@@ -68,8 +69,11 @@ export function AnalyticsAreaLineChart({
   valueFormatter = defaultValueFormatter,
   height = 220,
 }: AnalyticsAreaLineChartProps) {
+  const theme = useTheme()
+  const axisStyle = getAnalyticsChartAxisStyle(theme)
+  const gridStroke = getAnalyticsChartGridStroke(theme)
   const lineColor = figmaPalette.teal[500]
-  const fillColor = figmaPalette.teal[100]
+  const fillColor = theme.palette.mode === 'dark' ? figmaPalette.teal[900] : figmaPalette.teal[100]
 
   return (
     <Box sx={{ width: '100%', height, minHeight: height }}>
@@ -81,17 +85,17 @@ export function AnalyticsAreaLineChart({
               <stop offset="100%" stopColor={fillColor} stopOpacity={0.15} />
             </linearGradient>
           </defs>
-          <CartesianGrid stroke={analyticsChartGridStroke} strokeDasharray="3 3" vertical={false} />
+          <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
           <XAxis
             dataKey="label"
-            tick={analyticsChartAxisStyle}
+            tick={axisStyle}
             tickLine={false}
-            axisLine={{ stroke: analyticsChartGridStroke }}
+            axisLine={{ stroke: gridStroke }}
             interval="preserveStartEnd"
             minTickGap={24}
           />
           <YAxis
-            tick={analyticsChartAxisStyle}
+            tick={axisStyle}
             tickLine={false}
             axisLine={false}
             width={48}
@@ -102,7 +106,7 @@ export function AnalyticsAreaLineChart({
                     value: yAxisLabel,
                     angle: -90,
                     position: 'insideLeft',
-                    style: { ...analyticsChartAxisStyle, textAnchor: 'middle' },
+                    style: { ...axisStyle, textAnchor: 'middle' },
                   }
                 : undefined
             }

@@ -7,6 +7,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useState } from 'react'
 import { CopilotIcon } from '@/design-system/components'
+import { accentSubtle, isDarkMode } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 
@@ -22,8 +23,10 @@ export function DocumentStoryCard({ summary, syncedAt }: DocumentStoryCardProps)
     <Box
       sx={(theme) => ({
         borderRadius: `${layoutTokens.cardRadius}px`,
-        bgcolor: theme.figmaPalette.blue[50],
-        boxShadow: 'none',
+        bgcolor: accentSubtle(theme),
+        border: 1,
+        borderColor: 'divider',
+        boxShadow: isDarkMode(theme) ? 'none' : layoutTokens.cardShadow,
         overflow: 'hidden',
       })}
     >

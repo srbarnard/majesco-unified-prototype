@@ -6,6 +6,7 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import { useState } from 'react'
 import { SearchField } from '@/design-system/components'
+import { accentSubtle, accentSubtleHover } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { TeamOrgChart } from '@/pages/tasks/components/TeamOrgChart'
 import { TeamStructureOverview } from '@/pages/tasks/components/TeamStructureOverview'
@@ -38,11 +39,11 @@ export function TeamStructureTab() {
               color: 'text.secondary',
               gap: 0.75,
               '&.Mui-selected': {
-                bgcolor: (theme) => theme.figmaPalette.blue[50],
+                bgcolor: (theme) => accentSubtle(theme),
                 color: 'primary.main',
                 borderColor: 'primary.main',
                 '&:hover': {
-                  bgcolor: (theme) => theme.figmaPalette.blue[100],
+                  bgcolor: (theme) => accentSubtleHover(theme),
                 },
               },
             },

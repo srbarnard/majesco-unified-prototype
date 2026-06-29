@@ -3,6 +3,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { Button } from '@/design-system/components'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { accentSubtle, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 
 type ResultItem = {
   title: string
@@ -168,7 +169,7 @@ export function AgenticSearchResults({ prompt }: AgenticSearchResultsProps) {
             sx={{
               p: 1.5,
               borderRadius: 1.5,
-              bgcolor: (theme) => theme.figmaPalette.grey[50],
+              bgcolor: (theme) => surfaceMuted(theme),
               border: 1,
               borderColor: 'divider',
             }}
@@ -218,7 +219,7 @@ export function DailySummaryContent() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            bgcolor: (theme) => theme.figmaPalette.blue[50],
+            bgcolor: (theme) => accentSubtle(theme),
             color: 'primary.main',
             fontSize: '1rem',
           }}

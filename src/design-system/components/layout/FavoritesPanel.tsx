@@ -11,6 +11,7 @@ import ListItemText from '@mui/material/ListItemText'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useSidebar } from '@/app/contexts/SidebarContext'
+import { surfacePanel } from '@/design-system/theme/themeSurfaces'
 
 const watchlist = [
   { label: '01-BP-000009546-0', starred: true },
@@ -32,7 +33,7 @@ export function FavoritesPanel() {
   const { closeSecondaryPanel } = useSidebar()
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: (theme) => theme.figmaPalette.grey[100] }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: (theme) => surfacePanel(theme) }}>
       <Stack
         direction="row"
         alignItems="center"

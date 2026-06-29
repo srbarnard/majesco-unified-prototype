@@ -1,4 +1,5 @@
 import { Chip, StatusChip, type StatusChipProps } from '@/design-system/components'
+import { surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import type { QuoteStatus } from '@/pages/quotes/data/mockQuotes'
 
 const chipSx = {
@@ -57,8 +58,8 @@ export function QuoteStatusChip({ status }: { status: QuoteStatus | string }) {
       variant="filled"
       sx={(theme) => ({
         ...chipSx,
-        bgcolor: theme.figmaPalette.grey[100],
-        color: theme.figmaPalette.grey[800],
+        bgcolor: surfaceSubtle(theme),
+        color: 'text.secondary',
       })}
     />
   )

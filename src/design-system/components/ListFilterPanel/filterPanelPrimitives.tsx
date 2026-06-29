@@ -16,6 +16,7 @@ import { Button } from '@/design-system/components/Button'
 import type { PresetOption } from '@/design-system/filters/listFilterTypes'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack, figmaFontWeights } from '@/design-system/tokens/figma-typography'
+import { accentSubtle, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { borderRadius } from '@/design-system/tokens/shape'
 
 export const filterHeadingSx = {
@@ -69,7 +70,7 @@ export const filterMenuItemSx = {
 } as const
 
 export const filterChipSx = {
-  bgcolor: (theme: { figmaPalette: { blue: Record<number, string> } }) => theme.figmaPalette.blue[50],
+  bgcolor: (theme: Theme) => accentSubtle(theme),
   color: 'primary.main',
   fontFamily: figmaFontFamilyStack.body,
   fontSize: '0.875rem',
@@ -290,7 +291,7 @@ export function FilterPanelShell({ onClose, onClearAll, onApply, children }: Fil
           px: 2,
           pt: layoutTokens.policyHeaderTopPadding,
           pb: 1.5,
-          bgcolor: (theme) => theme.figmaPalette.grey[50],
+          bgcolor: (theme) => surfaceMuted(theme),
           borderBottom: 1,
           borderColor: 'divider',
           flexShrink: 0,
@@ -318,7 +319,7 @@ export function FilterPanelShell({ onClose, onClearAll, onApply, children }: Fil
           py: 2,
           borderTop: 1,
           borderColor: 'divider',
-          bgcolor: (theme) => theme.figmaPalette.grey[50],
+          bgcolor: (theme) => surfaceMuted(theme),
           flexShrink: 0,
         }}
       >
