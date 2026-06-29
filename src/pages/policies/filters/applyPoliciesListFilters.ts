@@ -47,6 +47,22 @@ export function applyPoliciesListFilters(
       return false
     }
 
+    if (
+      !matchesEffectiveDatePreset(
+        row.expirationDate,
+        filters.expirationDatePreset,
+        '',
+        '',
+        referenceDate,
+      )
+    ) {
+      return false
+    }
+
+    if (filters.openClaimsOnly && row.openClaimsCount <= 0) {
+      return false
+    }
+
     return true
   })
 }

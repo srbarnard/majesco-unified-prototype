@@ -1,132 +1,164 @@
+import MuiButton from '@mui/material/Button'
 import Box from '@mui/material/Box'
-import Grid from '@mui/material/Grid2'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { Button, Card, DataTable, StatusChip } from '@/design-system/components'
+import type { ReactNode } from 'react'
+import { useEffect, useRef } from 'react'
+import { CopilotIcon } from '@/design-system/components'
+import { useGlobalSearch } from '@/app/contexts/GlobalSearchContext'
+import { layoutTokens } from '@/design-system/tokens/layout'
+import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { AgenticActivityFeed } from '@/app/pages/home/AgenticActivityFeed'
+import { PriorityTasksCarousel } from '@/app/pages/home/PriorityTasksCarousel'
+import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
+import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 
-type ActivityRow = {
-  id: string
-  reference: string
-  customer: string
-  type: string
-  status: 'success' | 'warning' | 'error' | 'info'
-  updated: string
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
 }
 
-const stats = [
-  { label: 'Active Policies', value: '12,847', change: '+4.2%' },
-  { label: 'Open Claims', value: '326', change: '-1.8%' },
-  { label: 'Pending Tasks', value: '58', change: '+12 today' },
-  { label: 'Premium MTD', value: '$4.2M', change: '+6.1%' },
-]
-
-const activityRows: ActivityRow[] = [
-  {
-    id: '1',
-    reference: 'POL-2026-10482',
-    customer: 'Acme Insurance Co.',
-    type: 'Policy',
-    status: 'success',
-    updated: '2 min ago',
-  },
-  {
-    id: '2',
-    reference: 'CLM-2026-00931',
-    customer: 'Riverdale Mutual',
-    type: 'Claim',
-    status: 'warning',
-    updated: '18 min ago',
-  },
-  {
-    id: '3',
-    reference: 'POL-2026-10479',
-    customer: 'Summit Life Group',
-    type: 'Policy',
-    status: 'info',
-    updated: '1 hr ago',
-  },
-  {
-    id: '4',
-    reference: 'CLM-2026-00928',
-    customer: 'Harbor Health',
-    type: 'Claim',
-    status: 'error',
-    updated: '3 hr ago',
-  },
-]
+function PanelToggleButton({
+  label,
+  icon,
+  active,
+  onClick,
+}: {
+  label: string
+  icon: ReactNode
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <MuiButton
+      size="small"
+      variant="text"
+      disableRipple
+      startIcon={icon}
+      onClick={onClick}
+      sx={(theme) => ({
+        textTransform: 'none',
+        fontWeight: 400,
+        fontSize: '0.8125rem',
+        fontFamily: figmaFontFamilyStack.body,
+        minWidth: 'auto',
+        px: { xs: 1, sm: 1.25 },
+        py: 0.75,
+        border: 'none',
+        borderRadius: '30px',
+        boxShadow: 'none',
+        color: active ? 'primary.main' : 'text.secondary',
+        bgcolor: active ? theme.figmaPalette.blue[50] : 'transparent',
+        '&:hover': {
+          bgcolor: active ? theme.figmaPalette.blue[100] : theme.figmaPalette.grey[100],
+          boxShadow: 'none',
+        },
+        '& .MuiButton-startIcon': {
+          marginRight: { xs: 0, sm: 0.75 },
+          overflow: 'visible',
+          color: 'inherit',
+        },
+      })}
+    >
+      {label}
+    </MuiButton>
+  )
+}
 
 export function DashboardPage() {
+  const { copilotOpen, copilotView, agenticPrompt, toggleCopilot, closeCopilot, openHomeCopilotDefault } =
+    useGlobalSearch()
+  const contentPx = `${layoutTokens.contentPaddingX}px`
+
+  const didInitCopilot = useRef(false)
+
+  useEffect(() => {
+    if (didInitCopilot.current) return
+    didInitCopilot.current = true
+    if (agenticPrompt || copilotView === 'agentic-search') return
+    openHomeCopilotDefault()
+  }, [agenticPrompt, copilotView, openHomeCopilotDefault])
+
   return (
-    <Stack spacing={3}>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        justifyContent="space-between"
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
-        spacing={2}
+    <Box
+      sx={{
+        display: 'flex',
+        flex: 1,
+        minHeight: 0,
+        height: '100%',
+        width: '100%',
+        overflow: 'hidden',
+        bgcolor: 'background.paper',
+      }}
+    >
+      <Box
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          bgcolor: 'background.paper',
+        }}
       >
-        <Box>
-          <Typography variant="h4" component="h2" gutterBottom>
-            Dashboard
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Overview of policies, claims, and operational activity.
-          </Typography>
+        <Box
+          sx={{
+            flexShrink: 0,
+            px: contentPx,
+            pt: layoutTokens.policyHeaderTopPadding,
+            pb: 1.5,
+          }}
+        >
+          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+            <Typography
+              variant="h5"
+              component="h1"
+              sx={{
+                fontFamily: figmaFontFamilyStack.heading,
+                fontWeight: 600,
+                fontSize: { xs: '1.25rem', md: '1.375rem' },
+                lineHeight: 1.3,
+              }}
+            >
+              {getGreeting()}, Chris
+            </Typography>
+            <PanelToggleButton
+              label="Copilot"
+              icon={<CopilotIcon size={18} active={copilotOpen} />}
+              active={copilotOpen}
+              onClick={toggleCopilot}
+            />
+          </Stack>
         </Box>
-        <Stack direction="row" spacing={1}>
-          <Button variant="outlined" color="primary">
-            Export
-          </Button>
-          <Button variant="contained" color="primary">
-            New Policy
-          </Button>
-        </Stack>
-      </Stack>
 
-      <Grid container spacing={2}>
-        {stats.map((stat) => (
-          <Grid key={stat.label} size={{ xs: 12, sm: 6, lg: 3 }}>
-            <Card title={stat.label}>
-              <Typography variant="h4" component="p" fontWeight={600}>
-                {stat.value}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {stat.change}
-              </Typography>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflow: 'auto',
+            px: contentPx,
+            pb: contentPx,
+            width: '100%',
+          }}
+        >
+          <Stack spacing={3.5} sx={{ width: '100%' }}>
+            <PriorityTasksCarousel />
+            <AgenticActivityFeed />
+          </Stack>
+        </Box>
+      </Box>
 
-      <Card
-        title="Recent Activity"
-        subtitle="Latest policy and claim updates across your book of business"
-        headerAction={
-          <Button size="small" variant="text" color="primary">
-            View all
-          </Button>
-        }
-      >
-        <DataTable<ActivityRow>
-          columns={[
-            { id: 'reference', label: 'Reference' },
-            { id: 'customer', label: 'Customer' },
-            { id: 'type', label: 'Type' },
-            {
-              id: 'status',
-              label: 'Status',
-              render: (row) => (
-                <StatusChip
-                  status={row.status}
-                  label={row.status.charAt(0).toUpperCase() + row.status.slice(1)}
-                />
-              ),
-            },
-            { id: 'updated', label: 'Updated', align: 'right' },
-          ]}
-          rows={activityRows}
-          getRowId={(row) => row.id}
+      <ResizableRightPanel open={copilotOpen}>
+        <CopilotPanel
+          context="global"
+          globalView={copilotView}
+          agenticPrompt={agenticPrompt}
+          onClose={closeCopilot}
         />
-      </Card>
-    </Stack>
+      </ResizableRightPanel>
+    </Box>
   )
 }

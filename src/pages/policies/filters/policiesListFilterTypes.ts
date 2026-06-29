@@ -30,8 +30,24 @@ export type PolicyProducer = (typeof POLICY_PRODUCER_OPTIONS)[number]
 export type PolicyStatus = (typeof POLICY_STATUS_OPTIONS)[number]
 
 export type DatePreset = EffectiveDatePreset
-export type PoliciesListFilters = ListFilters
 
-export const emptyPoliciesListFilters = emptyListFilters
+export type PoliciesListFilters = ListFilters & {
+  expirationDatePreset: EffectiveDatePreset
+  openClaimsOnly: boolean
+}
+
+export const emptyPoliciesListFilters: PoliciesListFilters = {
+  ...emptyListFilters,
+  expirationDatePreset: '',
+  openClaimsOnly: false,
+}
+
 export const DATE_PRESET_OPTIONS = EFFECTIVE_DATE_PRESET_OPTIONS
-export const hasActiveFilters = hasActiveListFilters
+
+export function hasActiveFilters(filters: PoliciesListFilters) {
+  return (
+    hasActiveListFilters(filters) ||
+    filters.expirationDatePreset !== '' ||
+    filters.openClaimsOnly
+  )
+}

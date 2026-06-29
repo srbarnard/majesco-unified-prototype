@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box'
-import Container from '@mui/material/Container'
 import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router'
+import { GlobalSearchProvider } from '@/app/contexts/GlobalSearchContext'
 import { SidebarProvider } from '@/app/contexts/SidebarContext'
 import {
   AppSidebar,
@@ -15,6 +15,7 @@ function AppLayoutContent() {
   const location = useLocation()
 
   const isFullBleedPage =
+    location.pathname === '/' ||
     location.pathname === '/quotes' ||
     location.pathname === '/tasks' ||
     location.pathname === '/policies' ||
@@ -61,6 +62,7 @@ function AppLayoutContent() {
             sx={{
               flex: 1,
               minHeight: 0,
+              minWidth: 0,
               width: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -70,13 +72,7 @@ function AppLayoutContent() {
               bgcolor: 'background.paper',
             }}
           >
-            {isFullBleedPage ? (
-              <Outlet />
-            ) : (
-              <Container maxWidth="lg" sx={{ flexGrow: 1 }}>
-                <Outlet />
-              </Container>
-            )}
+            <Outlet />
           </Box>
         </Box>
       </Box>
@@ -87,7 +83,9 @@ function AppLayoutContent() {
 export function AppLayout() {
   return (
     <SidebarProvider>
-      <AppLayoutContent />
+      <GlobalSearchProvider>
+        <AppLayoutContent />
+      </GlobalSearchProvider>
     </SidebarProvider>
   )
 }

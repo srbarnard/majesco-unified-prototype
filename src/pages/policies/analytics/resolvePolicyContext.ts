@@ -80,6 +80,7 @@ export function resolvePolicyContext(policyId: string): PolicyContext {
       producer: 'Harborview Agency',
       status: 'Open',
       lastUpdated: '2026-06-01',
+      openClaimsCount: 0,
       twp: 500000,
       ftp: 480000,
     }

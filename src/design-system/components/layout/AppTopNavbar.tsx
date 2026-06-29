@@ -14,9 +14,8 @@ import MenuItem from '@mui/material/MenuItem'
 import Select from '@mui/material/Select'
 import Stack from '@mui/material/Stack'
 import Toolbar from '@mui/material/Toolbar'
-import { useEffect, useMemo, useState } from 'react'
-import { useLocation } from 'react-router'
-import { SearchField } from '@/design-system/components'
+import { useState } from 'react'
+import { GlobalSearchField } from '@/design-system/components/GlobalSearch/GlobalSearchField'
 import { layoutTokens } from '@/design-system/tokens/layout'
 
 type AppTopNavbarProps = {
@@ -25,18 +24,7 @@ type AppTopNavbarProps = {
 }
 
 export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopNavbarProps) {
-  const location = useLocation()
-  const [searchQuery, setSearchQuery] = useState('')
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
-
-  const routeSearchValue = useMemo(() => {
-    const policyMatch = location.pathname.match(/\/policies\/([^/]+)/)
-    return policyMatch?.[1] ?? ''
-  }, [location.pathname])
-
-  useEffect(() => {
-    setSearchQuery(routeSearchValue)
-  }, [routeSearchValue])
 
   return (
     <AppBar
@@ -62,7 +50,6 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
           gap: { xs: 1, md: 1.5 },
         }}
       >
-        {/* Brand */}
         <Stack
           direction="row"
           alignItems="center"
@@ -101,7 +88,6 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
           </Select>
         </Stack>
 
-        {/* Navigation arrows + search (desktop) */}
         <Stack
           direction="row"
           alignItems="center"
@@ -127,17 +113,9 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
             </IconButton>
           </Stack>
 
-          <SearchField
-            fullWidth
-            placeholder="Search P&amp;C Policy"
-            value={searchQuery}
-            onSearchChange={setSearchQuery}
-            enableVoice
-            sx={{ flex: 1, minWidth: 0, maxWidth: 'none' }}
-          />
+          <GlobalSearchField fullWidth />
         </Stack>
 
-        {/* Right actions */}
         <Stack
           direction="row"
           alignItems="center"
@@ -175,14 +153,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
 
       <Collapse in={mobileSearchOpen} sx={{ display: { xs: 'block', md: 'none' } }}>
         <Box sx={{ px: 1.5, pb: 1.5, bgcolor: (theme) => theme.figmaPalette.grey[50] }}>
-          <SearchField
-            fullWidth
-            placeholder="Search P&amp;C Policy"
-            value={searchQuery}
-            onSearchChange={setSearchQuery}
-            enableVoice
-            autoFocus={mobileSearchOpen}
-          />
+          <GlobalSearchField fullWidth autoFocus={mobileSearchOpen} />
         </Box>
       </Collapse>
     </AppBar>

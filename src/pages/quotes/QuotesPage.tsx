@@ -3,6 +3,7 @@ import Typography from '@mui/material/Typography'
 import { useCallback, useMemo, useState } from 'react'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { useQuotesLookupFromUrl } from '@/hooks/useLookupFromUrl'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { QuotesAnalyticsTab } from '@/pages/quotes/components/QuotesAnalyticsTab'
@@ -36,6 +37,8 @@ export function QuotesPage() {
   const [copilotQuoteFocus, setCopilotQuoteFocus] = useState<Quote | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<QuotesListFilters>(emptyQuotesListFilters)
+
+  useQuotesLookupFromUrl(setAppliedFilters)
 
   const filteredRows = useMemo(() => {
     const withFilters = applyQuotesListFilters(quotesMock, appliedFilters)

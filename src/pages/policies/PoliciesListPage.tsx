@@ -3,6 +3,7 @@ import Typography from '@mui/material/Typography'
 import { useCallback, useMemo, useState } from 'react'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { usePoliciesLookupFromUrl } from '@/hooks/useLookupFromUrl'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { FilterPanel } from '@/pages/policies/components/FilterPanel'
 import { PoliciesListAnalyticsDashboard } from '@/pages/policies/components/PoliciesListAnalyticsDashboard'
@@ -46,6 +47,8 @@ export function PoliciesListPage() {
   const [copilotPolicyFocus, setCopilotPolicyFocus] = useState<PolicyListRecord | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<PoliciesListFilters>(emptyPoliciesListFilters)
+
+  usePoliciesLookupFromUrl(setAppliedFilters)
 
   const filteredRows = useMemo(() => {
     const withFilters = applyPoliciesListFilters(policiesListMock, appliedFilters)

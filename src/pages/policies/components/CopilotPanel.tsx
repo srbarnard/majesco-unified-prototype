@@ -23,6 +23,8 @@ import { Button } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import type { PolicyTab } from '@/pages/policies/components/PolicyTabs'
+import type { GlobalCopilotView } from '@/app/contexts/GlobalSearchContext'
+import { AgenticSearchResults, DailySummaryContent } from '@/pages/policies/components/AgenticSearchResults'
 import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
 import { policyDetailsMock } from '@/pages/policies/data/mockPolicyDetails'
 import type { PolicyListRecord } from '@/pages/policies/data/mockPoliciesList'
@@ -34,7 +36,9 @@ import { TASKS_TOTAL_ROWS } from '@/pages/tasks/data/mockTasks'
 
 type CopilotPanelProps = {
   activePolicyTab?: PolicyTab
-  context?: 'policy' | 'quotes' | 'policies-list' | 'tasks'
+  context?: 'policy' | 'quotes' | 'policies-list' | 'tasks' | 'global'
+  globalView?: GlobalCopilotView
+  agenticPrompt?: string | null
   focusedDocument?: PolicyDocument | null
   focusedQuote?: Quote | null
   focusedPolicyList?: PolicyListRecord | null
@@ -458,6 +462,8 @@ function CopilotComposer({ placeholder }: { placeholder: string }) {
 export function CopilotPanel({
   activePolicyTab = 'overview',
   context = 'policy',
+  globalView = null,
+  agenticPrompt = null,
   focusedDocument,
   focusedQuote,
   focusedPolicyList,
@@ -469,6 +475,9 @@ export function CopilotPanel({
   const isQuotesContext = context === 'quotes'
   const isPoliciesListContext = context === 'policies-list'
   const isTasksContext = context === 'tasks'
+  const isGlobalContext = context === 'global'
+  const isAgenticView = isGlobalContext && globalView === 'agentic-search' && Boolean(agenticPrompt)
+  const isDailySummaryView = isGlobalContext && globalView === 'daily-summary'
 
   useEffect(() => {
     if (focusedDocument || focusedQuote || focusedPolicyList || focusedTask) {
@@ -548,19 +557,21 @@ export function CopilotPanel({
         ? 'Your Copilot conversations for policies will appear here.'
         : 'Your Copilot conversations for this policy will appear here.'
 
-  const composerPlaceholder = focusedTask
-    ? 'Ask about this task…'
-    : focusedPolicyList
-      ? 'Ask about this policy…'
-      : focusedQuote
-        ? 'Ask about this quote…'
-        : isTasksContext
-          ? 'Ask more…'
-          : isQuotesContext
-            ? 'Ask about your quotes pipeline…'
-            : isPoliciesListContext
-              ? 'Ask about your policies book…'
-              : 'Select a prompt or ask me anything'
+  const composerPlaceholder = isGlobalContext
+    ? 'Select a prompt or ask me anything'
+    : focusedTask
+      ? 'Ask about this task…'
+      : focusedPolicyList
+        ? 'Ask about this policy…'
+        : focusedQuote
+          ? 'Ask about this quote…'
+          : isTasksContext
+            ? 'Ask more…'
+            : isQuotesContext
+              ? 'Ask about your quotes pipeline…'
+              : isPoliciesListContext
+                ? 'Ask about your policies book…'
+                : 'Select a prompt or ask me anything'
 
   return (
     <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', overflow: 'hidden' }}>
@@ -629,6 +640,10 @@ export function CopilotPanel({
               {historyEmptyText}
             </Typography>
           </Stack>
+        ) : isAgenticView && agenticPrompt ? (
+          <AgenticSearchResults prompt={agenticPrompt} />
+        ) : isDailySummaryView ? (
+          <DailySummaryContent />
         ) : (
           <>
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>

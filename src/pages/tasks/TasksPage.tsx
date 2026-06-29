@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from 'react'
 import type { GridRowSelectionModel } from '@mui/x-data-grid-premium'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { useTasksLookupFromUrl } from '@/hooks/useLookupFromUrl'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { TasksActionBar } from '@/pages/tasks/components/TasksActionBar'
@@ -38,6 +39,8 @@ export function TasksPage() {
   const [copilotTaskFocus, setCopilotTaskFocus] = useState<TaskRecord | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<TasksFilters>(emptyTasksFilters)
+
+  useTasksLookupFromUrl(setAppliedFilters)
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
 
   const filteredRows = useMemo(() => {
