@@ -12,10 +12,12 @@ import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
-import { policyPartiesMock } from '@/pages/policies/data/mockPolicyDetails'
+import { policyPartiesMock, type PolicyParty } from '@/pages/policies/data/mockPolicyDetails'
 
 type PartiesPanelProps = {
   onClose?: () => void
+  title?: string
+  parties?: PolicyParty[]
 }
 
 function PartyDetails({
@@ -60,7 +62,7 @@ function PartyDetails({
   )
 }
 
-export function PartiesPanel({ onClose }: PartiesPanelProps) {
+export function PartiesPanel({ onClose, title = 'Parties', parties = policyPartiesMock }: PartiesPanelProps) {
   return (
     <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Stack
@@ -70,7 +72,7 @@ export function PartiesPanel({ onClose }: PartiesPanelProps) {
         sx={{ px: 2, pt: layoutTokens.policyHeaderTopPadding, pb: 1, borderBottom: 1, borderColor: 'divider' }}
       >
         <Typography variant="subtitle1" fontWeight={600}>
-          Parties
+          {title}
         </Typography>
         {onClose && (
           <IconButton size="small" onClick={onClose} aria-label="Close parties panel">
@@ -80,7 +82,7 @@ export function PartiesPanel({ onClose }: PartiesPanelProps) {
       </Stack>
 
       <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
-        {policyPartiesMock.map((party) => (
+        {parties.map((party) => (
           <Accordion
             key={party.id}
             defaultExpanded={party.defaultExpanded}

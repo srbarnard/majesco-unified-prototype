@@ -17,6 +17,8 @@ import {
 import { useMemo, useState } from 'react'
 import type { MutableRefObject } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
+import { Link as RouterLink } from 'react-router'
+import { insuredIdFromName } from '@/pages/shared/insuredId'
 import {
   CopilotIcon,
   copilotActiveIconSx,
@@ -55,7 +57,8 @@ function formatDate(value: string) {
 function QuoteNumberCell({ row }: { row: Quote }) {
   return (
     <Link
-      component="button"
+      component={RouterLink}
+      to={`/quotes/${encodeURIComponent(row.quoteNumber)}`}
       variant="body2"
       underline="hover"
       sx={{ fontWeight: 400, textAlign: 'left', py: 0.25, ...tableLinkSx }}
@@ -230,7 +233,8 @@ export function QuotesDataGrid({
         sortable: true,
         renderCell: ({ row }) => (
           <Link
-            component="button"
+            component={RouterLink}
+            to={`/insureds/${encodeURIComponent(insuredIdFromName(row.insured))}`}
             variant="body2"
             underline="hover"
             sx={{ fontWeight: 500, textAlign: 'left', py: 0.25, ...tableLinkSx }}

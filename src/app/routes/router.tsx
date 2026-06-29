@@ -7,6 +7,8 @@ import { PlaceholderPage } from '@/app/pages/PlaceholderPage'
 import { PoliciesListPage } from '@/pages/policies/PoliciesListPage'
 import { SettingsPage } from '@/app/pages/SettingsPage'
 import { PolicyDetails } from '@/pages/policies/PolicyDetails'
+import { InsuredDetails } from '@/pages/insureds/InsuredDetails'
+import { QuoteDetails } from '@/pages/quotes/QuoteDetails'
 import { QuotesPage } from '@/pages/quotes/QuotesPage'
 import { TasksPage } from '@/pages/tasks/TasksPage'
 
@@ -20,8 +22,10 @@ export const router = createBrowserRouter([
       { path: 'favorites', element: <PlaceholderPage title="Favorites" description="Saved policies, insureds, and watchlists will appear here." /> },
       { path: 'tasks', element: <TasksPage /> },
       { path: 'quotes', element: <QuotesPage /> },
+      { path: 'quotes/:quoteId', element: <QuoteDetails /> },
       { path: 'submissions', element: <PlaceholderPage title="Submissions" description="New business and endorsement submissions will appear here." /> },
       { path: 'insureds', element: <PlaceholderPage title="Insureds" description="Search and manage insured accounts." /> },
+      { path: 'insureds/:insuredId', element: <InsuredDetails /> },
       { path: 'producers', element: <PlaceholderPage title="Producers" description="Producer appointments and hierarchies." /> },
       { path: 'sub-producers', element: <PlaceholderPage title="Sub producers" description="Sub-producer relationships and commissions." /> },
       { path: 'copilot-studio', element: <PlaceholderPage title="Copilot Studio" description="Build and manage Copilot agents and automations." /> },

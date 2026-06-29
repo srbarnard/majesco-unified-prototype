@@ -28,6 +28,7 @@ import {
   tableLinkSx,
 } from '@/design-system/components'
 import { dataGridShellSx } from '@/design-system/theme/themeSurfaces'
+import { insuredIdFromName } from '@/pages/shared/insuredId'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import type { PolicyListRecord } from '@/pages/policies/data/mockPoliciesList'
 
@@ -72,7 +73,8 @@ function InsuredNameCell({ row }: { row: PolicyListRecord }) {
   return (
     <Stack direction="row" spacing={0.75} alignItems="center" sx={{ py: 0.25, minWidth: 0 }}>
       <Link
-        component="button"
+        component={RouterLink}
+        to={`/insureds/${encodeURIComponent(insuredIdFromName(row.insuredName))}`}
         variant="body2"
         underline="hover"
         sx={{ fontWeight: 500, textAlign: 'left', ...tableLinkSx }}

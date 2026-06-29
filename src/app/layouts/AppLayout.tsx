@@ -20,7 +20,9 @@ function AppLayoutContent() {
     location.pathname === '/quotes' ||
     location.pathname === '/tasks' ||
     location.pathname === '/policies' ||
-    /\/policies\/[^/]+/.test(location.pathname)
+    /\/policies\/[^/]+/.test(location.pathname) ||
+    /\/quotes\/[^/]+/.test(location.pathname) ||
+    /\/insureds\/[^/]+/.test(location.pathname)
 
   return (
     <Box

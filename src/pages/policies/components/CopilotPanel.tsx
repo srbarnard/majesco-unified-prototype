@@ -36,6 +36,8 @@ import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
 import { policyDetailsMock } from '@/pages/policies/data/mockPolicyDetails'
 import type { PolicyListRecord } from '@/pages/policies/data/mockPoliciesList'
 import { POLICIES_TOTAL_ROWS } from '@/pages/policies/data/mockPoliciesList'
+import type { InsuredDetailsRecord } from '@/pages/insureds/data/mockInsuredDetails'
+import type { QuoteDetailsRecord } from '@/pages/quotes/data/mockQuoteDetails'
 import type { Quote } from '@/pages/quotes/data/mockQuotes'
 import { QUOTES_TOTAL_ROWS } from '@/pages/quotes/data/mockQuotes'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
@@ -43,11 +45,13 @@ import { TASKS_TOTAL_ROWS } from '@/pages/tasks/data/mockTasks'
 
 type CopilotPanelProps = {
   activePolicyTab?: PolicyTab
-  context?: 'policy' | 'quotes' | 'policies-list' | 'tasks' | 'global'
+  context?: 'policy' | 'quotes' | 'quote-detail' | 'insured' | 'policies-list' | 'tasks' | 'global'
   globalView?: GlobalCopilotView
   agenticPrompt?: string | null
   focusedDocument?: PolicyDocument | null
   focusedQuote?: Quote | null
+  focusedQuoteDetail?: QuoteDetailsRecord | null
+  focusedInsured?: InsuredDetailsRecord | null
   focusedPolicyList?: PolicyListRecord | null
   focusedTask?: TaskRecord | null
   onClose?: () => void
@@ -140,6 +144,25 @@ function buildQuoteSummary(quote: Quote) {
   const products = quote.products.join(', ')
   return `**${quote.insured}** — Quote **${quote.quoteNumber}** covers **${products}** effective **${formatQuoteDate(quote.effectiveDate)}**. Status is **${quote.status}** with a quoted premium of **${formatQuotePremium(quote.premium)}**.`
 }
+
+function buildQuoteDetailSummary(quote: QuoteDetailsRecord) {
+  return `**${quote.insuredName}** — Quote **${quote.quoteNumber}** for **${quote.product}** effective **${quote.effectiveDate}**. Status is **${quote.status}** with a quoted premium of **${quote.premium}**.`
+}
+
+function quoteDetailInsights(quote: QuoteDetailsRecord): string[] {
+  return quote.copilotInsights
+}
+
+function buildInsuredSummary(insured: InsuredDetailsRecord) {
+  return insured.copilotSummary
+}
+
+function insuredInsights(insured: InsuredDetailsRecord): string[] {
+  return insured.copilotInsights
+}
+
+const insuredQuickActions = ['Portfolio summary', 'Open claims', 'Renewal outlook', 'Contact producer']
+const quoteDetailQuickActions = ['Summarize quote', 'Compare versions', 'Send to producer', 'Check rating factors']
 
 const quotesWorkspaceSummary =
   `You are viewing **${QUOTES_TOTAL_ROWS} quotes** in your pipeline. Select a quote from the list or ask Copilot about rating, underwriting, or submission status.`
@@ -477,6 +500,8 @@ export function CopilotPanel({
   agenticPrompt = null,
   focusedDocument,
   focusedQuote,
+  focusedQuoteDetail,
+  focusedInsured,
   focusedPolicyList,
   focusedTask,
   onClose,
@@ -484,6 +509,8 @@ export function CopilotPanel({
   const [copilotTab, setCopilotTab] = useState<'chat' | 'history'>('chat')
   const isDocumentsTab = activePolicyTab === 'documents'
   const isQuotesContext = context === 'quotes'
+  const isQuoteDetailContext = context === 'quote-detail'
+  const isInsuredContext = context === 'insured'
   const isPoliciesListContext = context === 'policies-list'
   const isTasksContext = context === 'tasks'
   const isGlobalContext = context === 'global'
@@ -491,26 +518,34 @@ export function CopilotPanel({
   const isDailySummaryView = isGlobalContext && globalView === 'daily-summary'
 
   useEffect(() => {
-    if (focusedDocument || focusedQuote || focusedPolicyList || focusedTask) {
+    if (focusedDocument || focusedQuote || focusedQuoteDetail || focusedInsured || focusedPolicyList || focusedTask) {
       setCopilotTab('chat')
     }
-  }, [focusedDocument, focusedQuote, focusedPolicyList, focusedTask])
+  }, [focusedDocument, focusedQuote, focusedQuoteDetail, focusedInsured, focusedPolicyList, focusedTask])
 
   const quickActions = focusedTask
     ? focusedTaskQuickActions
     : focusedPolicyList
       ? policyListQuickActions
-      : focusedQuote
-        ? quoteQuickActions
-        : isDocumentsTab
-          ? ['Summary', 'Add Note', 'Send Email', 'Explanation to Underwriters']
-          : isTasksContext
-            ? taskQuickActions
-            : isQuotesContext
-              ? ['Pipeline summary', 'Quotes needing action', 'Compare premiums']
-              : isPoliciesListContext
-                ? ['Renewals due', 'Billing exceptions', 'Portfolio summary']
-                : ['See endorsements', 'Review documents']
+      : focusedQuoteDetail
+        ? quoteDetailQuickActions
+        : focusedInsured
+          ? insuredQuickActions
+          : focusedQuote
+            ? quoteQuickActions
+            : isDocumentsTab
+              ? ['Summary', 'Add Note', 'Send Email', 'Explanation to Underwriters']
+              : isTasksContext
+                ? taskQuickActions
+                : isQuotesContext
+                  ? ['Pipeline summary', 'Quotes needing action', 'Compare premiums']
+                  : isInsuredContext
+                    ? insuredQuickActions
+                    : isQuoteDetailContext
+                      ? quoteDetailQuickActions
+                      : isPoliciesListContext
+                        ? ['Renewals due', 'Billing exceptions', 'Portfolio summary']
+                        : ['See endorsements', 'Review documents']
 
   const summaryTitle = focusedDocument
     ? 'Document summary'
@@ -518,15 +553,23 @@ export function CopilotPanel({
       ? 'Task summary'
       : focusedPolicyList
         ? 'Policy summary'
-        : focusedQuote
+        : focusedQuoteDetail
           ? 'Quote summary'
-          : isTasksContext
-            ? 'Summarize'
-            : isQuotesContext
-              ? 'Quotes workspace'
-              : isPoliciesListContext
-                ? 'Policies workspace'
-                : 'Policy summary'
+          : focusedInsured
+            ? 'Insured summary'
+            : focusedQuote
+              ? 'Quote summary'
+              : isTasksContext
+                ? 'Summarize'
+                : isQuotesContext
+                  ? 'Quotes workspace'
+                  : isInsuredContext
+                    ? 'Insured summary'
+                    : isQuoteDetailContext
+                      ? 'Quote summary'
+                      : isPoliciesListContext
+                        ? 'Policies workspace'
+                        : 'Policy summary'
 
   const summaryText = focusedDocument
     ? buildDocumentSummary(focusedDocument)
@@ -534,15 +577,23 @@ export function CopilotPanel({
       ? buildTaskSummary(focusedTask)
       : focusedPolicyList
         ? buildPolicyListSummary(focusedPolicyList)
-        : focusedQuote
-          ? buildQuoteSummary(focusedQuote)
-          : isTasksContext
-            ? tasksWorkspaceSummary
-            : isQuotesContext
-              ? quotesWorkspaceSummary
-              : isPoliciesListContext
-                ? policiesListWorkspaceSummary
-                : policyDetailsMock.copilotSummary
+        : focusedQuoteDetail
+          ? buildQuoteDetailSummary(focusedQuoteDetail)
+          : focusedInsured
+            ? buildInsuredSummary(focusedInsured)
+            : focusedQuote
+              ? buildQuoteSummary(focusedQuote)
+              : isTasksContext
+                ? tasksWorkspaceSummary
+                : isQuotesContext
+                  ? quotesWorkspaceSummary
+                  : isInsuredContext && focusedInsured
+                    ? buildInsuredSummary(focusedInsured)
+                    : isQuoteDetailContext && focusedQuoteDetail
+                      ? buildQuoteDetailSummary(focusedQuoteDetail)
+                      : isPoliciesListContext
+                        ? policiesListWorkspaceSummary
+                        : policyDetailsMock.copilotSummary
 
   const insights = focusedDocument
     ? documentInsights(focusedDocument)
@@ -550,23 +601,33 @@ export function CopilotPanel({
       ? taskInsights(focusedTask)
       : focusedPolicyList
         ? policyListInsights(focusedPolicyList)
-        : focusedQuote
-          ? quoteInsights(focusedQuote)
-          : isTasksContext
-            ? tasksWorkspaceInsights
-            : isQuotesContext
-              ? quotesWorkspaceInsights
-              : isPoliciesListContext
-                ? policiesListWorkspaceInsights
-                : policyDetailsMock.copilotInsights
+        : focusedQuoteDetail
+          ? quoteDetailInsights(focusedQuoteDetail)
+          : focusedInsured
+            ? insuredInsights(focusedInsured)
+            : focusedQuote
+              ? quoteInsights(focusedQuote)
+              : isTasksContext
+                ? tasksWorkspaceInsights
+                : isQuotesContext
+                  ? quotesWorkspaceInsights
+                  : isInsuredContext && focusedInsured
+                    ? insuredInsights(focusedInsured)
+                    : isQuoteDetailContext && focusedQuoteDetail
+                      ? quoteDetailInsights(focusedQuoteDetail)
+                      : isPoliciesListContext
+                        ? policiesListWorkspaceInsights
+                        : policyDetailsMock.copilotInsights
 
   const historyEmptyText = isTasksContext
     ? 'Your Copilot conversations for tasks will appear here.'
-    : isQuotesContext
+    : isQuotesContext || isQuoteDetailContext
       ? 'Your Copilot conversations for quotes will appear here.'
-      : isPoliciesListContext
-        ? 'Your Copilot conversations for policies will appear here.'
-        : 'Your Copilot conversations for this policy will appear here.'
+      : isInsuredContext
+        ? 'Your Copilot conversations for this insured will appear here.'
+        : isPoliciesListContext
+          ? 'Your Copilot conversations for policies will appear here.'
+          : 'Your Copilot conversations for this policy will appear here.'
 
   const composerPlaceholder = isGlobalContext
     ? 'Select a prompt or ask me anything'
@@ -574,15 +635,23 @@ export function CopilotPanel({
       ? 'Ask about this task…'
       : focusedPolicyList
         ? 'Ask about this policy…'
-        : focusedQuote
+        : focusedQuoteDetail
           ? 'Ask about this quote…'
-          : isTasksContext
-            ? 'Ask more…'
-            : isQuotesContext
-              ? 'Ask about your quotes pipeline…'
-              : isPoliciesListContext
-                ? 'Ask about your policies book…'
-                : 'Select a prompt or ask me anything'
+          : focusedInsured
+            ? 'Ask about this insured…'
+            : focusedQuote
+              ? 'Ask about this quote…'
+              : isTasksContext
+                ? 'Ask more…'
+                : isQuotesContext
+                  ? 'Ask about your quotes pipeline…'
+                  : isInsuredContext
+                    ? 'Ask about this insured account…'
+                    : isQuoteDetailContext
+                    ? 'Ask about this quote…'
+                      : isPoliciesListContext
+                        ? 'Ask about your policies book…'
+                        : 'Select a prompt or ask me anything'
 
   return (
     <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', overflow: 'hidden' }}>
@@ -673,6 +742,16 @@ export function CopilotPanel({
             {focusedDocument && (
               <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
                 {focusedDocument.fileName}
+              </Typography>
+            )}
+            {focusedQuoteDetail && (
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
+                {focusedQuoteDetail.quoteNumber}
+              </Typography>
+            )}
+            {focusedInsured && (
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
+                {focusedInsured.name}
               </Typography>
             )}
             {focusedQuote && (
