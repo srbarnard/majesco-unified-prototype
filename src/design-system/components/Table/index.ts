@@ -12,6 +12,7 @@ export {
   type DataTableSort,
   type SortDirection,
 } from './DataTable'
+export { ListDataGridLink } from './ListDataGridLink'
 export { ListDataGridToolbar } from './ListDataGridToolbar'
 export { ListDataGridToolbarActions } from './ListDataGridToolbarActions'
 export {

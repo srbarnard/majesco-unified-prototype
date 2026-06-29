@@ -2,7 +2,6 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
-import Link from '@mui/material/Link'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
@@ -16,16 +15,15 @@ import {
 import { useMemo, useState } from 'react'
 import type { MutableRefObject } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
-import { Link as RouterLink } from 'react-router'
 import {
   CopilotIcon,
   copilotActiveIconSx,
   dataGridInteractionSx,
   getListDataGridSlotProps,
+  ListDataGridLink,
   listDataGridActionColumnProps,
   listDataGridFilterProps,
   tableActionIconButtonSx,
-  tableLinkSx,
 } from '@/design-system/components'
 import { dataGridShellSx } from '@/design-system/theme/themeSurfaces'
 import { insuredIdFromName } from '@/pages/shared/insuredId'
@@ -57,30 +55,22 @@ function copilotActionIconSx(active?: boolean) {
 
 function PolicyNumberCell({ row }: { row: PolicyListRecord }) {
   return (
-    <Link
-      component={RouterLink}
-      to={`/policies/${encodeURIComponent(row.policyNumber)}`}
-      variant="body2"
-      underline="hover"
-      sx={{ fontWeight: 400, textAlign: 'left', py: 0.25, ...tableLinkSx }}
-    >
+    <ListDataGridLink to={`/policies/${encodeURIComponent(row.policyNumber)}`}>
       {row.policyNumber}
-    </Link>
+    </ListDataGridLink>
   )
 }
 
 function InsuredNameCell({ row }: { row: PolicyListRecord }) {
   return (
     <Stack direction="row" spacing={0.75} alignItems="center" sx={{ py: 0.25, minWidth: 0 }}>
-      <Link
-        component={RouterLink}
+      <ListDataGridLink
         to={`/insureds/${encodeURIComponent(insuredIdFromName(row.insuredName))}`}
-        variant="body2"
-        underline="hover"
-        sx={{ fontWeight: 500, textAlign: 'left', ...tableLinkSx }}
+        fontWeight={500}
+        sx={{ py: 0 }}
       >
         {row.insuredName}
-      </Link>
+      </ListDataGridLink>
       <BadgeOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }} />
     </Stack>
   )

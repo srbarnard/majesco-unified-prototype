@@ -17,13 +17,13 @@ import {
 import { useMemo, useState } from 'react'
 import type { MutableRefObject } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
-import { Link as RouterLink } from 'react-router'
 import { insuredIdFromName } from '@/pages/shared/insuredId'
 import {
   CopilotIcon,
   copilotActiveIconSx,
   dataGridInteractionSx,
   getListDataGridSlotProps,
+  ListDataGridLink,
   listDataGridActionColumnProps,
   listDataGridFilterProps,
   tableActionIconButtonSx,
@@ -56,15 +56,9 @@ function formatDate(value: string) {
 
 function QuoteNumberCell({ row }: { row: Quote }) {
   return (
-    <Link
-      component={RouterLink}
-      to={`/quotes/${encodeURIComponent(row.quoteNumber)}`}
-      variant="body2"
-      underline="hover"
-      sx={{ fontWeight: 400, textAlign: 'left', py: 0.25, ...tableLinkSx }}
-    >
+    <ListDataGridLink to={`/quotes/${encodeURIComponent(row.quoteNumber)}`}>
       {row.quoteNumber}
-    </Link>
+    </ListDataGridLink>
   )
 }
 
@@ -232,15 +226,12 @@ export function QuotesDataGrid({
         minWidth: 180,
         sortable: true,
         renderCell: ({ row }) => (
-          <Link
-            component={RouterLink}
+          <ListDataGridLink
             to={`/insureds/${encodeURIComponent(insuredIdFromName(row.insured))}`}
-            variant="body2"
-            underline="hover"
-            sx={{ fontWeight: 500, textAlign: 'left', py: 0.25, ...tableLinkSx }}
+            fontWeight={500}
           >
             {row.insured}
-          </Link>
+          </ListDataGridLink>
         ),
       },
       {
