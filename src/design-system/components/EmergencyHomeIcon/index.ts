@@ -1,0 +1,1 @@
+export { EmergencyHomeIcon } from './EmergencyHomeIcon'

@@ -1,2 +1,6 @@
 export { AppHeader } from './AppHeader'
 export { AppSidebar } from './AppSidebar'
+export { AppTopNavbar } from './AppTopNavbar'
+export { ActivityPanel } from './ActivityPanel'
+export { FavoritesPanel } from './FavoritesPanel'
+export { SecondaryNavPanel } from './SecondaryNavPanel'

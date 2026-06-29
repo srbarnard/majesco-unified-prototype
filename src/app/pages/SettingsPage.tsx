@@ -1,6 +1,6 @@
-import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { Card } from '@/design-system/components'
 
 export function SettingsPage() {
   return (
@@ -10,14 +10,15 @@ export function SettingsPage() {
           Settings
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Configure application preferences and environment options.
+          Application preferences.
         </Typography>
       </Stack>
-      <Paper sx={{ p: 3 }}>
+
+      <Card title="Appearance" subtitle="Theme configuration">
         <Typography variant="body2" color="text.secondary">
-          Settings content will live here as flows are added to the prototype.
+          Light mode is enabled for this prototype.
         </Typography>
-      </Paper>
+      </Card>
     </Stack>
   )
 }
