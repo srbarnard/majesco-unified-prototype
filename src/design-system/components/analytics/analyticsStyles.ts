@@ -138,6 +138,8 @@ export type AnalyticsComboPoint = {
 export type AnalyticsDonutSegment = {
   name: string
   value: number
+  /** Optional Figma hex — aligns donut with status chip color families. */
+  color?: string
 }
 
 export type AnalyticsStackedPoint = {

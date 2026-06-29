@@ -57,7 +57,7 @@ export function AnalyticsDonutChart({ data, height = 240 }: AnalyticsDonutChartP
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                bgcolor: analyticsChartColors[index % analyticsChartColors.length],
+                bgcolor: segment.color ?? analyticsChartColors[index % analyticsChartColors.length],
                 flexShrink: 0,
               }}
             />
@@ -82,8 +82,8 @@ export function AnalyticsDonutChart({ data, height = 240 }: AnalyticsDonutChartP
               stroke="#fff"
               strokeWidth={2}
             >
-              {data.map((_, index) => (
-                <Cell key={index} fill={analyticsChartColors[index % analyticsChartColors.length]} />
+              {data.map((entry, index) => (
+                <Cell key={entry.name} fill={entry.color ?? analyticsChartColors[index % analyticsChartColors.length]} />
               ))}
             </Pie>
             <Tooltip
