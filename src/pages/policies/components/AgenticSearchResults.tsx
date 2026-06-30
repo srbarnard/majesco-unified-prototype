@@ -3,7 +3,57 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { Button } from '@/design-system/components'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { accentSubtle, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { accentSubtle, accentSubtleHover, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+
+const bodySx = {
+  fontFamily: figmaFontFamilyStack.body,
+  fontWeight: 400,
+} as const
+
+const suggestedActionChipSx = {
+  textTransform: 'none',
+  fontFamily: figmaFontFamilyStack.body,
+  fontWeight: 400,
+  fontSize: '0.75rem',
+  lineHeight: 1.3,
+  borderRadius: '30px',
+  border: 'none',
+  boxShadow: 'none',
+  color: 'primary.main',
+  bgcolor: (theme: Parameters<typeof accentSubtle>[0]) => accentSubtle(theme),
+  px: 1.25,
+  py: 0.5,
+  minHeight: 'auto',
+  '&:hover': {
+    bgcolor: (theme: Parameters<typeof accentSubtle>[0]) => accentSubtleHover(theme),
+    boxShadow: 'none',
+  },
+} as const
+
+function SuggestedActions({
+  actions,
+  label,
+}: {
+  actions: string[]
+  label?: string
+}) {
+  return (
+    <Box>
+      {label && (
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1 }}>
+          {label}
+        </Typography>
+      )}
+      <Stack direction="row" flexWrap="wrap" gap={1}>
+        {actions.map((action) => (
+          <Button key={action} size="small" variant="text" disableRipple sx={suggestedActionChipSx}>
+            {action}
+          </Button>
+        ))}
+      </Stack>
+    </Box>
+  )
+}
 
 type ResultItem = {
   title: string
@@ -135,11 +185,6 @@ const headingSx = {
   fontWeight: 600,
 } as const
 
-const bodySx = {
-  fontFamily: figmaFontFamilyStack.body,
-  fontWeight: 400,
-} as const
-
 type AgenticSearchResultsProps = {
   prompt: string
 }
@@ -196,13 +241,7 @@ export function AgenticSearchResults({ prompt }: AgenticSearchResultsProps) {
         )}
       </Typography>
 
-      <Stack direction="row" flexWrap="wrap" gap={1}>
-        {content.actions.map((action) => (
-          <Button key={action} variant="outlined" size="small" color="primary">
-            {action}
-          </Button>
-        ))}
-      </Stack>
+      <SuggestedActions actions={content.actions} label="Suggested actions" />
     </Stack>
   )
 }
@@ -267,14 +306,7 @@ export function DailySummaryContent() {
         </Typography>
       </Box>
 
-      <Stack direction="row" flexWrap="wrap" gap={1}>
-        <Button variant="outlined" size="small" color="primary">
-          Start renewal quotes
-        </Button>
-        <Button variant="outlined" size="small" color="primary">
-          Review overdue items
-        </Button>
-      </Stack>
+      <SuggestedActions actions={['Start renewal quotes', 'Review overdue items']} />
     </Stack>
   )
 }

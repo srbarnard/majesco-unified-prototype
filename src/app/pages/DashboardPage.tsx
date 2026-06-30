@@ -3,17 +3,22 @@ import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { CopilotIcon } from '@/design-system/components'
 import { getPanelToggleButtonStyles } from '@/design-system/theme/themeSurfaces'
 import { useGlobalSearch } from '@/app/contexts/GlobalSearchContext'
+import type { PriorityTaskCard, RecentActivityItem } from '@/app/data/homeMock'
+import { resolvePriorityTaskRecord } from '@/app/data/resolvePriorityTask'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { AgenticActivityFeed } from '@/app/pages/home/AgenticActivityFeed'
+import { ActivityDetailsPanel } from '@/app/pages/home/ActivityDetailsPanel'
+import { RecentActivityFeed } from '@/app/pages/home/RecentActivityFeed'
 import { PriorityTasksCarousel } from '@/app/pages/home/PriorityTasksCarousel'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
+import { TaskDetailsPanel } from '@/pages/tasks/components/TaskDetailsPanel'
+import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -60,9 +65,57 @@ export function DashboardPage() {
     useGlobalSearch()
   const isDesktop = useIsDesktopLayout()
   const contentPx = `${layoutTokens.contentPaddingX}px`
+  const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
+  const [taskDetailOpen, setTaskDetailOpen] = useState(false)
+  const [selectedActivity, setSelectedActivity] = useState<RecentActivityItem | null>(null)
+  const [activityDetailOpen, setActivityDetailOpen] = useState(false)
+
+  const detailPanelOpen = taskDetailOpen || activityDetailOpen
 
   const didInitCopilot = useRef(false)
   const wasDesktop = useRef(isDesktop)
+
+  const handleCloseTaskDetail = useCallback(() => {
+    setTaskDetailOpen(false)
+    setSelectedTask(null)
+  }, [])
+
+  const handleCloseActivityDetail = useCallback(() => {
+    setActivityDetailOpen(false)
+    setSelectedActivity(null)
+  }, [])
+
+  const handleOpenPriorityTask = useCallback(
+    (card: PriorityTaskCard) => {
+      setSelectedTask(resolvePriorityTaskRecord(card))
+      closeCopilot()
+      handleCloseActivityDetail()
+      setTaskDetailOpen(true)
+    },
+    [closeCopilot, handleCloseActivityDetail],
+  )
+
+  const handleOpenActivity = useCallback(
+    (activity: RecentActivityItem) => {
+      setSelectedActivity(activity)
+      closeCopilot()
+      handleCloseTaskDetail()
+      setActivityDetailOpen(true)
+    },
+    [closeCopilot, handleCloseTaskDetail],
+  )
+
+  const handleCloseRightPanel = useCallback(() => {
+    if (taskDetailOpen) {
+      handleCloseTaskDetail()
+      return
+    }
+    if (activityDetailOpen) {
+      handleCloseActivityDetail()
+      return
+    }
+    closeCopilot()
+  }, [taskDetailOpen, activityDetailOpen, handleCloseTaskDetail, handleCloseActivityDetail, closeCopilot])
 
   useEffect(() => {
     if (didInitCopilot.current) return
@@ -144,19 +197,38 @@ export function DashboardPage() {
           }}
         >
           <Stack spacing={3.5} sx={{ width: '100%' }}>
-            <PriorityTasksCarousel />
-            <AgenticActivityFeed />
+            <PriorityTasksCarousel onTaskOpen={handleOpenPriorityTask} />
+            <RecentActivityFeed
+              activeActivityId={selectedActivity?.id}
+              onActivitySelect={handleOpenActivity}
+            />
           </Stack>
         </Box>
       </Box>
 
-      <ResizableRightPanel open={copilotOpen} onClose={closeCopilot}>
-        <CopilotPanel
-          context="global"
-          globalView={copilotView}
-          agenticPrompt={agenticPrompt}
-          onClose={closeCopilot}
-        />
+      <ResizableRightPanel
+        open={copilotOpen || detailPanelOpen}
+        variant={detailPanelOpen ? 'wide' : 'standard'}
+        onClose={handleCloseRightPanel}
+      >
+        {taskDetailOpen && selectedTask && (
+          <TaskDetailsPanel
+            task={selectedTask}
+            onClose={handleCloseTaskDetail}
+            onMarkComplete={handleCloseTaskDetail}
+          />
+        )}
+        {activityDetailOpen && selectedActivity && !taskDetailOpen && (
+          <ActivityDetailsPanel activity={selectedActivity} onClose={handleCloseActivityDetail} />
+        )}
+        {copilotOpen && !detailPanelOpen && (
+          <CopilotPanel
+            context="global"
+            globalView={copilotView}
+            agenticPrompt={agenticPrompt}
+            onClose={closeCopilot}
+          />
+        )}
       </ResizableRightPanel>
     </Box>
   )

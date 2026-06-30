@@ -4,6 +4,7 @@ import { ClaimsPage } from '@/app/pages/ClaimsPage'
 import { CustomersPage } from '@/app/pages/CustomersPage'
 import { DashboardPage } from '@/app/pages/DashboardPage'
 import { PlaceholderPage } from '@/app/pages/PlaceholderPage'
+import { CopilotStudioPage } from '@/pages/copilot-studio/CopilotStudioPage'
 import { PoliciesListPage } from '@/pages/policies/PoliciesListPage'
 import { SettingsPage } from '@/app/pages/SettingsPage'
 import { PolicyDetails } from '@/pages/policies/PolicyDetails'
@@ -28,7 +29,7 @@ export const router = createBrowserRouter([
       { path: 'insureds/:insuredId', element: <InsuredDetails /> },
       { path: 'producers', element: <PlaceholderPage title="Producers" description="Producer appointments and hierarchies." /> },
       { path: 'sub-producers', element: <PlaceholderPage title="Sub producers" description="Sub-producer relationships and commissions." /> },
-      { path: 'copilot-studio', element: <PlaceholderPage title="Copilot Studio" description="Build and manage Copilot agents and automations." /> },
+      { path: 'copilot-studio', element: <CopilotStudioPage /> },
       { path: 'policies', element: <PoliciesListPage /> },
       { path: 'policies/:policyId', element: <PolicyDetails /> },
       { path: 'claims', element: <ClaimsPage /> },

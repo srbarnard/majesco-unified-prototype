@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { priorityTasksMock, type PriorityTaskCard } from '@/app/data/homeMock'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { accentSubtleHover, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 
 const CARD_WIDTH = 272
 const CARD_GAP = 12
@@ -19,23 +19,44 @@ const priorityColors = {
   Low: '#16A34A',
 } as const
 
-function TaskCard({ task }: { task: PriorityTaskCard }) {
+function TaskCard({ task, onOpen }: { task: PriorityTaskCard; onOpen: (task: PriorityTaskCard) => void }) {
   return (
     <Box
+      component="button"
+      type="button"
       data-task-card
+      onClick={() => onOpen(task)}
       sx={{
         width: CARD_WIDTH,
         flex: `0 0 ${CARD_WIDTH}px`,
         p: 2,
         borderRadius: 2,
         bgcolor: (theme) => surfaceMuted(theme),
-        border: 1,
-        borderColor: 'divider',
+        border: 'none',
+        cursor: 'pointer',
+        textAlign: 'left',
+        display: 'block',
+        transition: 'background-color 0.15s ease',
+        '& [data-task-title]': {
+          transition: 'color 0.15s ease',
+        },
+        '&:hover': {
+          bgcolor: (theme) => accentSubtleHover(theme),
+          '& [data-task-title]': {
+            color: 'primary.main',
+          },
+        },
+        '&:focus-visible': {
+          outline: 2,
+          outlineColor: 'primary.main',
+          outlineOffset: 2,
+        },
       }}
     >
       <Typography
+        data-task-title
         variant="subtitle2"
-        sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, mb: 0.5 }}
+        sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, mb: 0.5, color: 'text.primary' }}
       >
         {task.title}
       </Typography>
@@ -78,7 +99,11 @@ function TaskCard({ task }: { task: PriorityTaskCard }) {
   )
 }
 
-export function PriorityTasksCarousel() {
+type PriorityTasksCarouselProps = {
+  onTaskOpen?: (task: PriorityTaskCard) => void
+}
+
+export function PriorityTasksCarousel({ onTaskOpen }: PriorityTasksCarouselProps) {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const isAdjustingScroll = useRef(false)
 
@@ -120,6 +145,13 @@ export function PriorityTasksCarousel() {
     node.scrollBy({ left: direction === 'left' ? -(CARD_WIDTH + CARD_GAP) : CARD_WIDTH + CARD_GAP, behavior: 'smooth' })
   }
 
+  const handleOpen = useCallback(
+    (task: PriorityTaskCard) => {
+      onTaskOpen?.(task)
+    },
+    [onTaskOpen],
+  )
+
   return (
     <Box>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
@@ -153,7 +185,7 @@ export function PriorityTasksCarousel() {
         }}
       >
         {loopedTasks.map((task) => (
-          <TaskCard key={task.id} task={task} />
+          <TaskCard key={task.id} task={task} onOpen={handleOpen} />
         ))}
       </Box>
     </Box>

@@ -10,23 +10,44 @@ import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { Link } from 'react-router'
 import { useSidebar } from '@/app/contexts/SidebarContext'
 import { surfacePanel } from '@/design-system/theme/themeSurfaces'
+import { insuredIdFromName } from '@/pages/shared/insuredId'
 
-const watchlist = [
-  { label: '01-BP-000009546-0', starred: true },
-  { label: 'Atlantic Ridge Construction, LLC', starred: true },
-  { label: 'Blue Harbor Logistics Inc.', starred: true },
+type FavoriteItem = {
+  label: string
+  to: string
+  starred?: boolean
+  risk?: boolean
+}
+
+function policyPath(policyNumber: string) {
+  return `/policies/${encodeURIComponent(policyNumber)}`
+}
+
+function insuredPath(insuredName: string) {
+  return `/insureds/${encodeURIComponent(insuredIdFromName(insuredName))}`
+}
+
+const watchlist: FavoriteItem[] = [
+  { label: '01-BP-000009546-0', to: policyPath('01-BP-000009546-0'), starred: true },
+  {
+    label: 'Atlantic Ridge Construction, LLC',
+    to: insuredPath('Atlantic Ridge Construction, LLC'),
+    starred: true,
+  },
+  { label: 'Blue Harbor Logistics Inc.', to: insuredPath('Blue Harbor Logistics Inc.'), starred: true },
 ]
 
-const renewals = [
-  { label: '01-CA-000100005-0', starred: true },
-  { label: '01-GL-000045821-0', starred: true },
+const renewals: FavoriteItem[] = [
+  { label: '01-CA-000100005-0', to: policyPath('01-CA-000100005-0'), starred: true },
+  { label: '01-GL-000045821-0', to: policyPath('01-GL-000045821-0'), starred: true },
 ]
 
-const highRisk = [
-  { label: '01-WC-000078234-0', risk: true },
-  { label: 'Red Oak Hospitality Group', risk: true },
+const highRisk: FavoriteItem[] = [
+  { label: '01-WC-000078234-0', to: policyPath('01-WC-000078234-0'), risk: true },
+  { label: 'Red Oak Hospitality Group', to: insuredPath('Red Oak Hospitality Group'), risk: true },
 ]
 
 export function FavoritesPanel() {
@@ -48,9 +69,9 @@ export function FavoritesPanel() {
         </IconButton>
       </Stack>
       <Box sx={{ flex: 1, overflowY: 'auto', py: 1 }}>
-        <FavoriteSection title="Watchlist" items={watchlist} />
-        <FavoriteSection title="Renewals" items={renewals} />
-        <FavoriteSection title="High risk" items={highRisk} showRisk />
+        <FavoriteSection title="Watchlist" items={watchlist} onNavigate={closeSecondaryPanel} />
+        <FavoriteSection title="Renewals" items={renewals} onNavigate={closeSecondaryPanel} />
+        <FavoriteSection title="High risk" items={highRisk} showRisk onNavigate={closeSecondaryPanel} />
       </Box>
     </Box>
   )
@@ -60,10 +81,12 @@ function FavoriteSection({
   title,
   items,
   showRisk = false,
+  onNavigate,
 }: {
   title: string
-  items: { label: string; starred?: boolean; risk?: boolean }[]
+  items: FavoriteItem[]
   showRisk?: boolean
+  onNavigate?: () => void
 }) {
   return (
     <Box sx={{ mb: 1 }}>
@@ -76,7 +99,21 @@ function FavoriteSection({
       </ListItemButton>
       <List dense disablePadding>
         {items.map((item) => (
-          <ListItemButton key={item.label} sx={{ py: 0.75, pl: 2.5 }}>
+          <ListItemButton
+            key={item.label}
+            component={Link}
+            to={item.to}
+            onClick={onNavigate}
+            sx={{
+              py: 0.75,
+              pl: 2.5,
+              color: 'text.primary',
+              textDecoration: 'none',
+              '&:hover': {
+                bgcolor: 'action.hover',
+              },
+            }}
+          >
             <ListItemIcon sx={{ minWidth: 32 }}>
               {showRisk ? (
                 <WarningAmberOutlinedIcon sx={{ fontSize: 18, color: 'warning.main' }} />

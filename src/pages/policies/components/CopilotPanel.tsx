@@ -1,23 +1,13 @@
-import AddIcon from '@mui/icons-material/Add'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import BoltOutlinedIcon from '@mui/icons-material/BoltOutlined'
-import CheckIcon from '@mui/icons-material/Check'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import CloseIcon from '@mui/icons-material/Close'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
-import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import OpenInFullIcon from '@mui/icons-material/OpenInFull'
-import PsychologyOutlinedIcon from '@mui/icons-material/PsychologyOutlined'
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import Box from '@mui/material/Box'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
-import Popover from '@mui/material/Popover'
 import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
-import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useEffect, useState } from 'react'
 import { Button } from '@/design-system/components'
@@ -26,13 +16,12 @@ import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import {
   accentSubtle,
   accentSubtleHover,
-  isDarkMode,
   surfaceMuted,
-  surfaceSubtle,
 } from '@/design-system/theme/themeSurfaces'
 import type { PolicyTab } from '@/pages/policies/components/PolicyTabs'
 import type { GlobalCopilotView } from '@/app/contexts/GlobalSearchContext'
 import { AgenticSearchResults, DailySummaryContent } from '@/pages/policies/components/AgenticSearchResults'
+import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
 import {
   DocumentAttachPanelContent,
   quickActionToAttachTarget,
@@ -78,16 +67,9 @@ type CopilotPanelProps = {
   onClose?: () => void
 }
 
-type CopilotMode = 'fast' | 'thinking'
-
 const headingSx = {
   fontFamily: figmaFontFamilyStack.heading,
   fontWeight: 600,
-} as const
-
-const subtitleSx = {
-  fontFamily: figmaFontFamilyStack.heading,
-  fontWeight: 500,
 } as const
 
 const bodySx = {
@@ -251,268 +233,6 @@ const tasksNextSteps = [
 
 const taskQuickActions = ['Show high priority', 'Show past due']
 const focusedTaskQuickActions = ['Summarize task', 'Reassign', 'Mark complete', 'Ask about ref #']
-
-const modeOptions = [
-  {
-    value: 'fast' as const,
-    label: 'Fast',
-    description: 'Quick answers for simple tasks',
-    icon: BoltOutlinedIcon,
-  },
-  {
-    value: 'thinking' as const,
-    label: 'Thinking',
-    description: 'More reasoning for complex tasks',
-    icon: PsychologyOutlinedIcon,
-  },
-]
-
-function ModePopover({
-  mode,
-  onChange,
-}: {
-  mode: CopilotMode
-  onChange: (mode: CopilotMode) => void
-}) {
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
-  const open = Boolean(anchorEl)
-  const activeOption = modeOptions.find((option) => option.value === mode) ?? modeOptions[0]
-  const ActiveIcon = activeOption.icon
-
-  return (
-    <>
-      <Box
-        component="button"
-        type="button"
-        onClick={(event) => setAnchorEl(event.currentTarget)}
-        sx={{
-          border: 0,
-          cursor: 'pointer',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 0.5,
-          px: 0.75,
-          py: 0.5,
-          borderRadius: 1,
-          bgcolor: 'transparent',
-          color: 'text.primary',
-          fontFamily: figmaFontFamilyStack.heading,
-          fontWeight: 500,
-          fontSize: '0.8125rem',
-          lineHeight: 1.2,
-          '&:hover': {
-            bgcolor: (theme) => surfaceSubtle(theme),
-          },
-        }}
-      >
-        <ActiveIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-        {activeOption.label}
-      </Box>
-
-      <Popover
-        open={open}
-        anchorEl={anchorEl}
-        onClose={() => setAnchorEl(null)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        slotProps={{
-          paper: {
-            sx: (theme) => ({
-              width: 280,
-              borderRadius: `${layoutTokens.cardRadius}px`,
-              border: `1px solid ${theme.palette.divider}`,
-              boxShadow: (theme) =>
-                isDarkMode(theme) ? '0 8px 24px rgba(0, 0, 0, 0.45)' : '0 8px 24px rgba(0, 0, 0, 0.12)',
-              mt: -1,
-              overflow: 'hidden',
-            }),
-          },
-        }}
-      >
-        <Stack divider={<Divider />}>
-          <Stack sx={{ py: 0.5 }}>
-            {modeOptions.map((option) => {
-              const Icon = option.icon
-              const selected = mode === option.value
-              return (
-                <Box
-                  key={option.value}
-                  component="button"
-                  type="button"
-                  onClick={() => {
-                    onChange(option.value)
-                    setAnchorEl(null)
-                  }}
-                  sx={{
-                    border: 0,
-                    width: '100%',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 1.25,
-                    px: 1.5,
-                    py: 1.25,
-                    bgcolor: 'background.paper',
-                    textAlign: 'left',
-                    '&:hover': {
-                      bgcolor: (theme) => surfaceMuted(theme),
-                    },
-                  }}
-                >
-                  <Icon sx={{ fontSize: 20, color: 'text.secondary', mt: 0.125 }} />
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.875rem' }}>
-                      {option.label}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ ...bodySx, display: 'block', mt: 0.25 }}>
-                      {option.description}
-                    </Typography>
-                  </Box>
-                  {selected && <CheckIcon sx={{ fontSize: 18, color: 'success.main', mt: 0.25 }} />}
-                </Box>
-              )
-            })}
-          </Stack>
-
-          <Box
-            component="button"
-            type="button"
-            sx={{
-              border: 0,
-              width: '100%',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 1.5,
-              py: 1.25,
-              bgcolor: 'background.paper',
-              textAlign: 'left',
-              '&:hover': {
-                bgcolor: (theme) => surfaceMuted(theme),
-              },
-            }}
-          >
-            <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.875rem' }}>
-              Model
-            </Typography>
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              <SettingsOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="body2" sx={{ ...subtitleSx, fontSize: '0.8125rem', color: 'text.secondary' }}>
-                Auto
-              </Typography>
-              <ChevronRightIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
-            </Stack>
-          </Box>
-        </Stack>
-      </Popover>
-    </>
-  )
-}
-
-function CopilotComposer({ placeholder }: { placeholder: string }) {
-  const [mode, setMode] = useState<CopilotMode>('fast')
-  const [message, setMessage] = useState('')
-  const canSubmit = message.trim().length > 0
-
-  return (
-    <Box sx={{ px: 2, py: 2 }}>
-      <Box
-        sx={(theme) => ({
-          border: `1px solid ${theme.palette.divider}`,
-          borderRadius: `${layoutTokens.cardRadius}px`,
-          bgcolor: 'background.paper',
-          boxShadow: (theme) => (isDarkMode(theme) ? 'none' : layoutTokens.cardShadow),
-          overflow: 'hidden',
-          '&:focus-within': {
-            borderColor: 'primary.main',
-            outline: `2px solid ${theme.palette.primary.main}`,
-            outlineOffset: 0,
-          },
-        })}
-      >
-        <TextField
-          fullWidth
-          multiline
-          minRows={2}
-          maxRows={5}
-          variant="standard"
-          placeholder={placeholder}
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-          slotProps={{
-            input: {
-              disableUnderline: true,
-              sx: {
-                ...bodySx,
-                fontSize: '0.875rem',
-                px: 1.75,
-                pt: 1.25,
-                pb: 1,
-                '&.Mui-focused': {
-                  outline: 'none',
-                },
-              },
-            },
-          }}
-        />
-
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{
-            px: 1,
-            py: 0.75,
-            bgcolor: 'background.paper',
-            gap: 1,
-          }}
-        >
-          <Stack direction="row" spacing={0.25} alignItems="center">
-            <IconButton size="small" aria-label="Add attachment">
-              <AddIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-            <ModePopover mode={mode} onChange={setMode} />
-          </Stack>
-
-          <Stack direction="row" spacing={0.25} alignItems="center">
-            <IconButton size="small" aria-label="Voice input">
-              <MicNoneOutlinedIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-            <IconButton
-              size="small"
-              aria-label="Send message"
-              disabled={!canSubmit}
-              sx={(theme) => ({
-                width: 34,
-                height: 34,
-                bgcolor: canSubmit ? accentSubtle(theme) : surfaceSubtle(theme),
-                color: canSubmit ? 'primary.main' : 'text.disabled',
-                '&:hover': {
-                  bgcolor: canSubmit ? accentSubtleHover(theme) : surfaceSubtle(theme),
-                },
-                '&.Mui-disabled': {
-                  bgcolor: surfaceSubtle(theme),
-                  color: 'text.disabled',
-                },
-              })}
-            >
-              <KeyboardArrowUpIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-          </Stack>
-        </Stack>
-      </Box>
-
-      <Typography
-        variant="caption"
-        color="text.disabled"
-        sx={{ ...bodySx, mt: 1, display: 'block', textAlign: 'center' }}
-      >
-        Copilot uses AI. Check for mistakes. Terms &amp; conditions.
-      </Typography>
-    </Box>
-  )
-}
 
 export function CopilotPanel({
   activePolicyTab = 'overview',
