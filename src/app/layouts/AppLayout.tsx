@@ -1,5 +1,5 @@
 import Box from '@mui/material/Box'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { GlobalSearchProvider } from '@/app/contexts/GlobalSearchContext'
 import { SidebarProvider } from '@/app/contexts/SidebarContext'
@@ -14,6 +14,10 @@ import { surfaceApp } from '@/design-system/theme/themeSurfaces'
 function AppLayoutContent() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
+
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [location.pathname])
 
   const isFullBleedPage =
     location.pathname === '/' ||
@@ -35,7 +39,7 @@ function AppLayoutContent() {
         bgcolor: (theme) => surfaceApp(theme),
       }}
     >
-      <AppTopNavbar onMobileMenuClick={() => setMobileOpen(true)} />
+      <AppTopNavbar onMobileMenuClick={() => setMobileOpen((open) => !open)} />
 
       <Box
         sx={{
@@ -43,6 +47,7 @@ function AppLayoutContent() {
           flex: 1,
           minHeight: 0,
           overflow: 'hidden',
+          position: 'relative',
         }}
       >
         <AppSidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />

@@ -11,6 +11,7 @@ import {
 type ResizableRightPanelProps = {
   open: boolean
   variant?: RightPanelVariant
+  onClose?: () => void
   children: ReactNode
 }
 
@@ -22,7 +23,7 @@ function PanelContent({ children }: { children: ReactNode }) {
   )
 }
 
-export function ResizableRightPanel({ open, variant = 'standard', children }: ResizableRightPanelProps) {
+export function ResizableRightPanel({ open, variant = 'standard', onClose, children }: ResizableRightPanelProps) {
   const theme = useTheme()
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
   const { width, startResize } = useRightPanelWidth(variant)
@@ -35,12 +36,18 @@ export function ResizableRightPanel({ open, variant = 'standard', children }: Re
         anchor="right"
         open={open}
         variant="temporary"
-        ModalProps={{ keepMounted: true }}
+        onClose={onClose}
+        ModalProps={{
+          keepMounted: true,
+          hideBackdrop: true,
+          disableScrollLock: true,
+        }}
         sx={{
           display: { xs: 'block', lg: 'none' },
           '& .MuiDrawer-paper': {
             width: variant === 'wide' ? 'min(100%, 92vw)' : 'min(100%, 400px)',
             boxSizing: 'border-box',
+            boxShadow: (t) => t.shadows[8],
           },
         }}
       >

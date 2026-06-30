@@ -1,4 +1,5 @@
 import type { SxProps, Theme } from '@mui/material/styles'
+import { layoutTokens } from '@/design-system/tokens/layout'
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 
 export function isDarkMode(theme: Theme) {
@@ -32,6 +33,16 @@ export function accentSubtle(theme: Theme) {
 
 export function accentSubtleHover(theme: Theme) {
   return isDarkMode(theme) ? theme.figmaPalette.blue[800] : theme.figmaPalette.blue[100]
+}
+
+/** Light-blue insight / callout surfaces — no chrome border or shadow. */
+export function accentSurfaceCardSx(theme: Theme) {
+  return {
+    borderRadius: `${layoutTokens.cardRadius}px`,
+    bgcolor: accentSubtle(theme),
+    border: 'none',
+    boxShadow: 'none',
+  }
 }
 
 /** Shared styles for filter/copilot panel toggle buttons in page headers. */

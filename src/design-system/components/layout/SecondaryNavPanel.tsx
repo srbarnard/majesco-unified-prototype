@@ -20,7 +20,7 @@ export function SecondaryNavPanel() {
         borderColor: 'divider',
         bgcolor: (theme) => surfacePanel(theme),
         overflow: 'hidden',
-        display: { xs: 'none', md: 'flex' },
+        display: { xs: 'none', lg: 'flex' },
         flexDirection: 'column',
       }}
     >

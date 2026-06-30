@@ -59,9 +59,9 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
         >
           <IconButton
             onClick={onMobileMenuClick}
-            aria-label="Open navigation"
+            aria-label="Open navigation menu"
             size="small"
-            sx={{ display: { xs: 'inline-flex', md: 'none' }, ml: 0.5 }}
+            sx={{ display: { xs: 'inline-flex', lg: 'none' }, ml: 0.5 }}
           >
             <MenuIcon fontSize="small" />
           </IconButton>
@@ -95,7 +95,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
           sx={{
             flex: 1,
             minWidth: 0,
-            display: { xs: 'none', md: 'flex' },
+            display: { xs: 'none', lg: 'flex' },
             gap: 1,
           }}
         >
@@ -121,13 +121,13 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
           direction="row"
           alignItems="center"
           spacing={0.25}
-          sx={{ flexShrink: 0, ml: { xs: 'auto', md: 0 } }}
+          sx={{ flexShrink: 0, ml: { xs: 'auto', lg: 0 } }}
         >
           <IconButton
             size="small"
             aria-label="Open search"
             onClick={() => setMobileSearchOpen((open) => !open)}
-            sx={{ display: { xs: 'inline-flex', md: 'none' } }}
+            sx={{ display: { xs: 'inline-flex', lg: 'none' } }}
           >
             <SearchIcon fontSize="small" />
           </IconButton>
@@ -152,7 +152,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
         </Stack>
       </Toolbar>
 
-      <Collapse in={mobileSearchOpen} sx={{ display: { xs: 'block', md: 'none' } }}>
+      <Collapse in={mobileSearchOpen} sx={{ display: { xs: 'block', lg: 'none' } }}>
         <Box sx={{ px: 1.5, pb: 1.5, bgcolor: (theme) => surfaceMuted(theme) }}>
           <GlobalSearchField fullWidth autoFocus={mobileSearchOpen} />
         </Box>

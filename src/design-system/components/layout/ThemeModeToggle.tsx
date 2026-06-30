@@ -9,7 +9,11 @@ const options = [
   { value: 'dark' as const, label: 'Dark mode', Icon: DarkModeOutlinedIcon },
 ]
 
-export function ThemeModeToggle() {
+type ThemeModeToggleProps = {
+  fullWidth?: boolean
+}
+
+export function ThemeModeToggle({ fullWidth = false }: ThemeModeToggleProps) {
   const { mode, setMode } = useColorScheme()
   const currentMode = mode === 'dark' ? 'dark' : 'light'
 
@@ -19,11 +23,11 @@ export function ThemeModeToggle() {
         flexShrink: 0,
         borderTop: 1,
         borderColor: 'divider',
-        px: 1,
+        px: fullWidth ? 2 : 1,
         py: 1.25,
         mt: 'auto',
         display: 'flex',
-        justifyContent: 'center',
+        justifyContent: fullWidth ? 'stretch' : 'center',
       }}
     >
       <Box
@@ -35,7 +39,7 @@ export function ThemeModeToggle() {
           gap: 0.375,
           p: 0.375,
           width: '100%',
-          maxWidth: 72,
+          maxWidth: fullWidth ? 'none' : 72,
           borderRadius: '999px',
           bgcolor: surfaceSubtle(theme),
           border: `1px solid ${theme.palette.divider}`,

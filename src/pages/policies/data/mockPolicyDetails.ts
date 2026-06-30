@@ -28,11 +28,18 @@ export const policyDetailsMock = {
   primaryGarage: 'San Diego, CA',
   policyType: 'Commercial Auto - Business Auto',
   useCase: 'Construction fleet operations',
-  documentCount: 100,
+  documentCount: 40,
   documentConfidence: 92,
   documentStorySyncedAt: '4 min ago',
   documentStory:
     'The most recent transaction on this policy was a renewal quote on 05/13/2026. Since the prior transaction, 7 documents were added or updated across renewal, endorsement, claims, and billing.',
+  documentStoryHighlights: [
+    { label: 'Renewal package from Lockton', date: '05/13' },
+    { label: 'A refreshed MVR report for 3 drivers', date: '05/12' },
+    { label: 'COI issued to Walmart DC #4421', date: '05/10' },
+    { label: 'Endorsement AI for West Coast Distribution', date: '05/10' },
+    { label: 'Loss control report with dock safety recommendations', date: '04/28' },
+  ],
   copilotSummary:
     'This policy has **multiple mid-term changes** and a **pending cancellation** triggered by non-payment. Review recent endorsements and the active claim before renewal.',
   copilotInsights: [

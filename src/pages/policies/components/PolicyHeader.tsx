@@ -1,5 +1,6 @@
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import StarBorderIcon from '@mui/icons-material/StarBorder'
@@ -26,6 +27,8 @@ type PolicyHeaderProps = {
   onTabChange: (tab: PolicyTab) => void
   activeRightPanel: RightPanel | null
   onToggleRightPanel: (panel: RightPanel) => void
+  documentsFilterOpen?: boolean
+  onToggleDocumentsFilter?: () => void
   starred?: boolean
   onToggleStar?: () => void
   emergency?: boolean
@@ -129,12 +132,15 @@ export function PolicyHeader({
   onTabChange,
   activeRightPanel,
   onToggleRightPanel,
+  documentsFilterOpen = false,
+  onToggleDocumentsFilter,
   starred = false,
   onToggleStar,
   emergency = false,
   onToggleEmergency,
 }: PolicyHeaderProps) {
   const contentPx = `${layoutTokens.contentPaddingX}px`
+  const isDocumentsTab = activeTab === 'documents'
 
   return (
     <Box sx={{ bgcolor: 'background.paper', width: '100%' }}>
@@ -197,6 +203,15 @@ export function PolicyHeader({
             <PolicyTabs value={activeTab} onChange={onTabChange} />
           </Box>
           <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexShrink: 0 }}>
+            {isDocumentsTab && (
+              <PanelToggleButton
+                label="Filter"
+                icon={<FilterListOutlinedIcon sx={{ fontSize: 18 }} />}
+                active={documentsFilterOpen}
+                onClick={() => onToggleDocumentsFilter?.()}
+                hideLabelOnMobile
+              />
+            )}
             <PanelToggleButton
               label="Parties"
               icon={<GroupsOutlinedIcon sx={{ fontSize: 18 }} />}

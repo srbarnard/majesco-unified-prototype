@@ -1,4 +1,5 @@
 import AddIcon from '@mui/icons-material/Add'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import BoltOutlinedIcon from '@mui/icons-material/BoltOutlined'
 import CheckIcon from '@mui/icons-material/Check'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -32,6 +33,12 @@ import {
 import type { PolicyTab } from '@/pages/policies/components/PolicyTabs'
 import type { GlobalCopilotView } from '@/app/contexts/GlobalSearchContext'
 import { AgenticSearchResults, DailySummaryContent } from '@/pages/policies/components/AgenticSearchResults'
+import {
+  DocumentAttachPanelContent,
+  quickActionToAttachTarget,
+  targetLabels,
+  type DocumentAttachMode,
+} from '@/pages/policies/components/DocumentAttachComposer'
 import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
 import { policyDetailsMock } from '@/pages/policies/data/mockPolicyDetails'
 import type { PolicyListRecord } from '@/pages/policies/data/mockPoliciesList'
@@ -54,6 +61,20 @@ type CopilotPanelProps = {
   focusedInsured?: InsuredDetailsRecord | null
   focusedPolicyList?: PolicyListRecord | null
   focusedTask?: TaskRecord | null
+  documentsWorkspaceSummary?: string
+  documentsWorkspaceInsights?: string[]
+  documentsImpactSummary?: string
+  documentsImpactInsights?: string[]
+  documentsCopilotMode?: 'workspace' | 'impact'
+  documentsImpactTitle?: string
+  documentPreviewMode?: boolean
+  documentExtractedText?: string
+  documentPreviewInsights?: string[]
+  attachMode?: DocumentAttachMode | null
+  attachContextLabel?: string
+  onCloseAttach?: () => void
+  onAttachSave?: (attachMode: DocumentAttachMode) => void
+  onQuickAction?: (action: string) => void
   onClose?: () => void
 }
 
@@ -504,9 +525,24 @@ export function CopilotPanel({
   focusedInsured,
   focusedPolicyList,
   focusedTask,
+  documentsWorkspaceSummary,
+  documentsWorkspaceInsights,
+  documentsImpactSummary,
+  documentsImpactInsights,
+  documentsCopilotMode = 'workspace',
+  documentsImpactTitle = 'Policy impact',
+  documentPreviewMode = false,
+  documentExtractedText,
+  documentPreviewInsights,
+  attachMode = null,
+  attachContextLabel,
+  onCloseAttach,
+  onAttachSave,
+  onQuickAction,
   onClose,
 }: CopilotPanelProps) {
   const [copilotTab, setCopilotTab] = useState<'chat' | 'history'>('chat')
+  const [internalAttachMode, setInternalAttachMode] = useState<DocumentAttachMode | null>(null)
   const isDocumentsTab = activePolicyTab === 'documents'
   const isQuotesContext = context === 'quotes'
   const isQuoteDetailContext = context === 'quote-detail'
@@ -518,12 +554,54 @@ export function CopilotPanel({
   const isDailySummaryView = isGlobalContext && globalView === 'daily-summary'
 
   useEffect(() => {
+    if (attachMode) return
     if (focusedDocument || focusedQuote || focusedQuoteDetail || focusedInsured || focusedPolicyList || focusedTask) {
       setCopilotTab('chat')
     }
-  }, [focusedDocument, focusedQuote, focusedQuoteDetail, focusedInsured, focusedPolicyList, focusedTask])
+  }, [attachMode, focusedDocument, focusedQuote, focusedQuoteDetail, focusedInsured, focusedPolicyList, focusedTask])
 
-  const quickActions = focusedTask
+  const activeAttachMode = attachMode ?? internalAttachMode
+  const isAttachView = Boolean(activeAttachMode)
+
+  const handleQuickActionClick = (action: string) => {
+    const attachTarget = quickActionToAttachTarget(action)
+    const documents = activeAttachMode?.documents ?? (focusedDocument ? [focusedDocument] : [])
+
+    if (attachTarget && documents.length > 0) {
+      if (attachMode) {
+        onQuickAction?.(action)
+        return
+      }
+      setInternalAttachMode({ target: attachTarget, documents })
+      return
+    }
+    onQuickAction?.(action)
+  }
+
+  const handleCloseAttach = () => {
+    if (attachMode) {
+      onCloseAttach?.()
+      return
+    }
+    setInternalAttachMode(null)
+  }
+
+  const handleAttachSave = (mode: DocumentAttachMode) => {
+    onAttachSave?.(mode)
+    handleCloseAttach()
+  }
+
+  const documentPreviewQuickActions = [
+    'Summarize',
+    'Draft Email',
+    'Create Note',
+    'Explain to Underwriters',
+    'Copy key terms',
+  ]
+
+  const quickActions = documentPreviewMode && focusedDocument
+    ? documentPreviewQuickActions
+    : focusedTask
     ? focusedTaskQuickActions
     : focusedPolicyList
       ? policyListQuickActions
@@ -547,9 +625,15 @@ export function CopilotPanel({
                         ? ['Renewals due', 'Billing exceptions', 'Portfolio summary']
                         : ['See endorsements', 'Review documents']
 
+  const isDocumentsImpact = isDocumentsTab && !focusedDocument && documentsCopilotMode === 'impact'
+
   const summaryTitle = focusedDocument
     ? 'Document summary'
-    : focusedTask
+    : isDocumentsImpact
+      ? documentsImpactTitle
+      : isDocumentsTab
+        ? 'Document summary'
+        : focusedTask
       ? 'Task summary'
       : focusedPolicyList
         ? 'Policy summary'
@@ -573,7 +657,11 @@ export function CopilotPanel({
 
   const summaryText = focusedDocument
     ? buildDocumentSummary(focusedDocument)
-    : focusedTask
+    : isDocumentsImpact && documentsImpactSummary
+      ? documentsImpactSummary
+      : isDocumentsTab && documentsWorkspaceSummary
+        ? documentsWorkspaceSummary
+        : focusedTask
       ? buildTaskSummary(focusedTask)
       : focusedPolicyList
         ? buildPolicyListSummary(focusedPolicyList)
@@ -595,9 +683,15 @@ export function CopilotPanel({
                         ? policiesListWorkspaceSummary
                         : policyDetailsMock.copilotSummary
 
-  const insights = focusedDocument
+  const insights = documentPreviewMode && documentPreviewInsights
+    ? documentPreviewInsights
+    : focusedDocument
     ? documentInsights(focusedDocument)
-    : focusedTask
+    : isDocumentsImpact && documentsImpactInsights
+      ? documentsImpactInsights
+      : isDocumentsTab && documentsWorkspaceInsights
+        ? documentsWorkspaceInsights
+        : focusedTask
       ? taskInsights(focusedTask)
       : focusedPolicyList
         ? policyListInsights(focusedPolicyList)
@@ -647,6 +741,10 @@ export function CopilotPanel({
                   ? 'Ask about your quotes pipeline…'
                   : isInsuredContext
                     ? 'Ask about this insured account…'
+                    : isDocumentsTab
+                      ? documentPreviewMode
+                        ? 'Ask about this document…'
+                        : 'Ask about these documents…'
                     : isQuoteDetailContext
                     ? 'Ask about this quote…'
                       : isPoliciesListContext
@@ -655,6 +753,78 @@ export function CopilotPanel({
 
   return (
     <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', overflow: 'hidden' }}>
+      {isAttachView && activeAttachMode ? (
+        <>
+          <Stack
+            direction="row"
+            alignItems="flex-start"
+            justifyContent="space-between"
+            spacing={1}
+            sx={{
+              px: 2,
+              pt: layoutTokens.policyHeaderTopPadding,
+              pb: 1.5,
+              bgcolor: (theme) => surfaceMuted(theme),
+              borderBottom: 1,
+              borderColor: 'divider',
+              flexShrink: 0,
+            }}
+          >
+            <Stack direction="row" spacing={0.5} alignItems="flex-start" sx={{ minWidth: 0, flex: 1 }}>
+              <IconButton
+                size="small"
+                onClick={handleCloseAttach}
+                aria-label="Back to Copilot"
+                sx={{ mt: -0.25, flexShrink: 0 }}
+              >
+                <ArrowBackIcon fontSize="small" />
+              </IconButton>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontFamily: figmaFontFamilyStack.body,
+                    fontWeight: 400,
+                    fontSize: '0.9375rem',
+                    lineHeight: 1.35,
+                    mb: 0.5,
+                  }}
+                >
+                  {targetLabels[activeAttachMode.target]}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={bodySx}>
+                  {activeAttachMode.documents.length} document{activeAttachMode.documents.length === 1 ? '' : 's'} attached
+                </Typography>
+              </Box>
+            </Stack>
+            {onClose && (
+              <IconButton size="small" onClick={onClose} aria-label="Close panel" sx={{ mt: -0.25 }}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            )}
+          </Stack>
+
+          <Box
+            sx={{
+              px: 2,
+              py: 2,
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            <DocumentAttachPanelContent
+              attachMode={activeAttachMode}
+              contextLabel={attachContextLabel}
+              onCancel={handleCloseAttach}
+              onSave={handleAttachSave}
+            />
+          </Box>
+        </>
+      ) : (
+        <>
       <Box
         sx={{
           px: 2,
@@ -710,7 +880,7 @@ export function CopilotPanel({
         </Tabs>
       </Box>
 
-      <Box sx={{ px: 2, py: 2, flexGrow: 1, overflowY: 'auto' }}>
+      <Box sx={{ px: 2, py: 2, flexGrow: 1, overflowY: 'auto', minHeight: 0 }}>
         {copilotTab === 'history' ? (
           <Stack spacing={1.5} alignItems="center" justifyContent="center" sx={{ py: 6, textAlign: 'center' }}>
             <Typography variant="subtitle2" sx={headingSx}>
@@ -772,6 +942,32 @@ export function CopilotPanel({
             <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2 }}>
               {renderSummaryText(summaryText)}
             </Typography>
+            {documentPreviewMode && documentExtractedText && (
+              <>
+                <Typography variant="subtitle2" sx={{ ...headingSx, mb: 1 }}>
+                  Extracted text
+                </Typography>
+                <Box
+                  sx={{
+                    mb: 2,
+                    px: 1.5,
+                    py: 1.25,
+                    borderRadius: `${layoutTokens.cardRadius}px`,
+                    bgcolor: (theme) => surfaceMuted(theme),
+                    maxHeight: 140,
+                    overflowY: 'auto',
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ ...bodySx, lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.8125rem' }}
+                  >
+                    {documentExtractedText}
+                  </Typography>
+                </Box>
+              </>
+            )}
             <Typography variant="subtitle2" sx={{ ...headingSx, mb: 1 }}>
               {isTasksContext && !focusedTask ? 'At a glance' : 'Key insights'}
             </Typography>
@@ -805,7 +1001,14 @@ export function CopilotPanel({
             </Typography>
             <Stack direction="row" flexWrap="wrap" gap={1}>
               {quickActions.map((action) => (
-                <Button key={action} size="small" variant="text" disableRipple sx={quickActionChipSx}>
+                <Button
+                  key={action}
+                  size="small"
+                  variant="text"
+                  disableRipple
+                  sx={quickActionChipSx}
+                  onClick={() => handleQuickActionClick(action)}
+                >
                   {action}
                 </Button>
               ))}
@@ -814,7 +1017,9 @@ export function CopilotPanel({
         )}
       </Box>
 
-      <CopilotComposer placeholder={composerPlaceholder} />
+      {!isAttachView && <CopilotComposer placeholder={composerPlaceholder} />}
+        </>
+      )}
     </Box>
   )
 }

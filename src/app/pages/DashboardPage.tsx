@@ -13,6 +13,7 @@ import { AgenticActivityFeed } from '@/app/pages/home/AgenticActivityFeed'
 import { PriorityTasksCarousel } from '@/app/pages/home/PriorityTasksCarousel'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
+import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -57,16 +58,27 @@ function PanelToggleButton({
 export function DashboardPage() {
   const { copilotOpen, copilotView, agenticPrompt, toggleCopilot, closeCopilot, openHomeCopilotDefault } =
     useGlobalSearch()
+  const isDesktop = useIsDesktopLayout()
   const contentPx = `${layoutTokens.contentPaddingX}px`
 
   const didInitCopilot = useRef(false)
+  const wasDesktop = useRef(isDesktop)
 
   useEffect(() => {
     if (didInitCopilot.current) return
     didInitCopilot.current = true
     if (agenticPrompt || copilotView === 'agentic-search') return
-    openHomeCopilotDefault()
-  }, [agenticPrompt, copilotView, openHomeCopilotDefault])
+    if (isDesktop) {
+      openHomeCopilotDefault()
+    }
+  }, [agenticPrompt, copilotView, openHomeCopilotDefault, isDesktop])
+
+  useEffect(() => {
+    if (wasDesktop.current && !isDesktop && copilotOpen) {
+      closeCopilot()
+    }
+    wasDesktop.current = isDesktop
+  }, [isDesktop, copilotOpen, closeCopilot])
 
   return (
     <Box
@@ -138,7 +150,7 @@ export function DashboardPage() {
         </Box>
       </Box>
 
-      <ResizableRightPanel open={copilotOpen}>
+      <ResizableRightPanel open={copilotOpen} onClose={closeCopilot}>
         <CopilotPanel
           context="global"
           globalView={copilotView}

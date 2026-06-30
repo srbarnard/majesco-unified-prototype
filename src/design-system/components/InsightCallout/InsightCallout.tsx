@@ -7,7 +7,7 @@ import Typography from '@mui/material/Typography'
 import type { Theme } from '@mui/material/styles'
 import type { ReactNode } from 'react'
 import { CopilotIcon } from '@/design-system/components/CopilotIcon'
-import { accentSubtle, isDarkMode } from '@/design-system/theme/themeSurfaces'
+import { accentSubtle, accentSurfaceCardSx, isDarkMode } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 
@@ -92,12 +92,17 @@ export function InsightCallout({ variant = 'copilot', title, children }: Insight
     <Box
       sx={(theme) => {
         const styles = getVariantStyles(theme, variant)
+        const isCopilot = variant === 'copilot'
         return {
-          borderRadius: `${layoutTokens.cardRadius}px`,
-          bgcolor: styles.bgcolor,
-          border: 1,
-          borderColor: styles.borderColor,
-          boxShadow: isDarkMode(theme) ? 'none' : layoutTokens.cardShadow,
+          ...(isCopilot
+            ? accentSurfaceCardSx(theme)
+            : {
+                borderRadius: `${layoutTokens.cardRadius}px`,
+                bgcolor: styles.bgcolor,
+                border: 1,
+                borderColor: styles.borderColor,
+                boxShadow: isDarkMode(theme) ? 'none' : layoutTokens.cardShadow,
+              }),
           px: 2,
           py: 1.5,
         }

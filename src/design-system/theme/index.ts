@@ -8,6 +8,7 @@ export {
   accentLinkHover,
   accentSubtle,
   accentSubtleHover,
+  accentSurfaceCardSx,
   chartAxisFill,
   chartGridStroke,
   dataGridPinnedBodyCellBackground,

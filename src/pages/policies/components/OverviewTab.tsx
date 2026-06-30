@@ -1,4 +1,3 @@
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -13,17 +12,11 @@ import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid2'
 import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableHead from '@mui/material/TableHead'
-import TableRow from '@mui/material/TableRow'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import type { ReactNode } from 'react'
 import { useMemo, useState } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
-import { Chip, tableInteractionSx } from '@/design-system/components'
 import type { AppTheme } from '@/design-system/theme'
 import { accentSubtle, accentSubtleHover, isDarkMode, surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -35,6 +28,7 @@ import type {
   OverviewTimeSeriesPoint,
   OverviewTransaction,
 } from '@/pages/policies/data/mockOverview'
+import { RecentTransactionsDataGrid } from '@/pages/policies/components/RecentTransactionsDataGrid'
 
 type OverviewTabProps = {
   stats: OverviewStat[]
@@ -76,13 +70,7 @@ function greySurfaceSx(theme: Theme) {
   }
 }
 
-const tableHeadCellSx = {
-  ...subtitleSx,
-  fontSize: '0.75rem',
-  py: 1.5,
-  border: 0,
-  bgcolor: (theme: Theme) => surfaceMuted(theme),
-} as const
+const TRANSACTIONS_CARD_HEIGHT = { xs: 360, md: 400 }
 
 function DashboardCard({
   title,
@@ -437,93 +425,37 @@ function TransactionsOverTimeChart({ data }: { data: OverviewTimeSeriesPoint[] }
   )
 }
 
-function StatusChip({ status, tone }: { status: string; tone: OverviewTransaction['statusTone'] }) {
-  const colorMap = {
-    success: 'success',
-    warning: 'warning',
-    error: 'error',
-    info: 'info',
-    default: 'default',
-  } as const
-
-  return <Chip label={status} size="small" color={colorMap[tone]} variant="filled" />
-}
-
 function TransactionsCard({ transactions }: { transactions: OverviewTransaction[] }) {
   return (
-    <DashboardCard
-      title="Recent transactions"
-      action={
-        <Link component="button" variant="body2" underline="hover" sx={{ ...subtitleSx, fontSize: '0.8125rem' }}>
-          View all
-        </Link>
-      }
-      noPadding
-      hideHeaderDivider
-      headerSx={{ py: 1.75, minHeight: 56 }}
-      contentSx={{ minHeight: { xs: 300, lg: 380 }, pt: 1.25, pb: 2.5 }}
+    <Box
+      sx={{
+        height: TRANSACTIONS_CARD_HEIGHT,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
     >
-      <Box sx={{ overflowX: 'auto', height: '100%' }}>
-        <Table size="small" sx={{ minWidth: 520, ...tableInteractionSx }}>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ ...tableHeadCellSx, pl: 2 }}>Type</TableCell>
-              <TableCell sx={tableHeadCellSx}>Description</TableCell>
-              <TableCell sx={tableHeadCellSx}>Status</TableCell>
-              <TableCell sx={tableHeadCellSx}>Premium</TableCell>
-              <TableCell sx={{ ...tableHeadCellSx, pr: 2 }}>Date</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {transactions.map((row) => (
-              <TableRow
-                key={row.id}
-                sx={{ '&:last-child td': { borderBottom: 0 } }}
-              >
-                <TableCell sx={{ ...bodySx, py: 1.625, pl: 2, fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
-                  {row.type}
-                  {row.revision && (
-                    <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5, ...bodySx }}>
-                      · {row.revision}
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell sx={{ ...bodySx, py: 1.625, fontSize: '0.8125rem', fontWeight: 500 }}>{row.description}</TableCell>
-                <TableCell sx={{ py: 1.625 }}>
-                  <StatusChip status={row.status} tone={row.statusTone} />
-                </TableCell>
-                <TableCell sx={{ ...bodySx, py: 1.625, fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
-                  {row.premiumChange ? (
-                    <Stack direction="row" spacing={0.25} alignItems="center">
-                      {row.premiumDirection === 'up' ? (
-                        <ArrowUpwardIcon sx={{ fontSize: 14, color: 'success.main' }} />
-                      ) : (
-                        <ArrowDownwardIcon sx={{ fontSize: 14, color: 'error.main' }} />
-                      )}
-                      <Typography
-                        variant="caption"
-                        fontWeight={600}
-                        color={row.premiumDirection === 'up' ? 'success.main' : 'error.main'}
-                        sx={bodySx}
-                      >
-                        {row.premiumChange}
-                      </Typography>
-                    </Stack>
-                  ) : (
-                    <Typography variant="caption" color="text.disabled" sx={bodySx}>
-                      —
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell sx={{ ...bodySx, py: 1.625, pr: 2, fontSize: '0.8125rem', color: 'text.secondary', whiteSpace: 'nowrap' }}>
-                  {row.effectiveDate}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Box>
-    </DashboardCard>
+      <DashboardCard
+        title="Recent transactions"
+        action={
+          <Link component="button" variant="body2" underline="hover" sx={{ ...subtitleSx, fontSize: '0.8125rem' }}>
+            View all
+          </Link>
+        }
+        noPadding
+        hideHeaderDivider
+        headerSx={{ py: 1.75, minHeight: 56, flexShrink: 0 }}
+        contentSx={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          p: 0,
+        }}
+      >
+        <RecentTransactionsDataGrid rows={transactions} />
+      </DashboardCard>
+    </Box>
   )
 }
 
@@ -639,7 +571,7 @@ export function OverviewTab({
           <Grid size={{ xs: 12, lg: 4 }} sx={{ display: 'flex' }}>
             <QuickActionsPanel actions={quickActions} />
           </Grid>
-          <Grid size={{ xs: 12 }}>
+          <Grid size={{ xs: 12 }} sx={{ mb: GUTTER }}>
             <TransactionsCard transactions={transactions} />
           </Grid>
         </Grid>

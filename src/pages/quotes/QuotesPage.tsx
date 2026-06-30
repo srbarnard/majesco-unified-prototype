@@ -102,6 +102,14 @@ export function QuotesPage() {
     }
   }, [])
 
+  const handleCloseMobileRightPanel = useCallback(() => {
+    if (filterOpen) {
+      handleCloseFilter()
+      return
+    }
+    handleCloseCopilot()
+  }, [filterOpen, handleCloseFilter, handleCloseCopilot])
+
   const isAllQuotesTab = activeTab === 'all'
   const contentPx = `${layoutTokens.contentPaddingX}px`
 
@@ -204,7 +212,7 @@ export function QuotesPage() {
         </Box>
       </Box>
 
-      <ResizableRightPanel open={filterOpen || copilotOpen}>
+      <ResizableRightPanel open={filterOpen || copilotOpen} onClose={handleCloseMobileRightPanel}>
         {filterOpen && (
           <QuotesFilterPanel
             appliedFilters={appliedFilters}

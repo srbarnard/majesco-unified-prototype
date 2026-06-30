@@ -6,6 +6,12 @@ import { Card } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
+import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
+import {
+  resolveOverviewCopilotPanel,
+  useCloseCopilotWhenMobile,
+  useDesktopCopilotInitialOpen,
+} from '@/pages/policies/hooks/useResponsiveCopilotPanel'
 import {
   InsuredHeader,
   type InsuredRightPanel,
@@ -22,9 +28,13 @@ import {
 export function InsuredDetails() {
   const { insuredId } = useParams<{ insuredId: string }>()
   const insured = resolveInsuredContext(insuredId)
+  const isDesktop = useIsDesktopLayout()
   const [activeTab, setActiveTab] = useState<InsuredTab>('overview')
   const [starred, setStarred] = useState(false)
-  const [activeRightPanel, setActiveRightPanel] = useState<InsuredRightPanel | null>('copilot')
+  const [activeRightPanel, setActiveRightPanel] = useState<InsuredRightPanel | null>(null)
+
+  useDesktopCopilotInitialOpen(isDesktop, activeTab === 'overview', 'copilot', setActiveRightPanel)
+  useCloseCopilotWhenMobile(isDesktop, activeRightPanel, 'copilot', setActiveRightPanel)
 
   const handleToggleRightPanel = useCallback((panel: InsuredRightPanel) => {
     setActiveRightPanel((current) => (current === panel ? null : panel))
@@ -37,9 +47,9 @@ export function InsuredDetails() {
   const handleTabChange = useCallback((tab: InsuredTab) => {
     setActiveTab(tab)
     if (tab === 'overview') {
-      setActiveRightPanel((current) => (current === 'contacts' ? current : 'copilot'))
+      setActiveRightPanel((current) => resolveOverviewCopilotPanel(isDesktop, current, 'copilot', 'contacts'))
     }
-  }, [])
+  }, [isDesktop])
 
   return (
     <Box
@@ -125,7 +135,7 @@ export function InsuredDetails() {
         </Box>
       </Box>
 
-      <ResizableRightPanel open={activeRightPanel !== null}>
+      <ResizableRightPanel open={activeRightPanel !== null} onClose={handleCloseRightPanel}>
         {activeRightPanel === 'contacts' && (
           <InsuredContactsPanel contacts={insured.contacts} onClose={handleCloseRightPanel} />
         )}

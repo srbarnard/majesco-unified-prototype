@@ -5,16 +5,23 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import Box from '@mui/material/Box'
 import Divider from '@mui/material/Divider'
+import Menu from '@mui/material/Menu'
+import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { useState } from 'react'
 import { Button, SearchField } from '@/design-system/components'
+import { documentAttachMenuItems, type DocumentAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
 
 type DocumentsActionBarProps = {
   searchQuery: string
   onSearchChange: (query: string) => void
   selectedCount: number
   filterCount?: number
+  visibleCount?: number
+  totalCount?: number
   onRemoveSelected?: () => void
+  onAttachTo?: (target: DocumentAttachTarget) => void
 }
 
 export function DocumentsActionBar({
@@ -22,9 +29,18 @@ export function DocumentsActionBar({
   onSearchChange,
   selectedCount,
   filterCount = 0,
+  visibleCount,
+  totalCount,
   onRemoveSelected,
+  onAttachTo,
 }: DocumentsActionBarProps) {
   const disableBulkActions = selectedCount === 0
+  const [attachMenuAnchor, setAttachMenuAnchor] = useState<null | HTMLElement>(null)
+
+  const handleAttachSelect = (target: DocumentAttachTarget) => {
+    setAttachMenuAnchor(null)
+    onAttachTo?.(target)
+  }
 
   return (
     <Box>
@@ -48,10 +64,23 @@ export function DocumentsActionBar({
             color="inherit"
             startIcon={<AttachFileOutlinedIcon />}
             endIcon={<KeyboardArrowDownIcon />}
-            sx={{ color: 'text.primary', textTransform: 'none' }}
+            disabled={disableBulkActions}
+            onClick={(event) => setAttachMenuAnchor(event.currentTarget)}
+            sx={{ color: disableBulkActions ? 'text.disabled' : 'text.primary', textTransform: 'none' }}
           >
             Attach To
           </Button>
+          <Menu
+            anchorEl={attachMenuAnchor}
+            open={Boolean(attachMenuAnchor)}
+            onClose={() => setAttachMenuAnchor(null)}
+          >
+            {documentAttachMenuItems.map((item) => (
+              <MenuItem key={item.target} onClick={() => handleAttachSelect(item.target)}>
+                {item.label}
+              </MenuItem>
+            ))}
+          </Menu>
           <Divider orientation="vertical" flexItem sx={{ mx: 0.5, display: { xs: 'none', sm: 'block' } }} />
           <Button
             size="small"
@@ -83,12 +112,13 @@ export function DocumentsActionBar({
           }}
         />
       </Stack>
-      {(selectedCount > 0 || filterCount > 0) && (
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-          {filterCount > 0 ? `Filter ${filterCount} filters` : ''}
-          {selectedCount > 0 ? `${filterCount > 0 ? ' · ' : ''}${selectedCount} selected` : ''}
-        </Typography>
-      )}
+      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+        {filterCount > 0 ? `${filterCount} filter${filterCount === 1 ? '' : 's'}` : '0 filters'}
+        {typeof visibleCount === 'number' && typeof totalCount === 'number'
+          ? ` · ${visibleCount} of ${totalCount} document${totalCount === 1 ? '' : 's'}`
+          : ''}
+        {selectedCount > 0 ? ` · ${selectedCount} selected` : ''}
+      </Typography>
     </Box>
   )
 }

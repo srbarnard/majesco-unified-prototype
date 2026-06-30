@@ -143,6 +143,18 @@ export function TasksPage() {
     }
   }, [])
 
+  const handleCloseMobileRightPanel = useCallback(() => {
+    if (taskDetailOpen) {
+      handleCloseTaskDetail()
+      return
+    }
+    if (filterOpen) {
+      handleCloseFilter()
+      return
+    }
+    handleCloseCopilot()
+  }, [taskDetailOpen, filterOpen, handleCloseTaskDetail, handleCloseFilter, handleCloseCopilot])
+
   const isAllTasksTab = activeTab === 'all'
   const isTeamTab = activeTab === 'team'
   const contentPx = `${layoutTokens.contentPaddingX}px`
@@ -253,7 +265,11 @@ export function TasksPage() {
         </Box>
       </Box>
 
-      <ResizableRightPanel open={filterOpen || copilotOpen || taskDetailOpen} variant={taskDetailOpen ? 'wide' : 'standard'}>
+      <ResizableRightPanel
+        open={filterOpen || copilotOpen || taskDetailOpen}
+        variant={taskDetailOpen ? 'wide' : 'standard'}
+        onClose={handleCloseMobileRightPanel}
+      >
         {filterOpen && (
           <TasksFilterPanel
             appliedFilters={appliedFilters}

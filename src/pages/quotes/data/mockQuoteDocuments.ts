@@ -113,6 +113,14 @@ export const quoteDocumentStoryMock =
 
 export const quoteDocumentStorySyncedAtMock = '12 min ago'
 
+export const quoteDocumentStoryHighlightsMock = [
+  { label: 'Rated quote proposal v3 generated', date: '06/26' },
+  { label: 'Fleet schedule updated — 12 units on file', date: '06/18' },
+  { label: 'Underwriting notes flag VIN exception', date: '06/24' },
+  { label: 'Five-year loss runs retrieved', date: '06/15' },
+  { label: 'Producer presentation package exported', date: '06/26' },
+]
+
 export function getQuoteDocuments(_quoteNumber: string) {
   return quoteDocumentsMock
 }
@@ -122,11 +130,13 @@ export function getQuoteDocumentStory(quoteNumber: string) {
     return {
       story: quoteDocumentStoryMock,
       syncedAt: quoteDocumentStorySyncedAtMock,
+      highlights: quoteDocumentStoryHighlightsMock,
     }
   }
 
   return {
     story: `Documents for quote **${quoteNumber}** include applications, rating inputs, and underwriting correspondence. Select a document to summarize with Copilot.`,
     syncedAt: 'Recently',
+    highlights: [] as { label: string; date: string }[],
   }
 }

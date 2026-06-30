@@ -114,6 +114,14 @@ export function PoliciesListPage() {
     }
   }, [])
 
+  const handleCloseMobileRightPanel = useCallback(() => {
+    if (filterOpen) {
+      handleCloseFilter()
+      return
+    }
+    handleCloseCopilot()
+  }, [filterOpen, handleCloseFilter, handleCloseCopilot])
+
   const isAllPoliciesTab = activeTab === 'all'
   const contentPx = `${layoutTokens.contentPaddingX}px`
 
@@ -216,7 +224,7 @@ export function PoliciesListPage() {
         </Box>
       </Box>
 
-      <ResizableRightPanel open={filterOpen || copilotOpen}>
+      <ResizableRightPanel open={filterOpen || copilotOpen} onClose={handleCloseMobileRightPanel}>
         {filterOpen && (
           <FilterPanel
             appliedFilters={appliedFilters}
