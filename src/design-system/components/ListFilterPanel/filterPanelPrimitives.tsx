@@ -16,7 +16,7 @@ import { Button } from '@/design-system/components/Button'
 import type { PresetOption } from '@/design-system/filters/listFilterTypes'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack, figmaFontWeights } from '@/design-system/tokens/figma-typography'
-import { accentSubtle, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { accentSubtle } from '@/design-system/theme/themeSurfaces'
 import { borderRadius } from '@/design-system/tokens/shape'
 
 export const filterHeadingSx = {
@@ -291,13 +291,13 @@ export function FilterPanelShell({ onClose, onClearAll, onApply, children }: Fil
           px: 2,
           pt: layoutTokens.policyHeaderTopPadding,
           pb: 1.5,
-          bgcolor: (theme) => surfaceMuted(theme),
+          bgcolor: 'background.paper',
           borderBottom: 1,
           borderColor: 'divider',
           flexShrink: 0,
         }}
       >
-        <Typography variant="subtitle1" sx={{ ...filterHeadingSx, fontSize: '0.9375rem' }}>
+        <Typography variant="h5" component="h2">
           Filter
         </Typography>
         {onClose && (
@@ -317,9 +317,7 @@ export function FilterPanelShell({ onClose, onClearAll, onApply, children }: Fil
         sx={{
           px: 2,
           py: 2,
-          borderTop: 1,
-          borderColor: 'divider',
-          bgcolor: (theme) => surfaceMuted(theme),
+          bgcolor: 'background.paper',
           flexShrink: 0,
         }}
       >

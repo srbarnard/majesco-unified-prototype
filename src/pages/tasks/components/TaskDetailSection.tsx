@@ -1,3 +1,7 @@
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import Accordion from '@mui/material/Accordion'
+import AccordionDetails from '@mui/material/AccordionDetails'
+import AccordionSummary from '@mui/material/AccordionSummary'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
@@ -14,11 +18,26 @@ const sectionTitleSx = {
   letterSpacing: '0.01em',
 } as const
 
+const accordionTitleSx = {
+  ...sectionTitleSx,
+  color: 'text.primary',
+} as const
+
 const bodySx = {
   fontFamily: figmaFontFamilyStack.body,
   fontSize: '0.875rem',
   lineHeight: 1.55,
   color: 'text.primary',
+} as const
+
+const accordionSx = {
+  '&:before': { display: 'none' },
+  border: 'none',
+  borderBottom: 1,
+  borderColor: 'divider',
+  borderRadius: 0,
+  bgcolor: 'transparent',
+  boxShadow: 'none',
 } as const
 
 type TaskDetailSectionProps = {
@@ -28,6 +47,7 @@ type TaskDetailSectionProps = {
   card?: boolean
 }
 
+/** Flat section with title — optional card wrapper for legacy panels. */
 export function TaskDetailSection({ title, children, card = false }: TaskDetailSectionProps) {
   const content = (
     <Stack spacing={1}>
@@ -56,6 +76,51 @@ export function TaskDetailSection({ title, children, card = false }: TaskDetailS
     >
       {content}
     </Box>
+  )
+}
+
+type TaskDetailAccordionProps = {
+  title: string
+  children: ReactNode
+  defaultExpanded?: boolean
+  subtitle?: string
+}
+
+/** Collapsible drawer section — matches parties panel accordion pattern. */
+export function TaskDetailAccordion({
+  title,
+  children,
+  defaultExpanded = false,
+  subtitle,
+}: TaskDetailAccordionProps) {
+  return (
+    <Accordion defaultExpanded={defaultExpanded} disableGutters elevation={0} sx={accordionSx}>
+      <AccordionSummary
+        expandIcon={<ExpandMoreIcon sx={{ fontSize: 20, color: 'text.secondary' }} />}
+        sx={{
+          px: 0,
+          minHeight: 44,
+          '& .MuiAccordionSummary-content': { my: 1 },
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle2" sx={accordionTitleSx}>
+            {title}
+          </Typography>
+          {subtitle && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.25 }}
+              noWrap
+            >
+              {subtitle}
+            </Typography>
+          )}
+        </Box>
+      </AccordionSummary>
+      <AccordionDetails sx={{ px: 0, pt: 0, pb: 1.5 }}>{children}</AccordionDetails>
+    </Accordion>
   )
 }
 

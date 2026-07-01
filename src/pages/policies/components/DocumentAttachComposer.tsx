@@ -207,9 +207,7 @@ export function DocumentAttachPanelContent({
         sx={{
           pt: 2,
           flexShrink: 0,
-          borderTop: 1,
-          borderColor: 'divider',
-          bgcolor: (theme) => surfaceMuted(theme),
+          bgcolor: 'background.paper',
           mx: -2,
           px: 2,
           pb: 0,

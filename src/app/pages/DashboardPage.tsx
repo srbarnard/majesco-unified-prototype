@@ -67,6 +67,9 @@ export function DashboardPage() {
   const contentPx = `${layoutTokens.contentPaddingX}px`
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
   const [taskDetailOpen, setTaskDetailOpen] = useState(false)
+  const [copilotTaskFocus, setCopilotTaskFocus] = useState<TaskRecord | null>(null)
+  const [copilotSeedMessage, setCopilotSeedMessage] = useState<string | null>(null)
+  const [returnToTask, setReturnToTask] = useState<TaskRecord | null>(null)
   const [selectedActivity, setSelectedActivity] = useState<RecentActivityItem | null>(null)
   const [activityDetailOpen, setActivityDetailOpen] = useState(false)
 
@@ -88,12 +91,44 @@ export function DashboardPage() {
   const handleOpenPriorityTask = useCallback(
     (card: PriorityTaskCard) => {
       setSelectedTask(resolvePriorityTaskRecord(card))
+      setCopilotTaskFocus(null)
+      setCopilotSeedMessage(null)
+      setReturnToTask(null)
       closeCopilot()
       handleCloseActivityDetail()
       setTaskDetailOpen(true)
     },
     [closeCopilot, handleCloseActivityDetail],
   )
+
+  const handleTaskRecommendation = useCallback(
+    (insight: string) => {
+      if (!selectedTask) return
+      setReturnToTask(selectedTask)
+      setCopilotTaskFocus(selectedTask)
+      setCopilotSeedMessage(insight)
+      setTaskDetailOpen(false)
+      openHomeCopilotDefault()
+    },
+    [openHomeCopilotDefault, selectedTask],
+  )
+
+  const handleBackToTaskDetails = useCallback(() => {
+    if (!returnToTask) return
+    setSelectedTask(returnToTask)
+    setTaskDetailOpen(true)
+    setCopilotTaskFocus(null)
+    setCopilotSeedMessage(null)
+    setReturnToTask(null)
+    closeCopilot()
+  }, [closeCopilot, returnToTask])
+
+  const handleCloseCopilotWithTask = useCallback(() => {
+    setCopilotTaskFocus(null)
+    setCopilotSeedMessage(null)
+    setReturnToTask(null)
+    closeCopilot()
+  }, [closeCopilot])
 
   const handleOpenActivity = useCallback(
     (activity: RecentActivityItem) => {
@@ -114,8 +149,8 @@ export function DashboardPage() {
       handleCloseActivityDetail()
       return
     }
-    closeCopilot()
-  }, [taskDetailOpen, activityDetailOpen, handleCloseTaskDetail, handleCloseActivityDetail, closeCopilot])
+    handleCloseCopilotWithTask()
+  }, [taskDetailOpen, activityDetailOpen, handleCloseTaskDetail, handleCloseActivityDetail, handleCloseCopilotWithTask])
 
   useEffect(() => {
     if (didInitCopilot.current) return
@@ -216,6 +251,7 @@ export function DashboardPage() {
             task={selectedTask}
             onClose={handleCloseTaskDetail}
             onMarkComplete={handleCloseTaskDetail}
+            onRecommendationClick={handleTaskRecommendation}
           />
         )}
         {activityDetailOpen && selectedActivity && !taskDetailOpen && (
@@ -223,10 +259,13 @@ export function DashboardPage() {
         )}
         {copilotOpen && !detailPanelOpen && (
           <CopilotPanel
-            context="global"
-            globalView={copilotView}
-            agenticPrompt={agenticPrompt}
-            onClose={closeCopilot}
+            context={copilotTaskFocus ? 'tasks' : 'global'}
+            globalView={copilotTaskFocus ? null : copilotView}
+            agenticPrompt={copilotTaskFocus ? null : agenticPrompt}
+            focusedTask={copilotTaskFocus}
+            seedComposerMessage={copilotSeedMessage}
+            onBackToTaskDetails={copilotSeedMessage && returnToTask ? handleBackToTaskDetails : undefined}
+            onClose={handleCloseCopilotWithTask}
           />
         )}
       </ResizableRightPanel>

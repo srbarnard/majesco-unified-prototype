@@ -12,24 +12,24 @@ export type CopilotIconProps = {
 }
 
 const COPILOT_ICONS = {
-  default: '/assets/copilot-icon.png',
+  inactive: '/assets/copilot-icon.png',
   active: '/assets/copilot-icon-active.png',
   white: '/assets/copilot-icon-white.png',
 } as const
 
-function resolveCopilotIconSrc(active: boolean, useWhiteMark: boolean) {
-  if (active && useWhiteMark) return COPILOT_ICONS.white
+function resolveCopilotIconSrc(active: boolean, inverted: boolean, isDarkMode: boolean) {
+  if (active && inverted) return COPILOT_ICONS.white
   if (active) return COPILOT_ICONS.active
-  if (useWhiteMark) return COPILOT_ICONS.white
-  return COPILOT_ICONS.default
+  if (inverted || isDarkMode) return COPILOT_ICONS.white
+  return COPILOT_ICONS.inactive
 }
 
 /** Official Majesco Copilot mark used for Copilot actions and AI summaries. */
 export function CopilotIcon({ size = 18, active = false, inverted = false, sx }: CopilotIconProps) {
-  const { mode } = useColorScheme()
-  const isDarkMode = mode === 'dark'
-  const useWhiteMark = inverted || isDarkMode
-  const src = resolveCopilotIconSrc(active, useWhiteMark)
+  const { mode, systemMode } = useColorScheme()
+  const resolvedMode = mode === 'system' ? systemMode : mode
+  const isDarkMode = resolvedMode === 'dark'
+  const src = resolveCopilotIconSrc(active, inverted, isDarkMode)
 
   return (
     <Box

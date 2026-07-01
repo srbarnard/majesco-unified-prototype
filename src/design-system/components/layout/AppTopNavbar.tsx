@@ -16,8 +16,20 @@ import Stack from '@mui/material/Stack'
 import Toolbar from '@mui/material/Toolbar'
 import { useState } from 'react'
 import { GlobalSearchField } from '@/design-system/components/GlobalSearch/GlobalSearchField'
+import { useBrowserHistoryNavigation } from '@/hooks/useBrowserHistoryNavigation'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
+
+const historyNavButtonSx = {
+  color: 'text.secondary',
+  '&:hover': {
+    bgcolor: 'action.hover',
+  },
+  '&.Mui-disabled': {
+    color: 'action.disabled',
+    opacity: 0.45,
+  },
+} as const
 
 type AppTopNavbarProps = {
   userInitials?: string
@@ -26,6 +38,7 @@ type AppTopNavbarProps = {
 
 export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopNavbarProps) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const { canGoBack, canGoForward, goBack, goForward } = useBrowserHistoryNavigation()
 
   return (
     <AppBar
@@ -106,10 +119,22 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
             spacing={0.25}
             sx={{ flexShrink: 0, width: 72 }}
           >
-            <IconButton size="small" aria-label="Go back">
+            <IconButton
+              size="small"
+              aria-label="Go back"
+              disabled={!canGoBack}
+              onClick={goBack}
+              sx={historyNavButtonSx}
+            >
               <ArrowBackIcon fontSize="small" />
             </IconButton>
-            <IconButton size="small" aria-label="Go forward">
+            <IconButton
+              size="small"
+              aria-label="Go forward"
+              disabled={!canGoForward}
+              onClick={goForward}
+              sx={historyNavButtonSx}
+            >
               <ArrowForwardIcon fontSize="small" />
             </IconButton>
           </Stack>

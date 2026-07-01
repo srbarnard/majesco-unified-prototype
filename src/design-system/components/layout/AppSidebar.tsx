@@ -13,15 +13,19 @@ import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
 import { useSidebar } from '@/app/contexts/SidebarContext'
 import { CopilotIcon } from '@/design-system/components'
 import { filterHeadingSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
-import { ActivityPanel } from '@/design-system/components/layout/ActivityPanel'
-import { FavoritesPanel } from '@/design-system/components/layout/FavoritesPanel'
 import { ThemeModeToggle } from '@/design-system/components/layout/ThemeModeToggle'
 import { layoutTokens } from '@/design-system/tokens/layout'
+import {
+  drawerTransitionDuration,
+  drawerTransitionEasing,
+  navItemActiveIndicatorStyles,
+  navItemInteractionStyles,
+} from '@/design-system/tokens/motion'
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { accentSubtle, surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import { moreMenuItems, visibleAppShellNavItems } from '@/design-system/tokens/navigation'
@@ -116,13 +120,36 @@ function SidebarContent({
   hideThemeToggle?: boolean
 }) {
   const location = useLocation()
-  const { secondaryPanel, toggleSecondaryPanel } = useSidebar()
+  const { secondaryPanel, toggleSecondaryPanel, closeSecondaryPanel } = useSidebar()
   const [moreAnchor, setMoreAnchor] = useState<null | HTMLElement>(null)
   const isDrawer = layout === 'drawer'
+  const isSecondaryPanelOpen = secondaryPanel !== null
 
-  const itemSx = (active: boolean) =>
-    isDrawer
+  const handleRouteNavClick = useCallback(() => {
+    closeSecondaryPanel()
+    onNavigate?.()
+  }, [closeSecondaryPanel, onNavigate])
+
+  const itemSx = (active: boolean) => {
+    const inactiveRouteOverride = !active
       ? {
+          bgcolor: 'transparent',
+          '&.active': {
+            bgcolor: 'transparent',
+            backgroundColor: 'transparent',
+            color: isDrawer ? 'text.primary' : 'text.secondary',
+            '& .MuiListItemIcon-root': {
+              color: 'inherit',
+            },
+          },
+        }
+      : {}
+
+    return isDrawer
+      ? {
+          ...navItemInteractionStyles,
+          ...navItemActiveIndicatorStyles,
+          ...inactiveRouteOverride,
           flexDirection: 'row' as const,
           alignItems: 'center',
           justifyContent: 'flex-start',
@@ -134,24 +161,14 @@ function SidebarContent({
           minHeight: 48,
           position: 'relative' as const,
           color: active ? 'primary.main' : 'text.primary',
-          '&.active, &.Mui-selected': {
+          ...(active && {
             bgcolor: (theme) => accentSubtle(theme),
-            color: 'primary.main',
-          },
-          '&::before': active
-            ? {
-                content: '""',
-                position: 'absolute',
-                left: 0,
-                top: 8,
-                bottom: 8,
-                width: 3,
-                borderRadius: '0 2px 2px 0',
-                bgcolor: 'primary.main',
-              }
-            : undefined,
+          }),
         }
       : {
+          ...navItemInteractionStyles,
+          ...navItemActiveIndicatorStyles,
+          ...inactiveRouteOverride,
           flexDirection: 'column' as const,
           alignItems: 'center',
           justifyContent: 'center',
@@ -162,23 +179,11 @@ function SidebarContent({
           minHeight: 64,
           position: 'relative' as const,
           color: active ? 'primary.main' : 'text.secondary',
-          '&.active, &.Mui-selected': {
+          ...(active && {
             bgcolor: (theme) => accentSubtle(theme),
-            color: 'primary.main',
-          },
-          '&::before': active
-            ? {
-                content: '""',
-                position: 'absolute',
-                left: 0,
-                top: 8,
-                bottom: 8,
-                width: 3,
-                borderRadius: '0 2px 2px 0',
-                bgcolor: 'primary.main',
-              }
-            : undefined,
+          }),
         }
+  }
 
   return (
     <Box
@@ -204,7 +209,7 @@ function SidebarContent({
           const Icon = item.icon
           const isPanelActive = item.panel ? secondaryPanel === item.panel : false
           const isRouteItemActive = item.path
-            ? isRouteActive(location.pathname, item.path, item.matchPaths)
+            ? !isSecondaryPanelOpen && isRouteActive(location.pathname, item.path, item.matchPaths)
             : false
           const active = isPanelActive || isRouteItemActive
 
@@ -245,6 +250,7 @@ function SidebarContent({
                 key={item.label}
                 onClick={() => toggleSecondaryPanel(item.panel!)}
                 selected={isPanelActive}
+                data-nav-active={isPanelActive ? 'true' : undefined}
                 sx={itemSx(active)}
               >
                 {icon}
@@ -259,7 +265,8 @@ function SidebarContent({
               component={NavLink}
               to={item.path!}
               end={item.path === '/'}
-              onClick={onNavigate}
+              onClick={handleRouteNavClick}
+              data-nav-active={active ? 'true' : undefined}
               sx={itemSx(active)}
             >
               {icon}
@@ -278,13 +285,18 @@ function SidebarContent({
             >
               More
             </Typography>
-            {moreMenuItems.map((item) => (
+            {moreMenuItems.map((item) => {
+              const moreActive =
+                !isSecondaryPanelOpen && isRouteActive(location.pathname, item.path)
+
+              return (
               <ListItemButton
                 key={item.path}
                 component={NavLink}
                 to={item.path}
-                onClick={onNavigate}
-                sx={itemSx(isRouteActive(location.pathname, item.path))}
+                onClick={handleRouteNavClick}
+                data-nav-active={moreActive ? 'true' : undefined}
+                sx={itemSx(moreActive)}
               >
                 <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
                   {item.copilotIcon ? (
@@ -298,7 +310,8 @@ function SidebarContent({
                   primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
                 />
               </ListItemButton>
-            ))}
+              )
+            })}
           </>
         ) : (
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 0.25 }}>
@@ -346,7 +359,7 @@ function SidebarContent({
               to={item.path}
               onClick={() => {
                 setMoreAnchor(null)
-                onNavigate?.()
+                handleRouteNavClick()
               }}
               sx={{ py: 1, gap: 1.5 }}
             >
@@ -367,16 +380,6 @@ function SidebarContent({
 }
 
 function MobileDrawerContent({ onClose }: { onClose: () => void }) {
-  const { secondaryPanel } = useSidebar()
-
-  if (secondaryPanel === 'activity') {
-    return <ActivityPanel />
-  }
-
-  if (secondaryPanel === 'favorites') {
-    return <FavoritesPanel />
-  }
-
   return (
     <MobileNavDrawerShell
       title="Navigation"
@@ -402,6 +405,12 @@ export function AppSidebar({ mobileOpen, onMobileClose }: AppSidebarProps) {
         variant="temporary"
         open={mobileOpen}
         onClose={onMobileClose}
+        transitionDuration={drawerTransitionDuration}
+        slotProps={{
+          transition: {
+            easing: drawerTransitionEasing,
+          },
+        }}
         ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: 'block', lg: 'none' },

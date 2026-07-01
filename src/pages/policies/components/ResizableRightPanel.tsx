@@ -7,6 +7,11 @@ import {
   useRightPanelWidth,
   type RightPanelVariant,
 } from '@/pages/policies/hooks/useCopilotWidth'
+import {
+  drawerTransitionDuration,
+  drawerTransitionEasing,
+  panelSlideInFromRightSx,
+} from '@/design-system/tokens/motion'
 
 type ResizableRightPanelProps = {
   open: boolean
@@ -37,6 +42,12 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
         open={open}
         variant="temporary"
         onClose={onClose}
+        transitionDuration={drawerTransitionDuration}
+        slotProps={{
+          transition: {
+            easing: drawerTransitionEasing,
+          },
+        }}
         ModalProps={{
           keepMounted: true,
           hideBackdrop: true,
@@ -71,6 +82,7 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
         borderColor: 'divider',
         bgcolor: 'background.paper',
         position: 'relative',
+        ...panelSlideInFromRightSx(),
       }}
     >
       <Box

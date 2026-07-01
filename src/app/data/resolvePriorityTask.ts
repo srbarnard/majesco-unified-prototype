@@ -22,6 +22,18 @@ function nextActionForTask(title: string, isPastDue?: boolean) {
   return `Review account context and complete "${title}" before the due date.`
 }
 
+function descriptionForPriorityTask(card: PriorityTaskCard) {
+  const lead = `${card.title} for ${card.account}. Policy ${card.policyNumber} requires follow-up from the home priority queue.`
+  const context =
+    'Copilot surfaced this item based on due date, open workflow status, and recent account activity. Review supporting documents, confirm producer expectations, and document any underwriting or service exceptions before closing the task.'
+  const pastDue =
+    'This task is past due — prioritize producer outreach, capture blockers in notes, and escalate if binding or renewal deadlines are at risk.'
+  const closing =
+    'Use Ask Copilot to draft a status update, checklist, or referral memo once account context has been validated.'
+
+  return [lead, context, card.isPastDue ? pastDue : null, closing].filter(Boolean).join(' ')
+}
+
 export function resolvePriorityTaskRecord(card: PriorityTaskCard): TaskRecord {
   const baseId = normalizePriorityTaskId(card.id)
   const canonical = priorityTasksMock.find((entry) => entry.id === baseId) ?? card
@@ -48,7 +60,7 @@ export function resolvePriorityTaskRecord(card: PriorityTaskCard): TaskRecord {
     agingDays: canonical.isPastDue ? 2 : 1,
     isPastDue: Boolean(canonical.isPastDue),
     hasAiInsights: true,
-    description: `${canonical.title} for ${canonical.account}. Policy ${canonical.policyNumber} requires follow-up from the home priority queue.`,
+    description: descriptionForPriorityTask(canonical),
     copilotInsights: [
       `Insured account: ${canonical.account}.`,
       `Policy ${canonical.policyNumber} is linked to this task.`,

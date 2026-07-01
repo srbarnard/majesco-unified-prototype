@@ -7,7 +7,7 @@ import Typography from '@mui/material/Typography'
 import type { Theme } from '@mui/material/styles'
 import type { ReactNode } from 'react'
 import { CopilotIcon } from '@/design-system/components/CopilotIcon'
-import { accentSubtle, accentSurfaceCardSx, isDarkMode } from '@/design-system/theme/themeSurfaces'
+import { accentSubtle, accentSurfaceCardSx } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 
@@ -39,7 +39,6 @@ function getVariantStyles(theme: Theme, variant: InsightCalloutVariant) {
   if (variant === 'copilot') {
     return {
       bgcolor: accentSubtle(theme),
-      borderColor: 'divider',
       titleColor: 'text.primary' as const,
       bodyColor: 'text.primary' as const,
     }
@@ -48,7 +47,6 @@ function getVariantStyles(theme: Theme, variant: InsightCalloutVariant) {
   if (variant === 'success') {
     return {
       bgcolor: isLight ? theme.figmaPalette.green[100] : theme.figmaPalette.green[900],
-      borderColor: isLight ? theme.figmaPalette.green[200] : theme.figmaPalette.green[800],
       titleColor: isLight ? theme.figmaPalette.green[800] : theme.figmaPalette.green[200],
       bodyColor: 'text.primary' as const,
     }
@@ -57,7 +55,6 @@ function getVariantStyles(theme: Theme, variant: InsightCalloutVariant) {
   if (variant === 'warning') {
     return {
       bgcolor: isLight ? theme.figmaPalette.amber[100] : theme.figmaPalette.amber[900],
-      borderColor: isLight ? theme.figmaPalette.amber[200] : theme.figmaPalette.amber[800],
       titleColor: isLight ? theme.figmaPalette.amber[900] : theme.figmaPalette.amber[200],
       bodyColor: 'text.primary' as const,
     }
@@ -65,7 +62,6 @@ function getVariantStyles(theme: Theme, variant: InsightCalloutVariant) {
 
   return {
     bgcolor: isLight ? theme.figmaPalette.red[100] : theme.figmaPalette.red[900],
-    borderColor: isLight ? theme.figmaPalette.red[200] : theme.figmaPalette.red[800],
     titleColor: isLight ? theme.figmaPalette.red[800] : theme.figmaPalette.red[200],
     bodyColor: 'text.primary' as const,
   }
@@ -75,7 +71,7 @@ function VariantIcon({ variant }: { variant: InsightCalloutVariant }) {
   const iconSx = { fontSize: 18, flexShrink: 0 } as const
 
   if (variant === 'copilot') {
-    return <CopilotIcon size={18} active />
+    return <CopilotIcon size={18} />
   }
   if (variant === 'success') {
     return <CheckCircleOutlineIcon sx={iconSx} />
@@ -99,9 +95,8 @@ export function InsightCallout({ variant = 'copilot', title, children }: Insight
             : {
                 borderRadius: `${layoutTokens.cardRadius}px`,
                 bgcolor: styles.bgcolor,
-                border: 1,
-                borderColor: styles.borderColor,
-                boxShadow: isDarkMode(theme) ? 'none' : layoutTokens.cardShadow,
+                border: 'none',
+                boxShadow: 'none',
               }),
           px: 2,
           py: 1.5,

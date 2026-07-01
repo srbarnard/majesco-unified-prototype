@@ -13,6 +13,11 @@ import { useState } from 'react'
 import { CopilotIcon } from '@/design-system/components'
 import { studioChatThreadsMock, type StudioChatThread } from '@/pages/copilot-studio/data/mockCopilotStudio'
 import { accentSubtle, accentSubtleHover, surfaceMuted, surfacePanel } from '@/design-system/theme/themeSurfaces'
+import {
+  drawerTransitionDuration,
+  drawerTransitionEasing,
+  panelSlideInFromLeftSx,
+} from '@/design-system/tokens/motion'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 
@@ -220,6 +225,12 @@ export function StudioChatDrawer({
         open={open}
         variant="temporary"
         onClose={onClose}
+        transitionDuration={drawerTransitionDuration}
+        slotProps={{
+          transition: {
+            easing: drawerTransitionEasing,
+          },
+        }}
         ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: 'block', lg: 'none' },
@@ -246,6 +257,7 @@ export function StudioChatDrawer({
         overflow: 'hidden',
         display: { xs: 'none', lg: 'flex' },
         flexDirection: 'column',
+        ...panelSlideInFromLeftSx(),
       }}
     >
       {drawerContent}

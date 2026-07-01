@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useLocation } from 'react-router'
 import { layoutTokens } from '@/design-system/tokens/layout'
 
 export type SecondaryPanel = 'activity' | 'favorites'
@@ -16,6 +17,7 @@ const SidebarContext = createContext<SidebarContextValue | null>(null)
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
   const [secondaryPanel, setSecondaryPanel] = useState<SecondaryPanel | null>(null)
+  const location = useLocation()
 
   const toggleSecondaryPanel = useCallback((panel: SecondaryPanel) => {
     setSecondaryPanel((current) => (current === panel ? null : panel))
@@ -24,6 +26,10 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   const closeSecondaryPanel = useCallback(() => {
     setSecondaryPanel(null)
   }, [])
+
+  useEffect(() => {
+    closeSecondaryPanel()
+  }, [location.pathname, closeSecondaryPanel])
 
   const value = useMemo<SidebarContextValue>(
     () => ({

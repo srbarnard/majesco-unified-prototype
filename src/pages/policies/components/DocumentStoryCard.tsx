@@ -82,7 +82,7 @@ export function DocumentStoryCard({
         sx={{ px: 2, py: 1.25 }}
       >
         <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
-          <CopilotIcon size={20} active />
+          <CopilotIcon size={20} />
           <Box sx={{ minWidth: 0 }}>
             <Typography
               variant="subtitle2"

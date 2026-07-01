@@ -6,6 +6,12 @@ import { figmaFontFamilyStack, figmaFontWeights } from '@/design-system/tokens/f
 import { borderRadius } from '@/design-system/tokens/shape'
 import { shadows } from '@/design-system/tokens/shadows'
 import { dataGridPinnedBodyCellSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import {
+  buttonPressStyles,
+  drawerTransitionDuration,
+  drawerTransitionEasing,
+  navItemInteractionStyles,
+} from '@/design-system/tokens/motion'
 
 function primaryFocusColor(theme: Theme) {
   return getFigmaColors(theme.palette.mode).primary.main
@@ -59,6 +65,14 @@ export const componentOverrides: ThemeOptions['components'] = {
     },
   },
   MuiDrawer: {
+    defaultProps: {
+      transitionDuration: drawerTransitionDuration,
+      slotProps: {
+        transition: {
+          easing: drawerTransitionEasing,
+        },
+      },
+    },
     styleOverrides: {
       paper: ({ theme }) => ({
         backgroundColor: theme.palette.background.paper,
@@ -83,10 +97,11 @@ export const componentOverrides: ThemeOptions['components'] = {
           borderRadius: borderRadius.default,
           marginBottom: 4,
           color: theme.palette.text.primary,
+          ...navItemInteractionStyles,
           '&:hover': {
             backgroundColor: tokens.primary.hover,
           },
-          '&.active': {
+          '&[data-nav-active="true"]': {
             backgroundColor: tokens.primary.selected,
             color: tokens.primary.main,
             '& .MuiListItemIcon-root': {
@@ -116,6 +131,7 @@ export const componentOverrides: ThemeOptions['components'] = {
         textTransform: 'none',
         fontFamily: figmaFontFamilyStack.heading,
         fontWeight: figmaFontWeights.medium,
+        ...buttonPressStyles,
       },
       containedPrimary: ({ theme }) => {
         const tokens = getFigmaColors(theme.palette.mode)
@@ -169,6 +185,7 @@ export const componentOverrides: ThemeOptions['components'] = {
         const tokens = getFigmaColors(theme.palette.mode)
         return {
           borderRadius: borderRadius.default,
+          ...buttonPressStyles,
           '&:hover': {
             backgroundColor: tokens.primary.hover,
           },

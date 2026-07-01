@@ -38,6 +38,7 @@ import type { Quote } from '@/pages/quotes/data/mockQuotes'
 import { QUOTES_TOTAL_ROWS } from '@/pages/quotes/data/mockQuotes'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
 import { TASKS_TOTAL_ROWS } from '@/pages/tasks/data/mockTasks'
+import { TaskRecommendationChat } from '@/pages/tasks/components/TaskRecommendationChat'
 
 type CopilotPanelProps = {
   activePolicyTab?: PolicyTab
@@ -50,6 +51,9 @@ type CopilotPanelProps = {
   focusedInsured?: InsuredDetailsRecord | null
   focusedPolicyList?: PolicyListRecord | null
   focusedTask?: TaskRecord | null
+  seedComposerMessage?: string | null
+  onBackToTaskDetails?: () => void
+  taskDetailsBackLabel?: string
   documentsWorkspaceSummary?: string
   documentsWorkspaceInsights?: string[]
   documentsImpactSummary?: string
@@ -245,6 +249,9 @@ export function CopilotPanel({
   focusedInsured,
   focusedPolicyList,
   focusedTask,
+  seedComposerMessage = null,
+  onBackToTaskDetails,
+  taskDetailsBackLabel = 'Task details',
   documentsWorkspaceSummary,
   documentsWorkspaceInsights,
   documentsImpactSummary,
@@ -262,6 +269,7 @@ export function CopilotPanel({
   onClose,
 }: CopilotPanelProps) {
   const [copilotTab, setCopilotTab] = useState<'chat' | 'history'>('chat')
+  const [composerMessage, setComposerMessage] = useState('')
   const [internalAttachMode, setInternalAttachMode] = useState<DocumentAttachMode | null>(null)
   const isDocumentsTab = activePolicyTab === 'documents'
   const isQuotesContext = context === 'quotes'
@@ -272,6 +280,7 @@ export function CopilotPanel({
   const isGlobalContext = context === 'global'
   const isAgenticView = isGlobalContext && globalView === 'agentic-search' && Boolean(agenticPrompt)
   const isDailySummaryView = isGlobalContext && globalView === 'daily-summary'
+  const isTaskRecommendationView = Boolean(focusedTask && seedComposerMessage && onBackToTaskDetails)
 
   useEffect(() => {
     if (attachMode) return
@@ -279,6 +288,12 @@ export function CopilotPanel({
       setCopilotTab('chat')
     }
   }, [attachMode, focusedDocument, focusedQuote, focusedQuoteDetail, focusedInsured, focusedPolicyList, focusedTask])
+
+  useEffect(() => {
+    if (seedComposerMessage) {
+      setComposerMessage(seedComposerMessage)
+    }
+  }, [seedComposerMessage])
 
   const activeAttachMode = attachMode ?? internalAttachMode
   const isAttachView = Boolean(activeAttachMode)
@@ -443,7 +458,9 @@ export function CopilotPanel({
           ? 'Your Copilot conversations for policies will appear here.'
           : 'Your Copilot conversations for this policy will appear here.'
 
-  const composerPlaceholder = isGlobalContext
+  const composerPlaceholder = isTaskRecommendationView
+    ? 'Ask a follow-up about this recommendation…'
+    : isGlobalContext
     ? 'Select a prompt or ask me anything'
     : focusedTask
       ? 'Ask about this task…'
@@ -484,7 +501,7 @@ export function CopilotPanel({
               px: 2,
               pt: layoutTokens.policyHeaderTopPadding,
               pb: 1.5,
-              bgcolor: (theme) => surfaceMuted(theme),
+              bgcolor: 'background.paper',
               borderBottom: 1,
               borderColor: 'divider',
               flexShrink: 0,
@@ -500,16 +517,7 @@ export function CopilotPanel({
                 <ArrowBackIcon fontSize="small" />
               </IconButton>
               <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontFamily: figmaFontFamilyStack.body,
-                    fontWeight: 400,
-                    fontSize: '0.9375rem',
-                    lineHeight: 1.35,
-                    mb: 0.5,
-                  }}
-                >
+                <Typography variant="h5" component="h2" sx={{ lineHeight: 1.35, mb: 0.5 }}>
                   {targetLabels[activeAttachMode.target]}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={bodySx}>
@@ -550,12 +558,13 @@ export function CopilotPanel({
           px: 2,
           pt: layoutTokens.policyHeaderTopPadding,
           pb: 0,
+          bgcolor: 'background.paper',
           borderBottom: 1,
           borderColor: 'divider',
         }}
       >
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography variant="subtitle1" sx={{ ...headingSx, fontSize: '0.9375rem' }}>
+          <Typography variant="h5" component="h2">
             Copilot
           </Typography>
           {onClose && (
@@ -614,6 +623,13 @@ export function CopilotPanel({
           <AgenticSearchResults prompt={agenticPrompt} />
         ) : isDailySummaryView ? (
           <DailySummaryContent />
+        ) : isTaskRecommendationView && focusedTask && seedComposerMessage ? (
+          <TaskRecommendationChat
+            insight={seedComposerMessage}
+            task={focusedTask}
+            backLabel={taskDetailsBackLabel}
+            onBack={onBackToTaskDetails}
+          />
         ) : (
           <>
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
@@ -737,7 +753,13 @@ export function CopilotPanel({
         )}
       </Box>
 
-      {!isAttachView && <CopilotComposer placeholder={composerPlaceholder} />}
+      {!isAttachView && (
+        <CopilotComposer
+          placeholder={composerPlaceholder}
+          value={composerMessage}
+          onChange={setComposerMessage}
+        />
+      )}
         </>
       )}
     </Box>

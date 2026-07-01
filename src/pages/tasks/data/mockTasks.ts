@@ -135,7 +135,7 @@ export const tasksMock: TaskRecord[] = [
       claimNumber: null,
     },
     description:
-      'Commercial property renewal flagged by Copilot after updated loss runs showed elevated CAT and water damage frequency. Account is strategic producer book; prior term had no rate change. Underwriting referral required before renewal terms can release to producer.',
+      'Commercial property renewal flagged by Copilot after updated loss runs showed elevated CAT and water damage frequency. Account is strategic producer book; prior term had no rate change. Underwriting referral required before renewal terms can release to producer. The account spans 12 locations across Nebraska and Iowa with total insured values exceeding $48M. Recent water intrusion claims at the Omaha grain elevator and secondary cold storage facility drove the loss ratio above the 62% referral threshold. Producer Hartwell Insurance Group has requested to maintain the current rate pending completion of roof mitigation at two flagged locations. Copilot pre-filled referral worksheet sections 1–4; sections 5–7 require underwriter narrative on catastrophe exposure and business income limits.',
     copilotInsights: [
       'Recommend +8–12% rate adjustment on property line; liability remains within appetite at current limits.',
       'Similar accounts in ZIP cluster 68102 renewed at avg +10.4% when loss ratio exceeded 62%.',

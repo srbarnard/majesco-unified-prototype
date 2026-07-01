@@ -52,6 +52,7 @@ export function TasksPage() {
   const [copilotOpen, setCopilotOpen] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
   const [copilotTaskFocus, setCopilotTaskFocus] = useState<TaskRecord | null>(null)
+  const [copilotSeedMessage, setCopilotSeedMessage] = useState<string | null>(null)
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
   const [taskDetailOpen, setTaskDetailOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -106,13 +107,31 @@ export function TasksPage() {
   const handleCloseCopilot = useCallback(() => {
     setCopilotOpen(false)
     setCopilotTaskFocus(null)
+    setCopilotSeedMessage(null)
   }, [])
 
   const handleTaskCopilot = useCallback((task: TaskRecord) => {
     setCopilotTaskFocus(task)
+    setCopilotSeedMessage(null)
     setFilterOpen(false)
     setTaskDetailOpen(false)
     setCopilotOpen(true)
+  }, [])
+
+  const handleTaskRecommendation = useCallback((task: TaskRecord, insight: string) => {
+    setSelectedTask(task)
+    setCopilotTaskFocus(task)
+    setCopilotSeedMessage(insight)
+    setFilterOpen(false)
+    setTaskDetailOpen(false)
+    setCopilotOpen(true)
+  }, [])
+
+  const handleBackToTaskDetails = useCallback(() => {
+    setCopilotOpen(false)
+    setCopilotSeedMessage(null)
+    setCopilotTaskFocus(null)
+    setTaskDetailOpen(true)
   }, [])
 
   const handleTaskOpen = useCallback((task: TaskRecord) => {
@@ -282,13 +301,15 @@ export function TasksPage() {
             task={selectedTask}
             onClose={handleCloseTaskDetail}
             onMarkComplete={handleTaskComplete}
-            onAskCopilot={handleTaskCopilot}
+            onRecommendationClick={(insight) => handleTaskRecommendation(selectedTask, insight)}
           />
         )}
         {copilotOpen && (
           <CopilotPanel
             context="tasks"
             focusedTask={copilotTaskFocus}
+            seedComposerMessage={copilotSeedMessage}
+            onBackToTaskDetails={copilotSeedMessage ? handleBackToTaskDetails : undefined}
             onClose={handleCloseCopilot}
           />
         )}

@@ -8,7 +8,10 @@ import Typography from '@mui/material/Typography'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { priorityTasksMock, type PriorityTaskCard } from '@/app/data/homeMock'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { motionTokens } from '@/design-system/tokens/motion'
 import { accentSubtleHover, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+
+const motionSafe = '@media (prefers-reduced-motion: no-preference)'
 
 const CARD_WIDTH = 272
 const CARD_GAP = 12
@@ -36,7 +39,7 @@ function TaskCard({ task, onOpen }: { task: PriorityTaskCard; onOpen: (task: Pri
         cursor: 'pointer',
         textAlign: 'left',
         display: 'block',
-        transition: 'background-color 0.15s ease',
+        transition: `background-color 0.15s ease, transform ${motionTokens.durationFastMs}ms ${motionTokens.easing}`,
         '& [data-task-title]': {
           transition: 'color 0.15s ease',
         },
@@ -44,6 +47,13 @@ function TaskCard({ task, onOpen }: { task: PriorityTaskCard; onOpen: (task: Pri
           bgcolor: (theme) => accentSubtleHover(theme),
           '& [data-task-title]': {
             color: 'primary.main',
+          },
+        },
+        [motionSafe]: {
+          '&:hover': {
+            transform: `translateY(${motionTokens.cardHoverTranslateY}px) scale(${motionTokens.cardHoverScale})`,
+            position: 'relative',
+            zIndex: 1,
           },
         },
         '&:focus-visible': {
@@ -169,24 +179,36 @@ export function PriorityTasksCarousel({ onTaskOpen }: PriorityTasksCarouselProps
       </Stack>
 
       <Box
-        ref={scrollerRef}
-        onScroll={normalizeScroll}
         sx={{
-          display: 'flex',
-          gap: `${CARD_GAP}px`,
-          overflowX: 'auto',
-          pb: 0.5,
-          scrollSnapType: 'x proximity',
-          scrollbarWidth: 'none',
-          '&::-webkit-scrollbar': { display: 'none' },
-          '& [data-task-card]': {
-            scrollSnapAlign: 'start',
-          },
+          overflow: 'visible',
+          mx: -0.5,
+          px: 0.5,
+          my: -1,
+          py: 1,
         }}
       >
-        {loopedTasks.map((task) => (
-          <TaskCard key={task.id} task={task} onOpen={handleOpen} />
-        ))}
+        <Box
+          ref={scrollerRef}
+          onScroll={normalizeScroll}
+          sx={{
+            display: 'flex',
+            gap: `${CARD_GAP}px`,
+            overflowX: 'auto',
+            overflowY: 'visible',
+            pt: 0.5,
+            pb: 1.5,
+            scrollSnapType: 'x proximity',
+            scrollbarWidth: 'none',
+            '&::-webkit-scrollbar': { display: 'none' },
+            '& [data-task-card]': {
+              scrollSnapAlign: 'start',
+            },
+          }}
+        >
+          {loopedTasks.map((task) => (
+            <TaskCard key={task.id} task={task} onOpen={handleOpen} />
+          ))}
+        </Box>
       </Box>
     </Box>
   )
