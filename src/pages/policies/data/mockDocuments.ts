@@ -12,13 +12,35 @@ export type PolicyDocument = {
   relativeTime: string
   activityLabel: string
   activityCount: number
+  fileSizeBytes?: number
+}
+
+export function formatDocumentFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  const kb = bytes / 1024
+  if (kb < 1024) {
+    const rounded = kb >= 100 ? Math.round(kb) : Math.round(kb * 10) / 10
+    return `${rounded} KB`
+  }
+  const mb = kb / 1024
+  return `${Math.round(mb * 10) / 10} MB`
+}
+
+export function getDocumentFileSizeBytes(document: PolicyDocument): number {
+  if (document.fileSizeBytes != null) return document.fileSizeBytes
+
+  const lower = document.fileName.toLowerCase()
+  if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) return 128_000
+  if (lower.endsWith('.csv')) return 48_000
+  if (lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 640_000
+  return 512_000
 }
 
 const basePolicyDocuments: PolicyDocument[] = [
   {
     id: 'doc-1',
     fileName: 'renewal_proposal_2026.pdf',
-    name: 'renewal_proposal_2026.pdf',
+    name: 'Renewal Proposal – 2026 term',
     kind: 'Document',
     description: 'Renewal proposal package for 2026 term.',
     aiSummary: 'Proposes 22% premium hike to $594,800 with updated fleet schedule.',
@@ -29,6 +51,7 @@ const basePolicyDocuments: PolicyDocument[] = [
     relativeTime: '2h ago',
     activityLabel: 'Policy',
     activityCount: 0,
+    fileSizeBytes: 842_432,
   },
   {
     id: 'doc-2',
@@ -44,6 +67,7 @@ const basePolicyDocuments: PolicyDocument[] = [
     relativeTime: '2h ago',
     activityLabel: 'Endorsement',
     activityCount: 4,
+    fileSizeBytes: 1_245_760,
   },
   {
     id: 'doc-3',
@@ -59,6 +83,7 @@ const basePolicyDocuments: PolicyDocument[] = [
     relativeTime: '3d ago',
     activityLabel: 'Endorsement',
     activityCount: 4,
+    fileSizeBytes: 248_320,
   },
   {
     id: 'doc-4',
@@ -74,6 +99,7 @@ const basePolicyDocuments: PolicyDocument[] = [
     relativeTime: '5d ago',
     activityLabel: 'Policy',
     activityCount: 0,
+    fileSizeBytes: 524_288,
   },
   {
     id: 'doc-5',
@@ -89,6 +115,7 @@ const basePolicyDocuments: PolicyDocument[] = [
     relativeTime: '1w ago',
     activityLabel: 'Endorsement',
     activityCount: 2,
+    fileSizeBytes: 96_256,
   },
   {
     id: 'doc-6',
@@ -104,6 +131,7 @@ const basePolicyDocuments: PolicyDocument[] = [
     relativeTime: '2w ago',
     activityLabel: 'Policy',
     activityCount: 0,
+    fileSizeBytes: 1_835_008,
   },
 ]
 

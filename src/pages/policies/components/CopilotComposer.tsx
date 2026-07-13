@@ -3,7 +3,6 @@ import AddIcon from '@mui/icons-material/Add'
 import BoltOutlinedIcon from '@mui/icons-material/BoltOutlined'
 import CheckIcon from '@mui/icons-material/Check'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import PsychologyOutlinedIcon from '@mui/icons-material/PsychologyOutlined'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
@@ -18,14 +17,13 @@ import type { ReactNode } from 'react'
 import { useState } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
 import {
-  accentSubtle,
-  accentSubtleHover,
   isDarkMode,
   surfaceMuted,
   surfaceSubtle,
 } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { ComposerSendButton } from '@/pages/policies/components/ComposerSendButton'
 
 type CopilotMode = 'fast' | 'thinking'
 
@@ -375,27 +373,7 @@ export function CopilotComposer({
             <IconButton size="small" aria-label="Voice input">
               <MicNoneOutlinedIcon sx={{ fontSize: 20 }} />
             </IconButton>
-            <IconButton
-              size="small"
-              aria-label="Send message"
-              disabled={!canSubmit}
-              onClick={handleSubmit}
-              sx={(theme) => ({
-                width: 34,
-                height: 34,
-                bgcolor: canSubmit ? accentSubtle(theme) : surfaceSubtle(theme),
-                color: canSubmit ? 'primary.main' : 'text.disabled',
-                '&:hover': {
-                  bgcolor: canSubmit ? accentSubtleHover(theme) : surfaceSubtle(theme),
-                },
-                '&.Mui-disabled': {
-                  bgcolor: surfaceSubtle(theme),
-                  color: 'text.disabled',
-                },
-              })}
-            >
-              <KeyboardArrowUpIcon sx={{ fontSize: 20 }} />
-            </IconButton>
+            <ComposerSendButton canSubmit={canSubmit} onClick={handleSubmit} />
           </Stack>
         </Stack>
       </Box>

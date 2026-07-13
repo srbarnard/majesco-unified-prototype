@@ -1,16 +1,11 @@
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CloseIcon from '@mui/icons-material/Close'
-import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
-import OpenInFullIcon from '@mui/icons-material/OpenInFull'
 import Box from '@mui/material/Box'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
-import Tab from '@mui/material/Tab'
-import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
-import { useEffect, useState } from 'react'
-import { Button } from '@/design-system/components'
+import { useState } from 'react'
+import { Button, RoutineIcon } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import {
@@ -21,9 +16,15 @@ import {
 import type { PolicyTab } from '@/pages/policies/components/PolicyTabs'
 import type { GlobalCopilotView } from '@/app/contexts/GlobalSearchContext'
 import { AgenticSearchResults, DailySummaryContent } from '@/pages/policies/components/AgenticSearchResults'
-import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
+import { CopilotConfidenceIndicator } from '@/pages/policies/components/copilot/CopilotConfidenceIndicator'
+import { CopilotDrawerShell } from '@/pages/policies/components/copilot/CopilotDrawerShell'
+import { copilotSectionHeadingSx, copilotSubtitleSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
+import { resolveCopilotConfidence } from '@/pages/policies/components/copilot/resolveCopilotConfidence'
+import { useAnimatedConfidence } from '@/pages/policies/components/copilot/useAnimatedConfidence'
 import {
   DocumentAttachPanelContent,
+  documentViewerAttachLabels,
+  getAttachPanelSubtitle,
   quickActionToAttachTarget,
   targetLabels,
   type DocumentAttachMode,
@@ -70,11 +71,6 @@ type CopilotPanelProps = {
   onQuickAction?: (action: string) => void
   onClose?: () => void
 }
-
-const headingSx = {
-  fontFamily: figmaFontFamilyStack.heading,
-  fontWeight: 600,
-} as const
 
 const bodySx = {
   fontFamily: figmaFontFamilyStack.body,
@@ -268,8 +264,6 @@ export function CopilotPanel({
   onQuickAction,
   onClose,
 }: CopilotPanelProps) {
-  const [copilotTab, setCopilotTab] = useState<'chat' | 'history'>('chat')
-  const [composerMessage, setComposerMessage] = useState('')
   const [internalAttachMode, setInternalAttachMode] = useState<DocumentAttachMode | null>(null)
   const isDocumentsTab = activePolicyTab === 'documents'
   const isQuotesContext = context === 'quotes'
@@ -282,18 +276,14 @@ export function CopilotPanel({
   const isDailySummaryView = isGlobalContext && globalView === 'daily-summary'
   const isTaskRecommendationView = Boolean(focusedTask && seedComposerMessage && onBackToTaskDetails)
 
-  useEffect(() => {
-    if (attachMode) return
-    if (focusedDocument || focusedQuote || focusedQuoteDetail || focusedInsured || focusedPolicyList || focusedTask) {
-      setCopilotTab('chat')
-    }
-  }, [attachMode, focusedDocument, focusedQuote, focusedQuoteDetail, focusedInsured, focusedPolicyList, focusedTask])
-
-  useEffect(() => {
-    if (seedComposerMessage) {
-      setComposerMessage(seedComposerMessage)
-    }
-  }, [seedComposerMessage])
+  const chatFocusKey =
+    focusedDocument?.id ??
+    focusedQuote?.id ??
+    focusedQuoteDetail?.quoteNumber ??
+    focusedInsured?.id ??
+    focusedPolicyList?.policyNumber ??
+    focusedTask?.id ??
+    null
 
   const activeAttachMode = attachMode ?? internalAttachMode
   const isAttachView = Boolean(activeAttachMode)
@@ -448,15 +438,29 @@ export function CopilotPanel({
                         ? policiesListWorkspaceInsights
                         : policyDetailsMock.copilotInsights
 
-  const historyEmptyText = isTasksContext
-    ? 'Your Copilot conversations for tasks will appear here.'
-    : isQuotesContext || isQuoteDetailContext
-      ? 'Your Copilot conversations for quotes will appear here.'
-      : isInsuredContext
-        ? 'Your Copilot conversations for this insured will appear here.'
-        : isPoliciesListContext
-          ? 'Your Copilot conversations for policies will appear here.'
-          : 'Your Copilot conversations for this policy will appear here.'
+  const confidenceState = resolveCopilotConfidence({
+    context,
+    activePolicyTab,
+    globalView,
+    agenticPrompt,
+    documentPreviewMode,
+    documentsCopilotMode,
+    focusedDocument,
+    focusedQuote,
+    focusedQuoteDetail,
+    isAttachView,
+    isTaskRecommendationView,
+  })
+
+  const confidenceFocusKey = [
+    context,
+    chatFocusKey ?? activePolicyTab,
+    documentsCopilotMode,
+    documentPreviewMode ? 'preview' : 'summary',
+  ].join(':')
+
+  const animatedConfidence = useAnimatedConfidence(confidenceState?.confidence ?? 0, confidenceFocusKey)
+  const displayedConfidence = confidenceState ? Math.round(animatedConfidence) : 0
 
   const composerPlaceholder = isTaskRecommendationView
     ? 'Ask a follow-up about this recommendation…'
@@ -498,33 +502,29 @@ export function CopilotPanel({
             justifyContent="space-between"
             spacing={1}
             sx={{
-              px: 2,
+              px: `${layoutTokens.contentPaddingX}px`,
               pt: layoutTokens.policyHeaderTopPadding,
-              pb: 1.5,
+              pb: layoutTokens.contentPaddingX / 8,
               bgcolor: 'background.paper',
               borderBottom: 1,
               borderColor: 'divider',
               flexShrink: 0,
             }}
           >
-            <Stack direction="row" spacing={0.5} alignItems="flex-start" sx={{ minWidth: 0, flex: 1 }}>
-              <IconButton
-                size="small"
-                onClick={handleCloseAttach}
-                aria-label="Back to Copilot"
-                sx={{ mt: -0.25, flexShrink: 0 }}
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography
+                variant="h5"
+                component="h2"
+                sx={{ lineHeight: 1.35, mb: 0.5 }}
               >
-                <ArrowBackIcon fontSize="small" />
-              </IconButton>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography variant="h5" component="h2" sx={{ lineHeight: 1.35, mb: 0.5 }}>
-                  {targetLabels[activeAttachMode.target]}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={bodySx}>
-                  {activeAttachMode.documents.length} document{activeAttachMode.documents.length === 1 ? '' : 's'} attached
-                </Typography>
-              </Box>
-            </Stack>
+                {(documentPreviewMode
+                  ? documentViewerAttachLabels[activeAttachMode.target]
+                  : undefined) ?? targetLabels[activeAttachMode.target]}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={bodySx}>
+                {getAttachPanelSubtitle(activeAttachMode)}
+              </Typography>
+            </Box>
             {onClose && (
               <IconButton size="small" onClick={onClose} aria-label="Close panel" sx={{ mt: -0.25 }}>
                 <CloseIcon fontSize="small" />
@@ -534,8 +534,9 @@ export function CopilotPanel({
 
           <Box
             sx={{
-              px: 2,
-              py: 2,
+              px: `${layoutTokens.contentPaddingX}px`,
+              pt: layoutTokens.contentPaddingX / 8,
+              pb: layoutTokens.contentPaddingX / 8,
               flex: 1,
               minHeight: 0,
               display: 'flex',
@@ -552,99 +553,51 @@ export function CopilotPanel({
           </Box>
         </>
       ) : (
-        <>
-      <Box
-        sx={{
-          px: 2,
-          pt: layoutTokens.policyHeaderTopPadding,
-          pb: 0,
-          bgcolor: 'background.paper',
-          borderBottom: 1,
-          borderColor: 'divider',
-        }}
-      >
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography variant="h5" component="h2">
-            Copilot
-          </Typography>
-          {onClose && (
-            <IconButton size="small" onClick={onClose} aria-label="Close Copilot">
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          )}
-        </Stack>
-
-        <Tabs
-          value={copilotTab}
-          onChange={(_, value: 'chat' | 'history') => setCopilotTab(value)}
-          sx={{
-            minHeight: 36,
-            '& .MuiTabs-flexContainer': {
-              justifyContent: 'center',
-            },
-            '& .MuiTabs-indicator': {
-              height: 3,
-              borderRadius: '3px 3px 0 0',
-              bgcolor: 'primary.main',
-            },
-            '& .MuiTab-root': {
-              minHeight: 36,
-              minWidth: 'auto',
-              textTransform: 'none',
-              fontFamily: figmaFontFamilyStack.heading,
-              fontWeight: 500,
-              fontSize: '0.875rem',
-              color: 'text.secondary',
-              px: '30px',
-              py: 0.75,
-            },
-            '& .Mui-selected': {
-              color: 'primary.main',
-              fontWeight: 600,
-            },
-          }}
-        >
-          <Tab label="Chat" value="chat" />
-          <Tab label="History" value="history" />
-        </Tabs>
-      </Box>
-
-      <Box sx={{ px: 2, py: 2, flexGrow: 1, overflowY: 'auto', minHeight: 0 }}>
-        {copilotTab === 'history' ? (
-          <Stack spacing={1.5} alignItems="center" justifyContent="center" sx={{ py: 6, textAlign: 'center' }}>
-            <Typography variant="subtitle2" sx={headingSx}>
-              No chat history yet
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={bodySx}>
-              {historyEmptyText}
-            </Typography>
-          </Stack>
-        ) : isAgenticView && agenticPrompt ? (
-          <AgenticSearchResults prompt={agenticPrompt} />
-        ) : isDailySummaryView ? (
-          <DailySummaryContent />
-        ) : isTaskRecommendationView && focusedTask && seedComposerMessage ? (
-          <TaskRecommendationChat
-            insight={seedComposerMessage}
-            task={focusedTask}
-            backLabel={taskDetailsBackLabel}
-            onBack={onBackToTaskDetails}
-          />
-        ) : (
-          <>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-              <Typography variant="subtitle2" sx={{ ...headingSx, color: 'secondary.main', fontSize: '1rem' }}>
+        <CopilotDrawerShell
+          onClose={onClose}
+          composerPlaceholder={composerPlaceholder}
+          seedComposerMessage={seedComposerMessage}
+          chatFocusKey={attachMode ? null : chatFocusKey}
+          headerTrailing={
+            confidenceState && !isAgenticView && !isDailySummaryView && !isTaskRecommendationView ? (
+              <CopilotConfidenceIndicator
+                animatedValue={animatedConfidence}
+                displayedValue={displayedConfidence}
+                statusLabel={confidenceState.statusLabel}
+                popoverTitle={confidenceState.popoverTitle}
+                popoverDescription={confidenceState.popoverDescription}
+                tiers={confidenceState.tiers}
+              />
+            ) : undefined
+          }
+          toolbarLeading={
+            isDailySummaryView ? (
+              <Stack direction="row" spacing={0.75} alignItems="center">
+                <RoutineIcon sx={{ fontSize: '1.25rem' }} />
+                <Typography variant="subtitle2" sx={copilotSubtitleSx}>
+                  Daily summary
+                </Typography>
+              </Stack>
+            ) : !isAgenticView && !(isTaskRecommendationView && focusedTask) ? (
+              <Typography variant="subtitle2" sx={copilotSubtitleSx}>
                 {summaryTitle}
               </Typography>
-              <Stack direction="row" spacing={0.25}>
-                <IconButton size="small" aria-label="Copy summary">
-                  <ContentCopyOutlinedIcon fontSize="small" />
-                </IconButton>
-                <IconButton size="small" aria-label="Expand summary">
-                  <OpenInFullIcon fontSize="small" />
-                </IconButton>
-              </Stack>
-            </Stack>
+            ) : undefined
+          }
+        >
+          {isAgenticView && agenticPrompt ? (
+            <AgenticSearchResults prompt={agenticPrompt} />
+          ) : isDailySummaryView ? (
+            <DailySummaryContent />
+          ) : isTaskRecommendationView && focusedTask && seedComposerMessage ? (
+            <TaskRecommendationChat
+              insight={seedComposerMessage}
+              task={focusedTask}
+              backLabel={taskDetailsBackLabel}
+              onBack={onBackToTaskDetails}
+            />
+          ) : (
+            <>
             {focusedDocument && (
               <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
                 {focusedDocument.fileName}
@@ -680,7 +633,7 @@ export function CopilotPanel({
             </Typography>
             {documentPreviewMode && documentExtractedText && (
               <>
-                <Typography variant="subtitle2" sx={{ ...headingSx, mb: 1 }}>
+                <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
                   Extracted text
                 </Typography>
                 <Box
@@ -704,7 +657,7 @@ export function CopilotPanel({
                 </Box>
               </>
             )}
-            <Typography variant="subtitle2" sx={{ ...headingSx, mb: 1 }}>
+            <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
               {isTasksContext && !focusedTask ? 'At a glance' : 'Key insights'}
             </Typography>
             <Box component="ul" sx={{ m: 0, pl: 2.5, mb: isTasksContext && !focusedTask ? 2 : 2 }}>
@@ -717,7 +670,7 @@ export function CopilotPanel({
 
             {isTasksContext && !focusedTask && (
               <>
-                <Typography variant="subtitle2" sx={{ ...headingSx, mb: 1 }}>
+                <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
                   Next steps
                 </Typography>
                 <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }}>
@@ -749,18 +702,9 @@ export function CopilotPanel({
                 </Button>
               ))}
             </Stack>
-          </>
-        )}
-      </Box>
-
-      {!isAttachView && (
-        <CopilotComposer
-          placeholder={composerPlaceholder}
-          value={composerMessage}
-          onChange={setComposerMessage}
-        />
-      )}
-        </>
+            </>
+          )}
+        </CopilotDrawerShell>
       )}
     </Box>
   )

@@ -15,6 +15,7 @@ import {
   accentSubtle,
   surfaceMuted,
 } from '@/design-system/theme/themeSurfaces'
+import { listDataGridMinHeight } from '@/design-system/tokens/tableLayout'
 
 export type SortDirection = 'asc' | 'desc'
 
@@ -212,7 +213,13 @@ export function DataTable<T extends Record<string, unknown>>({
           : { border: 1, borderColor: 'divider', borderRadius: 1 }),
         bgcolor: 'background.paper',
         flex: borderless ? 1 : undefined,
-        minHeight: borderless ? 0 : undefined,
+        minHeight: borderless ? listDataGridMinHeight({ headerFilters: false, minVisibleRows: 6 }) : undefined,
+        maxHeight: borderless
+          ? {
+              xs: `clamp(${listDataGridMinHeight({ headerFilters: false, minVisibleRows: 6 })}px, calc(100vh - 20rem), 100%)`,
+              xl: '100%',
+            }
+          : undefined,
         overflow: borderless ? 'auto' : undefined,
         ...tableInteractionSx,
       }}

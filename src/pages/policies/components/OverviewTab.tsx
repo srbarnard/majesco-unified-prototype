@@ -20,6 +20,7 @@ import type { SxProps, Theme } from '@mui/material/styles'
 import type { AppTheme } from '@/design-system/theme'
 import { accentSubtle, accentSubtleHover, isDarkMode, surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
+import { listDataGridMaxHeight, listDataGridMinHeight } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import type {
   OverviewQuickAction,
@@ -69,8 +70,6 @@ function greySurfaceSx(theme: Theme) {
     bgcolor: surfaceMuted(theme),
   }
 }
-
-const TRANSACTIONS_CARD_HEIGHT = { xs: 360, md: 400 }
 
 function DashboardCard({
   title,
@@ -425,13 +424,17 @@ function TransactionsOverTimeChart({ data }: { data: OverviewTimeSeriesPoint[] }
   )
 }
 
+const transactionsGridHeightOptions = { headerFilters: false } as const
+
 function TransactionsCard({ transactions }: { transactions: OverviewTransaction[] }) {
   return (
     <Box
       sx={{
-        height: TRANSACTIONS_CARD_HEIGHT,
+        minHeight: listDataGridMinHeight(transactionsGridHeightOptions),
+        maxHeight: listDataGridMaxHeight(transactionsGridHeightOptions),
         display: 'flex',
         flexDirection: 'column',
+        width: '100%',
       }}
     >
       <DashboardCard

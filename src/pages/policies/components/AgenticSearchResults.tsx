@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography'
 import { Button } from '@/design-system/components'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { accentSubtle, accentSubtleHover, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { copilotSubtitleSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 
 const bodySx = {
   fontFamily: figmaFontFamilyStack.body,
@@ -203,7 +204,7 @@ export function AgenticSearchResults({ prompt }: AgenticSearchResultsProps) {
         </Typography>
       </Box>
 
-      <Typography variant="subtitle2" sx={headingSx}>
+      <Typography variant="subtitle2" sx={copilotSubtitleSx}>
         {content.heading}
       </Typography>
 
@@ -249,27 +250,6 @@ export function AgenticSearchResults({ prompt }: AgenticSearchResultsProps) {
 export function DailySummaryContent() {
   return (
     <Stack spacing={2}>
-      <Stack direction="row" spacing={1} alignItems="center">
-        <Box
-          sx={{
-            width: 28,
-            height: 28,
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            bgcolor: (theme) => accentSubtle(theme),
-            color: 'primary.main',
-            fontSize: '1rem',
-          }}
-        >
-          ☀
-        </Box>
-        <Typography variant="subtitle2" sx={headingSx}>
-          Daily summary
-        </Typography>
-      </Stack>
-
       <Box>
         <Typography variant="caption" color="error.main" sx={{ ...headingSx, display: 'block', mb: 0.5 }}>
           Overdue (2)

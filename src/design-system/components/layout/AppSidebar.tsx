@@ -12,6 +12,8 @@ import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { useTheme } from '@mui/material/styles'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import type { ReactNode } from 'react'
 import { useCallback, useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
@@ -237,7 +239,7 @@ function SidebarContent({
               }}
             >
               {item.copilotIcon ? (
-                <CopilotIcon size={isDrawer ? 20 : 22} />
+                <CopilotIcon size={isDrawer ? 20 : 22} active={active} />
               ) : (
                 Icon && <Icon sx={{ fontSize: isDrawer ? 20 : 22 }} />
               )}
@@ -300,7 +302,7 @@ function SidebarContent({
               >
                 <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
                   {item.copilotIcon ? (
-                    <CopilotIcon size={20} />
+                    <CopilotIcon size={20} active={moreActive} />
                   ) : (
                     item.icon && <item.icon sx={{ fontSize: 20 }} />
                   )}
@@ -396,63 +398,67 @@ function MobileDrawerContent({ onClose }: { onClose: () => void }) {
 }
 
 export function AppSidebar({ mobileOpen, onMobileClose }: AppSidebarProps) {
+  const theme = useTheme()
+  const isDesktopNav = useMediaQuery(theme.breakpoints.up('lg'))
   const { navRailWidth } = useSidebar()
 
   return (
     <>
-      <Drawer
-        anchor="left"
-        variant="temporary"
-        open={mobileOpen}
-        onClose={onMobileClose}
-        transitionDuration={drawerTransitionDuration}
-        slotProps={{
-          transition: {
-            easing: drawerTransitionEasing,
-          },
-        }}
-        ModalProps={{ keepMounted: true }}
-        sx={{
-          display: { xs: 'block', lg: 'none' },
-          '& .MuiBackdrop-root': {
-            backgroundColor: (theme) =>
-              theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.55)' : 'rgba(0, 0, 0, 0.32)',
-          },
-          '& .MuiDrawer-paper': {
-            boxSizing: 'border-box',
-            width: `min(100vw, ${MOBILE_DRAWER_WIDTH}px)`,
-            maxWidth: '100%',
+      {!isDesktopNav && (
+        <Drawer
+          anchor="left"
+          variant="temporary"
+          open={mobileOpen}
+          onClose={onMobileClose}
+          transitionDuration={drawerTransitionDuration}
+          slotProps={{
+            transition: {
+              easing: drawerTransitionEasing,
+            },
+          }}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            '& .MuiBackdrop-root': {
+              backgroundColor: (theme) =>
+                theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.55)' : 'rgba(0, 0, 0, 0.32)',
+            },
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: `min(100vw, ${MOBILE_DRAWER_WIDTH}px)`,
+              maxWidth: '100%',
+              height: '100%',
+              borderRight: 1,
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+              boxShadow: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? '4px 0 24px rgba(0, 0, 0, 0.45)'
+                  : '4px 0 24px rgba(0, 0, 0, 0.12)',
+            },
+          }}
+        >
+          <MobileDrawerContent onClose={onMobileClose} />
+        </Drawer>
+      )}
+
+      {isDesktopNav && (
+        <Box
+          component="nav"
+          aria-label="Main navigation"
+          sx={{
+            width: navRailWidth,
+            flexShrink: 0,
             height: '100%',
+            minHeight: 0,
             borderRight: 1,
             borderColor: 'divider',
-            bgcolor: 'background.paper',
-            boxShadow: (theme) =>
-              theme.palette.mode === 'dark'
-                ? '4px 0 24px rgba(0, 0, 0, 0.45)'
-                : '4px 0 24px rgba(0, 0, 0, 0.12)',
-          },
-        }}
-      >
-        <MobileDrawerContent onClose={onMobileClose} />
-      </Drawer>
-
-      <Box
-        component="nav"
-        aria-label="Main navigation"
-        sx={{
-          width: navRailWidth,
-          flexShrink: 0,
-          height: '100%',
-          minHeight: 0,
-          borderRight: 1,
-          borderColor: 'divider',
-          bgcolor: (theme) => getFigmaColors(theme.palette.mode).background.grey,
-          overflow: 'hidden',
-          display: { xs: 'none', lg: 'block' },
-        }}
-      >
-        <SidebarContent layout="rail" />
-      </Box>
+            bgcolor: (theme) => getFigmaColors(theme.palette.mode).background.grey,
+            overflow: 'hidden',
+          }}
+        >
+          <SidebarContent layout="rail" />
+        </Box>
+      )}
     </>
   )
 }

@@ -1,12 +1,11 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useCallback, useState } from 'react'
-import { useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { Card } from '@/design-system/components'
 import { PolicyAnalyticsDashboard } from '@/pages/policies/components/PolicyAnalyticsDashboard'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { type DocumentAttachMode, type DocumentAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
-import { DocumentPreviewWorkspace } from '@/pages/policies/components/DocumentPreviewWorkspace'
 import { DocumentsFilterPanel } from '@/pages/policies/components/DocumentsFilterPanel'
 import { DocumentsTab } from '@/pages/policies/components/DocumentsTab'
 import { OverviewTab } from '@/pages/policies/components/OverviewTab'
@@ -42,6 +41,7 @@ import { emptyDocumentsFilters, type DocumentsFilters } from '@/pages/policies/f
 
 export function PolicyDetails() {
   const { policyId = policyDetailsMock.policyNumber } = useParams<{ policyId: string }>()
+  const navigate = useNavigate()
   const isDesktop = useIsDesktopLayout()
   const [activeTab, setActiveTab] = useState<PolicyTab>('overview')
   const [starred, setStarred] = useState(true)
@@ -50,7 +50,6 @@ export function PolicyDetails() {
   const [documentsFilterOpen, setDocumentsFilterOpen] = useState(false)
   const [appliedDocumentsFilters, setAppliedDocumentsFilters] = useState<DocumentsFilters>(emptyDocumentsFilters)
   const [copilotDocumentFocus, setCopilotDocumentFocus] = useState<PolicyDocument | null>(null)
-  const [documentPreview, setDocumentPreview] = useState<PolicyDocument | null>(null)
   const [documentsCopilotMode, setDocumentsCopilotMode] = useState<'workspace' | 'impact'>('workspace')
   const [attachMode, setAttachMode] = useState<DocumentAttachMode | null>(null)
 
@@ -99,7 +98,6 @@ export function PolicyDetails() {
   const handleTabChange = useCallback((tab: PolicyTab) => {
     setActiveTab(tab)
     setCopilotDocumentFocus(null)
-    setDocumentPreview(null)
     setDocumentsFilterOpen(false)
     setDocumentsCopilotMode('workspace')
     setAttachMode(null)
@@ -117,33 +115,25 @@ export function PolicyDetails() {
     setActiveRightPanel((current) => (current === 'copilot' ? null : current))
   }, [isDesktop])
 
-  const handleDocumentOpen = useCallback((document: PolicyDocument) => {
-    setDocumentPreview(document)
-    setCopilotDocumentFocus(document)
-    setDocumentsFilterOpen(false)
-    setAttachMode(null)
-    setActiveRightPanel(null)
-  }, [])
+  const handleDocumentOpen = useCallback(
+    (document: PolicyDocument) => {
+      navigate(`/policies/${policyId}/documents/${document.id}`)
+    },
+    [navigate, policyId],
+  )
 
-  const handleCloseDocumentPreview = useCallback(() => {
-    setDocumentPreview(null)
-    setCopilotDocumentFocus(null)
-    setAttachMode(null)
-  }, [])
+  const getDocumentHref = useCallback(
+    (document: PolicyDocument) => `/policies/${policyId}/documents/${document.id}`,
+    [policyId],
+  )
 
   const handleAttachTo = useCallback((target: DocumentAttachTarget, documents: PolicyDocument[]) => {
     setAttachMode({ target, documents })
     setDocumentsFilterOpen(false)
     setDocumentsCopilotMode('workspace')
     setCopilotDocumentFocus(documents[0] ?? null)
-
-    if (documentPreview) {
-      return
-    }
-
-    setDocumentPreview(null)
     setActiveRightPanel('copilot')
-  }, [documentPreview])
+  }, [])
 
   const handleCloseAttach = useCallback(() => {
     setAttachMode(null)
@@ -163,27 +153,15 @@ export function PolicyDetails() {
 
   const showCopilotPanel = activeRightPanel === 'copilot'
   const isDocumentsTab = activeTab === 'documents'
-  const documentPreviewOpen = Boolean(documentPreview)
-  const rightPanelOpen = documentsFilterOpen || activeRightPanel !== null || documentPreviewOpen
-  const rightPanelVariant = documentPreviewOpen ? 'wide' : 'standard'
+  const rightPanelOpen = documentsFilterOpen || activeRightPanel !== null
 
   const handleCloseMobileRightPanel = useCallback(() => {
-    if (documentPreviewOpen) {
-      handleCloseDocumentPreview()
-      return
-    }
     if (documentsFilterOpen) {
       handleCloseDocumentsFilter()
       return
     }
     handleCloseRightPanel()
-  }, [
-    documentPreviewOpen,
-    documentsFilterOpen,
-    handleCloseDocumentPreview,
-    handleCloseDocumentsFilter,
-    handleCloseRightPanel,
-  ])
+  }, [documentsFilterOpen, handleCloseDocumentsFilter, handleCloseRightPanel])
 
   return (
     <Box
@@ -246,8 +224,8 @@ export function PolicyDetails() {
               documentStoryHighlights={policyDetailsMock.documentStoryHighlights}
               appliedFilters={appliedDocumentsFilters}
               onDocumentOpen={handleDocumentOpen}
+              getDocumentHref={getDocumentHref}
               onAttachTo={handleAttachTo}
-              activePreviewDocumentId={documentPreview?.id ?? null}
               activeCopilotDocumentId={copilotDocumentFocus?.id ?? null}
               onShowStoryImpact={handleShowStoryImpact}
             />
@@ -271,23 +249,12 @@ export function PolicyDetails() {
         </Box>
       </Box>
 
-      <ResizableRightPanel open={rightPanelOpen} variant={rightPanelVariant} onClose={handleCloseMobileRightPanel}>
+      <ResizableRightPanel open={rightPanelOpen} onClose={handleCloseMobileRightPanel}>
         {documentsFilterOpen && (
           <DocumentsFilterPanel
             appliedFilters={appliedDocumentsFilters}
             onApply={handleApplyDocumentsFilters}
             onClose={handleCloseDocumentsFilter}
-          />
-        )}
-        {documentPreviewOpen && documentPreview && (
-          <DocumentPreviewWorkspace
-            document={documentPreview}
-            context="policy"
-            attachMode={attachMode}
-            attachContextLabel={policyDetailsMock.policyNumber}
-            onClose={handleCloseDocumentPreview}
-            onCloseAttach={handleCloseAttach}
-            onAttachSave={handleAttachSave}
           />
         )}
         {activeRightPanel === 'parties' && <PartiesPanel onClose={handleCloseRightPanel} />}

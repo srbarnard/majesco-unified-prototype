@@ -10,11 +10,13 @@ import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Collapse from '@mui/material/Collapse'
 import IconButton from '@mui/material/IconButton'
+import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Select from '@mui/material/Select'
 import Stack from '@mui/material/Stack'
 import Toolbar from '@mui/material/Toolbar'
 import { useState } from 'react'
+import { useNavigate } from 'react-router'
 import { GlobalSearchField } from '@/design-system/components/GlobalSearch/GlobalSearchField'
 import { useBrowserHistoryNavigation } from '@/hooks/useBrowserHistoryNavigation'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -36,9 +38,32 @@ type AppTopNavbarProps = {
   onMobileMenuClick?: () => void
 }
 
+type CreateMenuItem = {
+  label: string
+  disabled: boolean
+  path?: string
+}
+
+const CREATE_MENU_ITEMS: CreateMenuItem[] = [
+  { label: 'Customer', disabled: true },
+  { label: 'Quote', disabled: false, path: '/quotes/new' },
+  { label: 'Policy', disabled: true },
+  { label: 'Claim', disabled: true },
+  { label: 'Task', disabled: true },
+]
+
 export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopNavbarProps) {
+  const navigate = useNavigate()
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [createMenuAnchor, setCreateMenuAnchor] = useState<null | HTMLElement>(null)
   const { canGoBack, canGoForward, goBack, goForward } = useBrowserHistoryNavigation()
+
+  const handleCreateMenuClose = () => setCreateMenuAnchor(null)
+
+  const handleCreateMenuSelect = (path?: string) => {
+    handleCreateMenuClose()
+    if (path) navigate(path)
+  }
 
   return (
     <AppBar
@@ -74,7 +99,11 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
             onClick={onMobileMenuClick}
             aria-label="Open navigation menu"
             size="small"
-            sx={{ display: { xs: 'inline-flex', lg: 'none' }, ml: 0.5 }}
+            sx={(theme) => ({
+              display: 'inline-flex',
+              ml: 0.5,
+              [theme.breakpoints.up('lg')]: { display: 'none' },
+            })}
           >
             <MenuIcon fontSize="small" />
           </IconButton>
@@ -156,9 +185,40 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
           >
             <SearchIcon fontSize="small" />
           </IconButton>
-          <IconButton size="small" aria-label="Create new">
+          <IconButton
+            size="small"
+            aria-label="Create new"
+            aria-haspopup="true"
+            aria-expanded={Boolean(createMenuAnchor)}
+            onClick={(event) => setCreateMenuAnchor(event.currentTarget)}
+          >
             <AddIcon fontSize="small" />
           </IconButton>
+          <Menu
+            anchorEl={createMenuAnchor}
+            open={Boolean(createMenuAnchor)}
+            onClose={handleCreateMenuClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            slotProps={{
+              paper: {
+                sx: {
+                  minWidth: 160,
+                  mt: 0.75,
+                },
+              },
+            }}
+          >
+            {CREATE_MENU_ITEMS.map((item) => (
+              <MenuItem
+                key={item.label}
+                disabled={item.disabled}
+                onClick={() => handleCreateMenuSelect(item.path)}
+              >
+                {item.label}
+              </MenuItem>
+            ))}
+          </Menu>
           <IconButton color="inherit" aria-label="Settings" sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
             <SettingsOutlinedIcon fontSize="small" />
           </IconButton>

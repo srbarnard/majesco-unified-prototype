@@ -6,8 +6,9 @@ import type { SxProps, Theme } from '@mui/material/styles'
 import { DataGridPremium, type GridColDef } from '@mui/x-data-grid-premium'
 import { useMemo } from 'react'
 import { dataGridInteractionSx } from '@/design-system/components'
+import { listDataGridContainerSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { dataGridShellSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { teamMembersMock, type TeamMemberRecord } from '@/pages/tasks/data/mockTasks'
 
 type TeamStructureOverviewProps = {
@@ -119,7 +120,7 @@ export function TeamStructureOverview({ searchQuery }: TeamStructureOverviewProp
   )
 
   return (
-    <Box sx={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={listDataGridContainerSx({ headerFilters: false, footer: true })}>
       <DataGridPremium
         rows={rows}
         columns={columns}
@@ -134,10 +135,7 @@ export function TeamStructureOverview({ searchQuery }: TeamStructureOverviewProp
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}
         sx={[
-          {
-            flex: 1,
-            minHeight: 0,
-            height: '100%',
+          ...dataGridShellSx({
             border: 'none',
             borderRadius: 0,
             bgcolor: 'background.paper',
@@ -162,7 +160,7 @@ export function TeamStructureOverview({ searchQuery }: TeamStructureOverviewProp
               borderTop: 1,
               borderColor: 'divider',
             },
-          },
+          }, { headerFilters: false, footer: true }),
           dataGridInteractionSx,
         ] as SxProps<Theme>}
       />

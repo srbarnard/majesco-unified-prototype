@@ -8,6 +8,7 @@ import Typography from '@mui/material/Typography'
 import { Button } from '@/design-system/components'
 import { accentSubtle, accentSubtleHover } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { copilotSectionHeadingSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
 import { resolveTaskRecommendationResponse } from '@/pages/tasks/utils/resolveTaskRecommendationResponse'
 
@@ -98,7 +99,7 @@ export function TaskRecommendationChat({
       </Typography>
 
       <Box>
-        <Typography variant="subtitle2" sx={{ ...headingSx, fontSize: '0.9375rem', mb: 1 }}>
+        <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
           {content.heading}
         </Typography>
         {content.intro && (

@@ -29,9 +29,10 @@ import {
   tableActionIconButtonSx,
   tableLinkSx,
 } from '@/design-system/components'
-import { accentSubtle, dataGridShellSx, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
+import { listDataGridContainerSx } from '@/design-system/tokens/tableLayout'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { accentSubtle, dataGridShellSx, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import { QuoteStatusChip } from '@/pages/quotes/components/QuoteStatusChip'
 import type { Quote } from '@/pages/quotes/data/mockQuotes'
 
@@ -347,7 +348,7 @@ export function QuotesDataGrid({
   )
 
   return (
-    <Box sx={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={listDataGridContainerSx({ headerFilters: true })}>
       <DataGridPremium
         apiRef={apiRef}
         rows={rows}

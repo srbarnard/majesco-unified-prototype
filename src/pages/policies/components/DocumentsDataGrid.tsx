@@ -16,6 +16,7 @@ import {
 } from '@mui/x-data-grid-premium'
 import { useMemo, useState } from 'react'
 import type { MouseEvent } from 'react'
+import { Link as RouterLink } from 'react-router'
 import type { SxProps, Theme } from '@mui/material/styles'
 import {
   Chip,
@@ -27,7 +28,8 @@ import {
   tableActionIconButtonSx,
   tableLinkSx,
 } from '@/design-system/components'
-import { accentSubtle, dataGridPinnedShadow, dataGridShellSx, surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
+import { listDataGridContainerSx } from '@/design-system/tokens/tableLayout'
+import { dataGridPinnedBodyCellBackground, dataGridPinnedShadow, dataGridShellSx, surfaceMuted, surfaceSubtle, accentSubtle } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
 
@@ -38,6 +40,7 @@ type DocumentsDataGridProps = {
   rowSelectionModel: GridRowSelectionModel
   onRowSelectionModelChange: (model: GridRowSelectionModel) => void
   onDocumentOpen?: (document: PolicyDocument) => void
+  getDocumentHref?: (document: PolicyDocument) => string
   activePreviewDocumentId?: string | null
   activeCopilotDocumentId?: string | null
 }
@@ -62,36 +65,54 @@ function formatDate(value: string) {
 function DocumentNameCell({
   row,
   onDocumentOpen,
+  getDocumentHref,
   isPreviewActive,
 }: {
   row: PolicyDocument
   onDocumentOpen?: (document: PolicyDocument) => void
+  getDocumentHref?: (document: PolicyDocument) => string
   isPreviewActive?: boolean
 }) {
+  const linkSx = {
+    fontWeight: 600,
+    textAlign: 'left',
+    display: 'block',
+    mb: 0.5,
+    ...bodySx,
+    ...tableLinkSx,
+    ...(isPreviewActive && { color: 'primary.main' }),
+  } as const
+
   return (
     <Box sx={{ py: 0.25, width: '100%', pr: 1, minWidth: 0 }}>
-      <Link
-        component="button"
-        variant="body2"
-        underline="hover"
-        onClick={(event) => {
-          stopGridNavigation(event)
-          onDocumentOpen?.(row)
-        }}
-        onMouseDown={stopGridNavigation}
-        aria-pressed={isPreviewActive}
-        sx={{
-          fontWeight: 600,
-          textAlign: 'left',
-          display: 'block',
-          mb: 0.5,
-          ...bodySx,
-          ...tableLinkSx,
-          ...(isPreviewActive && { color: 'primary.main' }),
-        }}
-      >
-        {row.fileName}
-      </Link>
+      {getDocumentHref ? (
+        <Link
+          component={RouterLink}
+          to={getDocumentHref(row)}
+          variant="body2"
+          underline="hover"
+          onMouseDown={stopGridNavigation}
+          onClick={stopGridNavigation}
+          sx={linkSx}
+        >
+          {row.fileName}
+        </Link>
+      ) : (
+        <Link
+          component="button"
+          variant="body2"
+          underline="hover"
+          onClick={(event) => {
+            stopGridNavigation(event)
+            onDocumentOpen?.(row)
+          }}
+          onMouseDown={stopGridNavigation}
+          aria-pressed={isPreviewActive}
+          sx={linkSx}
+        >
+          {row.fileName}
+        </Link>
+      )}
       <Stack direction="row" spacing={0.5} alignItems="flex-start">
         <Box sx={{ mt: 0.125, flexShrink: 0, lineHeight: 0, color: 'text.secondary' }}>
           <CopilotIcon size={14} active={false} />
@@ -198,6 +219,7 @@ export function DocumentsDataGrid({
   rowSelectionModel,
   onRowSelectionModelChange,
   onDocumentOpen,
+  getDocumentHref,
   activePreviewDocumentId,
   activeCopilotDocumentId,
 }: DocumentsDataGridProps) {
@@ -213,6 +235,7 @@ export function DocumentsDataGrid({
           <DocumentNameCell
             row={row}
             onDocumentOpen={onDocumentOpen}
+            getDocumentHref={getDocumentHref}
             isPreviewActive={activePreviewDocumentId === row.id}
           />
         ),
@@ -296,11 +319,11 @@ export function DocumentsDataGrid({
         ),
       },
     ],
-    [activeCopilotDocumentId, activePreviewDocumentId, onDocumentOpen],
+    [activeCopilotDocumentId, activePreviewDocumentId, getDocumentHref, onDocumentOpen],
   )
 
   return (
-    <Box sx={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={listDataGridContainerSx({ headerFilters: true, footer: true })}>
       <DataGridPremium
         rows={rows}
         columns={columns}
@@ -372,15 +395,15 @@ export function DocumentsDataGrid({
               bgcolor: (theme) => surfaceMuted(theme),
             },
             '& .MuiDataGrid-row.Mui-selected': {
-              bgcolor: (theme) => accentSubtle(theme),
+              bgcolor: 'transparent !important',
               '&:hover': {
-                bgcolor: (theme) => accentSubtle(theme),
+                bgcolor: 'transparent !important',
               },
               '& .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-cell--pinnedRight': {
-                bgcolor: (theme) => accentSubtle(theme),
+                bgcolor: (theme) => `${dataGridPinnedBodyCellBackground(theme)} !important`,
               },
               '&:hover .MuiDataGrid-cell--pinnedLeft, &:hover .MuiDataGrid-cell--pinnedRight': {
-                bgcolor: (theme) => `${accentSubtle(theme)} !important`,
+                bgcolor: (theme) => `${dataGridPinnedBodyCellBackground(theme)} !important`,
               },
             },
             '& .MuiDataGrid-row.document-row-active': {
@@ -400,7 +423,7 @@ export function DocumentsDataGrid({
               borderColor: 'divider',
               minHeight: 52,
             },
-          }), dataGridInteractionSx] as SxProps<Theme>}
+          }, { headerFilters: true, footer: true }), dataGridInteractionSx] as SxProps<Theme>}
       />
     </Box>
   )

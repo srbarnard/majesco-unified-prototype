@@ -4,6 +4,7 @@ import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useMemo, useState } from 'react'
 import type { GridRowSelectionModel } from '@mui/x-data-grid-premium'
 import { layoutTokens } from '@/design-system/tokens/layout'
+import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { useTasksLookupFromUrl } from '@/hooks/useLookupFromUrl'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
@@ -218,7 +219,7 @@ export function TasksPage() {
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            overflow: isAllTasksTab || isTeamTab ? 'hidden' : 'auto',
+            ...listPageContentOverflowSx(isAllTasksTab || isTeamTab),
             px: contentPx,
             pt: LIST_SECTION_GAP,
             pb: contentPx,

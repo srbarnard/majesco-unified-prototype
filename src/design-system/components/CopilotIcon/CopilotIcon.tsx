@@ -18,9 +18,8 @@ const COPILOT_ICONS = {
 } as const
 
 function resolveCopilotIconSrc(active: boolean, inverted: boolean, isDarkMode: boolean) {
-  if (active && inverted) return COPILOT_ICONS.white
+  if (isDarkMode || inverted) return COPILOT_ICONS.white
   if (active) return COPILOT_ICONS.active
-  if (inverted || isDarkMode) return COPILOT_ICONS.white
   return COPILOT_ICONS.inactive
 }
 
@@ -30,6 +29,7 @@ export function CopilotIcon({ size = 18, active = false, inverted = false, sx }:
   const resolvedMode = mode === 'system' ? systemMode : mode
   const isDarkMode = resolvedMode === 'dark'
   const src = resolveCopilotIconSrc(active, inverted, isDarkMode)
+  const mutedInDarkMode = isDarkMode && !active && !inverted
 
   return (
     <Box
@@ -47,6 +47,7 @@ export function CopilotIcon({ size = 18, active = false, inverted = false, sx }:
         objectPosition: 'center',
         flexShrink: 0,
         overflow: 'visible',
+        opacity: mutedInDarkMode ? 0.7 : 1,
         ...sx,
       }}
     />

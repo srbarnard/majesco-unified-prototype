@@ -29,6 +29,7 @@ import {
   tableActionIconButtonSx,
   tableLinkSx,
 } from '@/design-system/components'
+import { listDataGridContainerSx } from '@/design-system/tokens/tableLayout'
 import { accentSubtle, dataGridPinnedShadow, dataGridShellSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { TaskPriorityIndicator } from '@/pages/tasks/components/TaskPriorityIndicator'
@@ -352,7 +353,7 @@ export function TasksDataGrid({
   )
 
   return (
-    <Box sx={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={listDataGridContainerSx({ headerFilters: true, footer: true })}>
       <DataGridPremium
         apiRef={apiRef}
         rows={rows}
@@ -453,7 +454,7 @@ export function TasksDataGrid({
               borderColor: 'divider',
               minHeight: 52,
             },
-          }), dataGridInteractionSx] as SxProps<Theme>}
+          }, { headerFilters: true, footer: true }), dataGridInteractionSx] as SxProps<Theme>}
       />
     </Box>
   )

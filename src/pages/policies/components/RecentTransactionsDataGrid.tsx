@@ -7,6 +7,7 @@ import { DataGridPremium, type GridColDef } from '@mui/x-data-grid-premium'
 import { useMemo } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { Chip, dataGridInteractionSx } from '@/design-system/components'
+import { listDataGridContainerSx } from '@/design-system/tokens/tableLayout'
 import { dataGridShellSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import type { OverviewTransaction } from '@/pages/policies/data/mockOverview'
@@ -123,7 +124,7 @@ export function RecentTransactionsDataGrid({ rows }: RecentTransactionsDataGridP
   )
 
   return (
-    <Box sx={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={listDataGridContainerSx({ headerFilters: false })}>
       <DataGridPremium
         rows={rows}
         columns={columns}
@@ -173,7 +174,7 @@ export function RecentTransactionsDataGrid({ rows }: RecentTransactionsDataGridP
               '& .MuiDataGrid-row:last-of-type .MuiDataGrid-cell': {
                 borderBottom: 0,
               },
-            }),
+            }, { headerFilters: false }),
             dataGridInteractionSx,
           ] as SxProps<Theme>
         }

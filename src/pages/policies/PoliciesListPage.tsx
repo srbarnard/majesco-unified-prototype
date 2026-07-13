@@ -4,6 +4,7 @@ import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useMemo, useState } from 'react'
 import { ListDataGridToolbar } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
+import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { usePoliciesLookupFromUrl } from '@/hooks/useLookupFromUrl'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
@@ -165,7 +166,7 @@ export function PoliciesListPage() {
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            overflow: isAllPoliciesTab ? 'hidden' : 'auto',
+            ...listPageContentOverflowSx(isAllPoliciesTab),
             px: contentPx,
             pt: LIST_SECTION_GAP,
             pb: contentPx,

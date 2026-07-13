@@ -4,6 +4,7 @@ import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useMemo, useState } from 'react'
 import { ListDataGridToolbar } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
+import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { useQuotesLookupFromUrl } from '@/hooks/useLookupFromUrl'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
@@ -153,7 +154,7 @@ export function QuotesPage() {
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            overflow: isAllQuotesTab ? 'hidden' : 'auto',
+            ...listPageContentOverflowSx(isAllQuotesTab),
             px: contentPx,
             pt: LIST_SECTION_GAP,
             pb: contentPx,

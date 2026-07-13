@@ -1,5 +1,4 @@
 import CloseIcon from '@mui/icons-material/Close'
-import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import MuiButton from '@mui/material/Button'
@@ -51,23 +50,9 @@ function getFieldsSectionTitle(kind: RecentActivityItem['kind']): string {
   }
 }
 
-function getActivityFooterCaption(activity: RecentActivityItem) {
-  if (activity.policyNumber) {
-    return `${activity.insuredName} · ${activity.policyNumber}`
-  }
-  if (activity.quoteNumber) {
-    return `${activity.insuredName} · ${activity.quoteNumber}`
-  }
-  if (activity.claimNumber) {
-    return `${activity.insuredName} · ${activity.claimNumber}`
-  }
-  return activity.insuredName
-}
-
 export function ActivityDetailsPanel({ activity, onClose, onRecommendationClick }: ActivityDetailsPanelProps) {
   const { typeLabel } = activityVisuals[activity.kind]
   const fieldsTitle = getFieldsSectionTitle(activity.kind)
-  const footerCaption = getActivityFooterCaption(activity)
   const hasFooterLinks = Boolean(activity.primaryLink || activity.secondaryLink)
 
   return (
@@ -209,57 +194,45 @@ export function ActivityDetailsPanel({ activity, onClose, onRecommendationClick 
             flexShrink: 0,
           }}
         >
-          <Stack spacing={1.25}>
-            <Stack direction="row" spacing={1.5} alignItems="stretch">
-              {activity.primaryLink ? (
-                <MuiButton
-                  component={RouterLink}
-                  to={activity.primaryLink.to}
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  disableElevation
-                  startIcon={<OpenInNewOutlinedIcon sx={{ fontSize: 18 }} />}
-                  sx={filterFooterButtonSx}
-                >
-                  {activity.primaryLink.label}
-                </MuiButton>
-              ) : activity.secondaryLink ? (
-                <Button variant="contained" color="primary" fullWidth disabled sx={filterFooterButtonSx}>
-                  No primary action
-                </Button>
-              ) : null}
-              {activity.secondaryLink ? (
-                <MuiButton
-                  component={RouterLink}
-                  to={activity.secondaryLink.to}
-                  variant="outlined"
-                  color="primary"
-                  fullWidth
-                  disableElevation
-                  startIcon={<OpenInNewOutlinedIcon sx={{ fontSize: 18 }} />}
-                  sx={{
-                    ...filterFooterButtonSx,
-                    borderWidth: 2,
-                    '&:hover': { borderWidth: 2 },
-                  }}
-                >
-                  {activity.secondaryLink.label}
-                </MuiButton>
-              ) : (
-                <Button variant="outlined" color="primary" disabled fullWidth sx={filterFooterButtonSx}>
-                  No link
-                </Button>
-              )}
-            </Stack>
-
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontFamily: figmaFontFamilyStack.body, textAlign: 'center', lineHeight: 1.4 }}
-            >
-              {footerCaption}
-            </Typography>
+          <Stack direction="row" spacing={1.5} alignItems="stretch">
+            {activity.primaryLink ? (
+              <MuiButton
+                component={RouterLink}
+                to={activity.primaryLink.to}
+                variant="contained"
+                color="primary"
+                fullWidth
+                disableElevation
+                sx={filterFooterButtonSx}
+              >
+                {activity.primaryLink.label}
+              </MuiButton>
+            ) : activity.secondaryLink ? (
+              <Button variant="contained" color="primary" fullWidth disabled sx={filterFooterButtonSx}>
+                No primary action
+              </Button>
+            ) : null}
+            {activity.secondaryLink ? (
+              <MuiButton
+                component={RouterLink}
+                to={activity.secondaryLink.to}
+                variant="outlined"
+                color="primary"
+                fullWidth
+                disableElevation
+                sx={{
+                  ...filterFooterButtonSx,
+                  borderWidth: 2,
+                  '&:hover': { borderWidth: 2 },
+                }}
+              >
+                {activity.secondaryLink.label}
+              </MuiButton>
+            ) : (
+              <Button variant="outlined" color="primary" disabled fullWidth sx={filterFooterButtonSx}>
+                No link
+              </Button>
+            )}
           </Stack>
         </Box>
       )}

@@ -25,6 +25,7 @@ import {
   listDataGridFilterProps,
   tableActionIconButtonSx,
 } from '@/design-system/components'
+import { listDataGridContainerSx } from '@/design-system/tokens/tableLayout'
 import { dataGridShellSx } from '@/design-system/theme/themeSurfaces'
 import { insuredIdFromName } from '@/pages/shared/insuredId'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -270,7 +271,7 @@ export function PoliciesListDataGrid({
   )
 
   return (
-    <Box sx={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={listDataGridContainerSx({ headerFilters: true })}>
       <DataGridPremium
         apiRef={apiRef}
         rows={rows}

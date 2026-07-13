@@ -22,6 +22,7 @@ function AppLayoutContent() {
   const isFullBleedPage =
     location.pathname === '/' ||
     location.pathname === '/quotes' ||
+    location.pathname === '/quotes/new' ||
     location.pathname === '/tasks' ||
     location.pathname === '/policies' ||
     location.pathname === '/copilot-studio' ||

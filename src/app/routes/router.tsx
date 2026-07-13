@@ -8,8 +8,10 @@ import { CopilotStudioPage } from '@/pages/copilot-studio/CopilotStudioPage'
 import { PoliciesListPage } from '@/pages/policies/PoliciesListPage'
 import { SettingsPage } from '@/app/pages/SettingsPage'
 import { PolicyDetails } from '@/pages/policies/PolicyDetails'
+import { DocumentViewerPage } from '@/pages/policies/DocumentViewerPage'
 import { InsuredDetails } from '@/pages/insureds/InsuredDetails'
 import { QuoteDetails } from '@/pages/quotes/QuoteDetails'
+import { NewQuoteWizardPage } from '@/pages/quotes/NewQuoteWizardPage'
 import { QuotesPage } from '@/pages/quotes/QuotesPage'
 import { TasksPage } from '@/pages/tasks/TasksPage'
 
@@ -23,7 +25,9 @@ export const router = createBrowserRouter([
       { path: 'favorites', element: <PlaceholderPage title="Favorites" description="Saved policies, insureds, and watchlists will appear here." /> },
       { path: 'tasks', element: <TasksPage /> },
       { path: 'quotes', element: <QuotesPage /> },
+      { path: 'quotes/new', element: <NewQuoteWizardPage /> },
       { path: 'quotes/:quoteId', element: <QuoteDetails /> },
+      { path: 'quotes/:quoteId/documents/:docId', element: <DocumentViewerPage context="quote-detail" /> },
       { path: 'submissions', element: <PlaceholderPage title="Submissions" description="New business and endorsement submissions will appear here." /> },
       { path: 'insureds', element: <PlaceholderPage title="Insureds" description="Search and manage insured accounts." /> },
       { path: 'insureds/:insuredId', element: <InsuredDetails /> },
@@ -32,6 +36,7 @@ export const router = createBrowserRouter([
       { path: 'copilot-studio', element: <CopilotStudioPage /> },
       { path: 'policies', element: <PoliciesListPage /> },
       { path: 'policies/:policyId', element: <PolicyDetails /> },
+      { path: 'policies/:policyId/documents/:docId', element: <DocumentViewerPage context="policy" /> },
       { path: 'claims', element: <ClaimsPage /> },
       { path: 'customers', element: <CustomersPage /> },
       { path: 'settings', element: <SettingsPage /> },

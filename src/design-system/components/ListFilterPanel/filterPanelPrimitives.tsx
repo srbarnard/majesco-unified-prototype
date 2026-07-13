@@ -100,14 +100,13 @@ export function FilterFieldLabel({ fieldId, children }: { fieldId: string; child
     <Typography
       component="label"
       htmlFor={fieldId}
+      variant="caption"
       sx={{
         display: 'block',
         fontFamily: figmaFontFamilyStack.body,
-        fontWeight: figmaFontWeights.regular,
-        fontSize: '0.875rem',
-        lineHeight: 1.5,
+        fontWeight: 500,
         color: 'text.primary',
-        mb: '7px',
+        mb: 0.5,
       }}
     >
       {children}

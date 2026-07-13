@@ -108,8 +108,7 @@ export function TaskDescriptionCard({
         <Box
           sx={(theme) => ({
             bgcolor: accentSubtle(theme),
-            borderTop: '2px solid',
-            borderColor: theme.palette.common.white,
+            mt: '2px',
             px: cardPaddingX,
             pt: 1.75,
             pb: 1.75,

@@ -1,9 +1,12 @@
 /**
  * Majesco Figma breakpoint tokens (Mode 1).
  * Min-width values in px — align with MUI `theme.breakpoints`.
+ *
+ * `xs` must be 0 so MUI mobile-first responsive props apply on narrow phones
+ * (e.g. iPhone ~390px). A non-zero xs leaves a gap with no matching styles.
  */
 export const figmaBreakpoints = {
-  xs: 444,
+  xs: 0,
   sm: 600,
   md: 900,
   lg: 1200,

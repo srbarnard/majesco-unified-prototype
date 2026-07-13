@@ -4,6 +4,7 @@ import type { GridRowSelectionModel } from '@mui/x-data-grid-premium'
 import { useMemo, useState } from 'react'
 import type { Theme } from '@mui/material/styles'
 import { layoutTokens } from '@/design-system/tokens/layout'
+import { listDataGridMinHeight } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { isDarkMode } from '@/design-system/theme/themeSurfaces'
 import { applyDocumentsFilters } from '@/pages/policies/filters/applyDocumentsFilters'
@@ -27,7 +28,7 @@ const GUTTER = layoutTokens.contentPaddingX / 8
 function documentsGridShellSx(theme: Theme) {
   return {
     flex: 1,
-    minHeight: 0,
+    minHeight: listDataGridMinHeight({ headerFilters: true, footer: true }),
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
@@ -45,6 +46,7 @@ type DocumentsTabProps = {
   documentStoryHighlights?: DocumentStoryHighlight[]
   appliedFilters: DocumentsFilters
   onDocumentOpen?: (document: PolicyDocument) => void
+  getDocumentHref?: (document: PolicyDocument) => string
   onAttachTo?: (target: DocumentAttachTarget, documents: PolicyDocument[]) => void
   activePreviewDocumentId?: string | null
   activeCopilotDocumentId?: string | null
@@ -77,6 +79,7 @@ export function DocumentsTab({
   documentStoryHighlights,
   appliedFilters,
   onDocumentOpen,
+  getDocumentHref,
   onAttachTo,
   activePreviewDocumentId,
   activeCopilotDocumentId,
@@ -172,6 +175,7 @@ export function DocumentsTab({
           rowSelectionModel={rowSelectionModel}
           onRowSelectionModelChange={setRowSelectionModel}
           onDocumentOpen={onDocumentOpen}
+          getDocumentHref={getDocumentHref}
           activePreviewDocumentId={activePreviewDocumentId}
           activeCopilotDocumentId={activeCopilotDocumentId}
         />

@@ -5,6 +5,7 @@ import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
+import { useNavigate } from 'react-router'
 import { Button, CopilotIcon } from '@/design-system/components'
 import { getPanelToggleButtonStyles, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -66,6 +67,7 @@ export function QuotesHeader({
   copilotOpen,
   onToggleCopilot,
 }: QuotesHeaderProps) {
+  const navigate = useNavigate()
   const contentPx = `${layoutTokens.contentPaddingX}px`
 
   return (
@@ -94,6 +96,7 @@ export function QuotesHeader({
           color="primary"
           startIcon={<AddIcon />}
           sx={{ flexShrink: 0 }}
+          onClick={() => navigate('/quotes/new')}
         >
           Create quote
         </Button>

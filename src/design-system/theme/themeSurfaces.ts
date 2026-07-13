@@ -1,4 +1,8 @@
 import type { SxProps, Theme } from '@mui/material/styles'
+import {
+  listDataGridShellHeightSx,
+  type ListDataGridHeightOptions,
+} from '@/design-system/tokens/tableLayout'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 
@@ -62,6 +66,9 @@ export function getPanelToggleButtonStyles(theme: Theme, active: boolean) {
     '&:hover': {
       bgcolor: active ? accentSubtleHover(theme) : surfaceSubtle(theme),
       boxShadow: 'none',
+    },
+    '& .MuiButton-startIcon': {
+      opacity: 1,
     },
   }
 }
@@ -274,6 +281,13 @@ const dataGridShellBaseSx = {
   },
 } as const
 
-export function dataGridShellSx(extra?: Record<string, unknown>): SxProps<Theme>[] {
-  return extra ? [dataGridShellBaseSx, extra] : [dataGridShellBaseSx]
+export function dataGridShellSx(
+  extra?: Record<string, unknown>,
+  heightOptions?: ListDataGridHeightOptions,
+): SxProps<Theme>[] {
+  const shell = {
+    ...dataGridShellBaseSx,
+    ...listDataGridShellHeightSx(heightOptions ?? { headerFilters: true }),
+  }
+  return extra ? [shell, extra] : [shell]
 }
