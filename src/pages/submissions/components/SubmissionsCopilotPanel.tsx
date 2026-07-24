@@ -10,7 +10,6 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Button } from '@/design-system/components'
 import { accentSubtle, accentSubtleHover } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { layoutTokens } from '@/design-system/tokens/layout'
 import {
   DEFAULT_COPILOT_CONFIDENCE_TIERS,
   getCopilotConfidenceStatusLabel,
@@ -189,9 +188,11 @@ const flatListRowSx = {
 function IssueListItem({
   issue,
   onSelect,
+  isLast = false,
 }: {
   issue: SubmissionIssue
   onSelect: (issue: SubmissionIssue) => void
+  isLast?: boolean
 }) {
   const isBlocking = issue.severity === 'blocking'
   return (
@@ -201,6 +202,7 @@ function IssueListItem({
       onClick={() => onSelect(issue)}
       sx={{
         ...flatListRowSx,
+        borderBottom: isLast ? 'none' : 1,
         cursor: 'pointer',
         '&:hover': { bgcolor: 'action.hover' },
       }}
@@ -422,10 +424,11 @@ function ReadyStructureOptionsView({
       <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
         {options.length === 1 ? 'Proposed structure' : 'Structure options'}
       </Typography>
-      <Stack spacing={1} sx={{ mb: 2 }}>
-        {options.map((option) => {
+      <Stack spacing={0} sx={{ mb: 0 }}>
+        {options.map((option, index) => {
           const isSelected = selected?.label === option.label
           const isApproved = approvedLabel === option.label
+          const isLast = index === options.length - 1
           return (
             <Box
               key={option.label}
@@ -436,16 +439,16 @@ function ReadyStructureOptionsView({
                 width: '100%',
                 textAlign: 'left',
                 cursor: 'pointer',
-                borderRadius: `${layoutTokens.cardRadius}px`,
-                border: '1px solid',
-                borderColor: isSelected ? 'primary.main' : 'divider',
-                bgcolor: isSelected ? accentSubtle(theme) : 'background.paper',
+                border: 'none',
+                borderRadius: 0,
+                borderBottom: isLast ? 'none' : '1px solid',
+                borderColor: 'divider',
+                bgcolor: isSelected ? accentSubtle(theme) : 'transparent',
                 px: 1.5,
                 py: 1.25,
-                transition: 'border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease',
+                transition: 'background-color 0.15s ease',
                 boxShadow: 'none',
                 '&:hover': {
-                  borderColor: isSelected ? 'primary.main' : 'primary.light',
                   bgcolor: isSelected ? accentSubtle(theme) : accentSubtleHover(theme),
                 },
               })}
@@ -847,20 +850,16 @@ export function SubmissionsCopilotPanel({
             )}
           </Typography>
           <Box sx={{ mx: -2 }}>
-            {openBlockingIssues(focusedSubmission).map((issue) => (
-              <IssueListItem
-                key={issue.id}
-                issue={issue}
-                onSelect={(next) => setActiveIssueId(next.id)}
-              />
-            ))}
-            {openWarningIssues(focusedSubmission).map((issue) => (
-              <IssueListItem
-                key={issue.id}
-                issue={issue}
-                onSelect={(next) => setActiveIssueId(next.id)}
-              />
-            ))}
+            {[...openBlockingIssues(focusedSubmission), ...openWarningIssues(focusedSubmission)].map(
+              (issue, index, all) => (
+                <IssueListItem
+                  key={issue.id}
+                  issue={issue}
+                  isLast={index === all.length - 1}
+                  onSelect={(next) => setActiveIssueId(next.id)}
+                />
+              ),
+            )}
           </Box>
         </>
       )}
