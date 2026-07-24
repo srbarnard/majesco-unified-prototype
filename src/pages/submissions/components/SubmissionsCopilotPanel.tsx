@@ -109,7 +109,7 @@ function StatusIconBadge({
         return {
           width: 32,
           height: 32,
-          borderRadius: '50%',
+          borderRadius: '10px',
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
