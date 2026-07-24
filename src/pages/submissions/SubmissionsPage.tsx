@@ -145,6 +145,7 @@ export function SubmissionsPage() {
         setCopilotSubmissionFocus(null)
         return false
       }
+      setCopilotEntryMode('insight')
       setFilterOpen(false)
       setNotesOpen(false)
       return true
