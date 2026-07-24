@@ -2,6 +2,7 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import StarBorderOutlinedIcon from '@mui/icons-material/StarBorderOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
+import MoveToInboxOutlinedIcon from '@mui/icons-material/MoveToInboxOutlined'
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
 import PolicyOutlinedIcon from '@mui/icons-material/PolicyOutlined'
 import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined'
@@ -31,8 +32,8 @@ export const appShellNavItems: NavItem[] = [
   { label: 'Activity', icon: NotificationsNoneOutlinedIcon, panel: 'activity' },
   { label: 'Favorites', icon: StarBorderOutlinedIcon, panel: 'favorites' },
   { label: 'Tasks', path: '/tasks', icon: TaskAltOutlinedIcon },
+  { label: 'Submissions', path: '/submissions', icon: MoveToInboxOutlinedIcon },
   { label: 'Quotes', path: '/quotes', icon: RequestQuoteOutlinedIcon },
-  { label: 'Submissions', path: '/submissions', icon: RequestQuoteOutlinedIcon, hidden: true },
   { label: 'Policies', path: '/policies', icon: PolicyOutlinedIcon, matchPaths: ['/policies'] },
   { label: 'Copilot Studio', path: '/copilot-studio', copilotIcon: true },
 ]

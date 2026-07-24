@@ -24,10 +24,12 @@ function AppLayoutContent() {
     location.pathname === '/quotes' ||
     location.pathname === '/quotes/new' ||
     location.pathname === '/tasks' ||
+    location.pathname === '/submissions' ||
     location.pathname === '/policies' ||
     location.pathname === '/copilot-studio' ||
     /\/policies\/[^/]+/.test(location.pathname) ||
     /\/quotes\/[^/]+/.test(location.pathname) ||
+    /\/submissions\/[^/]+/.test(location.pathname) ||
     /\/insureds\/[^/]+/.test(location.pathname)
 
   return (

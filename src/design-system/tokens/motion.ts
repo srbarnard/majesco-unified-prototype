@@ -11,6 +11,14 @@ export const motionTokens = {
   cardHoverScale: 1.02,
 } as const
 
+/** Copilot body content swap — short fade + slight vertical move. */
+export const copilotContentMotion = {
+  exitMs: 120,
+  enterMs: 180,
+  offsetPx: 6,
+  easing: motionTokens.easing,
+} as const
+
 /** Drawer / panel slide — smooth ease-in-out on open and close. */
 export const drawerMotion = {
   enterMs: 320,

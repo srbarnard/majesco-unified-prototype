@@ -7,7 +7,7 @@ import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
 import { useEffect, useState, type ReactNode } from 'react'
 import { layoutTokens } from '@/design-system/tokens/layout'
-import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
+import { CopilotComposer, type CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
 import { CopilotAgentsView } from '@/pages/policies/components/copilot/CopilotAgentsView'
 import { CopilotConversationView } from '@/pages/policies/components/copilot/CopilotConversationView'
 import { CopilotDrawerToolbar } from '@/pages/policies/components/copilot/CopilotDrawerToolbar'
@@ -31,6 +31,9 @@ type CopilotDrawerShellProps = {
   toolbarLeading?: ReactNode
   /** When false, hides the global prompts/agents toolbar above chat content. */
   showToolbar?: boolean
+  /** Change to open the composer file picker (guided upload actions). */
+  attachRequestKey?: number | string | null
+  onComposerSubmit?: (message: string, files?: CopilotAttachedFile[]) => void
   children: ReactNode
 }
 
@@ -44,6 +47,8 @@ export function CopilotDrawerShell({
   headerTrailing,
   toolbarLeading,
   showToolbar = true,
+  attachRequestKey = null,
+  onComposerSubmit,
   children,
 }: CopilotDrawerShellProps) {
   const [copilotTab, setCopilotTab] = useState<'chat' | 'history'>('chat')
@@ -171,6 +176,9 @@ export function CopilotDrawerShell({
           placeholder={activeConversation ? 'Continue the conversation…' : composerPlaceholder}
           value={composerMessage}
           onChange={setComposerMessage}
+          attachRequestKey={attachRequestKey}
+          attachmentResetKey={chatFocusKey}
+          onSubmit={onComposerSubmit}
         />
       )}
     </Box>

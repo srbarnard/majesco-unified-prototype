@@ -25,13 +25,13 @@ export const statusChipSx = {
 } as const
 
 /** Semantic status chip using Figma palette tones. */
-export function StatusChip({ status, ...props }: StatusChipProps) {
+export function StatusChip({ status, sx, ...props }: StatusChipProps) {
   return (
     <MuiChip
       size="small"
       variant="filled"
       color={statusColorMap[status]}
-      sx={statusChipSx}
+      sx={[statusChipSx, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}
       {...props}
     />
   )
