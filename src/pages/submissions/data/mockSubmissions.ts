@@ -2,6 +2,8 @@ export type SubmissionStatus = 'Ready' | 'Blocked'
 
 export type SubmissionIssueSeverity = 'blocking' | 'warning'
 
+export type SubmissionIssueResolutionMode = 'conversation' | 'guided'
+
 export type SubmissionIssue = {
   id: string
   title: string
@@ -11,6 +13,10 @@ export type SubmissionIssue = {
   missingDetails: string[]
   resolvedDetails?: string[]
   composerPlaceholder: string
+  /** conversation = resolve in composer; guided = needs checklist / structured actions */
+  resolutionMode?: SubmissionIssueResolutionMode
+  guidedActions?: string[]
+  reportedAt: string
   resolvedAt?: string
 }
 
@@ -94,8 +100,9 @@ export const submissionsMock: SubmissionListRecord[] = [
         severity: 'blocking',
         summary: 'Premium cannot be calculated',
         whyItMatters: 'Required to determine Workers Compensation exposure.',
-        missingDetails: ['Annual payroll', 'Payroll breakdown by role'],
+        missingDetails: ['Annual payroll', 'Payroll breakdown by role (clerical, field, drivers)'],
         composerPlaceholder: 'Enter payroll details...',
+        reportedAt: '04/23/2026 9:00am',
       },
       {
         id: 'iss-loss',
@@ -105,6 +112,9 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'Loss runs are required to evaluate prior claims frequency and severity.',
         missingDetails: ['3-year loss runs', 'Open claim reserves'],
         composerPlaceholder: 'Provide loss history details...',
+        resolutionMode: 'guided',
+        guidedActions: ['Request loss runs from producer', 'Upload 3-year loss PDF', 'Confirm open reserves'],
+        reportedAt: '04/23/2026 9:00am',
       },
       {
         id: 'iss-address',
@@ -114,6 +124,7 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'Primary location drives territory rating and catastrophe exposure.',
         missingDetails: ['Verified street address', 'Occupancy confirmation'],
         composerPlaceholder: 'Confirm business address...',
+        reportedAt: '04/23/2026 9:00am',
       },
       {
         id: 'iss-vehicle',
@@ -123,6 +134,9 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'Fleet size and vehicle classes affect rating and eligibility.',
         missingDetails: ['Vehicle schedule', 'Driver roster'],
         composerPlaceholder: 'Describe vehicle exposure...',
+        resolutionMode: 'guided',
+        guidedActions: ['Open vehicle schedule worksheet', 'Import VIN list', 'Request driver roster'],
+        reportedAt: '04/23/2026 9:00am',
       },
       {
         id: 'iss-appetite',
@@ -132,6 +146,7 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'Account mix sits near the edge of preferred underwriting guidelines.',
         missingDetails: [],
         composerPlaceholder: 'Add appetite notes...',
+        reportedAt: '04/23/2026 9:00am',
       },
       {
         id: 'iss-risk',
@@ -141,6 +156,7 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'Industry class and recent growth suggest elevated exposure volatility.',
         missingDetails: [],
         composerPlaceholder: 'Add risk notes...',
+        reportedAt: '04/23/2026 9:00am',
       },
     ],
     notes: ['Waiting on payroll breakdown from producer.'],
@@ -216,6 +232,9 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'MVRs are required for all scheduled drivers before quoting.',
         missingDetails: ['MVR reports', 'Driver hire dates'],
         composerPlaceholder: 'Provide driver / MVR details...',
+        resolutionMode: 'guided',
+        guidedActions: ['Request MVRs', 'Open driver checklist', 'Escalate to auto UW'],
+        reportedAt: '04/23/2026 9:00am',
       },
       {
         id: 'iss-radius',
@@ -225,6 +244,7 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'Operating radius determines auto territory and long-haul loadings.',
         missingDetails: ['Primary radius', 'States traveled'],
         composerPlaceholder: 'Describe operating radius...',
+        reportedAt: '04/23/2026 9:00am',
       },
       {
         id: 'iss-fleet-age',
@@ -234,6 +254,7 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'Average vehicle age exceeds preferred guidelines.',
         missingDetails: [],
         composerPlaceholder: 'Add fleet notes...',
+        reportedAt: '04/23/2026 9:00am',
       },
     ],
     notes: [],
@@ -276,6 +297,9 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'Detailed operations drive GL classification and rate.',
         missingDetails: ['Primary operations', 'Subcontractor usage %'],
         composerPlaceholder: 'Describe operations...',
+        resolutionMode: 'guided',
+        guidedActions: ['Open operations questionnaire', 'Request producer narrative'],
+        reportedAt: '04/23/2026 9:00am',
       },
       {
         id: 'iss-wc-class',
@@ -285,6 +309,9 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'Class codes are required to rate payroll exposure.',
         missingDetails: ['Class code list', 'Payroll by class'],
         composerPlaceholder: 'Provide WC class details...',
+        resolutionMode: 'guided',
+        guidedActions: ['Open class-code checklist', 'Request payroll by class'],
+        reportedAt: '04/23/2026 9:00am',
       },
       {
         id: 'iss-multi-state',
@@ -294,6 +321,7 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'Operations span 4 states with varying regulatory requirements.',
         missingDetails: [],
         composerPlaceholder: 'Add multi-state notes...',
+        reportedAt: '04/23/2026 9:00am',
       },
     ],
     notes: ['Producer requested rush review.'],
@@ -362,6 +390,9 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'SOV is required to bind property coverage and set limits.',
         missingDetails: ['Building values', 'Business personal property', 'Business income'],
         composerPlaceholder: 'Provide statement of values...',
+        resolutionMode: 'guided',
+        guidedActions: ['Request SOV workbook', 'Open property worksheet', 'Escalate to property UW'],
+        reportedAt: '04/23/2026 9:00am',
       },
       {
         id: 'iss-sprinkler',
@@ -371,6 +402,7 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'Protection class credits depend on confirmed sprinkler systems.',
         missingDetails: [],
         composerPlaceholder: 'Confirm sprinkler status...',
+        reportedAt: '04/23/2026 9:00am',
       },
     ],
     notes: [],
@@ -413,6 +445,9 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'Commodity mix drives cargo rate and excluded goods screening.',
         missingDetails: ['Top commodities', 'Average load value', 'Max load value'],
         composerPlaceholder: 'Describe cargo commodities...',
+        resolutionMode: 'guided',
+        guidedActions: ['Request commodity schedule', 'Open cargo worksheet'],
+        reportedAt: '04/23/2026 9:00am',
       },
       {
         id: 'iss-theft',
@@ -422,6 +457,7 @@ export const submissionsMock: SubmissionListRecord[] = [
         whyItMatters: 'Primary routes include high-theft corridors.',
         missingDetails: [],
         composerPlaceholder: 'Add theft mitigation notes...',
+        reportedAt: '04/23/2026 9:00am',
       },
     ],
     notes: ['Broker asked for guidance on cargo sublimits.'],

@@ -8,8 +8,8 @@ import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Button, CopilotIcon, InsightCallout } from '@/design-system/components'
-import { accentSubtle, accentSubtleHover } from '@/design-system/theme/themeSurfaces'
+import { Button, CopilotIcon } from '@/design-system/components'
+import { accentSubtle, accentSubtleHover, accentSurfaceCardSx } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
@@ -180,30 +180,65 @@ function IssueListItem({
   )
 }
 
-function IssueDetailCard({ issue }: { issue: SubmissionIssue }) {
+function IssueDetailCard({
+  issue,
+  onGuidedResolve,
+}: {
+  issue: SubmissionIssue
+  onGuidedResolve?: (issue: SubmissionIssue, action: string) => void
+}) {
   const isResolved = Boolean(issue.resolvedAt)
   const details = isResolved ? (issue.resolvedDetails ?? []) : issue.missingDetails
+  const isGuided = issue.resolutionMode === 'guided' && !isResolved
+  const timestamp = issue.resolvedAt ?? issue.reportedAt
 
   return (
-    <Stack spacing={1.5}>
-      <Box sx={{ display: 'flex', justifyContent: 'center', pt: 0.5 }}>
-        <CopilotIcon size={28} />
-      </Box>
-      <InsightCallout variant="copilot" title={issue.title}>
-        <Stack spacing={1.25}>
-          <Typography variant="body2" sx={{ ...bodySx, fontStyle: 'italic', fontSize: '0.8125rem' }}>
+    <Stack spacing={1.25}>
+      <Stack direction="row" spacing={1.25} alignItems="flex-start">
+        <Box
+          sx={(theme) => ({
+            width: 32,
+            height: 32,
+            borderRadius: '10px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            bgcolor: accentSubtle(theme),
+            mt: 0.25,
+          })}
+        >
+          <CopilotIcon size={18} />
+        </Box>
+
+        <Box
+          sx={(theme) => ({
+            ...accentSurfaceCardSx(theme),
+            flex: 1,
+            minWidth: 0,
+            px: 2,
+            py: 1.5,
+          })}
+        >
+          <Typography variant="subtitle2" sx={{ ...headingSx, fontSize: '0.875rem', mb: 0.5 }}>
+            {issue.title}
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{ ...bodySx, fontStyle: 'italic', fontSize: '0.8125rem', mb: 1.25 }}
+          >
             {isResolved ? 'Premium can now be estimated' : issue.summary}
           </Typography>
-          <Box>
-            <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.75rem', mb: 0.5 }}>
-              Why this matters
-            </Typography>
-            <Typography variant="body2" sx={{ ...bodySx, fontSize: '0.8125rem', lineHeight: 1.5 }}>
-              {issue.whyItMatters}
-            </Typography>
-          </Box>
+
+          <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.75rem', mb: 0.5 }}>
+            Why this matters
+          </Typography>
+          <Typography variant="body2" sx={{ ...bodySx, fontSize: '0.8125rem', lineHeight: 1.5, mb: 1.25 }}>
+            {issue.whyItMatters}
+          </Typography>
+
           {details.length > 0 && (
-            <Box>
+            <Box sx={{ mb: isGuided ? 1.25 : 0 }}>
               <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.75rem', mb: 0.5 }}>
                 {isResolved ? 'Details' : 'Missing details'}
               </Typography>
@@ -221,17 +256,46 @@ function IssueDetailCard({ issue }: { issue: SubmissionIssue }) {
               </Stack>
             </Box>
           )}
-          {issue.resolvedAt && (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ ...bodySx, fontSize: '0.75rem', display: 'block', pt: 0.25 }}
-            >
-              {issue.resolvedAt}
-            </Typography>
+
+          {isGuided && (
+            <Box>
+              <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.75rem', mb: 0.5 }}>
+                Guided next steps
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ ...bodySx, fontSize: '0.75rem', lineHeight: 1.45, mb: 1 }}
+              >
+                This blocker usually needs more than a quick reply. Use a structured action, or add
+                details below if you already have them.
+              </Typography>
+              <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+                {(issue.guidedActions ?? ['Open guided checklist']).map((action) => (
+                  <Button
+                    key={action}
+                    size="small"
+                    variant="outlined"
+                    color="primary"
+                    sx={suggestedActionChipSx}
+                    onClick={() => onGuidedResolve?.(issue, action)}
+                  >
+                    {action}
+                  </Button>
+                ))}
+              </Stack>
+            </Box>
           )}
-        </Stack>
-      </InsightCallout>
+        </Box>
+      </Stack>
+
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ ...bodySx, fontSize: '0.75rem', pl: 5.25 }}
+      >
+        {timestamp}
+      </Typography>
     </Stack>
   )
 }
@@ -412,16 +476,6 @@ export function SubmissionsCopilotPanel({
   const displayedConfidence = showConfidence ? Math.round(animatedConfidence) : 0
   const confidenceStatusLabel = getCopilotConfidenceStatusLabel(confidence)
 
-  const composerPlaceholder = activeIssue
-    ? activeIssue.resolvedAt
-      ? 'Add more details or continue...'
-      : activeIssue.composerPlaceholder
-    : focusedSubmission?.status === 'Blocked'
-      ? 'Add more details or continue...'
-      : multiSelectMode
-        ? 'Ask more...'
-        : 'Ask about submissions...'
-
   const handleSubmit = (message: string) => {
     if (!focusedSubmission) return
 
@@ -432,6 +486,28 @@ export function SubmissionsCopilotPanel({
     onResolveIssue?.(focusedSubmission.id, targetIssue.id, details)
     setActiveIssueId(targetIssue.id)
   }
+
+  const handleGuidedResolve = (issue: SubmissionIssue, action: string) => {
+    if (!focusedSubmission || issue.resolvedAt) return
+    const details =
+      issue.missingDetails.length > 0
+        ? issue.missingDetails.map((item) => `${item}: captured via “${action}”`)
+        : [`Resolved via “${action}”`]
+    onResolveIssue?.(focusedSubmission.id, issue.id, details)
+    setActiveIssueId(issue.id)
+  }
+
+  const composerPlaceholder = activeIssue
+    ? activeIssue.resolvedAt
+      ? 'Add more details or continue...'
+      : activeIssue.resolutionMode === 'guided'
+        ? 'Or paste details if you already have them...'
+        : activeIssue.composerPlaceholder
+    : focusedSubmission?.status === 'Blocked'
+      ? 'Add more details or continue...'
+      : multiSelectMode
+        ? 'Ask more...'
+        : 'Ask about submissions...'
 
   return (
     <Box
@@ -514,7 +590,7 @@ export function SubmissionsCopilotPanel({
           ) : !focusedSubmission ? (
             <WorkspaceView />
           ) : activeIssue ? (
-            <IssueDetailCard issue={activeIssue} />
+            <IssueDetailCard issue={activeIssue} onGuidedResolve={handleGuidedResolve} />
           ) : focusedSubmission.status === 'Ready' ? (
             <ReadyPremiumView submission={focusedSubmission} />
           ) : (
