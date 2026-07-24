@@ -31,6 +31,7 @@ type CopilotDrawerShellProps = {
   toolbarLeading?: ReactNode
   /** When false, hides the global prompts/agents toolbar above chat content. */
   showToolbar?: boolean
+  onComposerSubmit?: (message: string) => void
   children: ReactNode
 }
 
@@ -44,6 +45,7 @@ export function CopilotDrawerShell({
   headerTrailing,
   toolbarLeading,
   showToolbar = true,
+  onComposerSubmit,
   children,
 }: CopilotDrawerShellProps) {
   const [copilotTab, setCopilotTab] = useState<'chat' | 'history'>('chat')
@@ -171,6 +173,7 @@ export function CopilotDrawerShell({
           placeholder={activeConversation ? 'Continue the conversation…' : composerPlaceholder}
           value={composerMessage}
           onChange={setComposerMessage}
+          onSubmit={onComposerSubmit}
         />
       )}
     </Box>
