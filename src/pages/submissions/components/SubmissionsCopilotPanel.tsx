@@ -7,9 +7,9 @@ import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Button, CopilotIcon, InsightCallout } from '@/design-system/components'
-import { accentSubtle, accentSubtleHover, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { accentSubtle, accentSubtleHover } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
@@ -89,6 +89,55 @@ function parseResolvedDetails(issue: SubmissionIssue, message: string): string[]
   return [`Captured: ${message.trim()}`]
 }
 
+function StatusIconBadge({
+  tone,
+  children,
+}: {
+  tone: 'error' | 'warning' | 'success'
+  children: ReactNode
+}) {
+  return (
+    <Box
+      sx={(theme) => {
+        const isLight = theme.palette.mode === 'light'
+        const palette =
+          tone === 'error'
+            ? theme.figmaPalette.red
+            : tone === 'warning'
+              ? theme.figmaPalette.amber
+              : theme.figmaPalette.green
+        return {
+          width: 32,
+          height: 32,
+          borderRadius: '50%',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          bgcolor: isLight ? palette[100] : palette[900],
+          color: isLight ? palette[800] : palette[200],
+        }
+      }}
+    >
+      {children}
+    </Box>
+  )
+}
+
+const flatListRowSx = {
+  width: '100%',
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: 1.25,
+  px: 2,
+  py: 1.5,
+  border: 'none',
+  borderBottom: 1,
+  borderColor: 'divider',
+  bgcolor: 'transparent',
+  textAlign: 'left' as const,
+} as const
+
 function IssueListItem({
   issue,
   onSelect,
@@ -102,40 +151,31 @@ function IssueListItem({
       component="button"
       type="button"
       onClick={() => onSelect(issue)}
-      sx={(theme) => ({
-        display: 'block',
-        width: '100%',
-        textAlign: 'left',
-        border: `1px solid ${theme.palette.divider}`,
-        borderRadius: `${layoutTokens.cardRadius}px`,
-        bgcolor: 'background.paper',
-        px: 1.5,
-        py: 1.25,
+      sx={{
+        ...flatListRowSx,
         cursor: 'pointer',
-        '&:hover': {
-          bgcolor: surfaceMuted(theme),
-        },
-      })}
+        '&:hover': { bgcolor: 'action.hover' },
+      }}
     >
-      <Stack direction="row" spacing={1.25} alignItems="flex-start">
+      <StatusIconBadge tone={isBlocking ? 'error' : 'warning'}>
         {isBlocking ? (
-          <BlockIcon sx={{ fontSize: 18, color: 'error.main', mt: 0.125 }} />
+          <BlockIcon sx={{ fontSize: 18 }} />
         ) : (
-          <WarningAmberOutlinedIcon sx={{ fontSize: 18, color: 'warning.main', mt: 0.125 }} />
+          <WarningAmberOutlinedIcon sx={{ fontSize: 18 }} />
         )}
-        <Box sx={{ minWidth: 0 }}>
-          <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.8125rem' }}>
-            {issue.title}
-          </Typography>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ ...bodySx, fontSize: '0.75rem', fontStyle: 'italic', mt: 0.25 }}
-          >
-            {issue.summary}
-          </Typography>
-        </Box>
-      </Stack>
+      </StatusIconBadge>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.875rem', lineHeight: 1.35 }}>
+          {issue.title}
+        </Typography>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ ...bodySx, fontSize: '0.8125rem', lineHeight: 1.4, mt: 0.25 }}
+        >
+          {issue.summary}
+        </Typography>
+      </Box>
     </Box>
   )
 }
@@ -198,30 +238,20 @@ function IssueDetailCard({ issue }: { issue: SubmissionIssue }) {
 
 function ReadyPremiumView({ submission }: { submission: SubmissionListRecord }) {
   return (
-    <Stack spacing={1.25}>
+    <Box sx={{ mx: -2 }}>
       {(submission.premiumEstimates ?? []).map((estimate) => (
-        <Box
-          key={estimate.label}
-          sx={(theme) => ({
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 1.25,
-            px: 1.5,
-            py: 1.25,
-            borderRadius: `${layoutTokens.cardRadius}px`,
-            border: `1px solid ${theme.palette.divider}`,
-            bgcolor: 'background.paper',
-          })}
-        >
-          <CheckCircleOutlineIcon sx={{ fontSize: 18, color: 'success.main', mt: 0.125 }} />
-          <Box>
-            <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.8125rem' }}>
+        <Box key={estimate.label} sx={flatListRowSx}>
+          <StatusIconBadge tone="success">
+            <CheckCircleOutlineIcon sx={{ fontSize: 18 }} />
+          </StatusIconBadge>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.875rem', lineHeight: 1.35 }}>
               {estimate.label}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
-              sx={{ ...bodySx, fontSize: '0.75rem', mt: 0.25 }}
+              sx={{ ...bodySx, fontSize: '0.8125rem', lineHeight: 1.4, mt: 0.25 }}
             >
               Estimated: {estimate.range}
             </Typography>
@@ -231,35 +261,25 @@ function ReadyPremiumView({ submission }: { submission: SubmissionListRecord }) 
       {(submission.readyInsights ?? [])
         .filter((insight) => insight.severity === 'warning')
         .map((insight) => (
-          <Box
-            key={insight.id}
-            sx={(theme) => ({
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 1.25,
-              px: 1.5,
-              py: 1.25,
-              borderRadius: `${layoutTokens.cardRadius}px`,
-              border: `1px solid ${theme.palette.divider}`,
-              bgcolor: 'background.paper',
-            })}
-          >
-            <WarningAmberOutlinedIcon sx={{ fontSize: 18, color: 'warning.main', mt: 0.125 }} />
-            <Box>
-              <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.8125rem' }}>
+          <Box key={insight.id} sx={flatListRowSx}>
+            <StatusIconBadge tone="warning">
+              <WarningAmberOutlinedIcon sx={{ fontSize: 18 }} />
+            </StatusIconBadge>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.875rem', lineHeight: 1.35 }}>
                 {insight.title}
               </Typography>
               <Typography
                 variant="body2"
                 color="text.secondary"
-                sx={{ ...bodySx, fontSize: '0.75rem', mt: 0.25 }}
+                sx={{ ...bodySx, fontSize: '0.8125rem', lineHeight: 1.4, mt: 0.25 }}
               >
                 {insight.summary}
               </Typography>
             </Box>
           </Box>
         ))}
-    </Stack>
+    </Box>
   )
 }
 
@@ -498,7 +518,7 @@ export function SubmissionsCopilotPanel({
           ) : focusedSubmission.status === 'Ready' ? (
             <ReadyPremiumView submission={focusedSubmission} />
           ) : (
-            <Stack spacing={1}>
+            <Box sx={{ mx: -2 }}>
               {openBlockingIssues(focusedSubmission).map((issue) => (
                 <IssueListItem
                   key={issue.id}
@@ -513,7 +533,7 @@ export function SubmissionsCopilotPanel({
                   onSelect={(next) => setActiveIssueId(next.id)}
                 />
               ))}
-            </Stack>
+            </Box>
           )}
         </Stack>
       </Box>
