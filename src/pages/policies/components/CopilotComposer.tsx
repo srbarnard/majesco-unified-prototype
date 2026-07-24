@@ -1,12 +1,13 @@
 import type { SvgIconComponent } from '@mui/icons-material'
-import AddIcon from '@mui/icons-material/Add'
+import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined'
 import BoltOutlinedIcon from '@mui/icons-material/BoltOutlined'
 import CheckIcon from '@mui/icons-material/Check'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
+import CloseIcon from '@mui/icons-material/Close'
 import PsychologyOutlinedIcon from '@mui/icons-material/PsychologyOutlined'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import Box from '@mui/material/Box'
+import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Popover from '@mui/material/Popover'
@@ -14,16 +15,28 @@ import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
+import { VoiceInputButton } from '@/design-system/components/SearchField/VoiceInputButton'
 import {
+  accentSubtle,
   isDarkMode,
   surfaceMuted,
   surfaceSubtle,
 } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
 import { ComposerSendButton } from '@/pages/policies/components/ComposerSendButton'
+import type { QuoteWizardUploadedFile } from '@/pages/quotes/data/quoteWizardTypes'
+import {
+  createUploadedFile,
+  isAcceptedWizardFile,
+  kindLabel,
+  mergeUploadedFiles,
+} from '@/pages/quotes/utils/quoteWizardDocuments'
+
+export type CopilotAttachedFile = QuoteWizardUploadedFile
 
 type CopilotMode = 'fast' | 'thinking'
 
@@ -41,6 +54,8 @@ const bodySx = {
   fontFamily: figmaFontFamilyStack.body,
   fontWeight: 400,
 } as const
+
+const FILE_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.eml,.msg'
 
 const modeOptions = [
   {
@@ -250,7 +265,13 @@ export type CopilotComposerProps = {
   selectorValue?: string
   selectorOptions?: ComposerSelectorOption[]
   onSelectorChange?: (value: string) => void
-  onSubmit?: (message: string) => void
+  /** When true (default), paperclip + drag/drop attachments match New Quote input. */
+  enableAttachments?: boolean
+  /** Increment / change to programmatically open the file picker (e.g. guided “Upload…”). */
+  attachRequestKey?: number | string | null
+  /** When this changes, clear staged attachments (e.g. switching Copilot focus). */
+  attachmentResetKey?: string | number | null
+  onSubmit?: (message: string, files?: CopilotAttachedFile[]) => void
 }
 
 export function CopilotComposer({
@@ -267,10 +288,16 @@ export function CopilotComposer({
   selectorValue,
   selectorOptions,
   onSelectorChange,
+  enableAttachments = true,
+  attachRequestKey = null,
+  attachmentResetKey = null,
   onSubmit,
 }: CopilotComposerProps) {
   const [mode, setMode] = useState<CopilotMode>('fast')
   const [internalMessage, setInternalMessage] = useState('')
+  const [files, setFiles] = useState<CopilotAttachedFile[]>([])
+  const [dragActive, setDragActive] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const isControlled = value !== undefined && onChange !== undefined
   const message = isControlled ? value : internalMessage
 
@@ -282,26 +309,89 @@ export function CopilotComposer({
     setInternalMessage(next)
   }
 
-  const canSubmit = message.trim().length > 0
+  const handleTranscript = useCallback(
+    (transcript: string, isFinal: boolean) => {
+      if (!isFinal || !transcript) return
+      if (isControlled) {
+        onChange(message ? `${message} ${transcript}` : transcript)
+        return
+      }
+      setInternalMessage((current) => (current ? `${current} ${transcript}` : transcript))
+    },
+    [isControlled, message, onChange],
+  )
+
+  const { isListening, isSupported, error, toggleListening } = useSpeechRecognition({
+    onTranscript: handleTranscript,
+    continuous: false,
+  })
+
+  useEffect(() => {
+    if (attachRequestKey == null) return
+    fileInputRef.current?.click()
+  }, [attachRequestKey])
+
+  useEffect(() => {
+    setFiles([])
+  }, [attachmentResetKey])
+
+  const ingestFileList = useCallback((fileList: FileList | File[]) => {
+    if (!enableAttachments) return
+    const incoming = Array.from(fileList)
+      .filter(isAcceptedWizardFile)
+      .map(createUploadedFile)
+    if (incoming.length === 0) return
+    setFiles((current) => mergeUploadedFiles(current, incoming))
+  }, [enableAttachments])
+
+  const handleDrop = (event: React.DragEvent) => {
+    if (!enableAttachments) return
+    event.preventDefault()
+    setDragActive(false)
+    if (event.dataTransfer.files?.length) {
+      ingestFileList(event.dataTransfer.files)
+    }
+  }
+
+  const canSubmit = message.trim().length > 0 || files.length > 0
 
   const handleSubmit = () => {
     const trimmed = message.trim()
-    if (!trimmed) return
-    onSubmit?.(trimmed)
+    if (!trimmed && files.length === 0) return
+    onSubmit?.(trimmed, files)
     if (clearOnSubmit) {
       setMessage('')
+      setFiles([])
     }
   }
 
   return (
     <Box sx={[{ ...(padded ? { px: 2, py: 2 } : {}) }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}>
       <Box
+        onDragEnter={(event) => {
+          if (!enableAttachments) return
+          event.preventDefault()
+          setDragActive(true)
+        }}
+        onDragOver={(event) => {
+          if (!enableAttachments) return
+          event.preventDefault()
+          setDragActive(true)
+        }}
+        onDragLeave={(event) => {
+          if (!enableAttachments) return
+          if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+            setDragActive(false)
+          }
+        }}
+        onDrop={handleDrop}
         sx={(theme) => ({
-          border: `1px solid ${theme.palette.divider}`,
+          border: `1px solid ${dragActive ? theme.palette.primary.main : theme.palette.divider}`,
           borderRadius: `${layoutTokens.cardRadius}px`,
-          bgcolor: 'background.paper',
+          bgcolor: dragActive ? accentSubtle(theme) : 'background.paper',
           boxShadow: isDarkMode(theme) ? 'none' : layoutTokens.cardShadow,
           overflow: 'hidden',
+          transition: 'border-color 0.15s ease, background-color 0.15s ease',
           '&:focus-within': {
             borderColor: 'primary.main',
             outline: `2px solid ${theme.palette.primary.main}`,
@@ -309,13 +399,33 @@ export function CopilotComposer({
           },
         })}
       >
+        {dragActive && enableAttachments && (
+          <Box
+            sx={{
+              px: 2,
+              py: 0.75,
+              borderBottom: 1,
+              borderColor: 'divider',
+              bgcolor: (theme) => accentSubtle(theme),
+            }}
+          >
+            <Typography
+              variant="caption"
+              color="primary"
+              sx={{ fontFamily: figmaFontFamilyStack.body, fontWeight: 500 }}
+            >
+              Drop ACORDs, schedules, loss runs, or broker emails to attach
+            </Typography>
+          </Box>
+        )}
+
         <TextField
           fullWidth
           multiline
           minRows={minRows}
           maxRows={5}
           variant="standard"
-          placeholder={placeholder}
+          placeholder={isListening ? 'Listening…' : placeholder}
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           onFocus={onFocus}
@@ -333,7 +443,7 @@ export function CopilotComposer({
                 fontSize: '0.875rem',
                 px: 1.75,
                 pt: 1.25,
-                pb: 1,
+                pb: files.length > 0 ? 0.75 : 1,
                 '&.Mui-focused': {
                   outline: 'none',
                 },
@@ -341,6 +451,26 @@ export function CopilotComposer({
             },
           }}
         />
+
+        {files.length > 0 && (
+          <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ px: 1.75, pb: 1 }}>
+            {files.map((file) => (
+              <Chip
+                key={file.id}
+                size="small"
+                label={`${kindLabel(file.kind)} · ${file.name}`}
+                onDelete={() => setFiles((current) => current.filter((item) => item.id !== file.id))}
+                deleteIcon={<CloseIcon sx={{ fontSize: '14px !important' }} />}
+                sx={{
+                  maxWidth: '100%',
+                  fontFamily: figmaFontFamilyStack.body,
+                  fontSize: '0.75rem',
+                  '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+                }}
+              />
+            ))}
+          </Stack>
+        )}
 
         <Stack
           direction="row"
@@ -353,10 +483,25 @@ export function CopilotComposer({
             gap: 1,
           }}
         >
-          <Stack direction="row" spacing={0.25} alignItems="center">
-            <IconButton size="small" aria-label="Add attachment">
-              <AddIcon sx={{ fontSize: 20 }} />
-            </IconButton>
+          <Stack direction="row" spacing={0.25} alignItems="center" sx={{ minWidth: 0, flexWrap: 'wrap' }}>
+            {enableAttachments && (
+              <>
+                <IconButton
+                  size="small"
+                  aria-label="Attach documents"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <AttachFileOutlinedIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontFamily: figmaFontFamilyStack.body, mr: 0.5 }}
+                >
+                  {files.length > 0 ? `${files.length} attached` : 'Drop files here'}
+                </Typography>
+              </>
+            )}
             {selectorOptions && selectorValue !== undefined && onSelectorChange ? (
               <ComposerToolbarSelector
                 value={selectorValue}
@@ -370,21 +515,44 @@ export function CopilotComposer({
           </Stack>
 
           <Stack direction="row" spacing={0.25} alignItems="center">
-            <IconButton size="small" aria-label="Voice input">
-              <MicNoneOutlinedIcon sx={{ fontSize: 20 }} />
-            </IconButton>
+            <VoiceInputButton
+              isListening={isListening}
+              isSupported={isSupported}
+              error={error}
+              onToggle={toggleListening}
+            />
             <ComposerSendButton canSubmit={canSubmit} onClick={handleSubmit} />
           </Stack>
         </Stack>
+
+        {enableAttachments && (
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            hidden
+            accept={FILE_ACCEPT}
+            onChange={(event) => {
+              if (event.target.files) ingestFileList(event.target.files)
+              event.target.value = ''
+            }}
+          />
+        )}
       </Box>
 
       {footerAction}
+
+      {isListening && (
+        <Typography variant="caption" color="primary" sx={{ ...bodySx, mt: 0.5, display: 'block' }}>
+          Listening… speak naturally to continue.
+        </Typography>
+      )}
 
       {showDisclaimer && (
         <Typography
           variant="caption"
           color="text.disabled"
-          sx={{ ...bodySx, mt: footerAction ? 0.75 : 1, display: 'block', textAlign: 'center' }}
+          sx={{ ...bodySx, mt: footerAction || isListening ? 0.75 : 1, display: 'block', textAlign: 'center' }}
         >
           Copilot uses AI. Check for mistakes. Terms &amp; conditions.
         </Typography>

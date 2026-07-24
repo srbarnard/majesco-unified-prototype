@@ -22,6 +22,8 @@ import {
   copilotSubtitleSx,
 } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import { useAnimatedConfidence } from '@/pages/policies/components/copilot/useAnimatedConfidence'
+import type { CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
+import { kindLabel } from '@/pages/quotes/utils/quoteWizardDocuments'
 import {
   submissionsMock,
   type SubmissionIssue,
@@ -90,7 +92,7 @@ function openWarningIssues(submission: SubmissionListRecord) {
 function parseResolvedDetails(issue: SubmissionIssue, message: string): string[] {
   const normalized = message.toLowerCase()
 
-  if (issue.id === 'iss-payroll') {
+  if (issue.id === 'iss-payroll' || /payroll/i.test(issue.title)) {
     const details: string[] = []
     if (/600/.test(normalized) || /total|annual|payroll/.test(normalized)) {
       details.push('Annual payroll: $600,000')
@@ -105,6 +107,31 @@ function parseResolvedDetails(issue: SubmissionIssue, message: string): string[]
   }
 
   return [`Captured: ${message.trim()}`]
+}
+
+function parseResolvedDetailsFromAttachments(
+  issue: SubmissionIssue,
+  message: string,
+  files: CopilotAttachedFile[],
+): string[] {
+  const attached = files.map((file) => `Attached ${kindLabel(file.kind)}: ${file.name}`)
+
+  if (message.trim()) {
+    return [...parseResolvedDetails(issue, message), ...attached]
+  }
+
+  if (issue.missingDetails.length > 0) {
+    return [
+      ...issue.missingDetails.map((detail) => `${detail}: provided via attached document`),
+      ...attached,
+    ]
+  }
+
+  return attached.length > 0 ? attached : ['Documents attached']
+}
+
+function isUploadGuidedAction(action: string) {
+  return /upload|attach|import|drop/i.test(action)
 }
 
 function StatusIconBadge({
@@ -203,11 +230,13 @@ function IssueDetailCard({
   submissionNumber,
   onBack,
   onGuidedResolve,
+  onRequestAttach,
 }: {
   issue: SubmissionIssue
   submissionNumber: string
   onBack: () => void
   onGuidedResolve?: (issue: SubmissionIssue, action: string) => void
+  onRequestAttach?: () => void
 }) {
   const isResolved = Boolean(issue.resolvedAt)
   const details = isResolved ? (issue.resolvedDetails ?? []) : issue.missingDetails
@@ -222,8 +251,9 @@ function IssueDetailCard({
   const insights = isResolved
     ? details.map((detail) => `Resolved · ${detail}`)
     : [
-        `${severityLabel} · ${isGuided ? 'Guided actions available' : 'Conversational — ask Copilot for help'}`,
+        `${severityLabel} · ${isGuided ? 'Guided actions or document upload' : 'Conversational — ask Copilot or attach docs'}`,
         ...details.map((detail) => `Missing · ${detail}`),
+        'Composer · Drop files here or paste details to resolve',
       ]
 
   const quickActions = isResolved
@@ -284,6 +314,10 @@ function IssueDetailCard({
             onClick={() => {
               if (isResolved) {
                 if (action === 'Continue to next issue') onBack()
+                return
+              }
+              if (isUploadGuidedAction(action)) {
+                onRequestAttach?.()
                 return
               }
               if (isGuided || action !== 'Resolve with details below') {
@@ -441,6 +475,7 @@ export function SubmissionsCopilotPanel({
   onClose,
 }: SubmissionsCopilotPanelProps) {
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null)
+  const [attachRequestKey, setAttachRequestKey] = useState<number | null>(null)
   const multiSelectMode = selectedSubmissions.length > 1 && !focusedSubmission
 
   const activeIssue = useMemo(() => {
@@ -460,19 +495,31 @@ export function SubmissionsCopilotPanel({
   const displayedConfidence = showConfidence ? Math.round(animatedConfidence) : 0
   const confidenceStatusLabel = getCopilotConfidenceStatusLabel(confidence)
 
-  const handleSubmit = (message: string) => {
+  const handleSubmit = (message: string, files: CopilotAttachedFile[] = []) => {
     if (!focusedSubmission) return
 
     const targetIssue = activeIssue ?? openBlockingIssues(focusedSubmission)[0] ?? null
     if (!targetIssue || targetIssue.severity !== 'blocking' || targetIssue.resolvedAt) return
 
-    const details = parseResolvedDetails(targetIssue, message)
+    const details =
+      files.length > 0
+        ? parseResolvedDetailsFromAttachments(targetIssue, message, files)
+        : message.trim()
+          ? parseResolvedDetails(targetIssue, message)
+          : null
+
+    if (!details) return
+
     onResolveIssue?.(focusedSubmission.id, targetIssue.id, details)
     setActiveIssueId(targetIssue.id)
   }
 
   const handleGuidedResolve = (issue: SubmissionIssue, action: string) => {
     if (!focusedSubmission || issue.resolvedAt) return
+    if (isUploadGuidedAction(action)) {
+      setAttachRequestKey((key) => (key ?? 0) + 1)
+      return
+    }
     const details =
       issue.missingDetails.length > 0
         ? issue.missingDetails.map((item) => `${item}: captured via “${action}”`)
@@ -485,10 +532,15 @@ export function SubmissionsCopilotPanel({
     ? activeIssue.resolvedAt
       ? 'Add more details or continue...'
       : activeIssue.resolutionMode === 'guided'
-        ? 'Or paste details if you already have them...'
-        : activeIssue.composerPlaceholder
+        ? 'Drop supporting docs here, or paste details if you already have them...'
+        : activeIssue.composerPlaceholder.includes('...')
+          ? activeIssue.composerPlaceholder.replace(
+              /\.\.\.$/,
+              ' — or drop supporting documents here...',
+            )
+          : `${activeIssue.composerPlaceholder} — or drop supporting documents here`
     : focusedSubmission?.status === 'Blocked'
-      ? 'Add more details or continue...'
+      ? 'Add details or drop documents to resolve...'
       : multiSelectMode
         ? 'Ask more...'
         : 'Ask about submissions...'
@@ -508,6 +560,7 @@ export function SubmissionsCopilotPanel({
       onClose={onClose}
       composerPlaceholder={composerPlaceholder}
       chatFocusKey={`${focusKey}:${activeIssueId ?? 'list'}`}
+      attachRequestKey={attachRequestKey}
       onComposerSubmit={handleSubmit}
       headerTrailing={
         showConfidence ? (
@@ -540,6 +593,7 @@ export function SubmissionsCopilotPanel({
           submissionNumber={focusedSubmission.submissionNumber}
           onBack={() => setActiveIssueId(null)}
           onGuidedResolve={handleGuidedResolve}
+          onRequestAttach={() => setAttachRequestKey((key) => (key ?? 0) + 1)}
         />
       ) : focusedSubmission.status === 'Ready' ? (
         <>
