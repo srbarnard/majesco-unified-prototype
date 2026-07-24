@@ -16,6 +16,7 @@ import {
 } from '@/pages/policies/components/copilot/copilotConfidence'
 import { CopilotConfidenceIndicator } from '@/pages/policies/components/copilot/CopilotConfidenceIndicator'
 import { CopilotDrawerShell } from '@/pages/policies/components/copilot/CopilotDrawerShell'
+import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import {
   copilotSectionHeadingSx,
   copilotSubtitleSx,
@@ -382,6 +383,14 @@ function ReadyStructureOptionsView({
       ? `**${submission.insuredName}** — Submission **${submission.submissionNumber}** is **Ready** with **${submission.confidence}%** confidence. Copilot is presenting **1** structure option — alternatives were not meaningfully different.`
       : `**${submission.insuredName}** — Submission **${submission.submissionNumber}** is **Ready** with **${submission.confidence}%** confidence. Copilot is presenting **${options.length}** distinct structure ${optionWord}${recommended ? ` · recommending **${recommended.label}**` : ''}.`
 
+  const selectionDetail = selected
+    ? approvedLabel === selected.label
+      ? `**${selected.label}** is approved at **${selected.range}**. ${selected.rationale}`
+      : selected.recommended
+        ? `Reviewing **${selected.label}** (**recommended**) at **${selected.range}**. ${selected.rationale}`
+        : `Reviewing **${selected.label}** at **${selected.range}**. ${selected.rationale}`
+    : null
+
   const quickActions = approvedLabel
     ? ['Ask for adjustments', 'Summarize approved structure']
     : [
@@ -533,59 +542,71 @@ function ReadyStructureOptionsView({
         })}
       </Stack>
 
-      <Divider sx={{ mb: 2 }} />
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1 }}>
-        Quick actions
-      </Typography>
-      <Stack direction="row" flexWrap="wrap" gap={1}>
-        {quickActions.map((action) => (
-          <Button
-            key={action}
-            size="small"
-            variant="text"
-            disableRipple
-            sx={quickActionChipSx}
-            onClick={() => {
-              if (!selected) return
-              if (action.startsWith('Approve')) {
-                onApprove?.(selected)
-                return
-              }
-              if (action === 'Compare options') {
-                const comparison = options
-                  .map(
-                    (option) =>
-                      `${option.label}${option.recommended ? ' (recommended)' : ''}: ${option.range} — ${option.rationale}`,
-                  )
-                  .join('\n')
-                onSeedComposer?.(
-                  `Compare the ${options.length} structure options for ${submission.submissionNumber}:\n${comparison}\n\nWhich should I prefer and why?`,
-                )
-                return
-              }
-              if (action === 'Ask for adjustments') {
-                onSeedComposer?.(
-                  `Adjust the ${selected.label} structure (${selected.range}) for ${submission.submissionNumber}. I'd like to change…`,
-                )
-                return
-              }
-              if (action.startsWith('More detail') || action === 'Ask for more detail') {
-                onSeedComposer?.(
-                  `Explain the ${selected.label} option (${selected.range}) for ${submission.submissionNumber} in more detail — coverage terms, deductibles, and key drivers.`,
-                )
-                return
-              }
-              if (action === 'Summarize approved structure') {
-                onSeedComposer?.(
-                  `Summarize the approved ${approvedLabel} structure for ${submission.submissionNumber}.`,
-                )
-              }
-            }}
-          >
-            {action}
-          </Button>
-        ))}
-      </Stack>
+      <CopilotContentTransition
+        contentKey={`${submission.id}:${selected?.label ?? 'none'}:${approvedLabel ?? 'open'}`}
+      >
+        <>
+          {selectionDetail ? (
+            <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.55, mt: 1.5, mb: 0 }}>
+              {renderSummaryText(selectionDetail)}
+            </Typography>
+          ) : null}
+
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1 }}>
+            Quick actions
+          </Typography>
+          <Stack direction="row" flexWrap="wrap" gap={1}>
+            {quickActions.map((action) => (
+              <Button
+                key={action}
+                size="small"
+                variant="text"
+                disableRipple
+                sx={quickActionChipSx}
+                onClick={() => {
+                  if (!selected) return
+                  if (action.startsWith('Approve')) {
+                    onApprove?.(selected)
+                    return
+                  }
+                  if (action === 'Compare options') {
+                    const comparison = options
+                      .map(
+                        (option) =>
+                          `${option.label}${option.recommended ? ' (recommended)' : ''}: ${option.range} — ${option.rationale}`,
+                      )
+                      .join('\n')
+                    onSeedComposer?.(
+                      `Compare the ${options.length} structure options for ${submission.submissionNumber}:\n${comparison}\n\nWhich should I prefer and why?`,
+                    )
+                    return
+                  }
+                  if (action === 'Ask for adjustments') {
+                    onSeedComposer?.(
+                      `Adjust the ${selected.label} structure (${selected.range}) for ${submission.submissionNumber}. I'd like to change…`,
+                    )
+                    return
+                  }
+                  if (action.startsWith('More detail') || action === 'Ask for more detail') {
+                    onSeedComposer?.(
+                      `Explain the ${selected.label} option (${selected.range}) for ${submission.submissionNumber} in more detail — coverage terms, deductibles, and key drivers.`,
+                    )
+                    return
+                  }
+                  if (action === 'Summarize approved structure') {
+                    onSeedComposer?.(
+                      `Summarize the approved ${approvedLabel} structure for ${submission.submissionNumber}.`,
+                    )
+                  }
+                }}
+              >
+                {action}
+              </Button>
+            ))}
+          </Stack>
+        </>
+      </CopilotContentTransition>
     </>
   )
 }
@@ -789,6 +810,16 @@ export function SubmissionsCopilotPanel({
           ? 'Submission issues'
           : 'Intake summary'
 
+  const panelContentKey = multiSelectMode
+    ? `multi:${selectedSubmissions.map((row) => row.id).join('|')}`
+    : !focusedSubmission
+      ? 'workspace'
+      : activeIssue
+        ? `issue:${focusedSubmission.id}:${activeIssue.id}:${activeIssue.resolvedAt ?? 'open'}`
+        : focusedSubmission.status === 'Ready'
+          ? `ready:${focusedSubmission.id}:${focusedSubmission.approvedPremiumLabel ?? 'review'}`
+          : `blocked:${focusedSubmission.id}:list`
+
   return (
     <CopilotDrawerShell
       onClose={onClose}
@@ -818,51 +849,53 @@ export function SubmissionsCopilotPanel({
       }
       showToolbar={!activeIssue}
     >
-      {multiSelectMode ? (
-        <SummarizeView submissions={selectedSubmissions} />
-      ) : !focusedSubmission ? (
-        <WorkspaceView />
-      ) : activeIssue ? (
-        <IssueDetailCard
-          issue={activeIssue}
-          submissionNumber={focusedSubmission.submissionNumber}
-          onBack={() => setActiveIssueId(null)}
-          onGuidedResolve={handleGuidedResolve}
-          onRequestAttach={() => setAttachRequestKey((key) => (key ?? 0) + 1)}
-        />
-      ) : focusedSubmission.status === 'Ready' ? (
-        <ReadyStructureOptionsView
-          submission={focusedSubmission}
-          onApprove={(option) => onApprovePremiumOption?.(focusedSubmission.id, option)}
-          onSeedComposer={(message) => {
-            setSeedComposerMessage(null)
-            requestAnimationFrame(() => setSeedComposerMessage(message))
-          }}
-        />
-      ) : (
-        <>
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
-            {focusedSubmission.submissionNumber}
-          </Typography>
-          <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 1.5 }}>
-            {renderSummaryText(
-              `**${focusedSubmission.insuredName}** — Submission **${focusedSubmission.submissionNumber}** is **Blocked**. Select an issue below to resolve it in Copilot.`,
-            )}
-          </Typography>
-          <Box sx={{ mx: -2 }}>
-            {[...openBlockingIssues(focusedSubmission), ...openWarningIssues(focusedSubmission)].map(
-              (issue, index, all) => (
-                <IssueListItem
-                  key={issue.id}
-                  issue={issue}
-                  isLast={index === all.length - 1}
-                  onSelect={(next) => setActiveIssueId(next.id)}
-                />
-              ),
-            )}
-          </Box>
-        </>
-      )}
+      <CopilotContentTransition contentKey={panelContentKey}>
+        {multiSelectMode ? (
+          <SummarizeView submissions={selectedSubmissions} />
+        ) : !focusedSubmission ? (
+          <WorkspaceView />
+        ) : activeIssue ? (
+          <IssueDetailCard
+            issue={activeIssue}
+            submissionNumber={focusedSubmission.submissionNumber}
+            onBack={() => setActiveIssueId(null)}
+            onGuidedResolve={handleGuidedResolve}
+            onRequestAttach={() => setAttachRequestKey((key) => (key ?? 0) + 1)}
+          />
+        ) : focusedSubmission.status === 'Ready' ? (
+          <ReadyStructureOptionsView
+            submission={focusedSubmission}
+            onApprove={(option) => onApprovePremiumOption?.(focusedSubmission.id, option)}
+            onSeedComposer={(message) => {
+              setSeedComposerMessage(null)
+              requestAnimationFrame(() => setSeedComposerMessage(message))
+            }}
+          />
+        ) : (
+          <>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
+              {focusedSubmission.submissionNumber}
+            </Typography>
+            <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 1.5 }}>
+              {renderSummaryText(
+                `**${focusedSubmission.insuredName}** — Submission **${focusedSubmission.submissionNumber}** is **Blocked**. Select an issue below to resolve it in Copilot.`,
+              )}
+            </Typography>
+            <Box sx={{ mx: -2 }}>
+              {[...openBlockingIssues(focusedSubmission), ...openWarningIssues(focusedSubmission)].map(
+                (issue, index, all) => (
+                  <IssueListItem
+                    key={issue.id}
+                    issue={issue}
+                    isLast={index === all.length - 1}
+                    onSelect={(next) => setActiveIssueId(next.id)}
+                  />
+                ),
+              )}
+            </Box>
+          </>
+        )}
+      </CopilotContentTransition>
     </CopilotDrawerShell>
   )
 }
