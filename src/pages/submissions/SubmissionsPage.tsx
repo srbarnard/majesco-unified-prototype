@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box'
 import { useGridApiRef, type GridRowSelectionModel } from '@mui/x-data-grid-premium'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
@@ -51,6 +52,7 @@ function formatResolvedTimestamp(date = new Date()) {
 
 export function SubmissionsPage() {
   const apiRef = useGridApiRef()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [rows, setRows] = useState<SubmissionListRecord[]>(submissionsMock)
   const [activeTab, setActiveTab] = useState<SubmissionsTab>('all')
   const [copilotOpen, setCopilotOpen] = useState(false)
@@ -60,6 +62,32 @@ export function SubmissionsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<SubmissionsListFilters>(emptySubmissionsListFilters)
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
+
+  useEffect(() => {
+    const focusParam =
+      searchParams.get('submission') ??
+      searchParams.get('askCopilot') ??
+      searchParams.get('copilot')
+    if (!focusParam) return
+
+    const match = rows.find(
+      (row) =>
+        row.submissionNumber.toLowerCase() === focusParam.toLowerCase() ||
+        row.id.toLowerCase() === focusParam.toLowerCase(),
+    )
+    if (!match) return
+
+    setCopilotSubmissionFocus(match)
+    setFilterOpen(false)
+    setNotesOpen(false)
+    setCopilotOpen(true)
+
+    const next = new URLSearchParams(searchParams)
+    next.delete('submission')
+    next.delete('askCopilot')
+    next.delete('copilot')
+    setSearchParams(next, { replace: true })
+  }, [rows, searchParams, setSearchParams])
 
   const filteredRows = useMemo(() => {
     const withFilters = applySubmissionsListFilters(rows, appliedFilters)
@@ -137,8 +165,18 @@ export function SubmissionsPage() {
       setFilterOpen(false)
       setNotesOpen(false)
       setCopilotOpen(true)
+      return
     }
-  }, [])
+    if (model.length === 1) {
+      const selected = rows.find((row) => row.id === String(model[0]))
+      if (selected) {
+        setCopilotSubmissionFocus(selected)
+        setFilterOpen(false)
+        setNotesOpen(false)
+        setCopilotOpen(true)
+      }
+    }
+  }, [rows])
 
   const handleAddNote = useCallback((submission: SubmissionListRecord) => {
     setCopilotSubmissionFocus(submission)

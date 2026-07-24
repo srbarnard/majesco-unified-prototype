@@ -24,6 +24,7 @@ import type { SxProps, Theme } from '@mui/material/styles'
 import { insuredIdFromName } from '@/pages/shared/insuredId'
 import {
   CopilotIcon,
+  copilotActiveIconSx,
   dataGridInteractionSx,
   getListDataGridSlotProps,
   ListDataGridLink,
@@ -146,11 +147,30 @@ function RowActionsMenu({
             )}
           </IconButton>
         </Tooltip>
+        <Tooltip title="Ask Copilot about this submission">
+          <IconButton
+            size="small"
+            aria-label={`Ask Copilot about ${row.submissionNumber}`}
+            aria-pressed={isCopilotActive}
+            onClick={(event) => {
+              event.stopPropagation()
+              onAskCopilot?.(row)
+            }}
+            onMouseDown={(event) => event.stopPropagation()}
+            sx={copilotActiveIconSx(isCopilotActive)}
+          >
+            <CopilotIcon size={18} active={isCopilotActive} />
+          </IconButton>
+        </Tooltip>
         <Tooltip title="More actions">
           <IconButton
             size="small"
             aria-label={`More actions for ${row.submissionNumber}`}
-            onClick={(event) => setAnchorEl(event.currentTarget)}
+            onClick={(event) => {
+              event.stopPropagation()
+              setAnchorEl(event.currentTarget)
+            }}
+            onMouseDown={(event) => event.stopPropagation()}
             sx={tableActionIconButtonSx}
           >
             <MoreVertIcon fontSize="small" />
@@ -304,9 +324,9 @@ export function SubmissionsDataGrid({
       {
         field: 'actions',
         headerName: '',
-        width: 88,
-        minWidth: 88,
-        maxWidth: 88,
+        width: 120,
+        minWidth: 120,
+        maxWidth: 120,
         sortable: false,
         resizable: false,
         align: 'right',
