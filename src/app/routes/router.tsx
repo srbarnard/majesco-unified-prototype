@@ -13,6 +13,7 @@ import { InsuredDetails } from '@/pages/insureds/InsuredDetails'
 import { QuoteDetails } from '@/pages/quotes/QuoteDetails'
 import { NewQuoteWizardPage } from '@/pages/quotes/NewQuoteWizardPage'
 import { QuotesPage } from '@/pages/quotes/QuotesPage'
+import { SubmissionsPage } from '@/pages/submissions/SubmissionsPage'
 import { TasksPage } from '@/pages/tasks/TasksPage'
 
 export const router = createBrowserRouter([
@@ -28,7 +29,7 @@ export const router = createBrowserRouter([
       { path: 'quotes/new', element: <NewQuoteWizardPage /> },
       { path: 'quotes/:quoteId', element: <QuoteDetails /> },
       { path: 'quotes/:quoteId/documents/:docId', element: <DocumentViewerPage context="quote-detail" /> },
-      { path: 'submissions', element: <PlaceholderPage title="Submissions" description="New business and endorsement submissions will appear here." /> },
+      { path: 'submissions', element: <SubmissionsPage /> },
       { path: 'insureds', element: <PlaceholderPage title="Insureds" description="Search and manage insured accounts." /> },
       { path: 'insureds/:insuredId', element: <InsuredDetails /> },
       { path: 'producers', element: <PlaceholderPage title="Producers" description="Producer appointments and hierarchies." /> },
