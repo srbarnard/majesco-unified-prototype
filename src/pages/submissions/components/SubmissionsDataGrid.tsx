@@ -38,6 +38,8 @@ import { dataGridShellSx } from '@/design-system/theme/themeSurfaces'
 import { SubmissionStatusChip } from '@/pages/submissions/components/SubmissionStatusChip'
 import type { SubmissionListRecord } from '@/pages/submissions/data/mockSubmissions'
 
+const CHECKBOX_COLUMN_WIDTH = 50
+
 type SubmissionsDataGridProps = {
   apiRef: MutableRefObject<GridApi>
   rows: SubmissionListRecord[]
@@ -360,7 +362,7 @@ export function SubmissionsDataGrid({
   )
 
   return (
-    <Box sx={listDataGridContainerSx({ headerFilters: true })}>
+    <Box sx={listDataGridContainerSx({ headerFilters: true, footer: true })}>
       <DataGridPremium
         apiRef={apiRef}
         rows={rows}
@@ -384,11 +386,56 @@ export function SubmissionsDataGrid({
         {...listDataGridFilterProps}
         sx={
           [
-            ...dataGridShellSx({
-              '& .MuiDataGrid-cell[data-field="status"]': {
-                alignItems: 'center',
+            ...dataGridShellSx(
+              {
+                '& .MuiDataGrid-columnHeader:not(.MuiDataGrid-columnHeaderCheckbox)': {
+                  px: 1.5,
+                  '&:focus, &:focus-within': { outline: 'none' },
+                },
+                '& .MuiDataGrid-columnHeaderCheckbox, & .MuiDataGrid-cellCheckbox': {
+                  width: CHECKBOX_COLUMN_WIDTH,
+                  minWidth: CHECKBOX_COLUMN_WIDTH,
+                  maxWidth: CHECKBOX_COLUMN_WIDTH,
+                  p: 0,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                },
+                '& .MuiDataGrid-columnHeaderCheckbox .MuiDataGrid-columnHeaderDraggableContainer': {
+                  width: '100%',
+                  justifyContent: 'center',
+                },
+                '& .MuiDataGrid-columnHeaderCheckbox .MuiDataGrid-columnHeaderTitleContainer': {
+                  flex: '0 0 auto',
+                  width: 'auto',
+                  minWidth: 0,
+                  justifyContent: 'center',
+                },
+                '& .MuiDataGrid-columnHeaderCheckbox .MuiCheckbox-root, & .MuiDataGrid-cellCheckbox .MuiCheckbox-root':
+                  {
+                    p: 0.5,
+                  },
+                '& .MuiDataGrid-cell:not(.MuiDataGrid-cellCheckbox)': {
+                  px: 1.5,
+                  py: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderColor: 'divider',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  '&:focus, &:focus-within': { outline: 'none' },
+                },
+                '& .MuiDataGrid-cell[data-field="status"]': {
+                  alignItems: 'center',
+                },
+                '& .MuiDataGrid-footerContainer': {
+                  borderTop: 1,
+                  borderColor: 'divider',
+                  minHeight: 52,
+                },
               },
-            }),
+              { headerFilters: true, footer: true },
+            ),
             dataGridInteractionSx,
           ] as SxProps<Theme>
         }
