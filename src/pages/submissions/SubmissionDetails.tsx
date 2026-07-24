@@ -18,6 +18,7 @@ import { SubmissionDetailHeader, type SubmissionRightPanel } from '@/pages/submi
 import type { SubmissionDetailTab } from '@/pages/submissions/components/SubmissionDetailTabs'
 import { SubmissionOverviewTab } from '@/pages/submissions/components/SubmissionOverviewTab'
 import { SubmissionsCopilotPanel } from '@/pages/submissions/components/SubmissionsCopilotPanel'
+import type { SubmissionCopilotEntryMode } from '@/pages/submissions/data/submissionCopilotInsights'
 import {
   getSubmissionOverviewStats,
   resolveSubmissionContext,
@@ -54,6 +55,7 @@ export function SubmissionDetails() {
   const [activeTab, setActiveTab] = useState<SubmissionDetailTab>('overview')
   const [starred, setStarred] = useState(false)
   const [activeRightPanel, setActiveRightPanel] = useState<SubmissionRightPanel | null>(null)
+  const [copilotEntryMode, setCopilotEntryMode] = useState<SubmissionCopilotEntryMode>('insight')
 
   useEffect(() => {
     setSubmission(resolveSubmissionContext(submissionId))
@@ -66,7 +68,11 @@ export function SubmissionDetails() {
   const stats = useMemo(() => getSubmissionOverviewStats(submission), [submission])
 
   const handleToggleRightPanel = useCallback((panel: SubmissionRightPanel) => {
-    setActiveRightPanel((current) => (current === panel ? null : panel))
+    setActiveRightPanel((current) => {
+      if (current === panel) return null
+      if (panel === 'copilot') setCopilotEntryMode('insight')
+      return panel
+    })
   }, [])
 
   const handleCloseRightPanel = useCallback(() => {
@@ -74,6 +80,7 @@ export function SubmissionDetails() {
   }, [])
 
   const handleStatusClick = useCallback(() => {
+    setCopilotEntryMode('status')
     setActiveRightPanel('copilot')
   }, [])
 
@@ -250,6 +257,8 @@ export function SubmissionDetails() {
         {showCopilotPanel && (
           <SubmissionsCopilotPanel
             focusedSubmission={focusedListRecord}
+            entryMode={copilotEntryMode}
+            onEntryModeChange={setCopilotEntryMode}
             onResolveIssue={handleResolveIssue}
             onApprovePremiumOption={handleApprovePremiumOption}
             onClose={handleCloseRightPanel}

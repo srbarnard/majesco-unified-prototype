@@ -31,10 +31,16 @@ import {
   type SubmissionIssue,
   type SubmissionListRecord,
 } from '@/pages/submissions/data/mockSubmissions'
+import {
+  buildSubmissionInsightBriefing,
+  type SubmissionCopilotEntryMode,
+} from '@/pages/submissions/data/submissionCopilotInsights'
 
 type SubmissionsCopilotPanelProps = {
   focusedSubmission?: SubmissionListRecord | null
   selectedSubmissions?: SubmissionListRecord[]
+  entryMode?: SubmissionCopilotEntryMode
+  onEntryModeChange?: (mode: SubmissionCopilotEntryMode) => void
   onResolveIssue?: (submissionId: string, issueId: string, resolvedDetails: string[]) => void
   onApprovePremiumOption?: (submissionId: string, option: PremiumEstimate) => void
   onClose?: () => void
@@ -336,6 +342,93 @@ function IssueDetailCard({
         ))}
       </Stack>
     </Stack>
+  )
+}
+
+function SubmissionInsightView({
+  submission,
+  onViewStatus,
+  onSeedComposer,
+}: {
+  submission: SubmissionListRecord
+  onViewStatus: () => void
+  onSeedComposer?: (message: string) => void
+}) {
+  const briefing = useMemo(() => buildSubmissionInsightBriefing(submission), [submission])
+
+  const quickActions = [
+    briefing.statusQuickActionLabel,
+    submission.status === 'Blocked' ? 'Draft producer follow-up' : 'Summarize for underwriter',
+    'Ask about exposure',
+  ]
+
+  return (
+    <>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
+        {submission.submissionNumber}
+      </Typography>
+      <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2 }}>
+        {renderSummaryText(briefing.summary)}
+      </Typography>
+
+      <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
+        Key insights
+      </Typography>
+      <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }}>
+        {briefing.insights.map((insight) => (
+          <Typography
+            component="li"
+            variant="body2"
+            color="text.secondary"
+            key={insight}
+            sx={{ ...bodySx, mb: 0.5 }}
+          >
+            {insight}
+          </Typography>
+        ))}
+      </Box>
+
+      <Divider sx={{ mb: 2 }} />
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1 }}>
+        Quick actions
+      </Typography>
+      <Stack direction="row" flexWrap="wrap" gap={1}>
+        {quickActions.map((action) => (
+          <Button
+            key={action}
+            size="small"
+            variant="text"
+            disableRipple
+            sx={quickActionChipSx}
+            onClick={() => {
+              if (action === briefing.statusQuickActionLabel) {
+                onViewStatus()
+                return
+              }
+              if (action === 'Draft producer follow-up') {
+                onSeedComposer?.(
+                  `Draft a concise producer follow-up for ${submission.submissionNumber} (${submission.insuredName}) covering the open intake gaps.`,
+                )
+                return
+              }
+              if (action === 'Summarize for underwriter') {
+                onSeedComposer?.(
+                  `Summarize ${submission.submissionNumber} for underwriting handoff — account fit, confidence, and recommended next step.`,
+                )
+                return
+              }
+              if (action === 'Ask about exposure') {
+                onSeedComposer?.(
+                  `What exposure and appetite considerations should I watch on ${submission.submissionNumber} (${submission.linesOfBusiness.join(', ')})?`,
+                )
+              }
+            }}
+          >
+            {action}
+          </Button>
+        ))}
+      </Stack>
+    </>
   )
 }
 
@@ -723,6 +816,8 @@ function WorkspaceView() {
 export function SubmissionsCopilotPanel({
   focusedSubmission = null,
   selectedSubmissions = [],
+  entryMode = 'insight',
+  onEntryModeChange,
   onResolveIssue,
   onApprovePremiumOption,
   onClose,
@@ -738,11 +833,12 @@ export function SubmissionsCopilotPanel({
   }, [activeIssueId, focusedSubmission])
 
   const focusKey = focusedSubmission?.id ?? (multiSelectMode ? 'multi' : 'workspace')
+  const statusMode = entryMode === 'status'
 
   useEffect(() => {
     setActiveIssueId(null)
     setSeedComposerMessage(null)
-  }, [focusKey])
+  }, [focusKey, entryMode])
 
   const confidence = focusedSubmission?.confidence ?? 0
   const showConfidence = Boolean(focusedSubmission && !multiSelectMode)
@@ -783,49 +879,61 @@ export function SubmissionsCopilotPanel({
     setActiveIssueId(issue.id)
   }
 
-  const composerPlaceholder = activeIssue
-    ? activeIssue.resolvedAt
-      ? 'Add more details or continue...'
-      : activeIssue.resolutionMode === 'guided'
-        ? 'Drop supporting docs here, or paste details if you already have them...'
-        : activeIssue.composerPlaceholder.includes('...')
-          ? activeIssue.composerPlaceholder.replace(
-              /\.\.\.$/,
-              ' — or drop supporting documents here...',
-            )
-          : `${activeIssue.composerPlaceholder} — or drop supporting documents here`
-    : focusedSubmission?.status === 'Blocked'
-      ? 'Add details or drop documents to resolve...'
-      : multiSelectMode
-        ? 'Ask more...'
-        : 'Ask about submissions...'
+  const composerPlaceholder =
+    focusedSubmission && !statusMode && !activeIssue
+      ? 'Ask about this submission...'
+      : activeIssue
+        ? activeIssue.resolvedAt
+          ? 'Add more details or continue...'
+          : activeIssue.resolutionMode === 'guided'
+            ? 'Drop supporting docs here, or paste details if you already have them...'
+            : activeIssue.composerPlaceholder.includes('...')
+              ? activeIssue.composerPlaceholder.replace(
+                  /\.\.\.$/,
+                  ' — or drop supporting documents here...',
+                )
+              : `${activeIssue.composerPlaceholder} — or drop supporting documents here`
+        : focusedSubmission?.status === 'Blocked'
+          ? 'Add details or drop documents to resolve...'
+          : multiSelectMode
+            ? 'Ask more...'
+            : 'Ask about submissions...'
 
   const summaryTitle = activeIssue
     ? 'Issue details'
     : multiSelectMode
       ? 'Selection summary'
-      : focusedSubmission?.status === 'Ready'
-        ? 'Structure review'
-        : focusedSubmission
-          ? 'Submission issues'
-          : 'Intake summary'
+      : focusedSubmission && !statusMode
+        ? 'Submission briefing'
+        : focusedSubmission?.status === 'Ready'
+          ? 'Structure review'
+          : focusedSubmission
+            ? 'Submission issues'
+            : 'Intake summary'
 
   const panelContentKey = multiSelectMode
     ? `multi:${selectedSubmissions.map((row) => row.id).join('|')}`
     : !focusedSubmission
       ? 'workspace'
-      : activeIssue
-        ? `issue:${focusedSubmission.id}:${activeIssue.id}:${activeIssue.resolvedAt ?? 'open'}`
-        : focusedSubmission.status === 'Ready'
-          ? `ready:${focusedSubmission.id}:${focusedSubmission.approvedPremiumLabel ?? 'review'}`
-          : `blocked:${focusedSubmission.id}:list`
+      : !statusMode
+        ? `insight:${focusedSubmission.id}`
+        : activeIssue
+          ? `issue:${focusedSubmission.id}:${activeIssue.id}:${activeIssue.resolvedAt ?? 'open'}`
+          : focusedSubmission.status === 'Ready'
+            ? `ready:${focusedSubmission.id}:${focusedSubmission.approvedPremiumLabel ?? 'review'}`
+            : `blocked:${focusedSubmission.id}:list`
+
+  const seedComposer = (message: string) => {
+    setSeedComposerMessage(null)
+    requestAnimationFrame(() => setSeedComposerMessage(message))
+  }
 
   return (
     <CopilotDrawerShell
       onClose={onClose}
       composerPlaceholder={composerPlaceholder}
       seedComposerMessage={seedComposerMessage}
-      chatFocusKey={`${focusKey}:${activeIssueId ?? 'list'}`}
+      chatFocusKey={`${focusKey}:${entryMode}:${activeIssueId ?? 'list'}`}
       attachRequestKey={attachRequestKey}
       onComposerSubmit={handleSubmit}
       headerTrailing={
@@ -854,6 +962,12 @@ export function SubmissionsCopilotPanel({
           <SummarizeView submissions={selectedSubmissions} />
         ) : !focusedSubmission ? (
           <WorkspaceView />
+        ) : !statusMode ? (
+          <SubmissionInsightView
+            submission={focusedSubmission}
+            onViewStatus={() => onEntryModeChange?.('status')}
+            onSeedComposer={seedComposer}
+          />
         ) : activeIssue ? (
           <IssueDetailCard
             issue={activeIssue}
@@ -866,10 +980,7 @@ export function SubmissionsCopilotPanel({
           <ReadyStructureOptionsView
             submission={focusedSubmission}
             onApprove={(option) => onApprovePremiumOption?.(focusedSubmission.id, option)}
-            onSeedComposer={(message) => {
-              setSeedComposerMessage(null)
-              requestAnimationFrame(() => setSeedComposerMessage(message))
-            }}
+            onSeedComposer={seedComposer}
           />
         ) : (
           <>

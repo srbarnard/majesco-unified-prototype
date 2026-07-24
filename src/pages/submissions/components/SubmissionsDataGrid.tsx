@@ -45,7 +45,10 @@ type SubmissionsDataGridProps = {
   rows: SubmissionListRecord[]
   rowSelectionModel: GridRowSelectionModel
   onRowSelectionModelChange: (model: GridRowSelectionModel) => void
+  /** Row Copilot icon / Ask Copilot — insight briefing. */
   onAskCopilot?: (submission: SubmissionListRecord) => void
+  /** Status chip — status workflow (issues / structure options). */
+  onOpenStatusCopilot?: (submission: SubmissionListRecord) => void
   onAssign?: (submission: SubmissionListRecord) => void
   onAddNote?: (submission: SubmissionListRecord) => void
   onDiscard?: (submission: SubmissionListRecord) => void
@@ -237,6 +240,7 @@ export function SubmissionsDataGrid({
   rowSelectionModel,
   onRowSelectionModelChange,
   onAskCopilot,
+  onOpenStatusCopilot,
   onAssign,
   onAddNote,
   onDiscard,
@@ -274,7 +278,7 @@ export function SubmissionsDataGrid({
           <SubmissionStatusChip
             status={row.status}
             selected={activeCopilotSubmissionId === row.id}
-            onClick={() => onAskCopilot?.(row)}
+            onClick={() => onOpenStatusCopilot?.(row)}
           />
         ),
       },
@@ -358,7 +362,7 @@ export function SubmissionsDataGrid({
         ),
       },
     ],
-    [activeCopilotSubmissionId, onAddNote, onAskCopilot, onAssign, onDiscard],
+    [activeCopilotSubmissionId, onAddNote, onAskCopilot, onAssign, onDiscard, onOpenStatusCopilot],
   )
 
   return (

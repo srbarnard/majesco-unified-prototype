@@ -64,6 +64,7 @@ export function SubmissionsPage() {
   const [filterOpen, setFilterOpen] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
   const [copilotSubmissionFocus, setCopilotSubmissionFocus] = useState<SubmissionListRecord | null>(null)
+  const [copilotEntryMode, setCopilotEntryMode] = useState<'insight' | 'status'>('insight')
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<SubmissionsListFilters>(emptySubmissionsListFilters)
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
@@ -83,6 +84,7 @@ export function SubmissionsPage() {
     if (!match) return
 
     setCopilotSubmissionFocus(match)
+    setCopilotEntryMode('insight')
     setFilterOpen(false)
     setNotesOpen(false)
     setCopilotOpen(true)
@@ -158,6 +160,15 @@ export function SubmissionsPage() {
 
   const handleAskCopilot = useCallback((submission: SubmissionListRecord) => {
     setCopilotSubmissionFocus(submission)
+    setCopilotEntryMode('insight')
+    setFilterOpen(false)
+    setNotesOpen(false)
+    setCopilotOpen(true)
+  }, [])
+
+  const handleOpenStatusCopilot = useCallback((submission: SubmissionListRecord) => {
+    setCopilotSubmissionFocus(submission)
+    setCopilotEntryMode('status')
     setFilterOpen(false)
     setNotesOpen(false)
     setCopilotOpen(true)
@@ -167,6 +178,7 @@ export function SubmissionsPage() {
     setRowSelectionModel(model)
     if (model.length > 1) {
       setCopilotSubmissionFocus(null)
+      setCopilotEntryMode('insight')
       setFilterOpen(false)
       setNotesOpen(false)
       setCopilotOpen(true)
@@ -176,6 +188,7 @@ export function SubmissionsPage() {
       const selected = rows.find((row) => row.id === String(model[0]))
       if (selected) {
         setCopilotSubmissionFocus(selected)
+        setCopilotEntryMode('insight')
         setFilterOpen(false)
         setNotesOpen(false)
         setCopilotOpen(true)
@@ -392,6 +405,7 @@ export function SubmissionsPage() {
                   rowSelectionModel={rowSelectionModel}
                   onRowSelectionModelChange={handleRowSelectionModelChange}
                   onAskCopilot={handleAskCopilot}
+                  onOpenStatusCopilot={handleOpenStatusCopilot}
                   onAddNote={handleAddNote}
                   onDiscard={handleDiscardOne}
                   activeCopilotSubmissionId={focusedSubmission?.id ?? null}
@@ -432,6 +446,8 @@ export function SubmissionsPage() {
           <SubmissionsCopilotPanel
             focusedSubmission={copilotFocusForPanel}
             selectedSubmissions={selectedSubmissions}
+            entryMode={copilotEntryMode}
+            onEntryModeChange={setCopilotEntryMode}
             onResolveIssue={handleResolveIssue}
             onApprovePremiumOption={handleApprovePremiumOption}
             onClose={handleCloseCopilot}
