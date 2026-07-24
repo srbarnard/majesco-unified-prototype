@@ -22,6 +22,10 @@ export const SUBMISSION_ASSIGNEE_OPTIONS = [
   'Sarah Thompson',
   'Dana Patel',
   'Marcus Lee',
+  'Jordan Reyes',
+  'Ava Chen',
+  'Chris Nolan',
+  'Priya Shah',
 ] as const
 
 export const SUBMISSION_FILTER_STATUS_OPTIONS = ['Ready', 'Blocked'] as const

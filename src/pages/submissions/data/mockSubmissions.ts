@@ -48,9 +48,8 @@ export type SubmissionListRecord = {
   notes: string[]
 }
 
-export const SUBMISSIONS_TOTAL_ROWS = 75
-
-export const submissionsMock: SubmissionListRecord[] = [
+/** Hand-crafted demo rows (rich Copilot issue detail). Extra volume is generated below. */
+const curatedSubmissions: SubmissionListRecord[] = [
   {
     id: 'sub-00123',
     submissionNumber: 'SUB-00123',
@@ -462,4 +461,404 @@ export const submissionsMock: SubmissionListRecord[] = [
     ],
     notes: ['Broker asked for guidance on cargo sublimits.'],
   },
+]
+
+const INSURED_NAME_POOL = [
+  'Cedar Peak Builders',
+  'Ironclad Steelworks',
+  'Lakeside Retail Partners',
+  'Prairie Wind Energy Co.',
+  'Copperline Plumbing LLC',
+  'BrightPath Learning Centers',
+  'Oakmont Dental Associates',
+  'Riverbend Warehousing',
+  'Summit Peak Outfitters',
+  'Coastal Breeze Hotels',
+  'Granite State Fabricators',
+  'Yellowstone Transit Group',
+  'Pinecrest Landscaping Inc.',
+  'Metro Lift Elevator Co.',
+  'Harvest Moon Agribusiness',
+  'Skyline Facade Systems',
+  'Northwind Cold Storage',
+  'Beacon Street Pharmacies',
+  'Clearwater Marine Services',
+  'Ridgeway Auto Body Group',
+  'Silver Creek Distillery',
+  'Frontier Fiber Networks',
+  'Ember & Ash Restaurants',
+  'Valley View Veterinary',
+  'Pacific Rim Import Co.',
+  'Stonebridge Masonry Inc.',
+  'Apex Drone Logistics',
+  'Greenfield Solar Installers',
+  'Twin Cities Printworks',
+  'Highland Trails Resort',
+  'Bayfront Yacht Club Ops',
+  'Midwest Grain Elevators',
+  'Urban Nest Property Co.',
+  'Falcon Security Services',
+  'Cascade Coffee Roasters',
+  'Redline Motorsport LLC',
+  'Willowbrook Senior Living',
+  'Arcadia Theme Parks Inc.',
+  'Northern Lights HVAC',
+  'Sunbelt Pool Builders',
+  'Eclipse Digital Media',
+  'Frontier Ranch Outfitters',
+  'Capitol Hill Catering',
+  'Bluegrass Equine Center',
+  'Desert Bloom Nurseries',
+  'Harbor Crane Rentals',
+  'Kinetic Fitness Franchise',
+  'Alpine Ski Patrol Co-op',
+  'Meridian Data Centers',
+  'Southbay Seafood Packers',
+  'TruNorth Mining Support',
+  'Velvet Curtain Theaters',
+  'Orbit Transit Advertising',
+  'Canvas & Co. Interiors',
+  'Iron Horse Rail Services',
+  'Pearl Street Boutiques',
+  'Astra Aerospace Parts',
+  'Lone Star Fence Co.',
+  'Glacier Ice Logistics',
+  'Nova Biotech Labs',
+  'Crescent City Jazz Clubs',
+  'Thunder Bay Paper Mill',
+  'Golden Gate Tours Inc.',
+  'Shadowridge Golf Ops',
+  'PrimeCut Meats Dist.',
+  'Echo Valley Wineries',
+  'Rapid Response EMS Co.',
+  'Lumen Street Lighting',
+  'Forge & Flame Foundry',
+  'Seabreeze Charter School',
+  'Atlas Modular Homes',
+  'Brightline Telecom Co.',
+  'Crowne Plaza Franchisee',
+  'Delta Force Training Gym',
+  'Everest Climbing Gear',
+  'Frostline Refrigeration',
+  'Galaxy Arcade Holdings',
+  'Horizon Pet Hospitals',
+  'Indigo Textile Mills',
+  'Juniper Wellness Spas',
+  'Knotty Pine Cabinetry',
+  'Lighthouse Maritime Ins.',
+  'Moonrise Cinema Chain',
+  'Nexus Cloud Hosting',
+  'Orchid Floral Wholesale',
+  'Pinnacle Roofing Group',
+  'Quarry Stone Supplies',
+  'Radiant Heat Systems',
+  'Starlight Event Venues',
+  'Timberline Logging Co.',
+  'Umbra Design Studios',
+  'Vortex Water Parks',
+  'Windward Sailing School',
+  'Xenon Neon Sign Co.',
+  'Yukon Freight Brokers',
+  'Zenith Orthopedics',
+  'Amber Fields Farms',
+  'Boulder Creek Brewing',
+  'Cypress Tree Care Inc.',
+  'Driftwood Surf Shops',
+  'Elm Street Bakeries',
+  'Foxfire Campgrounds',
+  'Graphite Pencil Co.',
+  'Hawthorn Legal Offices',
+  'Ivory Coast Importers',
+  'Jade Mountain Spa Chain',
+  'Key West Charter Boats',
+  'Lunar Nightclubs LLC',
+  'Mystic River Canoes',
+  'Nebula Software Inc.',
+]
+
+const LOB_POOL: string[][] = [
+  ['Workers Compensation'],
+  ['Commercial Auto'],
+  ['General Liability'],
+  ['Commercial Property'],
+  ['BOP'],
+  ['Inland Marine'],
+  ['Professional Liability'],
+  ['Commercial Package'],
+  ['Commercial Auto', 'General Liability'],
+  ['Workers Compensation', 'Commercial Auto'],
+  ['Commercial Property', 'General Liability'],
+  ['Commercial Package', 'Umbrella'],
+  ['Motor Truck Cargo', 'Commercial Auto'],
+  ['General Liability', 'Workers Compensation', 'Commercial Auto'],
+]
+
+const ASSIGNEE_POOL = [
+  'Underwriting Queue',
+  'Sarah Thompson',
+  'Dana Patel',
+  'Marcus Lee',
+  'Jordan Reyes',
+  'Ava Chen',
+  'Chris Nolan',
+  'Priya Shah',
+]
+
+const BLOCKING_ISSUE_TEMPLATES: Omit<SubmissionIssue, 'id' | 'reportedAt'>[] = [
+  {
+    title: 'Missing Payroll Information',
+    severity: 'blocking',
+    summary: 'Premium cannot be calculated',
+    whyItMatters: 'Required to determine Workers Compensation exposure.',
+    missingDetails: ['Annual payroll', 'Payroll breakdown by role'],
+    composerPlaceholder: 'Enter payroll details...',
+  },
+  {
+    title: 'Incomplete Loss History',
+    severity: 'blocking',
+    summary: 'Risk profile cannot be validated',
+    whyItMatters: 'Loss runs are required to evaluate prior claims frequency and severity.',
+    missingDetails: ['3-year loss runs', 'Open claim reserves'],
+    composerPlaceholder: 'Provide loss history details...',
+    resolutionMode: 'guided',
+    guidedActions: ['Request loss runs from producer', 'Upload 3-year loss PDF'],
+  },
+  {
+    title: 'Unverified Business Address',
+    severity: 'blocking',
+    summary: 'Location-based risk scoring unavailable',
+    whyItMatters: 'Primary location drives territory rating and catastrophe exposure.',
+    missingDetails: ['Verified street address', 'Occupancy confirmation'],
+    composerPlaceholder: 'Confirm business address...',
+  },
+  {
+    title: 'Driver MVR Pending',
+    severity: 'blocking',
+    summary: 'Cannot finalize auto rating',
+    whyItMatters: 'MVRs are required for all scheduled drivers before quoting.',
+    missingDetails: ['MVR reports', 'Driver hire dates'],
+    composerPlaceholder: 'Provide driver / MVR details...',
+    resolutionMode: 'guided',
+    guidedActions: ['Request MVRs', 'Open driver checklist'],
+  },
+  {
+    title: 'Statement of Values Missing',
+    severity: 'blocking',
+    summary: 'Property TIV cannot be confirmed',
+    whyItMatters: 'SOV is required to bind property coverage and set limits.',
+    missingDetails: ['Building values', 'Business personal property'],
+    composerPlaceholder: 'Provide statement of values...',
+    resolutionMode: 'guided',
+    guidedActions: ['Request SOV workbook', 'Open property worksheet'],
+  },
+  {
+    title: 'Operations Description Incomplete',
+    severity: 'blocking',
+    summary: 'GL class codes cannot be assigned',
+    whyItMatters: 'Detailed operations drive GL classification and rate.',
+    missingDetails: ['Primary operations', 'Subcontractor usage %'],
+    composerPlaceholder: 'Describe operations...',
+    resolutionMode: 'guided',
+    guidedActions: ['Open operations questionnaire', 'Request producer narrative'],
+  },
+  {
+    title: 'Cargo Commodity List Incomplete',
+    severity: 'blocking',
+    summary: 'Cargo limit recommendations blocked',
+    whyItMatters: 'Commodity mix drives cargo rate and excluded goods screening.',
+    missingDetails: ['Top commodities', 'Average load value'],
+    composerPlaceholder: 'Describe cargo commodities...',
+    resolutionMode: 'guided',
+    guidedActions: ['Request commodity schedule', 'Open cargo worksheet'],
+  },
+  {
+    title: 'Missing WC Class Codes',
+    severity: 'blocking',
+    summary: 'Workers Comp rating blocked',
+    whyItMatters: 'Class codes are required to rate payroll exposure.',
+    missingDetails: ['Class code list', 'Payroll by class'],
+    composerPlaceholder: 'Provide WC class details...',
+    resolutionMode: 'guided',
+    guidedActions: ['Open class-code checklist', 'Request payroll by class'],
+  },
+]
+
+const WARNING_ISSUE_TEMPLATES: Omit<SubmissionIssue, 'id' | 'reportedAt'>[] = [
+  {
+    title: 'Outside Preferred Appetite',
+    severity: 'warning',
+    summary: 'Review before proceeding',
+    whyItMatters: 'Account mix sits near the edge of preferred underwriting guidelines.',
+    missingDetails: [],
+    composerPlaceholder: 'Add appetite notes...',
+  },
+  {
+    title: 'Elevated Risk Indicators',
+    severity: 'warning',
+    summary: 'Consider adjusted coverage',
+    whyItMatters: 'Industry class and recent growth suggest elevated exposure volatility.',
+    missingDetails: [],
+    composerPlaceholder: 'Add risk notes...',
+  },
+  {
+    title: 'Aging Fleet Mix',
+    severity: 'warning',
+    summary: 'Review before proceeding',
+    whyItMatters: 'Average vehicle age exceeds preferred guidelines.',
+    missingDetails: [],
+    composerPlaceholder: 'Add fleet notes...',
+  },
+  {
+    title: 'Multi-State Exposure',
+    severity: 'warning',
+    summary: 'Consider adjusted coverage',
+    whyItMatters: 'Operations span multiple states with varying regulatory requirements.',
+    missingDetails: [],
+    composerPlaceholder: 'Add multi-state notes...',
+  },
+  {
+    title: 'Coastal Wind Exposure',
+    severity: 'warning',
+    summary: 'Review before proceeding',
+    whyItMatters: 'One or more locations sit within elevated wind zones.',
+    missingDetails: [],
+    composerPlaceholder: 'Add wind mitigation notes...',
+  },
+]
+
+const PREMIUM_RANGES: PremiumEstimate[][] = [
+  [
+    { label: 'Optimized', range: '$95K - $110K' },
+    { label: 'Balanced', range: '$82K - $95K' },
+    { label: 'Conservative', range: '$110K - $125K' },
+  ],
+  [
+    { label: 'Optimized', range: '$210K - $245K' },
+    { label: 'Balanced', range: '$185K - $210K' },
+    { label: 'Conservative', range: '$245K - $275K' },
+  ],
+  [
+    { label: 'Optimized', range: '$420K - $480K' },
+    { label: 'Balanced', range: '$380K - $420K' },
+    { label: 'Conservative', range: '$480K - $540K' },
+  ],
+  [
+    { label: 'Optimized', range: '$760K - $890K' },
+    { label: 'Balanced', range: '$690K - $760K' },
+    { label: 'Conservative', range: '$890K - $980K' },
+  ],
+  [
+    { label: 'Optimized', range: '$1.1M - $1.3M' },
+    { label: 'Balanced', range: '$900K - $1.1M' },
+    { label: 'Conservative', range: '$1.3M - $1.6M' },
+  ],
+]
+
+/** Target volume for the list demo — Copilot still works off the same row model. */
+export const SUBMISSIONS_TOTAL_ROWS = 120
+
+function padSubmissionNumber(n: number) {
+  return `SUB-${String(n).padStart(5, '0')}`
+}
+
+function submittedAtForIndex(index: number) {
+  const base = Date.UTC(2026, 3, 9, 8, 0, 0)
+  const offsetMs = index * 3.25 * 60 * 60 * 1000
+  return new Date(base - offsetMs).toISOString().replace(/\.\d{3}Z$/, '')
+}
+
+function buildGeneratedSubmissions(count: number, startNumber: number): SubmissionListRecord[] {
+  const rows: SubmissionListRecord[] = []
+
+  for (let i = 0; i < count; i += 1) {
+    const submissionNumber = padSubmissionNumber(startNumber - i)
+    const id = `sub-${String(startNumber - i).padStart(5, '0')}`
+    const isBlocked = i % 3 !== 0
+    const insuredName = INSURED_NAME_POOL[i % INSURED_NAME_POOL.length]
+    const linesOfBusiness = LOB_POOL[i % LOB_POOL.length]
+    const assignedTo = isBlocked
+      ? i % 4 === 0
+        ? ASSIGNEE_POOL[(i % (ASSIGNEE_POOL.length - 1)) + 1]
+        : 'Underwriting Queue'
+      : ASSIGNEE_POOL[(i % (ASSIGNEE_POOL.length - 1)) + 1]
+
+    if (isBlocked) {
+      const blockerCount = 1 + (i % 3)
+      const issues: SubmissionIssue[] = []
+      for (let b = 0; b < blockerCount; b += 1) {
+        const template = BLOCKING_ISSUE_TEMPLATES[(i + b) % BLOCKING_ISSUE_TEMPLATES.length]
+        issues.push({
+          ...template,
+          id: `${id}-block-${b}`,
+          reportedAt: '04/23/2026 9:00am',
+        })
+      }
+      if (i % 2 === 0) {
+        const warning = WARNING_ISSUE_TEMPLATES[i % WARNING_ISSUE_TEMPLATES.length]
+        issues.push({
+          ...warning,
+          id: `${id}-warn-0`,
+          reportedAt: '04/23/2026 9:00am',
+        })
+      }
+
+      rows.push({
+        id,
+        submissionNumber,
+        status: 'Blocked',
+        insuredName,
+        linesOfBusiness,
+        assignedTo,
+        submittedAt: submittedAtForIndex(i),
+        hasAlert: true,
+        confidence: 42 + (i % 28),
+        issues,
+        notes: i % 5 === 0 ? ['Producer follow-up scheduled.'] : [],
+      })
+      continue
+    }
+
+    const premiums = PREMIUM_RANGES[i % PREMIUM_RANGES.length]
+    const readyInsights: SubmissionReadyInsight[] =
+      i % 4 === 0
+        ? [
+            {
+              id: `${id}-ri`,
+              title: WARNING_ISSUE_TEMPLATES[i % WARNING_ISSUE_TEMPLATES.length].title,
+              summary: WARNING_ISSUE_TEMPLATES[i % WARNING_ISSUE_TEMPLATES.length].summary,
+              severity: 'warning',
+            },
+          ]
+        : []
+
+    rows.push({
+      id,
+      submissionNumber,
+      status: 'Ready',
+      insuredName,
+      linesOfBusiness,
+      assignedTo,
+      submittedAt: submittedAtForIndex(i),
+      hasAlert: readyInsights.length > 0,
+      confidence: 82 + (i % 14),
+      issues: [],
+      premiumEstimates: premiums,
+      readyInsights,
+      notes: [],
+    })
+  }
+
+  return rows
+}
+
+const curatedNumbers = new Set(curatedSubmissions.map((row) => row.submissionNumber))
+const generatedStart = 111
+const generatedNeeded = Math.max(0, SUBMISSIONS_TOTAL_ROWS - curatedSubmissions.length)
+const generatedSubmissions = buildGeneratedSubmissions(generatedNeeded, generatedStart).filter(
+  (row) => !curatedNumbers.has(row.submissionNumber),
+)
+
+export const submissionsMock: SubmissionListRecord[] = [
+  ...curatedSubmissions,
+  ...generatedSubmissions,
 ]

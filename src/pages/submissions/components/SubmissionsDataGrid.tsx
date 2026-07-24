@@ -268,8 +268,8 @@ export function SubmissionsDataGrid({
         flex: 0.85,
         minWidth: 120,
         sortable: true,
-        align: 'left',
-        headerAlign: 'left',
+        align: 'center',
+        headerAlign: 'center',
         renderCell: ({ row }) => (
           <SubmissionStatusChip
             status={row.status}
@@ -375,9 +375,9 @@ export function SubmissionsDataGrid({
         sortingOrder={['asc', 'desc']}
         initialState={{
           sorting: { sortModel: [{ field: 'submittedAt', sort: 'desc' }] },
-          pagination: { paginationModel: { pageSize: 10, page: 0 } },
+          pagination: { paginationModel: { pageSize: 25, page: 0 } },
         }}
-        pageSizeOptions={[10, 25, 50]}
+        pageSizeOptions={[10, 25, 50, 100]}
         pinnedColumns={{ left: ['__check__', 'submissionNumber'], right: ['actions'] }}
         disableColumnReorder
         columnHeaderHeight={40}
@@ -426,8 +426,13 @@ export function SubmissionsDataGrid({
                   '&:focus, &:focus-within': { outline: 'none' },
                 },
                 '& .MuiDataGrid-cell[data-field="status"]': {
+                  justifyContent: 'center',
                   alignItems: 'center',
                 },
+                '& .MuiDataGrid-columnHeader[data-field="status"] .MuiDataGrid-columnHeaderTitleContainer':
+                  {
+                    justifyContent: 'center',
+                  },
                 '& .MuiDataGrid-footerContainer': {
                   borderTop: 1,
                   borderColor: 'divider',

@@ -1,7 +1,9 @@
 import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
 import { useGridApiRef, type GridRowSelectionModel } from '@mui/x-data-grid-premium'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
+import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
@@ -14,12 +16,14 @@ import { SubmissionsNotesPanel } from '@/pages/submissions/components/Submission
 import type { SubmissionsTab } from '@/pages/submissions/components/SubmissionsTabs'
 import { SubmissionsToolbar } from '@/pages/submissions/components/SubmissionsToolbar'
 import {
+  SUBMISSIONS_TOTAL_ROWS,
   submissionsMock,
   type SubmissionListRecord,
 } from '@/pages/submissions/data/mockSubmissions'
 import { applySubmissionsListFilters } from '@/pages/submissions/filters/applySubmissionsListFilters'
 import {
   emptySubmissionsListFilters,
+  hasActiveSubmissionsFilters,
   type SubmissionsListFilters,
 } from '@/pages/submissions/filters/submissionsListFilterTypes'
 
@@ -381,6 +385,16 @@ export function SubmissionsPage() {
                   activeCopilotSubmissionId={focusedSubmission?.id ?? null}
                 />
               </Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontFamily: figmaFontFamilyStack.body, textAlign: 'right', flexShrink: 0 }}
+              >
+                Total Rows:{' '}
+                {hasActiveSubmissionsFilters(appliedFilters) || searchQuery.trim()
+                  ? filteredRows.length
+                  : Math.max(SUBMISSIONS_TOTAL_ROWS, rows.length)}
+              </Typography>
             </Box>
           ) : (
             <SubmissionsAnalyticsTab />

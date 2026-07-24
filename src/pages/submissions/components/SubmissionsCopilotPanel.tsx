@@ -22,9 +22,10 @@ import {
   copilotSubtitleSx,
 } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import { useAnimatedConfidence } from '@/pages/policies/components/copilot/useAnimatedConfidence'
-import type {
-  SubmissionIssue,
-  SubmissionListRecord,
+import {
+  submissionsMock,
+  type SubmissionIssue,
+  type SubmissionListRecord,
 } from '@/pages/submissions/data/mockSubmissions'
 
 type SubmissionsCopilotPanelProps = {
@@ -380,14 +381,21 @@ function SummarizeView({ submissions }: { submissions: SubmissionListRecord[] })
 }
 
 function WorkspaceView() {
-  const summaryText =
-    'Copilot is monitoring incoming submissions to identify items that require attention. Select a blocked submission — or multi-select rows — to resolve issues in place.'
+  const blocked = submissionsMock.filter((row) => row.status === 'Blocked').length
+  const ready = submissionsMock.filter((row) => row.status === 'Ready').length
+  const queueBlocked = submissionsMock.filter(
+    (row) => row.status === 'Blocked' && row.assignedTo === 'Underwriting Queue',
+  ).length
+
+  const summaryText = `Copilot is monitoring **${submissionsMock.length}** incoming submissions to identify items that require attention. Select a blocked submission — or multi-select rows — to resolve issues in place.`
 
   const insights = [
-    '3 submissions are blocked and require action',
-    'Payroll and loss history are the most common blockers',
-    'Most blocked submissions are in the Underwriting Queue',
-    'Ready submissions already include estimated premium ranges',
+    `${blocked} submissions are blocked and require action`,
+    `${ready} submissions are ready for underwriting review`,
+    `Payroll, loss history, and exposure gaps remain the most common blockers`,
+    queueBlocked > 0
+      ? `Most blocked volume sits in the Underwriting Queue (${queueBlocked})`
+      : 'Blocked submissions are assigned across underwriters',
   ]
 
   return (
