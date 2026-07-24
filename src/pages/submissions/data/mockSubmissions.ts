@@ -60,13 +60,36 @@ export type SubmissionListRecord = {
 
 /**
  * Agent decision helper: keep only distinct, useful structure options (max 3).
- * Prefers authored lists; prunes near-duplicate ranges when needed.
+ * Trusts authored 1–3 option lists that already include rationales; otherwise
+ * prunes near-duplicates and caps count by account complexity.
  */
 export function resolvePremiumStructureOptions(
   estimates: PremiumEstimate[] | undefined,
   context?: { linesOfBusiness?: string[]; confidence?: number },
 ): PremiumEstimate[] {
   if (!estimates?.length) return []
+
+  const ensureRecommended = (options: PremiumEstimate[]) => {
+    if (options.length === 0) return options
+    if (options.length === 1) {
+      return options.map((option) => ({ ...option, recommended: true }))
+    }
+    if (options.some((option) => option.recommended)) return options
+    const balanced = options.find((option) => option.label === 'Balanced')
+    return options.map((option) => ({
+      ...option,
+      recommended: balanced ? option.label === 'Balanced' : option === options[0],
+    }))
+  }
+
+  // Authored Copilot decisions already carry rationales — do not force-prune to fewer.
+  if (estimates.length <= 3 && estimates.every((option) => Boolean(option.rationale?.trim()))) {
+    const uniqueAuthored = estimates.filter((option, index, all) => {
+      const normalized = option.range.replace(/\s/g, '').toLowerCase()
+      return all.findIndex((item) => item.range.replace(/\s/g, '').toLowerCase() === normalized) === index
+    })
+    return ensureRecommended(uniqueAuthored.slice(0, 3))
+  }
 
   const uniqueByRange = estimates.filter((option, index, all) => {
     const normalized = option.range.replace(/\s/g, '').toLowerCase()
@@ -85,18 +108,7 @@ export function resolvePremiumStructureOptions(
           ? Math.min(2, uniqueByRange.length)
           : Math.min(uniqueByRange.length, confidence >= 93 ? 1 : 2)
 
-  const selected = uniqueByRange.slice(0, Math.min(maxOptions, 3))
-  if (selected.length === 1) {
-    return selected.map((option) => ({ ...option, recommended: true }))
-  }
-  if (!selected.some((option) => option.recommended)) {
-    const balanced = selected.find((option) => option.label === 'Balanced')
-    return selected.map((option) => ({
-      ...option,
-      recommended: balanced ? option.label === 'Balanced' : option === selected[0],
-    }))
-  }
-  return selected
+  return ensureRecommended(uniqueByRange.slice(0, Math.min(maxOptions, 3)))
 }
 
 /** Hand-crafted demo rows (rich Copilot issue detail). Extra volume is generated below. */
