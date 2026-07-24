@@ -29,6 +29,7 @@ function AppLayoutContent() {
     location.pathname === '/copilot-studio' ||
     /\/policies\/[^/]+/.test(location.pathname) ||
     /\/quotes\/[^/]+/.test(location.pathname) ||
+    /\/submissions\/[^/]+/.test(location.pathname) ||
     /\/insureds\/[^/]+/.test(location.pathname)
 
   return (

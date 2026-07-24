@@ -4,7 +4,6 @@ import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNone
 import Box from '@mui/material/Box'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
-import Link from '@mui/material/Link'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import ListItemIcon from '@mui/material/ListItemIcon'
@@ -21,6 +20,7 @@ import {
 import { useMemo, useState } from 'react'
 import type { MutableRefObject } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
+import { useNavigate } from 'react-router'
 import { insuredIdFromName } from '@/pages/shared/insuredId'
 import {
   CopilotIcon,
@@ -31,7 +31,6 @@ import {
   listDataGridActionColumnProps,
   listDataGridFilterProps,
   tableActionIconButtonSx,
-  tableLinkSx,
 } from '@/design-system/components'
 import { listDataGridContainerSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -117,6 +116,7 @@ function RowActionsMenu({
   onAssign,
   onAddNote,
   onDiscard,
+  onViewDetails,
   isCopilotActive,
 }: {
   row: SubmissionListRecord
@@ -124,6 +124,7 @@ function RowActionsMenu({
   onAssign?: (submission: SubmissionListRecord) => void
   onAddNote?: (submission: SubmissionListRecord) => void
   onDiscard?: (submission: SubmissionListRecord) => void
+  onViewDetails?: (submission: SubmissionListRecord) => void
   isCopilotActive?: boolean
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -178,7 +179,14 @@ function RowActionsMenu({
         </Tooltip>
       </Stack>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-        <MenuItem onClick={() => setAnchorEl(null)}>View details</MenuItem>
+        <MenuItem
+          onClick={() => {
+            setAnchorEl(null)
+            onViewDetails?.(row)
+          }}
+        >
+          View details
+        </MenuItem>
         <MenuItem
           onClick={() => {
             setAnchorEl(null)
@@ -232,6 +240,12 @@ export function SubmissionsDataGrid({
   onDiscard,
   activeCopilotSubmissionId,
 }: SubmissionsDataGridProps) {
+  const navigate = useNavigate()
+
+  const handleViewDetails = (row: SubmissionListRecord) => {
+    navigate(`/submissions/${encodeURIComponent(row.submissionNumber)}`)
+  }
+
   const columns = useMemo<GridColDef<SubmissionListRecord>[]>(
     () => [
       {
@@ -241,18 +255,9 @@ export function SubmissionsDataGrid({
         minWidth: 120,
         sortable: true,
         renderCell: ({ row }) => (
-          <Link
-            component="button"
-            variant="body2"
-            underline="hover"
-            onClick={(event) => {
-              event.stopPropagation()
-              onAskCopilot?.(row)
-            }}
-            sx={{ fontWeight: 400, textAlign: 'left', py: 0.25, ...tableLinkSx }}
-          >
+          <ListDataGridLink to={`/submissions/${encodeURIComponent(row.submissionNumber)}`}>
             {row.submissionNumber}
-          </Link>
+          </ListDataGridLink>
         ),
       },
       {
@@ -263,7 +268,13 @@ export function SubmissionsDataGrid({
         sortable: true,
         align: 'left',
         headerAlign: 'left',
-        renderCell: ({ row }) => <SubmissionStatusChip status={row.status} />,
+        renderCell: ({ row }) => (
+          <SubmissionStatusChip
+            status={row.status}
+            selected={activeCopilotSubmissionId === row.id}
+            onClick={() => onAskCopilot?.(row)}
+          />
+        ),
       },
       {
         field: 'insuredName',
@@ -339,6 +350,7 @@ export function SubmissionsDataGrid({
             onAssign={onAssign}
             onAddNote={onAddNote}
             onDiscard={onDiscard}
+            onViewDetails={handleViewDetails}
             isCopilotActive={activeCopilotSubmissionId === row.id}
           />
         ),
