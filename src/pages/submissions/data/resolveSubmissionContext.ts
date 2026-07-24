@@ -24,6 +24,7 @@ export type SubmissionDetailsRecord = {
   premiumEstimates?: PremiumEstimate[]
   readyInsights?: SubmissionReadyInsight[]
   notes: string[]
+  approvedPremiumLabel?: PremiumEstimate['label']
   producer: string
   underwriter: string
   effectiveTarget: string
@@ -61,6 +62,7 @@ function buildFromListRecord(row: SubmissionListRecord): SubmissionDetailsRecord
     premiumEstimates: row.premiumEstimates,
     readyInsights: row.readyInsights,
     notes: row.notes,
+    approvedPremiumLabel: row.approvedPremiumLabel,
     producer: 'Liberty Specialty Group',
     underwriter: row.assignedTo === 'Underwriting Queue' ? 'Unassigned' : row.assignedTo,
     effectiveTarget: 'TBD — pending clearance',
@@ -134,6 +136,7 @@ export function toSubmissionListRecord(details: SubmissionDetailsRecord): Submis
     premiumEstimates: details.premiumEstimates,
     readyInsights: details.readyInsights,
     notes: details.notes,
+    approvedPremiumLabel: details.approvedPremiumLabel,
   }
 }
 

@@ -1,6 +1,5 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import BlockIcon from '@mui/icons-material/Block'
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import Box from '@mui/material/Box'
 import Divider from '@mui/material/Divider'
@@ -11,6 +10,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Button } from '@/design-system/components'
 import { accentSubtle, accentSubtleHover } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { layoutTokens } from '@/design-system/tokens/layout'
 import {
   DEFAULT_COPILOT_CONFIDENCE_TIERS,
   getCopilotConfidenceStatusLabel,
@@ -25,7 +25,9 @@ import { useAnimatedConfidence } from '@/pages/policies/components/copilot/useAn
 import type { CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
 import { kindLabel } from '@/pages/quotes/utils/quoteWizardDocuments'
 import {
+  resolvePremiumStructureOptions,
   submissionsMock,
+  type PremiumEstimate,
   type SubmissionIssue,
   type SubmissionListRecord,
 } from '@/pages/submissions/data/mockSubmissions'
@@ -34,6 +36,7 @@ type SubmissionsCopilotPanelProps = {
   focusedSubmission?: SubmissionListRecord | null
   selectedSubmissions?: SubmissionListRecord[]
   onResolveIssue?: (submissionId: string, issueId: string, resolvedDetails: string[]) => void
+  onApprovePremiumOption?: (submissionId: string, option: PremiumEstimate) => void
   onClose?: () => void
 }
 
@@ -333,29 +336,254 @@ function IssueDetailCard({
   )
 }
 
-function ReadyPremiumView({ submission }: { submission: SubmissionListRecord }) {
+function ReadyStructureOptionsView({
+  submission,
+  onApprove,
+  onSeedComposer,
+}: {
+  submission: SubmissionListRecord
+  onApprove?: (option: PremiumEstimate) => void
+  onSeedComposer?: (message: string) => void
+}) {
+  const options = useMemo(
+    () =>
+      resolvePremiumStructureOptions(submission.premiumEstimates, {
+        linesOfBusiness: submission.linesOfBusiness,
+        confidence: submission.confidence,
+      }),
+    [submission.confidence, submission.linesOfBusiness, submission.premiumEstimates],
+  )
+
+  const recommended = options.find((option) => option.recommended) ?? options[0]
+  const [selectedLabel, setSelectedLabel] = useState<PremiumEstimate['label'] | null>(
+    submission.approvedPremiumLabel ?? recommended?.label ?? null,
+  )
+  const approvedLabel = submission.approvedPremiumLabel
+  const selected = options.find((option) => option.label === selectedLabel) ?? recommended
+
+  useEffect(() => {
+    setSelectedLabel(submission.approvedPremiumLabel ?? recommended?.label ?? null)
+  }, [recommended?.label, submission.approvedPremiumLabel, submission.id])
+
+  if (options.length === 0) {
+    return (
+      <Typography variant="body2" color="text.secondary" sx={{ ...bodySx, mb: 2 }}>
+        Copilot has not proposed a premium structure yet.
+      </Typography>
+    )
+  }
+
+  const optionWord = options.length === 1 ? 'option' : 'options'
+  const summaryText = approvedLabel
+    ? `**${submission.insuredName}** is **Ready**. You approved **${approvedLabel}** (${options.find((o) => o.label === approvedLabel)?.range ?? 'selected structure'}). Ask for adjustments anytime.`
+    : options.length === 1
+      ? `**${submission.insuredName}** — Submission **${submission.submissionNumber}** is **Ready** with **${submission.confidence}%** confidence. Copilot is presenting **1** structure option — alternatives were not meaningfully different.`
+      : `**${submission.insuredName}** — Submission **${submission.submissionNumber}** is **Ready** with **${submission.confidence}%** confidence. Copilot is presenting **${options.length}** distinct structure ${optionWord}${recommended ? ` · recommending **${recommended.label}**` : ''}.`
+
+  const quickActions = approvedLabel
+    ? ['Ask for adjustments', 'Summarize approved structure']
+    : [
+        selected ? `Approve ${selected.label}` : 'Approve selected',
+        ...(options.length > 1 ? ['Compare options'] : []),
+        'Ask for adjustments',
+        selected ? `More detail on ${selected.label}` : 'Ask for more detail',
+      ]
+
   return (
-    <Box sx={{ mx: -2, mb: 0 }}>
-      {(submission.premiumEstimates ?? []).map((estimate) => (
-        <Box key={estimate.label} sx={flatListRowSx}>
-          <StatusIconBadge tone="success">
-            <CheckCircleOutlineIcon sx={{ fontSize: 18 }} />
-          </StatusIconBadge>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.875rem', lineHeight: 1.35 }}>
-              {estimate.label}
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ ...bodySx, fontSize: '0.8125rem', lineHeight: 1.4, mt: 0.25 }}
-            >
-              Estimated: {estimate.range}
-            </Typography>
+    <>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
+        {submission.submissionNumber}
+      </Typography>
+      <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2 }}>
+        {renderSummaryText(summaryText)}
+      </Typography>
+
+      {(submission.readyInsights?.length ?? 0) > 0 && (
+        <>
+          <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
+            Key insights
+          </Typography>
+          <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }}>
+            {submission.readyInsights!.slice(0, 3).map((insight) => (
+              <Typography
+                component="li"
+                variant="body2"
+                color="text.secondary"
+                key={insight.id}
+                sx={{ ...bodySx, mb: 0.5 }}
+              >
+                {insight.title} · {insight.summary}
+              </Typography>
+            ))}
           </Box>
-        </Box>
-      ))}
-    </Box>
+        </>
+      )}
+
+      <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
+        {options.length === 1 ? 'Proposed structure' : 'Structure options'}
+      </Typography>
+      <Stack spacing={1} sx={{ mb: 2 }}>
+        {options.map((option) => {
+          const isSelected = selected?.label === option.label
+          const isApproved = approvedLabel === option.label
+          return (
+            <Box
+              key={option.label}
+              component="button"
+              type="button"
+              onClick={() => setSelectedLabel(option.label)}
+              sx={(theme) => ({
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+                borderRadius: `${layoutTokens.cardRadius}px`,
+                border: '1px solid',
+                borderColor: isSelected ? 'primary.main' : 'divider',
+                bgcolor: isSelected ? accentSubtle(theme) : 'background.paper',
+                px: 1.5,
+                py: 1.25,
+                transition: 'border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease',
+                boxShadow: 'none',
+                '&:hover': {
+                  borderColor: isSelected ? 'primary.main' : 'primary.light',
+                  bgcolor: isSelected ? accentSubtle(theme) : accentSubtleHover(theme),
+                },
+              })}
+            >
+              <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Stack direction="row" alignItems="center" spacing={0.75} flexWrap="wrap" useFlexGap>
+                    <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.875rem' }}>
+                      {option.label}
+                    </Typography>
+                    {option.recommended ? (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          ...bodySx,
+                          px: 0.75,
+                          py: 0.125,
+                          borderRadius: '30px',
+                          bgcolor: 'success.main',
+                          color: 'success.contrastText',
+                          fontSize: '0.6875rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Recommended
+                      </Typography>
+                    ) : null}
+                    {isApproved ? (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          ...bodySx,
+                          px: 0.75,
+                          py: 0.125,
+                          borderRadius: '30px',
+                          bgcolor: 'primary.main',
+                          color: 'primary.contrastText',
+                          fontSize: '0.6875rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Approved
+                      </Typography>
+                    ) : null}
+                  </Stack>
+                  <Typography
+                    variant="body2"
+                    sx={{ ...headingSx, fontSize: '0.8125rem', mt: 0.5, color: 'text.primary' }}
+                  >
+                    {option.range}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ ...bodySx, fontSize: '0.75rem', lineHeight: 1.45, mt: 0.5 }}
+                  >
+                    {option.rationale}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={(theme) => ({
+                    width: 18,
+                    height: 18,
+                    borderRadius: '50%',
+                    border: '2px solid',
+                    borderColor: isSelected ? 'primary.main' : theme.palette.divider,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    mt: 0.25,
+                    bgcolor: isSelected ? 'primary.main' : 'transparent',
+                  })}
+                >
+                  {isSelected ? (
+                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'common.white' }} />
+                  ) : null}
+                </Box>
+              </Stack>
+            </Box>
+          )
+        })}
+      </Stack>
+
+      <Divider sx={{ mb: 2 }} />
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1 }}>
+        Quick actions
+      </Typography>
+      <Stack direction="row" flexWrap="wrap" gap={1}>
+        {quickActions.map((action) => (
+          <Button
+            key={action}
+            size="small"
+            variant="text"
+            disableRipple
+            sx={quickActionChipSx}
+            onClick={() => {
+              if (!selected) return
+              if (action.startsWith('Approve')) {
+                onApprove?.(selected)
+                return
+              }
+              if (action === 'Compare options') {
+                const comparison = options
+                  .map(
+                    (option) =>
+                      `${option.label}${option.recommended ? ' (recommended)' : ''}: ${option.range} — ${option.rationale}`,
+                  )
+                  .join('\n')
+                onSeedComposer?.(
+                  `Compare the ${options.length} structure options for ${submission.submissionNumber}:\n${comparison}\n\nWhich should I prefer and why?`,
+                )
+                return
+              }
+              if (action === 'Ask for adjustments') {
+                onSeedComposer?.(
+                  `Adjust the ${selected.label} structure (${selected.range}) for ${submission.submissionNumber}. I'd like to change…`,
+                )
+                return
+              }
+              if (action.startsWith('More detail') || action === 'Ask for more detail') {
+                onSeedComposer?.(
+                  `Explain the ${selected.label} option (${selected.range}) for ${submission.submissionNumber} in more detail — coverage terms, deductibles, and key drivers.`,
+                )
+                return
+              }
+              if (action === 'Summarize approved structure') {
+                onSeedComposer?.(
+                  `Summarize the approved ${approvedLabel} structure for ${submission.submissionNumber}.`,
+                )
+              }
+            }}
+          >
+            {action}
+          </Button>
+        ))}
+      </Stack>
+    </>
   )
 }
 
@@ -472,10 +700,12 @@ export function SubmissionsCopilotPanel({
   focusedSubmission = null,
   selectedSubmissions = [],
   onResolveIssue,
+  onApprovePremiumOption,
   onClose,
 }: SubmissionsCopilotPanelProps) {
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null)
   const [attachRequestKey, setAttachRequestKey] = useState<number | null>(null)
+  const [seedComposerMessage, setSeedComposerMessage] = useState<string | null>(null)
   const multiSelectMode = selectedSubmissions.length > 1 && !focusedSubmission
 
   const activeIssue = useMemo(() => {
@@ -487,6 +717,7 @@ export function SubmissionsCopilotPanel({
 
   useEffect(() => {
     setActiveIssueId(null)
+    setSeedComposerMessage(null)
   }, [focusKey])
 
   const confidence = focusedSubmission?.confidence ?? 0
@@ -550,7 +781,7 @@ export function SubmissionsCopilotPanel({
     : multiSelectMode
       ? 'Selection summary'
       : focusedSubmission?.status === 'Ready'
-        ? 'Premium outlook'
+        ? 'Structure review'
         : focusedSubmission
           ? 'Submission issues'
           : 'Intake summary'
@@ -559,6 +790,7 @@ export function SubmissionsCopilotPanel({
     <CopilotDrawerShell
       onClose={onClose}
       composerPlaceholder={composerPlaceholder}
+      seedComposerMessage={seedComposerMessage}
       chatFocusKey={`${focusKey}:${activeIssueId ?? 'list'}`}
       attachRequestKey={attachRequestKey}
       onComposerSubmit={handleSubmit}
@@ -596,55 +828,14 @@ export function SubmissionsCopilotPanel({
           onRequestAttach={() => setAttachRequestKey((key) => (key ?? 0) + 1)}
         />
       ) : focusedSubmission.status === 'Ready' ? (
-        <>
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
-            {focusedSubmission.submissionNumber}
-          </Typography>
-          <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2 }}>
-            {renderSummaryText(
-              `**${focusedSubmission.insuredName}** — Submission **${focusedSubmission.submissionNumber}** is **Ready** with **${focusedSubmission.confidence}%** confidence. Review premium ranges and remaining warnings before proceeding.`,
-            )}
-          </Typography>
-          <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
-            Key insights
-          </Typography>
-          <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }}>
-            {(
-              (focusedSubmission.readyInsights?.length
-                ? focusedSubmission.readyInsights.map(
-                    (insight) => `${insight.title} · ${insight.summary}`,
-                  )
-                : (focusedSubmission.premiumEstimates ?? []).map(
-                    (estimate) => `${estimate.label} · Estimated ${estimate.range}`,
-                  )
-              ) as string[]
-            )
-              .slice(0, 4)
-              .map((insight) => (
-                <Typography
-                  component="li"
-                  variant="body2"
-                  color="text.secondary"
-                  key={insight}
-                  sx={{ ...bodySx, mb: 0.5 }}
-                >
-                  {insight}
-                </Typography>
-              ))}
-          </Box>
-          <ReadyPremiumView submission={focusedSubmission} />
-          <Divider sx={{ my: 2 }} />
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1 }}>
-            Quick actions
-          </Typography>
-          <Stack direction="row" flexWrap="wrap" gap={1}>
-            {['Review premium drivers', 'Export briefing', 'Ask about exposure'].map((action) => (
-              <Button key={action} size="small" variant="text" disableRipple sx={quickActionChipSx}>
-                {action}
-              </Button>
-            ))}
-          </Stack>
-        </>
+        <ReadyStructureOptionsView
+          submission={focusedSubmission}
+          onApprove={(option) => onApprovePremiumOption?.(focusedSubmission.id, option)}
+          onSeedComposer={(message) => {
+            setSeedComposerMessage(null)
+            requestAnimationFrame(() => setSeedComposerMessage(message))
+          }}
+        />
       ) : (
         <>
           <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>

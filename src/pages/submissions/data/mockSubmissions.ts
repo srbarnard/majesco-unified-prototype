@@ -23,6 +23,10 @@ export type SubmissionIssue = {
 export type PremiumEstimate = {
   label: 'Optimized' | 'Balanced' | 'Conservative'
   range: string
+  /** Short underwriting rationale — why this structure is distinct. */
+  rationale: string
+  /** Agent-marked preferred structure when more than one option is shown. */
+  recommended?: boolean
 }
 
 export type SubmissionReadyInsight = {
@@ -43,9 +47,56 @@ export type SubmissionListRecord = {
   hasAlert: boolean
   confidence: number
   issues: SubmissionIssue[]
+  /**
+   * Agent-chosen premium/structure options (1–3).
+   * Only meaningfully distinct alternatives should be included — never pad to 3.
+   */
   premiumEstimates?: PremiumEstimate[]
   readyInsights?: SubmissionReadyInsight[]
   notes: string[]
+  /** Copilot-approved structure label, when the UW confirms an option. */
+  approvedPremiumLabel?: PremiumEstimate['label']
+}
+
+/**
+ * Agent decision helper: keep only distinct, useful structure options (max 3).
+ * Prefers authored lists; prunes near-duplicate ranges when needed.
+ */
+export function resolvePremiumStructureOptions(
+  estimates: PremiumEstimate[] | undefined,
+  context?: { linesOfBusiness?: string[]; confidence?: number },
+): PremiumEstimate[] {
+  if (!estimates?.length) return []
+
+  const uniqueByRange = estimates.filter((option, index, all) => {
+    const normalized = option.range.replace(/\s/g, '').toLowerCase()
+    return all.findIndex((item) => item.range.replace(/\s/g, '').toLowerCase() === normalized) === index
+  })
+
+  const lobCount = context?.linesOfBusiness?.length ?? 1
+  const confidence = context?.confidence ?? 80
+  // High-confidence, single-LOB accounts rarely need three structures.
+  const maxOptions =
+    uniqueByRange.length === 1
+      ? 1
+      : lobCount >= 3 && confidence < 90
+        ? 3
+        : lobCount >= 2 || confidence < 88
+          ? Math.min(2, uniqueByRange.length)
+          : Math.min(uniqueByRange.length, confidence >= 93 ? 1 : 2)
+
+  const selected = uniqueByRange.slice(0, Math.min(maxOptions, 3))
+  if (selected.length === 1) {
+    return selected.map((option) => ({ ...option, recommended: true }))
+  }
+  if (!selected.some((option) => option.recommended)) {
+    const balanced = selected.find((option) => option.label === 'Balanced')
+    return selected.map((option) => ({
+      ...option,
+      recommended: balanced ? option.label === 'Balanced' : option === selected[0],
+    }))
+  }
+  return selected
 }
 
 /** Hand-crafted demo rows (rich Copilot issue detail). Extra volume is generated below. */
@@ -62,9 +113,22 @@ const curatedSubmissions: SubmissionListRecord[] = [
     confidence: 92,
     issues: [],
     premiumEstimates: [
-      { label: 'Optimized', range: '$1.1M - $1.3M' },
-      { label: 'Balanced', range: '$900K - $1.1M' },
-      { label: 'Conservative', range: '$1.3M - $1.6M' },
+      {
+        label: 'Optimized',
+        range: '$1.1M - $1.3M',
+        rationale: 'Broader limits and schedule credits for the multi-line package.',
+      },
+      {
+        label: 'Balanced',
+        range: '$900K - $1.1M',
+        rationale: 'Best fit for current exposures with standard deductible structure.',
+        recommended: true,
+      },
+      {
+        label: 'Conservative',
+        range: '$1.3M - $1.6M',
+        rationale: 'Higher attachment and catastrophe load given construction class.',
+      },
     ],
     readyInsights: [
       {
@@ -172,9 +236,12 @@ const curatedSubmissions: SubmissionListRecord[] = [
     confidence: 88,
     issues: [],
     premiumEstimates: [
-      { label: 'Optimized', range: '$420K - $480K' },
-      { label: 'Balanced', range: '$380K - $420K' },
-      { label: 'Conservative', range: '$480K - $540K' },
+      {
+        label: 'Optimized',
+        range: '$420K - $480K',
+        rationale: 'Single GL structure is clear — no meaningfully different alternatives.',
+        recommended: true,
+      },
     ],
     readyInsights: [
       {
@@ -198,9 +265,17 @@ const curatedSubmissions: SubmissionListRecord[] = [
     confidence: 85,
     issues: [],
     premiumEstimates: [
-      { label: 'Optimized', range: '$760K - $890K' },
-      { label: 'Balanced', range: '$690K - $760K' },
-      { label: 'Conservative', range: '$890K - $980K' },
+      {
+        label: 'Optimized',
+        range: '$760K - $890K',
+        rationale: 'Seasonal occupancy load with umbrella retained at $5M.',
+        recommended: true,
+      },
+      {
+        label: 'Balanced',
+        range: '$690K - $760K',
+        rationale: 'Tighter package terms with higher hospitality deductibles.',
+      },
     ],
     readyInsights: [
       {
@@ -270,9 +345,12 @@ const curatedSubmissions: SubmissionListRecord[] = [
     confidence: 91,
     issues: [],
     premiumEstimates: [
-      { label: 'Optimized', range: '$210K - $245K' },
-      { label: 'Balanced', range: '$185K - $210K' },
-      { label: 'Conservative', range: '$245K - $275K' },
+      {
+        label: 'Balanced',
+        range: '$185K - $210K',
+        rationale: 'Inland marine schedule is stable — one structure is sufficient.',
+        recommended: true,
+      },
     ],
     readyInsights: [],
     notes: [],
@@ -337,9 +415,17 @@ const curatedSubmissions: SubmissionListRecord[] = [
     confidence: 94,
     issues: [],
     premiumEstimates: [
-      { label: 'Optimized', range: '$310K - $355K' },
-      { label: 'Balanced', range: '$280K - $310K' },
-      { label: 'Conservative', range: '$355K - $390K' },
+      {
+        label: 'Optimized',
+        range: '$310K - $355K',
+        rationale: 'Professional liability with extended reporting endorsement.',
+      },
+      {
+        label: 'Balanced',
+        range: '$280K - $310K',
+        rationale: 'Standard claims-made terms matching peer medical groups.',
+        recommended: true,
+      },
     ],
     readyInsights: [],
     notes: [],
@@ -356,9 +442,22 @@ const curatedSubmissions: SubmissionListRecord[] = [
     confidence: 87,
     issues: [],
     premiumEstimates: [
-      { label: 'Optimized', range: '$540K - $610K' },
-      { label: 'Balanced', range: '$490K - $540K' },
-      { label: 'Conservative', range: '$610K - $680K' },
+      {
+        label: 'Optimized',
+        range: '$540K - $610K',
+        rationale: 'Competitive property terms if wind mitigation credits hold.',
+      },
+      {
+        label: 'Balanced',
+        range: '$490K - $540K',
+        rationale: 'Mid-market deductibles with shared GL attachment.',
+      },
+      {
+        label: 'Conservative',
+        range: '$610K - $680K',
+        rationale: 'Elevated wind deductible and Tier 1 coastal load.',
+        recommended: true,
+      },
     ],
     readyInsights: [
       {
@@ -418,9 +517,12 @@ const curatedSubmissions: SubmissionListRecord[] = [
     confidence: 90,
     issues: [],
     premiumEstimates: [
-      { label: 'Optimized', range: '$95K - $110K' },
-      { label: 'Balanced', range: '$82K - $95K' },
-      { label: 'Conservative', range: '$110K - $125K' },
+      {
+        label: 'Optimized',
+        range: '$95K - $110K',
+        rationale: 'Straightforward BOP — alternatives would not change the decision.',
+        recommended: true,
+      },
     ],
     readyInsights: [],
     notes: [],
@@ -726,33 +828,111 @@ const WARNING_ISSUE_TEMPLATES: Omit<SubmissionIssue, 'id' | 'reportedAt'>[] = [
   },
 ]
 
-const PREMIUM_RANGES: PremiumEstimate[][] = [
+const PREMIUM_OPTION_SETS: PremiumEstimate[][] = [
   [
-    { label: 'Optimized', range: '$95K - $110K' },
-    { label: 'Balanced', range: '$82K - $95K' },
-    { label: 'Conservative', range: '$110K - $125K' },
+    {
+      label: 'Optimized',
+      range: '$95K - $110K',
+      rationale: 'Lean schedule credits with standard deductibles.',
+      recommended: true,
+    },
+    {
+      label: 'Balanced',
+      range: '$82K - $95K',
+      rationale: 'Lower premium via higher deductibles and tighter limits.',
+    },
+    {
+      label: 'Conservative',
+      range: '$110K - $125K',
+      rationale: 'Additional catastrophe and equipment floaters.',
+    },
   ],
   [
-    { label: 'Optimized', range: '$210K - $245K' },
-    { label: 'Balanced', range: '$185K - $210K' },
-    { label: 'Conservative', range: '$245K - $275K' },
+    {
+      label: 'Optimized',
+      range: '$210K - $245K',
+      rationale: 'Preferred terms for clean loss history.',
+    },
+    {
+      label: 'Balanced',
+      range: '$185K - $210K',
+      rationale: 'Market midpoint with shared retention.',
+      recommended: true,
+    },
+    {
+      label: 'Conservative',
+      range: '$245K - $275K',
+      rationale: 'Extra capacity for seasonal inventory spikes.',
+    },
   ],
   [
-    { label: 'Optimized', range: '$420K - $480K' },
-    { label: 'Balanced', range: '$380K - $420K' },
-    { label: 'Conservative', range: '$480K - $540K' },
+    {
+      label: 'Optimized',
+      range: '$420K - $480K',
+      rationale: 'Aggressive packaging across primary lines.',
+      recommended: true,
+    },
+    {
+      label: 'Balanced',
+      range: '$380K - $420K',
+      rationale: 'Balanced deductibles without umbrella stretch.',
+    },
+    {
+      label: 'Conservative',
+      range: '$480K - $540K',
+      rationale: 'Higher attachment for multi-location GL.',
+    },
   ],
   [
-    { label: 'Optimized', range: '$760K - $890K' },
-    { label: 'Balanced', range: '$690K - $760K' },
-    { label: 'Conservative', range: '$890K - $980K' },
+    {
+      label: 'Optimized',
+      range: '$760K - $890K',
+      rationale: 'Full package with umbrella retained.',
+      recommended: true,
+    },
+    {
+      label: 'Balanced',
+      range: '$690K - $760K',
+      rationale: 'Reduced umbrella and higher property deductibles.',
+    },
+    {
+      label: 'Conservative',
+      range: '$890K - $980K',
+      rationale: 'Conservative catastrophe and liquor loads.',
+    },
   ],
   [
-    { label: 'Optimized', range: '$1.1M - $1.3M' },
-    { label: 'Balanced', range: '$900K - $1.1M' },
-    { label: 'Conservative', range: '$1.3M - $1.6M' },
+    {
+      label: 'Optimized',
+      range: '$1.1M - $1.3M',
+      rationale: 'Broad multi-line terms for complex operations.',
+    },
+    {
+      label: 'Balanced',
+      range: '$900K - $1.1M',
+      rationale: 'Best overall fit for current exposure mix.',
+      recommended: true,
+    },
+    {
+      label: 'Conservative',
+      range: '$1.3M - $1.6M',
+      rationale: 'Elevated limits and stricter underwriting terms.',
+    },
   ],
 ]
+
+/** Pick 1–3 options the way the agent would — only when alternatives are useful. */
+function pickGeneratedPremiumOptions(index: number, linesOfBusiness: string[]): PremiumEstimate[] {
+  const pool = PREMIUM_OPTION_SETS[index % PREMIUM_OPTION_SETS.length]
+  const lobCount = linesOfBusiness.length
+  // Variety for the volume demo: many Ready rows get 1 option; some 2; complex multi-LOB get 3.
+  const desiredCount =
+    lobCount >= 3 ? 3 : lobCount === 2 ? 2 : index % 4 === 0 ? 2 : 1
+  return resolvePremiumStructureOptions(pool.slice(0, desiredCount), {
+    linesOfBusiness,
+    confidence: 82 + (index % 14),
+  })
+}
 
 /** Target volume for the list demo — Copilot still works off the same row model. */
 export const SUBMISSIONS_TOTAL_ROWS = 120
@@ -818,7 +998,7 @@ function buildGeneratedSubmissions(count: number, startNumber: number): Submissi
       continue
     }
 
-    const premiums = PREMIUM_RANGES[i % PREMIUM_RANGES.length]
+    const premiums = pickGeneratedPremiumOptions(i, linesOfBusiness)
     const readyInsights: SubmissionReadyInsight[] =
       i % 4 === 0
         ? [

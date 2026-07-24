@@ -90,7 +90,11 @@ export function SubmissionOverviewTab({ submission, stats }: SubmissionOverviewT
             {submission.status === 'Ready' && (submission.premiumEstimates?.length ?? 0) > 0 ? (
               <Stack spacing={1}>
                 {submission.premiumEstimates?.map((estimate) => (
-                  <DetailRow key={estimate.label} label={estimate.label} value={estimate.range} />
+                  <DetailRow
+                    key={estimate.label}
+                    label={`${estimate.label}${estimate.recommended ? ' · Recommended' : ''}${submission.approvedPremiumLabel === estimate.label ? ' · Approved' : ''}`}
+                    value={estimate.range}
+                  />
                 ))}
                 {(submission.readyInsights ?? [])
                   .filter((insight) => insight.severity === 'warning')

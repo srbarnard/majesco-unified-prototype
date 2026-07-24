@@ -24,6 +24,7 @@ import {
   toSubmissionListRecord,
   type SubmissionDetailsRecord,
 } from '@/pages/submissions/data/resolveSubmissionContext'
+import type { PremiumEstimate } from '@/pages/submissions/data/mockSubmissions'
 
 const bodySx = {
   fontFamily: figmaFontFamilyStack.body,
@@ -117,9 +118,12 @@ export function SubmissionDetails() {
             issues: remainingIssues,
             hasAlert: remainingIssues.some((issue) => issue.severity === 'warning'),
             premiumEstimates: current.premiumEstimates ?? [
-              { label: 'Optimized' as const, range: '$1.1M - $1.3M' },
-              { label: 'Balanced' as const, range: '$900K - $1.1M' },
-              { label: 'Conservative' as const, range: '$1.3M - $1.6M' },
+              {
+                label: 'Balanced' as const,
+                range: '$900K - $1.1M',
+                rationale: 'Best fit after blockers cleared — alternatives not yet differentiated.',
+                recommended: true,
+              },
             ],
             readyInsights: current.readyInsights ?? [
               {
@@ -139,6 +143,16 @@ export function SubmissionDetails() {
           hasAlert: true,
         }
       })
+    },
+    [],
+  )
+
+  const handleApprovePremiumOption = useCallback(
+    (_submissionId: string, option: PremiumEstimate) => {
+      setSubmission((current) => ({
+        ...current,
+        approvedPremiumLabel: option.label,
+      }))
     },
     [],
   )
@@ -237,6 +251,7 @@ export function SubmissionDetails() {
           <SubmissionsCopilotPanel
             focusedSubmission={focusedListRecord}
             onResolveIssue={handleResolveIssue}
+            onApprovePremiumOption={handleApprovePremiumOption}
             onClose={handleCloseRightPanel}
           />
         )}

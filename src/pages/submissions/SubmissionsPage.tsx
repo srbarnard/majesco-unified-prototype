@@ -18,6 +18,7 @@ import { SubmissionsToolbar } from '@/pages/submissions/components/SubmissionsTo
 import {
   SUBMISSIONS_TOTAL_ROWS,
   submissionsMock,
+  type PremiumEstimate,
   type SubmissionListRecord,
 } from '@/pages/submissions/data/mockSubmissions'
 import { applySubmissionsListFilters } from '@/pages/submissions/filters/applySubmissionsListFilters'
@@ -238,9 +239,12 @@ export function SubmissionsPage() {
               issues: remainingIssues,
               hasAlert: remainingIssues.some((issue) => issue.severity === 'warning'),
               premiumEstimates: row.premiumEstimates ?? [
-                { label: 'Optimized' as const, range: '$1.1M - $1.3M' },
-                { label: 'Balanced' as const, range: '$900K - $1.1M' },
-                { label: 'Conservative' as const, range: '$1.3M - $1.6M' },
+                {
+                  label: 'Balanced' as const,
+                  range: '$900K - $1.1M',
+                  rationale: 'Best fit after blockers cleared — alternatives not yet differentiated.',
+                  recommended: true,
+                },
               ],
               readyInsights: row.readyInsights ?? [
                 {
@@ -264,6 +268,14 @@ export function SubmissionsPage() {
     },
     [],
   )
+
+  const handleApprovePremiumOption = useCallback((submissionId: string, option: PremiumEstimate) => {
+    setRows((current) =>
+      current.map((row) =>
+        row.id === submissionId ? { ...row, approvedPremiumLabel: option.label } : row,
+      ),
+    )
+  }, [])
 
   const handleDiscardSelected = useCallback(() => {
     const selectedIds = new Set(rowSelectionModel.map(String))
@@ -421,6 +433,7 @@ export function SubmissionsPage() {
             focusedSubmission={copilotFocusForPanel}
             selectedSubmissions={selectedSubmissions}
             onResolveIssue={handleResolveIssue}
+            onApprovePremiumOption={handleApprovePremiumOption}
             onClose={handleCloseCopilot}
           />
         )}
