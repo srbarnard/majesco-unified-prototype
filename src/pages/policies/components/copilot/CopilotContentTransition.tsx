@@ -70,11 +70,6 @@ export function CopilotContentTransition({ contentKey, children }: CopilotConten
   const displayNode =
     phase === 'idle' && contentKey === rendered.key ? children : rendered.node
 
-  // If a newer pending swap arrived mid-exit, refresh its node from the latest children.
-  if (pendingRef.current && pendingRef.current.key === contentKey) {
-    pendingRef.current = { key: contentKey, node: children }
-  }
-
   const { exitMs, enterMs, offsetPx, easing } = copilotContentMotion
   const isExiting = phase === 'exiting'
   const isEntering = phase === 'entering'
