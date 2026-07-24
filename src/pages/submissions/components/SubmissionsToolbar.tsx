@@ -1,4 +1,3 @@
-import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
 import Stack from '@mui/material/Stack'
@@ -8,7 +7,6 @@ type SubmissionsToolbarProps = {
   searchQuery: string
   onSearchChange: (query: string) => void
   selectionCount: number
-  onAddSubmission?: () => void
   onAssign?: () => void
   onDiscard?: () => void
 }
@@ -17,7 +15,6 @@ export function SubmissionsToolbar({
   searchQuery,
   onSearchChange,
   selectionCount,
-  onAddSubmission,
   onAssign,
   onDiscard,
 }: SubmissionsToolbarProps) {
@@ -31,15 +28,6 @@ export function SubmissionsToolbar({
       spacing={1}
     >
       <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
-        <Button
-          size="small"
-          variant="outlined"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={onAddSubmission}
-        >
-          Add submission
-        </Button>
         <Button
           size="small"
           variant="text"

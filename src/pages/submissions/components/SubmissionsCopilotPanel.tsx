@@ -5,7 +5,6 @@ import CloseIcon from '@mui/icons-material/Close'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
-import LinearProgress from '@mui/material/LinearProgress'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useEffect, useMemo, useState } from 'react'
@@ -14,6 +13,11 @@ import { accentSubtle, accentSubtleHover, surfaceMuted } from '@/design-system/t
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
+import {
+  DEFAULT_COPILOT_CONFIDENCE_TIERS,
+  getCopilotConfidenceStatusLabel,
+} from '@/pages/policies/components/copilot/copilotConfidence'
+import { CopilotConfidenceIndicator } from '@/pages/policies/components/copilot/CopilotConfidenceIndicator'
 import { useAnimatedConfidence } from '@/pages/policies/components/copilot/useAnimatedConfidence'
 import type {
   SubmissionIssue,
@@ -63,10 +67,6 @@ function openBlockingIssues(submission: SubmissionListRecord) {
 
 function openWarningIssues(submission: SubmissionListRecord) {
   return submission.issues.filter((issue) => issue.severity === 'warning' && !issue.resolvedAt)
-}
-
-function openIssueCount(submission: SubmissionListRecord) {
-  return submission.issues.filter((issue) => !issue.resolvedAt).length
 }
 
 function parseResolvedDetails(issue: SubmissionIssue, message: string): string[] {
@@ -386,9 +386,11 @@ export function SubmissionsCopilotPanel({
     setActiveIssueId(null)
   }, [focusKey])
 
-  const confidence = focusedSubmission?.confidence ?? 78
-  const issueCount = focusedSubmission ? openIssueCount(focusedSubmission) : 0
+  const confidence = focusedSubmission?.confidence ?? 0
+  const showConfidence = Boolean(focusedSubmission && !multiSelectMode)
   const animatedConfidence = useAnimatedConfidence(confidence, focusKey)
+  const displayedConfidence = showConfidence ? Math.round(animatedConfidence) : 0
+  const confidenceStatusLabel = getCopilotConfidenceStatusLabel(confidence)
 
   const composerPlaceholder = activeIssue
     ? activeIssue.resolvedAt
@@ -442,6 +444,16 @@ export function SubmissionsCopilotPanel({
             >
               Copilot
             </Typography>
+            {showConfidence && (
+              <CopilotConfidenceIndicator
+                animatedValue={animatedConfidence}
+                displayedValue={displayedConfidence}
+                statusLabel={confidenceStatusLabel}
+                popoverTitle="Submission confidence"
+                popoverDescription="How complete and consistent this submission is based on captured details and underwriting status."
+                tiers={DEFAULT_COPILOT_CONFIDENCE_TIERS}
+              />
+            )}
           </Stack>
           {onClose && (
             <IconButton size="small" onClick={onClose} aria-label="Close Copilot">
@@ -449,33 +461,6 @@ export function SubmissionsCopilotPanel({
             </IconButton>
           )}
         </Stack>
-
-        {focusedSubmission && !multiSelectMode && (
-          <Box sx={{ mt: 1 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ ...bodySx, fontSize: '0.75rem' }}
-            >
-              {Math.round(animatedConfidence)}% Confidence · {issueCount} issue
-              {issueCount === 1 ? '' : 's'}
-            </Typography>
-            <LinearProgress
-              variant="determinate"
-              value={animatedConfidence}
-              sx={{
-                mt: 0.75,
-                height: 3,
-                borderRadius: 2,
-                bgcolor: (theme) => accentSubtle(theme),
-                '& .MuiLinearProgress-bar': {
-                  borderRadius: 2,
-                  bgcolor: 'primary.main',
-                },
-              }}
-            />
-          </Box>
-        )}
       </Box>
 
       <Box sx={{ px: 2, py: 2, flexGrow: 1, overflowY: 'auto', minHeight: 0 }}>

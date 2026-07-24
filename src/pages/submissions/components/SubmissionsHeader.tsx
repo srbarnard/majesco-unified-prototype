@@ -1,3 +1,4 @@
+import AddIcon from '@mui/icons-material/Add'
 import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined'
 import StickyNote2OutlinedIcon from '@mui/icons-material/StickyNote2Outlined'
 import MuiButton from '@mui/material/Button'
@@ -5,7 +6,7 @@ import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
-import { CopilotIcon } from '@/design-system/components'
+import { Button, CopilotIcon } from '@/design-system/components'
 import { getPanelToggleButtonStyles, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -20,6 +21,7 @@ type SubmissionsHeaderProps = {
   onToggleNotes: () => void
   copilotOpen: boolean
   onToggleCopilot: () => void
+  onCreateSubmission?: () => void
 }
 
 function PanelToggleButton({
@@ -69,14 +71,15 @@ export function SubmissionsHeader({
   onToggleNotes,
   copilotOpen,
   onToggleCopilot,
+  onCreateSubmission,
 }: SubmissionsHeaderProps) {
   const contentPx = `${layoutTokens.contentPaddingX}px`
 
   return (
     <Box sx={{ bgcolor: 'background.paper', width: '100%', flexShrink: 0 }}>
       <Stack
-        direction="row"
-        alignItems="center"
+        direction={{ xs: 'column', sm: 'row' }}
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
         justifyContent="space-between"
         spacing={1.5}
         sx={{ px: contentPx, pt: layoutTokens.policyHeaderTopPadding, pb: 1.5 }}
@@ -93,6 +96,15 @@ export function SubmissionsHeader({
         >
           Submissions
         </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+          sx={{ flexShrink: 0 }}
+          onClick={onCreateSubmission}
+        >
+          Create submission
+        </Button>
       </Stack>
 
       <Box sx={sectionTabRowBorderSx}>

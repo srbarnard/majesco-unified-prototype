@@ -319,6 +319,12 @@ export function SubmissionsPage() {
             onToggleNotes={handleToggleNotes}
             copilotOpen={copilotOpen}
             onToggleCopilot={handleToggleCopilot}
+            onCreateSubmission={() => {
+              setFilterOpen(false)
+              setNotesOpen(false)
+              setCopilotSubmissionFocus(null)
+              setCopilotOpen(true)
+            }}
           />
         </Box>
 
