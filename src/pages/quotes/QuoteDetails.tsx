@@ -1,8 +1,8 @@
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { useCallback, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useCallback, useEffect, useState } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { Card } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -41,13 +41,21 @@ const bodySx = {
   fontWeight: 400,
 } as const
 
+function parseQuoteTab(value: string | null): QuoteTab | null {
+  if (value === 'overview' || value === 'documents' || value === 'underwriting' || value === 'activity') {
+    return value
+  }
+  return null
+}
+
 export function QuoteDetails() {
   const { quoteId } = useParams<{ quoteId: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const quote = resolveQuoteContext(quoteId)
   const documentStory = getQuoteDocumentStory(quote.quoteNumber)
   const isDesktop = useIsDesktopLayout()
-  const [activeTab, setActiveTab] = useState<QuoteTab>('overview')
+  const [activeTab, setActiveTab] = useState<QuoteTab>(() => parseQuoteTab(searchParams.get('tab')) ?? 'overview')
   const [starred, setStarred] = useState(false)
   const [activeRightPanel, setActiveRightPanel] = useState<QuoteRightPanel | null>(null)
   const [documentsFilterOpen, setDocumentsFilterOpen] = useState(false)
@@ -58,6 +66,29 @@ export function QuoteDetails() {
 
   useDesktopCopilotInitialOpen(isDesktop, activeTab === 'overview', 'copilot', setActiveRightPanel)
   useCloseCopilotWhenMobile(isDesktop, activeRightPanel, 'copilot', setActiveRightPanel)
+
+  useEffect(() => {
+    const tab = parseQuoteTab(searchParams.get('tab'))
+    if (!tab) return
+
+    setActiveTab(tab)
+    setCopilotDocumentFocus(null)
+    setDocumentsFilterOpen(false)
+    setDocumentsCopilotMode('workspace')
+    setAttachMode(null)
+
+    if (tab === 'overview') {
+      setActiveRightPanel((current) => resolveOverviewCopilotPanel(isDesktop, current, 'copilot', 'parties'))
+      return
+    }
+
+    if (tab === 'documents') {
+      setActiveRightPanel(null)
+      return
+    }
+
+    setActiveRightPanel((current) => (current === 'copilot' ? null : current))
+  }, [isDesktop, searchParams])
 
   const handleToggleRightPanel = useCallback((panel: QuoteRightPanel) => {
     if (panel === 'copilot') {

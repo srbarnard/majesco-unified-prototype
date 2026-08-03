@@ -69,8 +69,8 @@ export function resolvePriorityTaskRecord(card: PriorityTaskCard): TaskRecord {
         : 'Copilot can draft a status update or next-step checklist for this task.',
     ],
     documents: [
-      { name: 'Supporting policy documents', status: 'Received', required: true },
-      { name: 'Producer correspondence', status: 'Missing', required: false },
+      { id: 'doc-1', name: 'Supporting policy documents', status: 'Received', required: true },
+      { id: 'doc-2', name: 'Producer correspondence', status: 'Missing', required: false },
     ],
     blockingIssues: canonical.isPastDue ? 'Due date passed without completion.' : null,
     notes: 'Opened from homepage priority tasks.',

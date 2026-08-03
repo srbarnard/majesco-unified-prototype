@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
-import { useCallback, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useCallback, useEffect, useState } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { Card } from '@/design-system/components'
 import { PolicyAnalyticsDashboard } from '@/pages/policies/components/PolicyAnalyticsDashboard'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
@@ -39,11 +39,19 @@ import {
 import { policyDetailsMock } from '@/pages/policies/data/mockPolicyDetails'
 import { emptyDocumentsFilters, type DocumentsFilters } from '@/pages/policies/filters/documentsFilterTypes'
 
+function parsePolicyTab(value: string | null): PolicyTab | null {
+  if (value === 'overview' || value === 'documents' || value === 'analytics' || value === 'communications') {
+    return value
+  }
+  return null
+}
+
 export function PolicyDetails() {
   const { policyId = policyDetailsMock.policyNumber } = useParams<{ policyId: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const isDesktop = useIsDesktopLayout()
-  const [activeTab, setActiveTab] = useState<PolicyTab>('overview')
+  const [activeTab, setActiveTab] = useState<PolicyTab>(() => parsePolicyTab(searchParams.get('tab')) ?? 'overview')
   const [starred, setStarred] = useState(true)
   const [emergency, setEmergency] = useState(false)
   const [activeRightPanel, setActiveRightPanel] = useState<RightPanel | null>(null)
@@ -55,6 +63,29 @@ export function PolicyDetails() {
 
   useDesktopCopilotInitialOpen(isDesktop, activeTab === 'overview', 'copilot', setActiveRightPanel)
   useCloseCopilotWhenMobile(isDesktop, activeRightPanel, 'copilot', setActiveRightPanel)
+
+  useEffect(() => {
+    const tab = parsePolicyTab(searchParams.get('tab'))
+    if (!tab) return
+
+    setActiveTab(tab)
+    setCopilotDocumentFocus(null)
+    setDocumentsFilterOpen(false)
+    setDocumentsCopilotMode('workspace')
+    setAttachMode(null)
+
+    if (tab === 'overview') {
+      setActiveRightPanel((current) => resolveOverviewCopilotPanel(isDesktop, current, 'copilot', 'parties'))
+      return
+    }
+
+    if (tab === 'documents') {
+      setActiveRightPanel(null)
+      return
+    }
+
+    setActiveRightPanel((current) => (current === 'copilot' ? null : current))
+  }, [isDesktop, searchParams])
 
   const handleToggleRightPanel = useCallback((panel: RightPanel) => {
     if (panel === 'copilot') {

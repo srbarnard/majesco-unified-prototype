@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import type { SubmissionListRecord } from '@/pages/submissions/data/mockSubmissions'
 
 type SubmissionsNotesPanelProps = {
@@ -65,26 +66,28 @@ export function SubmissionsNotesPanel({ focusedSubmission, onClose }: Submission
       </Box>
 
       <Box sx={{ px: 2, py: 2, flexGrow: 1, overflowY: 'auto' }}>
-        <Stack spacing={1.25}>
-          {notes.map((note) => (
-            <Box
-              key={note}
-              sx={(theme) => ({
-                px: 1.5,
-                py: 1.25,
-                borderRadius: `${layoutTokens.cardRadius}px`,
-                bgcolor: surfaceMuted(theme),
-              })}
-            >
-              <Typography
-                variant="body2"
-                sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem', lineHeight: 1.5 }}
+        <CopilotContentTransition contentKey={focusedSubmission?.id ?? 'empty'}>
+          <Stack spacing={1.25}>
+            {notes.map((note) => (
+              <Box
+                key={note}
+                sx={(theme) => ({
+                  px: 1.5,
+                  py: 1.25,
+                  borderRadius: `${layoutTokens.cardRadius}px`,
+                  bgcolor: surfaceMuted(theme),
+                })}
               >
-                {note}
-              </Typography>
-            </Box>
-          ))}
-        </Stack>
+                <Typography
+                  variant="body2"
+                  sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem', lineHeight: 1.5 }}
+                >
+                  {note}
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+        </CopilotContentTransition>
       </Box>
     </Box>
   )

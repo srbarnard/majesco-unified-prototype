@@ -9,12 +9,14 @@ import { GlobalSearchDropdown } from './GlobalSearchDropdown'
 
 type GlobalSearchFieldProps = {
   fullWidth?: boolean
+  maxWidth?: number | string
   placeholder?: string
   autoFocus?: boolean
 }
 
 export function GlobalSearchField({
   fullWidth = true,
+  maxWidth,
   placeholder = 'Search P&C Policy',
   autoFocus,
 }: GlobalSearchFieldProps) {
@@ -33,7 +35,15 @@ export function GlobalSearchField({
 
   return (
     <ClickAwayListener onClickAway={handleClose}>
-      <Box sx={{ position: 'relative', flex: fullWidth ? 1 : undefined, minWidth: 0 }}>
+      <Box
+        sx={{
+          position: 'relative',
+          flex: fullWidth && maxWidth == null ? 1 : undefined,
+          width: maxWidth != null ? maxWidth : undefined,
+          maxWidth: maxWidth != null ? '100%' : undefined,
+          minWidth: 0,
+        }}
+      >
         <SearchField
           fullWidth={fullWidth}
           placeholder={placeholder}
@@ -62,7 +72,7 @@ export function GlobalSearchField({
               </IconButton>
             ) : undefined
           }
-          sx={{ flex: 1, minWidth: 0, maxWidth: 'none' }}
+          sx={{ flex: 1, minWidth: 0, maxWidth: maxWidth ?? 'none' }}
         />
         {open && <GlobalSearchDropdown query={query} onSelect={handleClose} />}
       </Box>

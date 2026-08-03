@@ -9,6 +9,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { CopilotComposer, type CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
 import { CopilotAgentsView } from '@/pages/policies/components/copilot/CopilotAgentsView'
+import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import { CopilotConversationView } from '@/pages/policies/components/copilot/CopilotConversationView'
 import { CopilotDrawerToolbar } from '@/pages/policies/components/copilot/CopilotDrawerToolbar'
 import { CopilotHistoryView } from '@/pages/policies/components/copilot/CopilotHistoryView'
@@ -23,6 +24,11 @@ type CopilotDrawerShellProps = {
   hideComposer?: boolean
   /** When this value changes, the drawer returns to the default chat view. */
   chatFocusKey?: string | null
+  /**
+   * When this value changes, the drawer body cross-fades (selection-driven chat content).
+   * Tab / prompts / agents / history swaps always animate via the shell.
+   */
+  contentKey?: string | null
   /** Rendered inside scrollable chat content when on the default chat view. */
   banner?: ReactNode
   /** Optional slot beside the Copilot title in the drawer header. */
@@ -43,6 +49,7 @@ export function CopilotDrawerShell({
   seedComposerMessage = null,
   hideComposer = false,
   chatFocusKey = null,
+  contentKey = null,
   banner,
   headerTrailing,
   toolbarLeading,
@@ -93,6 +100,46 @@ export function CopilotDrawerShell({
   const isDefaultChat = copilotTab === 'chat' && !drawerView && !activeConversation
   const showComposer = !hideComposer && !drawerView && copilotTab !== 'history'
 
+  const shellContentKey = [
+    copilotTab,
+    drawerView ?? (activeConversation ? `conversation:${activeConversation.id}` : 'chat'),
+    contentKey ?? 'default',
+  ].join(':')
+
+  const body = copilotTab === 'history' ? (
+    <CopilotHistoryView onSelectEntry={handleSelectHistoryEntry} />
+  ) : drawerView === 'prompts' ? (
+    <CopilotPromptsView
+      onBack={() => setDrawerView(null)}
+      onSelectPrompt={(prompt) => handlePromptSelected(prompt.title)}
+    />
+  ) : drawerView === 'agents' ? (
+    <CopilotAgentsView
+      onBack={() => setDrawerView(null)}
+      onSelectAgent={(agent) => handlePromptSelected(`Run ${agent.title}`)}
+    />
+  ) : activeConversation ? (
+    <CopilotConversationView
+      entry={activeConversation}
+      onBack={() => {
+        setActiveConversation(null)
+        setCopilotTab('history')
+      }}
+    />
+  ) : (
+    <>
+      {isDefaultChat && banner}
+      {showToolbar && (
+        <CopilotDrawerToolbar
+          leading={toolbarLeading}
+          onOpenPrompts={() => setDrawerView('prompts')}
+          onOpenAgents={() => setDrawerView('agents')}
+        />
+      )}
+      {children}
+    </>
+  )
+
   return (
     <Box
       sx={{
@@ -135,40 +182,18 @@ export function CopilotDrawerShell({
         </Tabs>
       </Box>
 
-      <Box sx={{ px: 2, py: 2, flexGrow: 1, overflowY: 'auto', minHeight: 0 }}>
-        {copilotTab === 'history' ? (
-          <CopilotHistoryView onSelectEntry={handleSelectHistoryEntry} />
-        ) : drawerView === 'prompts' ? (
-          <CopilotPromptsView
-            onBack={() => setDrawerView(null)}
-            onSelectPrompt={(prompt) => handlePromptSelected(prompt.title)}
-          />
-        ) : drawerView === 'agents' ? (
-          <CopilotAgentsView
-            onBack={() => setDrawerView(null)}
-            onSelectAgent={(agent) => handlePromptSelected(`Run ${agent.title}`)}
-          />
-        ) : activeConversation ? (
-          <CopilotConversationView
-            entry={activeConversation}
-            onBack={() => {
-              setActiveConversation(null)
-              setCopilotTab('history')
-            }}
-          />
-        ) : (
-          <>
-            {isDefaultChat && banner}
-            {showToolbar && (
-              <CopilotDrawerToolbar
-                leading={toolbarLeading}
-                onOpenPrompts={() => setDrawerView('prompts')}
-                onOpenAgents={() => setDrawerView('agents')}
-              />
-            )}
-            {children}
-          </>
-        )}
+      <Box
+        sx={{
+          px: 2,
+          py: 2,
+          flexGrow: 1,
+          overflowY: 'auto',
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <CopilotContentTransition contentKey={shellContentKey}>{body}</CopilotContentTransition>
       </Box>
 
       {showComposer && (

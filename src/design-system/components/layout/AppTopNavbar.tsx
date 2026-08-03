@@ -87,13 +87,16 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
           minHeight: layoutTokens.headerHeight,
           px: { xs: 1, md: 2 },
           gap: { xs: 1, md: 1.5 },
+          display: { xs: 'flex', lg: 'grid' },
+          gridTemplateColumns: '1fr auto 1fr',
+          alignItems: 'center',
         }}
       >
         <Stack
           direction="row"
           alignItems="center"
           spacing={1}
-          sx={{ flexShrink: 0, pr: { md: 1 } }}
+          sx={{ flexShrink: 0, justifySelf: 'start', pr: { md: 1 } }}
         >
           <IconButton
             onClick={onMobileMenuClick}
@@ -135,18 +138,19 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
           direction="row"
           alignItems="center"
           sx={{
-            flex: 1,
-            minWidth: 0,
             display: { xs: 'none', lg: 'flex' },
-            gap: 1,
+            justifyContent: 'center',
+            gap: 0.75,
+            width: 'min(720px, 56vw)',
+            maxWidth: '100%',
+            minWidth: 0,
           }}
         >
           <Stack
             direction="row"
             alignItems="center"
-            justifyContent="center"
             spacing={0.25}
-            sx={{ flexShrink: 0, width: 72 }}
+            sx={{ flexShrink: 0 }}
           >
             <IconButton
               size="small"
@@ -168,14 +172,32 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
             </IconButton>
           </Stack>
 
-          <GlobalSearchField fullWidth />
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <GlobalSearchField fullWidth />
+          </Box>
+
+          <IconButton
+            size="small"
+            aria-label="Create new"
+            aria-haspopup="true"
+            aria-expanded={Boolean(createMenuAnchor)}
+            onClick={(event) => setCreateMenuAnchor(event.currentTarget)}
+            sx={{ flexShrink: 0 }}
+          >
+            <AddIcon fontSize="small" />
+          </IconButton>
         </Stack>
 
         <Stack
           direction="row"
           alignItems="center"
           spacing={0.25}
-          sx={{ flexShrink: 0, ml: { xs: 'auto', lg: 0 } }}
+          sx={{
+            flexShrink: 0,
+            ml: { xs: 'auto', lg: 0 },
+            justifySelf: 'end',
+            justifyContent: 'flex-end',
+          }}
         >
           <IconButton
             size="small"
@@ -191,6 +213,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
             aria-haspopup="true"
             aria-expanded={Boolean(createMenuAnchor)}
             onClick={(event) => setCreateMenuAnchor(event.currentTarget)}
+            sx={{ display: { xs: 'inline-flex', lg: 'none' } }}
           >
             <AddIcon fontSize="small" />
           </IconButton>

@@ -8,6 +8,7 @@ import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { useTasksLookupFromUrl } from '@/hooks/useLookupFromUrl'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
+import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { TaskDetailsPanel } from '@/pages/tasks/components/TaskDetailsPanel'
 import { TasksActionBar } from '@/pages/tasks/components/TasksActionBar'
@@ -93,7 +94,20 @@ export function TasksPage() {
     setAppliedFilters(filters)
   }, [])
 
+  const handleBackToCopilotSummary = useCallback(() => {
+    setTaskDetailOpen(false)
+    setSelectedTask(null)
+    setFilterOpen(false)
+    setCopilotTaskFocus(null)
+    setCopilotSeedMessage(null)
+    setCopilotOpen(true)
+  }, [])
+
   const handleToggleCopilot = useCallback(() => {
+    if (taskDetailOpen) {
+      handleBackToCopilotSummary()
+      return
+    }
     setCopilotOpen((current) => {
       if (current) {
         setCopilotTaskFocus(null)
@@ -103,7 +117,7 @@ export function TasksPage() {
       setTaskDetailOpen(false)
       return true
     })
-  }, [])
+  }, [handleBackToCopilotSummary, taskDetailOpen])
 
   const handleCloseCopilot = useCallback(() => {
     setCopilotOpen(false)
@@ -177,6 +191,14 @@ export function TasksPage() {
 
   const isAllTasksTab = activeTab === 'all'
   const isTeamTab = activeTab === 'team'
+
+  const rightPanelContentKey = taskDetailOpen
+    ? 'section:task'
+    : filterOpen
+      ? 'section:filter'
+      : copilotOpen
+        ? 'section:copilot'
+        : 'empty'
   const contentPx = `${layoutTokens.contentPaddingX}px`
 
   return (
@@ -208,7 +230,7 @@ export function TasksPage() {
             onTabChange={handleTabChange}
             filterOpen={filterOpen}
             onToggleFilter={handleToggleFilter}
-            copilotOpen={copilotOpen}
+            copilotOpen={copilotOpen && !taskDetailOpen}
             onToggleCopilot={handleToggleCopilot}
           />
         </Box>
@@ -287,33 +309,33 @@ export function TasksPage() {
 
       <ResizableRightPanel
         open={filterOpen || copilotOpen || taskDetailOpen}
-        variant={taskDetailOpen ? 'wide' : 'standard'}
         onClose={handleCloseMobileRightPanel}
       >
-        {filterOpen && (
-          <TasksFilterPanel
-            appliedFilters={appliedFilters}
-            onApply={handleApplyFilters}
-            onClose={handleCloseFilter}
-          />
-        )}
-        {taskDetailOpen && selectedTask && (
-          <TaskDetailsPanel
-            task={selectedTask}
-            onClose={handleCloseTaskDetail}
-            onMarkComplete={handleTaskComplete}
-            onRecommendationClick={(insight) => handleTaskRecommendation(selectedTask, insight)}
-          />
-        )}
-        {copilotOpen && (
-          <CopilotPanel
-            context="tasks"
-            focusedTask={copilotTaskFocus}
-            seedComposerMessage={copilotSeedMessage}
-            onBackToTaskDetails={copilotSeedMessage ? handleBackToTaskDetails : undefined}
-            onClose={handleCloseCopilot}
-          />
-        )}
+        <CopilotContentTransition contentKey={rightPanelContentKey}>
+          {taskDetailOpen && selectedTask ? (
+            <TaskDetailsPanel
+              task={selectedTask}
+              onBack={handleBackToCopilotSummary}
+              onClose={handleCloseTaskDetail}
+              onMarkComplete={handleTaskComplete}
+              onRecommendationClick={(insight) => handleTaskRecommendation(selectedTask, insight)}
+            />
+          ) : filterOpen ? (
+            <TasksFilterPanel
+              appliedFilters={appliedFilters}
+              onApply={handleApplyFilters}
+              onClose={handleCloseFilter}
+            />
+          ) : copilotOpen ? (
+            <CopilotPanel
+              context="tasks"
+              focusedTask={copilotTaskFocus}
+              seedComposerMessage={copilotSeedMessage}
+              onBackToTaskDetails={copilotSeedMessage ? handleBackToTaskDetails : undefined}
+              onClose={handleCloseCopilot}
+            />
+          ) : null}
+        </CopilotContentTransition>
       </ResizableRightPanel>
     </Box>
   )

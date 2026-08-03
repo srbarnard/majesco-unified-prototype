@@ -21,8 +21,8 @@ function prefersReducedMotion() {
 }
 
 /**
- * Subtle Copilot body transition: outgoing fades/slides up slightly,
- * then incoming fades/slides in. ~200–300ms total, reduced-motion safe.
+ * Subtle drawer body transition: outgoing ease-out fade/slide,
+ * then incoming quicker ease-in. Reduced-motion safe.
  */
 export function CopilotContentTransition({ contentKey, children }: CopilotContentTransitionProps) {
   const [rendered, setRendered] = useState<RenderedContent>({ key: contentKey, node: children })
@@ -70,28 +70,41 @@ export function CopilotContentTransition({ contentKey, children }: CopilotConten
   const displayNode =
     phase === 'idle' && contentKey === rendered.key ? children : rendered.node
 
-  const { exitMs, enterMs, offsetPx, easing } = copilotContentMotion
+  const { exitMs, enterMs, offsetPx, enterEasing, exitEasing } = copilotContentMotion
   const isExiting = phase === 'exiting'
   const isEntering = phase === 'entering'
 
   return (
-    <Box sx={{ position: 'relative', minHeight: 0 }}>
+    <Box
+      sx={{
+        position: 'relative',
+        flex: 1,
+        minHeight: 0,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <Box
         sx={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
           transformOrigin: 'top center',
           willChange: isExiting || isEntering ? 'opacity, transform' : 'auto',
           ...(isExiting
             ? {
                 opacity: 0,
                 transform: `translateY(-${offsetPx}px)`,
-                transition: `opacity ${exitMs}ms ${easing}, transform ${exitMs}ms ${easing}`,
+                transition: `opacity ${exitMs}ms ${exitEasing}, transform ${exitMs}ms ${exitEasing}`,
                 pointerEvents: 'none',
               }
             : isEntering
               ? {
                   opacity: 1,
                   transform: 'translateY(0)',
-                  animation: `copilotContentEnter ${enterMs}ms ${easing} both`,
+                  animation: `copilotContentEnter ${enterMs}ms ${enterEasing} both`,
                   '@keyframes copilotContentEnter': {
                     from: {
                       opacity: 0,

@@ -148,6 +148,7 @@ export function QuoteWizardCopilotPanel({
       onClose={onClose}
       composerPlaceholder="Ask about this submission…"
       chatFocusKey={String(stepIndex)}
+      contentKey={`wizard-step:${stepIndex}`}
       headerTrailing={
         <CopilotConfidenceIndicator
           animatedValue={animatedConfidence}

@@ -1,4 +1,5 @@
 import '@mui/x-data-grid/themeAugmentation'
+import Slide from '@mui/material/Slide'
 import type { Theme } from '@mui/material/styles'
 import type { ThemeOptions } from '@mui/material/styles'
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
@@ -7,6 +8,7 @@ import { borderRadius } from '@/design-system/tokens/shape'
 import { shadows } from '@/design-system/tokens/shadows'
 import { dataGridPinnedBodyCellSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import {
+  backdropTransitionDuration,
   buttonPressStyles,
   drawerTransitionDuration,
   drawerTransitionEasing,
@@ -66,10 +68,16 @@ export const componentOverrides: ThemeOptions['components'] = {
   },
   MuiDrawer: {
     defaultProps: {
+      slots: {
+        transition: Slide,
+      },
       transitionDuration: drawerTransitionDuration,
       slotProps: {
         transition: {
           easing: drawerTransitionEasing,
+        },
+        backdrop: {
+          transitionDuration: backdropTransitionDuration,
         },
       },
     },
@@ -77,6 +85,8 @@ export const componentOverrides: ThemeOptions['components'] = {
       paper: ({ theme }) => ({
         backgroundColor: theme.palette.background.paper,
         borderRight: `1px solid ${theme.palette.divider}`,
+        willChange: 'transform',
+        backfaceVisibility: 'hidden',
       }),
     },
   },

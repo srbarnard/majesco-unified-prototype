@@ -40,10 +40,15 @@ import { QUOTES_TOTAL_ROWS } from '@/pages/quotes/data/mockQuotes'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
 import { TASKS_TOTAL_ROWS } from '@/pages/tasks/data/mockTasks'
 import { TaskRecommendationChat } from '@/pages/tasks/components/TaskRecommendationChat'
+import type { CustomerRecord } from '@/pages/customers/data/mockCustomers'
+import {
+  customersWorkspaceInsights,
+  customersWorkspaceSummary,
+} from '@/pages/customers/data/mockCustomers'
 
 type CopilotPanelProps = {
   activePolicyTab?: PolicyTab
-  context?: 'policy' | 'quotes' | 'quote-detail' | 'insured' | 'policies-list' | 'tasks' | 'global'
+  context?: 'policy' | 'quotes' | 'quote-detail' | 'insured' | 'policies-list' | 'tasks' | 'customers' | 'global'
   globalView?: GlobalCopilotView
   agenticPrompt?: string | null
   focusedDocument?: PolicyDocument | null
@@ -52,6 +57,7 @@ type CopilotPanelProps = {
   focusedInsured?: InsuredDetailsRecord | null
   focusedPolicyList?: PolicyListRecord | null
   focusedTask?: TaskRecord | null
+  focusedCustomer?: CustomerRecord | null
   seedComposerMessage?: string | null
   onBackToTaskDetails?: () => void
   taskDetailsBackLabel?: string
@@ -234,6 +240,25 @@ const tasksNextSteps = [
 const taskQuickActions = ['Show high priority', 'Show past due']
 const focusedTaskQuickActions = ['Summarize task', 'Reassign', 'Mark complete', 'Ask about ref #']
 
+function formatCustomerCurrency(value: number) {
+  return value.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+}
+
+function customerInsights(customer: CustomerRecord): string[] {
+  return [
+    `Attention: ${customer.attention} · Billing ${customer.billingStatus}`,
+    `${customer.activePolicies} active policies · ${customer.openQuotes} open quotes · ${customer.openClaims} open claims`,
+    `TWP ${formatCustomerCurrency(customer.twp)} · Contact ${customer.contactName}`,
+  ]
+}
+
+function buildCustomerSummary(customer: CustomerRecord) {
+  return `**${customer.name}** (${customer.customerNumber}) — ${customer.attention === 'None' ? 'No active attention flags' : `**${customer.attention}**`}. Billing is **${customer.billingStatus.toLowerCase()}** with TWP **${formatCustomerCurrency(customer.twp)}** across **${customer.activePolicies}** active policies.`
+}
+
+const customerQuickActions = ['Billing summary', 'Open claims', 'Renewal outlook', 'Contact producer']
+const customersListQuickActions = ['Accounts needing attention', 'Past due billing', 'Renewal risk']
+
 export function CopilotPanel({
   activePolicyTab = 'overview',
   context = 'policy',
@@ -245,6 +270,7 @@ export function CopilotPanel({
   focusedInsured,
   focusedPolicyList,
   focusedTask,
+  focusedCustomer,
   seedComposerMessage = null,
   onBackToTaskDetails,
   taskDetailsBackLabel = 'Task details',
@@ -271,6 +297,7 @@ export function CopilotPanel({
   const isInsuredContext = context === 'insured'
   const isPoliciesListContext = context === 'policies-list'
   const isTasksContext = context === 'tasks'
+  const isCustomersContext = context === 'customers'
   const isGlobalContext = context === 'global'
   const isAgenticView = isGlobalContext && globalView === 'agentic-search' && Boolean(agenticPrompt)
   const isDailySummaryView = isGlobalContext && globalView === 'daily-summary'
@@ -283,7 +310,18 @@ export function CopilotPanel({
     focusedInsured?.id ??
     focusedPolicyList?.policyNumber ??
     focusedTask?.id ??
+    focusedCustomer?.id ??
     null
+
+  const panelContentKey = [
+    context,
+    globalView ?? 'none',
+    isAgenticView ? 'agentic' : isDailySummaryView ? 'daily' : isTaskRecommendationView ? 'recommendation' : 'briefing',
+    chatFocusKey ?? 'workspace',
+    activePolicyTab,
+    documentsCopilotMode,
+    documentPreviewMode ? 'preview' : 'summary',
+  ].join(':')
 
   const activeAttachMode = attachMode ?? internalAttachMode
   const isAttachView = Boolean(activeAttachMode)
@@ -328,6 +366,8 @@ export function CopilotPanel({
     ? documentPreviewQuickActions
     : focusedTask
     ? focusedTaskQuickActions
+    : focusedCustomer
+      ? customerQuickActions
     : focusedPolicyList
       ? policyListQuickActions
       : focusedQuoteDetail
@@ -340,6 +380,8 @@ export function CopilotPanel({
               ? ['Summary', 'Add Note', 'Send Email', 'Explanation to Underwriters']
               : isTasksContext
                 ? taskQuickActions
+                : isCustomersContext
+                  ? customersListQuickActions
                 : isQuotesContext
                   ? ['Pipeline summary', 'Quotes needing action', 'Compare premiums']
                   : isInsuredContext
@@ -360,6 +402,8 @@ export function CopilotPanel({
         ? 'Document summary'
         : focusedTask
       ? 'Task summary'
+      : focusedCustomer
+        ? 'Customer summary'
       : focusedPolicyList
         ? 'Policy summary'
         : focusedQuoteDetail
@@ -370,6 +414,8 @@ export function CopilotPanel({
               ? 'Quote summary'
               : isTasksContext
                 ? 'Summarize'
+                : isCustomersContext
+                  ? 'Customers workspace'
                 : isQuotesContext
                   ? 'Quotes workspace'
                   : isInsuredContext
@@ -388,6 +434,8 @@ export function CopilotPanel({
         ? documentsWorkspaceSummary
         : focusedTask
       ? buildTaskSummary(focusedTask)
+      : focusedCustomer
+        ? buildCustomerSummary(focusedCustomer)
       : focusedPolicyList
         ? buildPolicyListSummary(focusedPolicyList)
         : focusedQuoteDetail
@@ -398,6 +446,8 @@ export function CopilotPanel({
               ? buildQuoteSummary(focusedQuote)
               : isTasksContext
                 ? tasksWorkspaceSummary
+                : isCustomersContext
+                  ? customersWorkspaceSummary
                 : isQuotesContext
                   ? quotesWorkspaceSummary
                   : isInsuredContext && focusedInsured
@@ -418,6 +468,8 @@ export function CopilotPanel({
         ? documentsWorkspaceInsights
         : focusedTask
       ? taskInsights(focusedTask)
+      : focusedCustomer
+        ? customerInsights(focusedCustomer)
       : focusedPolicyList
         ? policyListInsights(focusedPolicyList)
         : focusedQuoteDetail
@@ -428,6 +480,8 @@ export function CopilotPanel({
               ? quoteInsights(focusedQuote)
               : isTasksContext
                 ? tasksWorkspaceInsights
+                : isCustomersContext
+                  ? customersWorkspaceInsights
                 : isQuotesContext
                   ? quotesWorkspaceInsights
                   : isInsuredContext && focusedInsured
@@ -558,6 +612,7 @@ export function CopilotPanel({
           composerPlaceholder={composerPlaceholder}
           seedComposerMessage={seedComposerMessage}
           chatFocusKey={attachMode ? null : chatFocusKey}
+          contentKey={panelContentKey}
           headerTrailing={
             confidenceState && !isAgenticView && !isDailySummaryView && !isTaskRecommendationView ? (
               <CopilotConfidenceIndicator
@@ -626,6 +681,11 @@ export function CopilotPanel({
             {focusedTask && (
               <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
                 {focusedTask.refNumber}
+              </Typography>
+            )}
+            {focusedCustomer && (
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
+                {focusedCustomer.customerNumber}
               </Typography>
             )}
             <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2 }}>
