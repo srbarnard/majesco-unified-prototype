@@ -934,6 +934,7 @@ export function SubmissionsCopilotPanel({
       composerPlaceholder={composerPlaceholder}
       seedComposerMessage={seedComposerMessage}
       chatFocusKey={`${focusKey}:${entryMode}:${activeIssueId ?? 'list'}`}
+      contentKey={panelContentKey}
       attachRequestKey={attachRequestKey}
       onComposerSubmit={handleSubmit}
       headerTrailing={
@@ -957,8 +958,7 @@ export function SubmissionsCopilotPanel({
       }
       showToolbar={!activeIssue}
     >
-      <CopilotContentTransition contentKey={panelContentKey}>
-        {multiSelectMode ? (
+      {multiSelectMode ? (
           <SummarizeView submissions={selectedSubmissions} />
         ) : !focusedSubmission ? (
           <WorkspaceView />
@@ -1006,7 +1006,6 @@ export function SubmissionsCopilotPanel({
             </Box>
           </>
         )}
-      </CopilotContentTransition>
     </CopilotDrawerShell>
   )
 }

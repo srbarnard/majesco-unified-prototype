@@ -11,6 +11,7 @@ import ListItemText from '@mui/material/ListItemText'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
+import Slide from '@mui/material/Slide'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
@@ -24,7 +25,7 @@ import { ThemeModeToggle } from '@/design-system/components/layout/ThemeModeTogg
 import { layoutTokens } from '@/design-system/tokens/layout'
 import {
   drawerTransitionDuration,
-  drawerTransitionEasing,
+  getDrawerTransitionSlotProps,
   navItemActiveIndicatorStyles,
   navItemInteractionStyles,
 } from '@/design-system/tokens/motion'
@@ -409,13 +410,10 @@ export function AppSidebar({ mobileOpen, onMobileClose }: AppSidebarProps) {
           anchor="left"
           variant="temporary"
           open={mobileOpen}
+          slots={{ transition: Slide }}
           onClose={onMobileClose}
           transitionDuration={drawerTransitionDuration}
-          slotProps={{
-            transition: {
-              easing: drawerTransitionEasing,
-            },
-          }}
+          slotProps={getDrawerTransitionSlotProps()}
           ModalProps={{ keepMounted: true }}
           sx={{
             '& .MuiBackdrop-root': {

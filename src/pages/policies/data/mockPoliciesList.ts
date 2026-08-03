@@ -502,3 +502,92 @@ export const policiesListMock: PolicyListRecord[] = [
 ]
 
 export const POLICIES_TOTAL_ROWS = 100
+
+export type PolicyInsuredContact = {
+  addressLine1: string
+  cityStateZip: string
+  email: string
+  phone: string
+}
+
+const DEFAULT_INSURED_CONTACT: PolicyInsuredContact = {
+  addressLine1: '100 Main Street, Suite 200',
+  cityStateZip: 'Chicago, IL 60601',
+  email: 'mailto:risk@example.com',
+  phone: '(312) 555-0100',
+}
+
+/** Deterministic demo contact info for insured-name ID card popovers. */
+const insuredContactsByName: Record<string, PolicyInsuredContact> = {
+  'Atlantic Ridge Construction, LLC': {
+    addressLine1: '1240 Harbor View Blvd',
+    cityStateZip: 'San Diego, CA 92101',
+    email: 'ops@atlanticridge.com',
+    phone: '(619) 555-0142',
+  },
+  'Blue Harbor Logistics Inc.': {
+    addressLine1: '300 Demo Way, Floor 3',
+    cityStateZip: 'Austin, TX 78701',
+    email: 'billing@blueharbor.com',
+    phone: '(123) 456-7890',
+  },
+  'Maple Grove Property Management': {
+    addressLine1: '880 Maple Grove Ave',
+    cityStateZip: 'Minneapolis, MN 55401',
+    email: 'risk@maplegrove.com',
+    phone: '(612) 555-0188',
+  },
+  'Silverline Manufacturing Co.': {
+    addressLine1: '4500 Industrial Pkwy',
+    cityStateZip: 'Cincinnati, OH 45241',
+    email: 'insurance@silverlinemfg.com',
+    phone: '(513) 555-0190',
+  },
+  'Northshore Medical Group, P.C.': {
+    addressLine1: '2100 Medical Center Dr',
+    cityStateZip: 'Evanston, IL 60201',
+    email: 'admin@northshoremed.com',
+    phone: '(847) 555-0133',
+  },
+  'Keystone Commercial Realty': {
+    addressLine1: '1600 Market St, Floor 12',
+    cityStateZip: 'Philadelphia, PA 19103',
+    email: 'risk@keystonecommercial.com',
+    phone: '(215) 555-0160',
+  },
+  'Summit Outdoor Equipment, Inc.': {
+    addressLine1: '77 Summit Trail',
+    cityStateZip: 'Denver, CO 80202',
+    email: 'ops@summitoutdoor.com',
+    phone: '(303) 555-0174',
+  },
+  'Red Oak Hospitality Group': {
+    addressLine1: '500 Red Oak Blvd',
+    cityStateZip: 'Nashville, TN 37203',
+    email: 'finance@redoakhospitality.com',
+    phone: '(615) 555-0121',
+  },
+  'Evergreen Food Distributors': {
+    addressLine1: '7800 Harbor Ave SW',
+    cityStateZip: 'Seattle, WA 98106',
+    email: 'payables@evergreenfoods.com',
+    phone: '(206) 555-0141',
+  },
+  'Horizon Fleet Services, LLC': {
+    addressLine1: '3900 Desert Peak Rd',
+    cityStateZip: 'Phoenix, AZ 85034',
+    email: 'fleet@horizonfleet.com',
+    phone: '(480) 555-0128',
+  },
+}
+
+export function getPolicyInsuredContact(insuredName: string): PolicyInsuredContact {
+  return insuredContactsByName[insuredName] ?? {
+    ...DEFAULT_INSURED_CONTACT,
+    email: `risk@${insuredName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '')
+      .slice(0, 18) || 'insured'}.com`,
+    phone: '(555) 010-0000',
+  }
+}

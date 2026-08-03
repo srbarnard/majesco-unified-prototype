@@ -15,6 +15,7 @@ import { ActivityDetailsPanel } from '@/app/pages/home/ActivityDetailsPanel'
 import { RecentActivityFeed } from '@/app/pages/home/RecentActivityFeed'
 import { PriorityTasksCarousel } from '@/app/pages/home/PriorityTasksCarousel'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
+import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
 import { TaskDetailsPanel } from '@/pages/tasks/components/TaskDetailsPanel'
@@ -75,6 +76,14 @@ export function DashboardPage() {
 
   const detailPanelOpen = taskDetailOpen || activityDetailOpen
 
+  const rightPanelContentKey = taskDetailOpen
+    ? 'section:task'
+    : activityDetailOpen
+      ? 'section:activity'
+      : copilotOpen
+        ? 'section:copilot'
+        : 'empty'
+
   const didInitCopilot = useRef(false)
   const wasDesktop = useRef(isDesktop)
 
@@ -87,6 +96,17 @@ export function DashboardPage() {
     setActivityDetailOpen(false)
     setSelectedActivity(null)
   }, [])
+
+  const handleBackToCopilotSummary = useCallback(() => {
+    setTaskDetailOpen(false)
+    setSelectedTask(null)
+    setActivityDetailOpen(false)
+    setSelectedActivity(null)
+    setCopilotTaskFocus(null)
+    setCopilotSeedMessage(null)
+    setReturnToTask(null)
+    openHomeCopilotDefault()
+  }, [openHomeCopilotDefault])
 
   const handleOpenPriorityTask = useCallback(
     (card: PriorityTaskCard) => {
@@ -214,9 +234,15 @@ export function DashboardPage() {
             </Typography>
             <PanelToggleButton
               label="Copilot"
-              icon={<CopilotIcon size={18} active={copilotOpen} />}
-              active={copilotOpen}
-              onClick={toggleCopilot}
+              icon={<CopilotIcon size={18} active={copilotOpen && !detailPanelOpen} />}
+              active={copilotOpen && !detailPanelOpen}
+              onClick={() => {
+                if (detailPanelOpen) {
+                  handleBackToCopilotSummary()
+                  return
+                }
+                toggleCopilot()
+              }}
             />
           </Stack>
         </Box>
@@ -243,31 +269,35 @@ export function DashboardPage() {
 
       <ResizableRightPanel
         open={copilotOpen || detailPanelOpen}
-        variant={detailPanelOpen ? 'wide' : 'standard'}
         onClose={handleCloseRightPanel}
       >
-        {taskDetailOpen && selectedTask && (
-          <TaskDetailsPanel
-            task={selectedTask}
-            onClose={handleCloseTaskDetail}
-            onMarkComplete={handleCloseTaskDetail}
-            onRecommendationClick={handleTaskRecommendation}
-          />
-        )}
-        {activityDetailOpen && selectedActivity && !taskDetailOpen && (
-          <ActivityDetailsPanel activity={selectedActivity} onClose={handleCloseActivityDetail} />
-        )}
-        {copilotOpen && !detailPanelOpen && (
-          <CopilotPanel
-            context={copilotTaskFocus ? 'tasks' : 'global'}
-            globalView={copilotTaskFocus ? null : copilotView}
-            agenticPrompt={copilotTaskFocus ? null : agenticPrompt}
-            focusedTask={copilotTaskFocus}
-            seedComposerMessage={copilotSeedMessage}
-            onBackToTaskDetails={copilotSeedMessage && returnToTask ? handleBackToTaskDetails : undefined}
-            onClose={handleCloseCopilotWithTask}
-          />
-        )}
+        <CopilotContentTransition contentKey={rightPanelContentKey}>
+          {taskDetailOpen && selectedTask ? (
+            <TaskDetailsPanel
+              task={selectedTask}
+              onBack={handleBackToCopilotSummary}
+              onClose={handleCloseTaskDetail}
+              onMarkComplete={handleCloseTaskDetail}
+              onRecommendationClick={handleTaskRecommendation}
+            />
+          ) : activityDetailOpen && selectedActivity ? (
+            <ActivityDetailsPanel
+              activity={selectedActivity}
+              onBack={handleBackToCopilotSummary}
+              onClose={handleCloseActivityDetail}
+            />
+          ) : copilotOpen ? (
+            <CopilotPanel
+              context={copilotTaskFocus ? 'tasks' : 'global'}
+              globalView={copilotTaskFocus ? null : copilotView}
+              agenticPrompt={copilotTaskFocus ? null : agenticPrompt}
+              focusedTask={copilotTaskFocus}
+              seedComposerMessage={copilotSeedMessage}
+              onBackToTaskDetails={copilotSeedMessage && returnToTask ? handleBackToTaskDetails : undefined}
+              onClose={handleCloseCopilotWithTask}
+            />
+          ) : null}
+        </CopilotContentTransition>
       </ResizableRightPanel>
     </Box>
   )

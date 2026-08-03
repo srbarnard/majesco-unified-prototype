@@ -1,4 +1,5 @@
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import StarBorderOutlinedIcon from '@mui/icons-material/StarBorderOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
@@ -39,6 +40,7 @@ export const appShellNavItems: NavItem[] = [
 ]
 
 export const moreMenuItems: MoreMenuItem[] = [
+  { label: 'Customers', path: '/customers', icon: BusinessOutlinedIcon },
   { label: 'Insureds', path: '/insureds', icon: GroupsOutlinedIcon },
   { label: 'Producers', path: '/producers', icon: BadgeOutlinedIcon },
   { label: 'Sub producers', path: '/sub-producers', icon: BadgeOutlinedIcon },

@@ -1,3 +1,4 @@
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CloseIcon from '@mui/icons-material/Close'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
@@ -11,6 +12,11 @@ import { Button, StatusChip } from '@/design-system/components'
 import { filterFooterButtonSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
+import {
+  copilotDrawerHeadingSx,
+  copilotSubtitleSx,
+} from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import {
   TaskDetailAccordion,
   TaskDetailText,
@@ -24,6 +30,8 @@ const contentPaddingX = `${layoutTokens.contentPaddingX}px`
 type ActivityDetailsPanelProps = {
   activity: RecentActivityItem
   onClose?: () => void
+  /** Return to the Copilot summary without closing the right panel. */
+  onBack?: () => void
   onRecommendationClick?: (insight: string) => void
 }
 
@@ -50,7 +58,12 @@ function getFieldsSectionTitle(kind: RecentActivityItem['kind']): string {
   }
 }
 
-export function ActivityDetailsPanel({ activity, onClose, onRecommendationClick }: ActivityDetailsPanelProps) {
+export function ActivityDetailsPanel({
+  activity,
+  onClose,
+  onBack,
+  onRecommendationClick,
+}: ActivityDetailsPanelProps) {
   const { typeLabel } = activityVisuals[activity.kind]
   const fieldsTitle = getFieldsSectionTitle(activity.kind)
   const hasFooterLinks = Boolean(activity.primaryLink || activity.secondaryLink)
@@ -66,25 +79,59 @@ export function ActivityDetailsPanel({ activity, onClose, onRecommendationClick 
         overflow: 'hidden',
       }}
     >
-      <Stack
-        direction="row"
-        alignItems="flex-start"
-        justifyContent="space-between"
-        spacing={1}
+      <Box
         sx={{
           px: contentPaddingX,
           pt: layoutTokens.policyHeaderTopPadding,
-          pb: GUTTER,
+          pb: 1.5,
           bgcolor: 'background.paper',
           borderBottom: 1,
           borderColor: 'divider',
           flexShrink: 0,
         }}
       >
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Typography variant="h5" component="h2" sx={{ lineHeight: 1.35, mb: 0.5 }}>
-            {activity.label}
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography variant="subtitle1" component="h2" sx={copilotDrawerHeadingSx}>
+            Recent Activity
           </Typography>
+          {onClose && (
+            <IconButton size="small" onClick={onClose} aria-label="Close activity details">
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Stack>
+      </Box>
+
+      <Box
+        sx={{
+          px: contentPaddingX,
+          pt: 2,
+          pb: GUTTER,
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+        }}
+      >
+        <Stack spacing={0.75} sx={{ mb: 1.5 }}>
+          {onBack ? (
+            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ minWidth: 0 }}>
+              <IconButton
+                size="small"
+                onClick={onBack}
+                aria-label="Back to Copilot"
+                sx={{ ml: -0.75, flexShrink: 0 }}
+              >
+                <ArrowBackIcon fontSize="small" />
+              </IconButton>
+              <Typography variant="subtitle2" noWrap sx={{ ...copilotSubtitleSx, minWidth: 0 }}>
+                {activity.label}
+              </Typography>
+            </Stack>
+          ) : (
+            <Typography variant="subtitle2" sx={copilotSubtitleSx}>
+              {activity.label}
+            </Typography>
+          )}
           <Stack
             direction="row"
             alignItems="center"
@@ -128,61 +175,47 @@ export function ActivityDetailsPanel({ activity, onClose, onRecommendationClick 
             </Typography>
             <StatusChip label={activity.status} status={activity.statusVariant} />
           </Stack>
-        </Box>
-        {onClose && (
-          <IconButton size="small" onClick={onClose} aria-label="Close activity details" sx={{ mt: -0.25 }}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        )}
-      </Stack>
-
-      <Box
-        sx={{
-          px: contentPaddingX,
-          pt: GUTTER,
-          pb: GUTTER,
-          flex: 1,
-          minHeight: 0,
-          overflowY: 'auto',
-        }}
-      >
-        <Stack spacing={GUTTER}>
-          <TaskDescriptionCard
-            description={activity.summary}
-            copilotInsights={activity.insights}
-            onRecommendationClick={onRecommendationClick}
-          />
-
-          <Stack spacing={0}>
-            <TaskDetailAccordion title={fieldsTitle} defaultExpanded>
-              <Stack spacing={0.75}>
-                {activity.fields.map((field) => (
-                  <TaskEntityRow key={field.label} label={field.label} value={field.value} />
-                ))}
-              </Stack>
-            </TaskDetailAccordion>
-
-            <TaskDetailAccordion title="Related entities" subtitle={activity.insuredName}>
-              <Stack spacing={0.75}>
-                <TaskEntityRow label="Insured" value={activity.insuredName} />
-                <TaskEntityRow label="Policy #" value={activity.policyNumber ?? null} />
-                <TaskEntityRow label="Quote #" value={activity.quoteNumber ?? null} />
-                <TaskEntityRow label="Claim #" value={activity.claimNumber ?? null} />
-              </Stack>
-            </TaskDetailAccordion>
-
-            <TaskDetailAccordion title="Activity" subtitle={activity.performedBy}>
-              <TaskDetailText>{activity.detail}</TaskDetailText>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.75 }}
-              >
-                Performed by {activity.performedBy}
-              </Typography>
-            </TaskDetailAccordion>
-          </Stack>
         </Stack>
+
+        <CopilotContentTransition contentKey={activity.id}>
+          <Stack spacing={GUTTER}>
+            <TaskDescriptionCard
+              description={activity.summary}
+              copilotInsights={activity.insights}
+              onRecommendationClick={onRecommendationClick}
+            />
+
+            <Stack spacing={0}>
+              <TaskDetailAccordion title={fieldsTitle} defaultExpanded>
+                <Stack spacing={0.75}>
+                  {activity.fields.map((field) => (
+                    <TaskEntityRow key={field.label} label={field.label} value={field.value} />
+                  ))}
+                </Stack>
+              </TaskDetailAccordion>
+
+              <TaskDetailAccordion title="Related entities" subtitle={activity.insuredName}>
+                <Stack spacing={0.75}>
+                  <TaskEntityRow label="Insured" value={activity.insuredName} />
+                  <TaskEntityRow label="Policy #" value={activity.policyNumber ?? null} />
+                  <TaskEntityRow label="Quote #" value={activity.quoteNumber ?? null} />
+                  <TaskEntityRow label="Claim #" value={activity.claimNumber ?? null} />
+                </Stack>
+              </TaskDetailAccordion>
+
+              <TaskDetailAccordion title="Activity" subtitle={activity.performedBy}>
+                <TaskDetailText>{activity.detail}</TaskDetailText>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.75 }}
+                >
+                  Performed by {activity.performedBy}
+                </Typography>
+              </TaskDetailAccordion>
+            </Stack>
+          </Stack>
+        </CopilotContentTransition>
       </Box>
 
       {hasFooterLinks && (

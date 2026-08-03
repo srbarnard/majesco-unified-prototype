@@ -4,14 +4,16 @@ export const layoutTokens = {
   navRailWidth: 88,
   secondaryPanelWidth: 280,
   headerHeight: 56,
-  copilotMinWidth: 320,
-  copilotMaxWidth: 480,
-  copilotDefaultWidth: 380,
-  /** Detail panels (task details, rich side views): ~50/50 split on desktop. */
-  detailPanelMinWidth: 480,
-  detailPanelMinRatio: 0.4,
+  /** @deprecated Prefer detailPanel* — Copilot now shares the detail-panel width. */
+  copilotMinWidth: 360,
+  copilotMaxWidth: 720,
+  copilotDefaultWidth: 420,
+  /** Right drawer (Copilot + task/activity): ~2/3 content · 1/3 drawer; user can drag. */
+  detailPanelMinWidth: 360,
+  detailPanelMinRatio: 0.28,
   detailPanelMaxRatio: 0.55,
-  detailPanelDefaultRatio: 0.5,
+  detailPanelDefaultRatio: 0.34,
+  detailPanelFallbackWidth: 420,
   /** Horizontal padding for main content areas (px). */
   contentPaddingX: 25,
   /** Dashboard card corner radius (px). */

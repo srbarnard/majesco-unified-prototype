@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box'
 import { useCallback, useEffect, useState } from 'react'
-import { useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { PlaceholderPage } from '@/app/pages/PlaceholderPage'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import type { DocumentAttachMode } from '@/pages/policies/components/DocumentAttachComposer'
@@ -19,8 +19,9 @@ type DocumentViewerPageProps = {
 }
 
 export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
+  const navigate = useNavigate()
   const isDesktop = useIsDesktopLayout()
-  const { quoteId, docId = '' } = useParams<{
+  const { policyId, quoteId, docId = '' } = useParams<{
     policyId?: string
     quoteId?: string
     docId: string
@@ -51,6 +52,14 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
   const entityLabel = isQuote
     ? `Quote ${quote?.quoteNumber ?? quoteId}`
     : `Policy ${policyDetailsMock.policyNumber}`
+
+  const handleBackToDocuments = useCallback(() => {
+    if (isQuote && quoteId) {
+      navigate(`/quotes/${quoteId}?tab=documents`)
+      return
+    }
+    navigate(`/policies/${policyId ?? policyDetailsMock.policyNumber}?tab=documents`)
+  }, [isQuote, navigate, policyId, quoteId])
 
   const handleViewerAction = useCallback(
     (action: DocumentViewerAction) => {
@@ -110,6 +119,7 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
           entityLabel={entityLabel}
           copilotOpen={copilotOpen}
           onToggleCopilot={() => setCopilotOpen((open) => !open)}
+          onBack={handleBackToDocuments}
         />
 
         <DocumentViewerCanvas document={document} onAction={handleViewerAction} />

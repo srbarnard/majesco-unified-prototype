@@ -1,7 +1,7 @@
 import { createBrowserRouter } from 'react-router'
 import { AppLayout } from '@/app/layouts/AppLayout'
 import { ClaimsPage } from '@/app/pages/ClaimsPage'
-import { CustomersPage } from '@/app/pages/CustomersPage'
+import { CustomersPage } from '@/pages/customers/CustomersPage'
 import { DashboardPage } from '@/app/pages/DashboardPage'
 import { PlaceholderPage } from '@/app/pages/PlaceholderPage'
 import { CopilotStudioPage } from '@/pages/copilot-studio/CopilotStudioPage'

@@ -4,6 +4,7 @@ import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined'
 import Box from '@mui/material/Box'
 import Drawer from '@mui/material/Drawer'
 import IconButton from '@mui/material/IconButton'
+import Slide from '@mui/material/Slide'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
@@ -14,10 +15,11 @@ import { CopilotIcon } from '@/design-system/components'
 import { studioChatThreadsMock, type StudioChatThread } from '@/pages/copilot-studio/data/mockCopilotStudio'
 import { accentSubtle, accentSubtleHover, surfaceMuted, surfacePanel } from '@/design-system/theme/themeSurfaces'
 import {
+  dockedPanelMotionSx,
   drawerTransitionDuration,
-  drawerTransitionEasing,
-  panelSlideInFromLeftSx,
+  getDrawerTransitionSlotProps,
 } from '@/design-system/tokens/motion'
+import { useAnimatedPanelPresence } from '@/design-system/hooks/useAnimatedPanelPresence'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 
@@ -206,8 +208,8 @@ export function StudioChatDrawer({
 }: StudioChatDrawerProps) {
   const theme = useTheme()
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
-
-  if (!open) return null
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const { mounted, entered } = useAnimatedPanelPresence(open, prefersReducedMotion)
 
   const drawerContent = (
     <ChatDrawerContent
@@ -223,14 +225,11 @@ export function StudioChatDrawer({
       <Drawer
         anchor="left"
         open={open}
+        slots={{ transition: Slide }}
         variant="temporary"
         onClose={onClose}
         transitionDuration={drawerTransitionDuration}
-        slotProps={{
-          transition: {
-            easing: drawerTransitionEasing,
-          },
-        }}
+        slotProps={getDrawerTransitionSlotProps()}
         ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: 'block', lg: 'none' },
@@ -245,22 +244,29 @@ export function StudioChatDrawer({
     )
   }
 
+  if (!mounted) return null
+
+  const { shellSx, innerSx } = dockedPanelMotionSx({
+    side: 'left',
+    entered,
+    width: layoutTokens.secondaryPanelWidth,
+    reducedMotion: prefersReducedMotion,
+  })
+
   return (
     <Box
       sx={{
-        width: layoutTokens.secondaryPanelWidth,
-        flexShrink: 0,
-        height: '100%',
-        minHeight: 0,
-        borderRight: 1,
-        borderColor: 'divider',
-        overflow: 'hidden',
-        display: { xs: 'none', lg: 'flex' },
-        flexDirection: 'column',
-        ...panelSlideInFromLeftSx(),
+        ...shellSx,
+        display: { xs: 'none', lg: 'block' },
       }}
     >
-      {drawerContent}
+      <Box
+        sx={{
+          ...innerSx,
+        }}
+      >
+        {drawerContent}
+      </Box>
     </Box>
   )
 }

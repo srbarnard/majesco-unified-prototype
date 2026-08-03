@@ -1,9 +1,12 @@
-import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
+import ContactPageOutlinedIcon from '@mui/icons-material/ContactPageOutlined'
+import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
+import Link from '@mui/material/Link'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
+import Popover from '@mui/material/Popover'
 import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
@@ -26,10 +29,14 @@ import {
   tableActionIconButtonSx,
 } from '@/design-system/components'
 import { listDataGridContainerSx } from '@/design-system/tokens/tableLayout'
+import { layoutTokens } from '@/design-system/tokens/layout'
 import { dataGridShellSx } from '@/design-system/theme/themeSurfaces'
 import { insuredIdFromName } from '@/pages/shared/insuredId'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import type { PolicyListRecord } from '@/pages/policies/data/mockPoliciesList'
+import {
+  getPolicyInsuredContact,
+  type PolicyListRecord,
+} from '@/pages/policies/data/mockPoliciesList'
 
 type PoliciesListDataGridProps = {
   apiRef: MutableRefObject<GridApi>
@@ -63,17 +70,113 @@ function PolicyNumberCell({ row }: { row: PolicyListRecord }) {
 }
 
 function InsuredNameCell({ row }: { row: PolicyListRecord }) {
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+  const open = Boolean(anchorEl)
+  const contact = getPolicyInsuredContact(row.insuredName)
+
   return (
-    <Stack direction="row" spacing={0.75} alignItems="center" sx={{ py: 0.25, minWidth: 0 }}>
-      <ListDataGridLink
-        to={`/insureds/${encodeURIComponent(insuredIdFromName(row.insuredName))}`}
-        fontWeight={500}
-        sx={{ py: 0 }}
+    <>
+      <Stack direction="row" spacing={0.5} alignItems="center" sx={{ py: 0.25, minWidth: 0 }}>
+        <ListDataGridLink
+          to={`/insureds/${encodeURIComponent(insuredIdFromName(row.insuredName))}`}
+          fontWeight={500}
+          sx={{ py: 0, minWidth: 0 }}
+        >
+          {row.insuredName}
+        </ListDataGridLink>
+        <Tooltip title="Contact information">
+          <IconButton
+            size="small"
+            aria-label={`Contact information for ${row.insuredName}`}
+            aria-haspopup="true"
+            aria-expanded={open ? 'true' : undefined}
+            onClick={(event) => {
+              event.stopPropagation()
+              setAnchorEl(event.currentTarget)
+            }}
+            onMouseDown={(event) => event.stopPropagation()}
+            sx={{
+              p: 0.25,
+              color: 'text.secondary',
+              flexShrink: 0,
+              '&:hover': { color: 'primary.main', bgcolor: 'transparent' },
+            }}
+          >
+            <ContactPageOutlinedIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Tooltip>
+      </Stack>
+      <Popover
+        open={open}
+        anchorEl={anchorEl}
+        onClose={() => setAnchorEl(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            onClick: (event) => event.stopPropagation(),
+            sx: (theme) => ({
+              mt: 0.75,
+              py: 1.5,
+              px: 1.75,
+              minWidth: 240,
+              maxWidth: 300,
+              borderRadius: `${layoutTokens.cardRadius}px`,
+              border: `1px solid ${theme.palette.divider}`,
+              boxShadow:
+                theme.palette.mode === 'dark'
+                  ? '0 8px 24px rgba(0, 0, 0, 0.45)'
+                  : '0 8px 24px rgba(0, 0, 0, 0.12)',
+            }),
+          },
+        }}
       >
-        {row.insuredName}
-      </ListDataGridLink>
-      <BadgeOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }} />
-    </Stack>
+        <Stack spacing={1.25}>
+          <Box>
+            <Typography
+              variant="body2"
+              sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem', lineHeight: 1.45 }}
+            >
+              {contact.addressLine1}
+            </Typography>
+            <Stack direction="row" spacing={0.75} alignItems="center" justifyContent="space-between">
+              <Typography
+                variant="body2"
+                sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem', lineHeight: 1.45 }}
+              >
+                {contact.cityStateZip}
+              </Typography>
+              <PlaceOutlinedIcon sx={{ fontSize: 16, color: 'primary.main', flexShrink: 0 }} />
+            </Stack>
+          </Box>
+          <Typography
+            variant="body2"
+            sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem', lineHeight: 1.45 }}
+          >
+            <Box component="span" sx={{ fontWeight: 600 }}>
+              Email:{' '}
+            </Box>
+            <Link
+              href={`mailto:${contact.email}`}
+              underline="hover"
+              onClick={(event) => event.stopPropagation()}
+              sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem' }}
+            >
+              Send message
+            </Link>
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem', lineHeight: 1.45 }}
+          >
+            <Box component="span" sx={{ fontWeight: 600 }}>
+              Phone:{' '}
+            </Box>
+            {contact.phone}
+          </Typography>
+        </Stack>
+      </Popover>
+    </>
   )
 }
 

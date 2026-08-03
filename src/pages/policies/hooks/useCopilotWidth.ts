@@ -3,21 +3,15 @@ import { layoutTokens } from '@/design-system/tokens/layout'
 
 export type RightPanelVariant = 'standard' | 'wide'
 
-const STORAGE_KEYS: Record<RightPanelVariant, string> = {
-  standard: 'majesco-copilot-width',
-  wide: 'majesco-detail-panel-width',
-}
+/**
+ * Shared storage for Copilot + detail drawers so open/close swaps keep one width.
+ * v3: Copilot defaults aligned to the ~1/3 detail-panel width (was fixed ~380px).
+ */
+const STORAGE_KEY = 'majesco-right-panel-width-v3'
 
-function clampStandardWidth(value: number) {
-  return Math.min(
-    layoutTokens.copilotMaxWidth,
-    Math.max(layoutTokens.copilotMinWidth, value),
-  )
-}
-
-function clampWideWidth(value: number) {
+function clampPanelWidth(value: number) {
   if (typeof window === 'undefined') {
-    return 720
+    return layoutTokens.detailPanelFallbackWidth
   }
 
   const viewportWidth = window.innerWidth
@@ -29,45 +23,40 @@ function clampWideWidth(value: number) {
   return Math.min(max, Math.max(min, value))
 }
 
-function defaultWidthForVariant(variant: RightPanelVariant) {
-  if (variant === 'wide') {
-    if (typeof window === 'undefined') return 720
-    return clampWideWidth(window.innerWidth * layoutTokens.detailPanelDefaultRatio)
-  }
-  return layoutTokens.copilotDefaultWidth
+function defaultPanelWidth() {
+  if (typeof window === 'undefined') return layoutTokens.detailPanelFallbackWidth
+  return clampPanelWidth(window.innerWidth * layoutTokens.detailPanelDefaultRatio)
 }
 
-function readStoredWidth(variant: RightPanelVariant) {
-  if (typeof window === 'undefined') return defaultWidthForVariant(variant)
+function readStoredWidth() {
+  if (typeof window === 'undefined') return defaultPanelWidth()
 
-  const stored = window.localStorage.getItem(STORAGE_KEYS[variant])
-  if (!stored) return defaultWidthForVariant(variant)
+  const stored = window.localStorage.getItem(STORAGE_KEY)
+  if (!stored) return defaultPanelWidth()
 
   const parsed = Number(stored)
-  if (!Number.isFinite(parsed)) return defaultWidthForVariant(variant)
+  if (!Number.isFinite(parsed)) return defaultPanelWidth()
 
-  return variant === 'wide' ? clampWideWidth(parsed) : clampStandardWidth(parsed)
+  return clampPanelWidth(parsed)
 }
 
-export function useRightPanelWidth(variant: RightPanelVariant = 'standard') {
-  const [width, setWidth] = useState(() => readStoredWidth(variant))
+/**
+ * Resizable right-panel width. `variant` is retained for call-site compatibility;
+ * Copilot and detail panels share one default and storage key.
+ */
+export function useRightPanelWidth(_variant: RightPanelVariant = 'standard') {
+  const [width, setWidth] = useState(() => readStoredWidth())
 
   useEffect(() => {
-    setWidth(readStoredWidth(variant))
-  }, [variant])
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS[variant], String(width))
-  }, [variant, width])
+    window.localStorage.setItem(STORAGE_KEY, String(width))
+  }, [width])
 
   const startResize = useCallback(
     (startX: number) => {
       const startWidth = width
-      const clamp = variant === 'wide' ? clampWideWidth : clampStandardWidth
 
       const onMouseMove = (event: MouseEvent) => {
-        const nextWidth = clamp(startWidth + (startX - event.clientX))
-        setWidth(nextWidth)
+        setWidth(clampPanelWidth(startWidth + (startX - event.clientX)))
       }
 
       const onMouseUp = () => {
@@ -82,13 +71,13 @@ export function useRightPanelWidth(variant: RightPanelVariant = 'standard') {
       document.addEventListener('mousemove', onMouseMove)
       document.addEventListener('mouseup', onMouseUp)
     },
-    [variant, width],
+    [width],
   )
 
   return { width, setWidth, startResize }
 }
 
-/** @deprecated Use useRightPanelWidth('standard') */
+/** @deprecated Use useRightPanelWidth() */
 export function useCopilotWidth() {
   return useRightPanelWidth('standard')
 }

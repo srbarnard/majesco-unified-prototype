@@ -1,3 +1,4 @@
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import CloseIcon from '@mui/icons-material/Close'
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined'
@@ -16,6 +17,11 @@ import {
 import { filterFooterButtonSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
+import {
+  copilotDrawerHeadingSx,
+  copilotSubtitleSx,
+} from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import {
   TaskDetailAccordion,
   TaskDetailText,
@@ -37,6 +43,8 @@ const contentPaddingX = `${layoutTokens.contentPaddingX}px`
 type TaskDetailsPanelProps = {
   task: TaskRecord
   onClose?: () => void
+  /** Return to the Copilot summary without closing the right panel. */
+  onBack?: () => void
   onMarkComplete?: (task: TaskRecord) => void
   onRecommendationClick?: (insight: string) => void
 }
@@ -49,7 +57,13 @@ function formatDueDate(dueDate: string) {
   })
 }
 
-export function TaskDetailsPanel({ task, onClose, onMarkComplete, onRecommendationClick }: TaskDetailsPanelProps) {
+export function TaskDetailsPanel({
+  task,
+  onClose,
+  onBack,
+  onMarkComplete,
+  onRecommendationClick,
+}: TaskDetailsPanelProps) {
   const related = getTaskRelatedSummary(task)
   const relatedRoute = getTaskRelatedEntityRoute(task)
   const { relatedEntities } = task
@@ -57,25 +71,59 @@ export function TaskDetailsPanel({ task, onClose, onMarkComplete, onRecommendati
 
   return (
     <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', overflow: 'hidden' }}>
-      <Stack
-        direction="row"
-        alignItems="flex-start"
-        justifyContent="space-between"
-        spacing={1}
+      <Box
         sx={{
           px: contentPaddingX,
           pt: layoutTokens.policyHeaderTopPadding,
-          pb: GUTTER,
+          pb: 1.5,
           bgcolor: 'background.paper',
           borderBottom: 1,
           borderColor: 'divider',
           flexShrink: 0,
         }}
       >
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Typography variant="h5" component="h2" sx={{ lineHeight: 1.35, mb: 0.5 }}>
-            {task.taskName}
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography variant="subtitle1" component="h2" sx={copilotDrawerHeadingSx}>
+            Task
           </Typography>
+          {onClose && (
+            <IconButton size="small" onClick={onClose} aria-label="Close task details">
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Stack>
+      </Box>
+
+      <Box
+        sx={{
+          px: contentPaddingX,
+          pt: 2,
+          pb: GUTTER,
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+        }}
+      >
+        <Stack spacing={0.75} sx={{ mb: 1.5 }}>
+          {onBack ? (
+            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ minWidth: 0 }}>
+              <IconButton
+                size="small"
+                onClick={onBack}
+                aria-label="Back to Copilot"
+                sx={{ ml: -0.75, flexShrink: 0 }}
+              >
+                <ArrowBackIcon fontSize="small" />
+              </IconButton>
+              <Typography variant="subtitle2" noWrap sx={{ ...copilotSubtitleSx, minWidth: 0 }}>
+                {task.taskName}
+              </Typography>
+            </Stack>
+          ) : (
+            <Typography variant="subtitle2" sx={copilotSubtitleSx}>
+              {task.taskName}
+            </Typography>
+          )}
           <Stack
             direction="row"
             alignItems="center"
@@ -117,121 +165,122 @@ export function TaskDetailsPanel({ task, onClose, onMarkComplete, onRecommendati
             </Typography>
             <TaskStatusChip displayStatus={task.displayStatus} />
           </Stack>
-        </Box>
-        {onClose && (
-          <IconButton size="small" onClick={onClose} aria-label="Close task details" sx={{ mt: -0.25 }}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        )}
-      </Stack>
+        </Stack>
 
-      <Box
-        sx={{
-          px: contentPaddingX,
-          pt: GUTTER,
-          pb: GUTTER,
-          flex: 1,
-          minHeight: 0,
-          overflowY: 'auto',
-        }}
-      >
-        <Stack spacing={GUTTER}>
-          {task.blockingIssues && (
-            <InsightCallout variant="error" title="Blocking issue">
-              <TaskDetailText>{task.blockingIssues}</TaskDetailText>
-            </InsightCallout>
-          )}
+        <CopilotContentTransition contentKey={task.id}>
+          <Stack spacing={GUTTER}>
+            {task.blockingIssues && (
+              <InsightCallout variant="error" title="Blocking issue">
+                <TaskDetailText>{task.blockingIssues}</TaskDetailText>
+              </InsightCallout>
+            )}
 
-          <TaskDescriptionCard
-            description={task.description}
-            copilotInsights={task.copilotInsights}
-            onRecommendationClick={onRecommendationClick}
-          />
+            <TaskDescriptionCard
+              description={task.description}
+              copilotInsights={task.copilotInsights}
+              onRecommendationClick={onRecommendationClick}
+            />
 
-          <Stack spacing={0}>
-            <TaskDetailAccordion title="Next action" defaultExpanded>
-              <TaskDetailText>{task.nextAction}</TaskDetailText>
-            </TaskDetailAccordion>
+            <Stack spacing={0}>
+              <TaskDetailAccordion title="Next action" defaultExpanded>
+                <TaskDetailText>{task.nextAction}</TaskDetailText>
+              </TaskDetailAccordion>
 
-            <TaskDetailAccordion
-              title="SLA / due"
-              subtitle={`${task.ageIndicator} · Due ${dueLabel}`}
-            >
-              <Typography
-                variant="body2"
-                sx={{
-                  fontFamily: figmaFontFamilyStack.body,
-                  fontSize: '0.875rem',
-                  lineHeight: 1.55,
-                  color: getTaskSlaTone(task),
-                  fontWeight: task.isPastDue ? 600 : 400,
-                }}
-              >
-                {task.ageIndicator}
-                {' · '}
-                Due {dueLabel}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.75 }}
-              >
-                {task.agingDays}d open · {task.priorityReason}
-              </Typography>
-              <Divider sx={{ my: 1.25 }} />
-              <Typography variant="subtitle2" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.75rem', color: 'text.secondary', mb: 0.5 }}>
-                Assignment
-              </Typography>
-              <TaskDetailText>{task.assignedTo}</TaskDetailText>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.5 }}
-              >
-                {task.team} · Assigned by {task.assigner}
-              </Typography>
-            </TaskDetailAccordion>
-
-            <TaskDetailAccordion
-              title="Related entities"
-              subtitle={related.primary}
-            >
-              <Stack spacing={0.75}>
-                <TaskEntityRow label="Insured" value={relatedEntities.insuredName} />
-                <TaskEntityRow label="Policy #" value={relatedEntities.policyNumber} />
-                <TaskEntityRow label="Quote #" value={relatedEntities.quoteNumber} />
-                <TaskEntityRow label="Claim #" value={relatedEntities.claimNumber} />
-                <TaskEntityRow label="Submission" value={relatedEntities.submissionId} />
-                <TaskEntityRow label="Producer" value={relatedEntities.producer} />
-              </Stack>
-            </TaskDetailAccordion>
-
-            {task.documents.length > 0 && (
               <TaskDetailAccordion
-                title="Documents"
-                subtitle={`${task.documents.length} file${task.documents.length === 1 ? '' : 's'}`}
+                title="SLA / due"
+                subtitle={`${task.ageIndicator} · Due ${dueLabel}`}
               >
-                <Stack spacing={0.75} divider={<Divider flexItem />}>
-                  {task.documents.map((doc) => (
-                    <Stack key={doc.name} direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-                      <Typography variant="body2" sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem', flex: 1 }}>
-                        {doc.name}
-                        {doc.required ? '' : ' (optional)'}
-                      </Typography>
-                      <StatusChip label={doc.status} status={getTaskDocumentChipVariant(doc.status)} />
-                    </Stack>
-                  ))}
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontFamily: figmaFontFamilyStack.body,
+                    fontSize: '0.875rem',
+                    lineHeight: 1.55,
+                    color: getTaskSlaTone(task),
+                    fontWeight: task.isPastDue ? 600 : 400,
+                  }}
+                >
+                  {task.ageIndicator}
+                  {' · '}
+                  Due {dueLabel}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.75 }}
+                >
+                  {task.agingDays}d open · {task.priorityReason}
+                </Typography>
+                <Divider sx={{ my: 1.25 }} />
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontFamily: figmaFontFamilyStack.heading,
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
+                    color: 'text.secondary',
+                    mb: 0.5,
+                  }}
+                >
+                  Assignment
+                </Typography>
+                <TaskDetailText>{task.assignedTo}</TaskDetailText>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.5 }}
+                >
+                  {task.team} · Assigned by {task.assigner}
+                </Typography>
+              </TaskDetailAccordion>
+
+              <TaskDetailAccordion title="Related entities" subtitle={related.primary}>
+                <Stack spacing={0.75}>
+                  <TaskEntityRow label="Insured" value={relatedEntities.insuredName} />
+                  <TaskEntityRow label="Policy #" value={relatedEntities.policyNumber} />
+                  <TaskEntityRow label="Quote #" value={relatedEntities.quoteNumber} />
+                  <TaskEntityRow label="Claim #" value={relatedEntities.claimNumber} />
+                  <TaskEntityRow label="Submission" value={relatedEntities.submissionId} />
+                  <TaskEntityRow label="Producer" value={relatedEntities.producer} />
                 </Stack>
               </TaskDetailAccordion>
-            )}
 
-            {task.notes && (
-              <TaskDetailAccordion title="Notes">
-                <TaskDetailText>{task.notes}</TaskDetailText>
-              </TaskDetailAccordion>
-            )}
+              {task.documents.length > 0 && (
+                <TaskDetailAccordion
+                  title="Documents"
+                  subtitle={`${task.documents.length} file${task.documents.length === 1 ? '' : 's'}`}
+                >
+                  <Stack spacing={0.75} divider={<Divider flexItem />}>
+                    {task.documents.map((doc) => (
+                      <Stack
+                        key={doc.name}
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        spacing={1}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem', flex: 1 }}
+                        >
+                          {doc.name}
+                          {doc.required ? '' : ' (optional)'}
+                        </Typography>
+                        <StatusChip label={doc.status} status={getTaskDocumentChipVariant(doc.status)} />
+                      </Stack>
+                    ))}
+                  </Stack>
+                </TaskDetailAccordion>
+              )}
+
+              {task.notes && (
+                <TaskDetailAccordion title="Notes">
+                  <TaskDetailText>{task.notes}</TaskDetailText>
+                </TaskDetailAccordion>
+              )}
+            </Stack>
           </Stack>
-        </Stack>
+        </CopilotContentTransition>
       </Box>
 
       <Box
