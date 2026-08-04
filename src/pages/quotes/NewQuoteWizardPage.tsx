@@ -39,7 +39,8 @@ function canAdvanceFromStep(stepIndex: number, form: QuoteWizardFormData) {
         hasValue(form.annualRevenue) &&
         hasValue(form.employeeCount) &&
         hasValue(form.payroll) &&
-        form.operationalExposures.length > 0
+        form.operationalExposures.length > 0 &&
+        form.selectedCoverages.length > 0
       )
     case 2:
       return hasValue(form.primaryLocation) && hasValue(form.annualRevenue) && hasValue(form.payroll)
@@ -170,9 +171,24 @@ export function NewQuoteWizardPage() {
       case 2:
         return <ExposuresLocationsStep {...shared} />
       case 3:
-        return <CoveragesPricingStep form={form} onChange={updateForm} />
+        return (
+          <CoveragesPricingStep
+            form={form}
+            onChange={updateForm}
+            onNaturalLanguageSubmit={handleNaturalLanguageSubmit}
+            onFilesAdd={handleFilesAdd}
+            onFileRemove={handleFileRemove}
+          />
+        )
       case 4:
-        return <ReviewSubmitStep form={form} />
+        return (
+          <ReviewSubmitStep
+            form={form}
+            onNaturalLanguageSubmit={handleNaturalLanguageSubmit}
+            onFilesAdd={handleFilesAdd}
+            onFileRemove={handleFileRemove}
+          />
+        )
       default:
         return null
     }

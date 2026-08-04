@@ -175,7 +175,15 @@ export function CopilotConfidenceIndicator({
           >
             {tiers.map((tier) => (
               <Box key={tier.label}>
-                <Typography variant="caption" sx={{ ...headingSx, display: 'block', fontSize: '0.75rem' }}>
+                <Typography
+                  variant="caption"
+                  sx={(theme) => ({
+                    ...headingSx,
+                    display: 'block',
+                    fontSize: '0.75rem',
+                    color: getCopilotConfidenceColor(theme, tier.min),
+                  })}
+                >
                   {tier.rangeLabel} — {tier.label}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ ...bodySx, fontSize: '0.6875rem', lineHeight: 1.45 }}>

@@ -3,17 +3,31 @@ import Box from '@mui/material/Box'
 import Checkbox from '@mui/material/Checkbox'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { COVERAGE_OPTIONS, type QuoteWizardFormData } from '@/pages/quotes/data/quoteWizardTypes'
+import {
+  COVERAGE_OPTIONS,
+  type QuoteWizardFormData,
+  type QuoteWizardUploadedFile,
+} from '@/pages/quotes/data/quoteWizardTypes'
 import { estimatePremium, formatCurrency } from '@/pages/quotes/utils/parseQuoteWizardInput'
 import { getRecommendedCoverageIds } from '@/pages/quotes/utils/quoteWizardCopilotContent'
 import { QuoteWizardStepHeading } from '../QuoteWizardFormField'
+import { QuoteWizardNaturalLanguageInput } from '../QuoteWizardNaturalLanguageInput'
 
 type StepProps = {
   form: QuoteWizardFormData
   onChange: (updates: Partial<QuoteWizardFormData>) => void
+  onNaturalLanguageSubmit: (text: string) => void
+  onFilesAdd?: (files: QuoteWizardUploadedFile[]) => void
+  onFileRemove?: (fileId: string) => void
 }
 
-export function CoveragesPricingStep({ form, onChange }: StepProps) {
+export function CoveragesPricingStep({
+  form,
+  onChange,
+  onNaturalLanguageSubmit,
+  onFilesAdd,
+  onFileRemove,
+}: StepProps) {
   const recommended = getRecommendedCoverageIds(form)
   const premium = estimatePremium(form)
 
@@ -27,6 +41,17 @@ export function CoveragesPricingStep({ form, onChange }: StepProps) {
   return (
     <Box>
       <QuoteWizardStepHeading>Choose coverages and pricing</QuoteWizardStepHeading>
+
+      <QuoteWizardNaturalLanguageInput
+        value=""
+        placeholder="e.g., Add GL and property — or drop loss runs and coverage schedules here"
+        files={form.uploadedFiles}
+        onChange={() => undefined}
+        onSubmit={onNaturalLanguageSubmit}
+        onFilesAdd={onFilesAdd}
+        onFileRemove={onFileRemove}
+      />
+
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Copilot recommends lines based on the risk profile. Select coverages to generate an indicative premium.
       </Typography>
@@ -47,8 +72,8 @@ export function CoveragesPricingStep({ form, onChange }: StepProps) {
                 py: 1.25,
               }}
             >
-              <Stack direction="row" spacing={1.25} alignItems="flex-start">
-                <Checkbox checked={selected} onChange={() => toggleCoverage(option.id)} size="small" sx={{ mt: -0.25 }} />
+              <Stack direction="row" spacing={1.25} alignItems="center">
+                <Checkbox checked={selected} onChange={() => toggleCoverage(option.id)} size="small" />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Stack direction="row" alignItems="center" spacing={0.75}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>

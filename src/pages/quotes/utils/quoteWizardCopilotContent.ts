@@ -76,9 +76,9 @@ function confidenceLabel(confidence: number, isParsingDocuments = false) {
 }
 
 function recommendedCoverages(form: QuoteWizardFormData) {
-  const ids = new Set<string>(['gl'])
+  // Commercial Auto is always recommended and preselected; remaining lines depend on risk signals.
+  const ids = new Set<string>(['gl', 'ca'])
   if (hasValue(form.payroll) || hasValue(form.employeeCount)) ids.add('wc')
-  if (form.operationalExposures.includes('vehicles')) ids.add('ca')
   if (form.operationalExposures.includes('equipment')) ids.add('im')
   if (Number(form.annualRevenue.replace(/[^\d.]/g, '')) > 500_000) ids.add('cp')
   return COVERAGE_OPTIONS.filter((option) => ids.has(option.id)).map((option) => option.id)

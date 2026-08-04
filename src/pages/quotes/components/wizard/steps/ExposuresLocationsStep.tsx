@@ -4,7 +4,7 @@ import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { TaskDetailAccordion } from '@/pages/tasks/components/TaskDetailSection'
-import type { QuoteWizardFormData } from '@/pages/quotes/data/quoteWizardTypes'
+import type { QuoteWizardFormData, QuoteWizardUploadedFile } from '@/pages/quotes/data/quoteWizardTypes'
 import {
   QuoteWizardFormCard,
   QuoteWizardFormField,
@@ -16,6 +16,8 @@ type StepProps = {
   form: QuoteWizardFormData
   onChange: (updates: Partial<QuoteWizardFormData>) => void
   onNaturalLanguageSubmit: (text: string) => void
+  onFilesAdd?: (files: QuoteWizardUploadedFile[]) => void
+  onFileRemove?: (fileId: string) => void
   focusField?: string | null
 }
 
@@ -23,17 +25,26 @@ function isAiFilled(form: QuoteWizardFormData, field: string) {
   return form.aiFilledFields.includes(field)
 }
 
-export function ExposuresLocationsStep({ form, onChange, onNaturalLanguageSubmit, focusField }: StepProps) {
+export function ExposuresLocationsStep({
+  form,
+  onChange,
+  onNaturalLanguageSubmit,
+  onFilesAdd,
+  onFileRemove,
+  focusField,
+}: StepProps) {
   return (
     <Box>
       <QuoteWizardStepHeading>Confirm exposure and locations</QuoteWizardStepHeading>
 
       <QuoteWizardNaturalLanguageInput
         value=""
-        placeholder="e.g., Primary location at 123 Main St, Princeton, NJ with $1M revenue"
+        placeholder="e.g., Primary location at 123 Main St, Princeton, NJ — or drop SOVs and location schedules here"
+        files={form.uploadedFiles}
         onChange={() => undefined}
         onSubmit={onNaturalLanguageSubmit}
-        enableAttachments={false}
+        onFilesAdd={onFilesAdd}
+        onFileRemove={onFileRemove}
       />
 
       <QuoteWizardFormCard>

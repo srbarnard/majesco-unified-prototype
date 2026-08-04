@@ -1,5 +1,6 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import BlockIcon from '@mui/icons-material/Block'
+import CloseIcon from '@mui/icons-material/Close'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import Box from '@mui/material/Box'
 import Divider from '@mui/material/Divider'
@@ -9,7 +10,12 @@ import Typography from '@mui/material/Typography'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Button } from '@/design-system/components'
 import { accentSubtle, accentSubtleHover } from '@/design-system/theme/themeSurfaces'
+import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import {
+  DocumentAttachPanelContent,
+  targetLabels,
+} from '@/pages/policies/components/DocumentAttachComposer'
 import {
   DEFAULT_COPILOT_CONFIDENCE_TIERS,
   getCopilotConfidenceStatusLabel,
@@ -31,6 +37,15 @@ import {
   type SubmissionIssue,
   type SubmissionListRecord,
 } from '@/pages/submissions/data/mockSubmissions'
+import {
+  buildIssueNoteDraft,
+  buildProducerRequestEmail,
+  isAddNoteAction,
+  isProducerRequestAction,
+  producerRequestResolvedDetails,
+  type IssueNoteDraft,
+  type ProducerRequestEmailDraft,
+} from '@/pages/submissions/data/producerRequestEmail'
 import {
   buildSubmissionInsightBriefing,
   type SubmissionCopilotEntryMode,
@@ -301,7 +316,7 @@ function IssueDetailCard({
           <Typography
             component="li"
             variant="body2"
-            color="text.secondary"
+            color="text.primary"
             key={insight}
             sx={{ ...bodySx, mb: 0.5 }}
           >
@@ -312,7 +327,7 @@ function IssueDetailCard({
 
       <Divider sx={{ mb: 2 }} />
 
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1 }}>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1, fontWeight: 600}}>
         Quick actions
       </Typography>
       <Stack direction="row" flexWrap="wrap" gap={1}>
@@ -332,6 +347,10 @@ function IssueDetailCard({
                 onRequestAttach?.()
                 return
               }
+              if (isProducerRequestAction(action) || isAddNoteAction(action)) {
+                onGuidedResolve?.(issue, action)
+                return
+              }
               if (isGuided || action !== 'Resolve with details below') {
                 onGuidedResolve?.(issue, action)
               }
@@ -349,10 +368,12 @@ function SubmissionInsightView({
   submission,
   onViewStatus,
   onSeedComposer,
+  onDraftProducerEmail,
 }: {
   submission: SubmissionListRecord
   onViewStatus: () => void
   onSeedComposer?: (message: string) => void
+  onDraftProducerEmail?: () => void
 }) {
   const briefing = useMemo(() => buildSubmissionInsightBriefing(submission), [submission])
 
@@ -379,7 +400,7 @@ function SubmissionInsightView({
           <Typography
             component="li"
             variant="body2"
-            color="text.secondary"
+            color="text.primary"
             key={insight}
             sx={{ ...bodySx, mb: 0.5 }}
           >
@@ -389,7 +410,7 @@ function SubmissionInsightView({
       </Box>
 
       <Divider sx={{ mb: 2 }} />
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1 }}>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1, fontWeight: 600}}>
         Quick actions
       </Typography>
       <Stack direction="row" flexWrap="wrap" gap={1}>
@@ -406,9 +427,7 @@ function SubmissionInsightView({
                 return
               }
               if (action === 'Draft producer follow-up') {
-                onSeedComposer?.(
-                  `Draft a concise producer follow-up for ${submission.submissionNumber} (${submission.insuredName}) covering the open intake gaps.`,
-                )
+                onDraftProducerEmail?.()
                 return
               }
               if (action === 'Summarize for underwriter') {
@@ -512,7 +531,7 @@ function ReadyStructureOptionsView({
               <Typography
                 component="li"
                 variant="body2"
-                color="text.secondary"
+                color="text.primary"
                 key={insight.id}
                 sx={{ ...bodySx, mb: 0.5 }}
               >
@@ -646,7 +665,7 @@ function ReadyStructureOptionsView({
           ) : null}
 
           <Divider sx={{ my: 2 }} />
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1 }}>
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1, fontWeight: 600}}>
             Quick actions
           </Typography>
           <Stack direction="row" flexWrap="wrap" gap={1}>
@@ -736,7 +755,7 @@ function SummarizeView({ submissions }: { submissions: SubmissionListRecord[] })
           <Typography
             component="li"
             variant="body2"
-            color="text.secondary"
+            color="text.primary"
             key={insight}
             sx={{ ...bodySx, mb: 0.5 }}
           >
@@ -745,7 +764,7 @@ function SummarizeView({ submissions }: { submissions: SubmissionListRecord[] })
         ))}
       </Box>
       <Divider sx={{ mb: 2 }} />
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1 }}>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1, fontWeight: 600}}>
         Quick actions
       </Typography>
       <Stack direction="row" flexWrap="wrap" gap={1}>
@@ -790,7 +809,7 @@ function WorkspaceView() {
           <Typography
             component="li"
             variant="body2"
-            color="text.secondary"
+            color="text.primary"
             key={insight}
             sx={{ ...bodySx, mb: 0.5 }}
           >
@@ -799,7 +818,7 @@ function WorkspaceView() {
         ))}
       </Box>
       <Divider sx={{ mb: 2 }} />
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1 }}>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1, fontWeight: 600}}>
         Quick actions
       </Typography>
       <Stack direction="row" flexWrap="wrap" gap={1}>
@@ -825,6 +844,8 @@ export function SubmissionsCopilotPanel({
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null)
   const [attachRequestKey, setAttachRequestKey] = useState<number | null>(null)
   const [seedComposerMessage, setSeedComposerMessage] = useState<string | null>(null)
+  const [producerEmail, setProducerEmail] = useState<ProducerRequestEmailDraft | null>(null)
+  const [issueNote, setIssueNote] = useState<IssueNoteDraft | null>(null)
   const multiSelectMode = selectedSubmissions.length > 1 && !focusedSubmission
 
   const activeIssue = useMemo(() => {
@@ -838,6 +859,8 @@ export function SubmissionsCopilotPanel({
   useEffect(() => {
     setActiveIssueId(null)
     setSeedComposerMessage(null)
+    setProducerEmail(null)
+    setIssueNote(null)
   }, [focusKey, entryMode])
 
   const confidence = focusedSubmission?.confidence ?? 0
@@ -845,6 +868,18 @@ export function SubmissionsCopilotPanel({
   const animatedConfidence = useAnimatedConfidence(confidence, focusKey)
   const displayedConfidence = showConfidence ? Math.round(animatedConfidence) : 0
   const confidenceStatusLabel = getCopilotConfidenceStatusLabel(confidence)
+
+  const openProducerEmail = (action: string, issue: SubmissionIssue | null) => {
+    if (!focusedSubmission) return
+    setIssueNote(null)
+    setProducerEmail(buildProducerRequestEmail(focusedSubmission, action, issue))
+  }
+
+  const openIssueNote = (issue: SubmissionIssue, action = 'Add a note') => {
+    if (!focusedSubmission) return
+    setProducerEmail(null)
+    setIssueNote(buildIssueNoteDraft(focusedSubmission, issue, action))
+  }
 
   const handleSubmit = (message: string, files: CopilotAttachedFile[] = []) => {
     if (!focusedSubmission) return
@@ -871,12 +906,41 @@ export function SubmissionsCopilotPanel({
       setAttachRequestKey((key) => (key ?? 0) + 1)
       return
     }
+    if (isProducerRequestAction(action)) {
+      openProducerEmail(action, issue)
+      return
+    }
+    if (isAddNoteAction(action)) {
+      openIssueNote(issue, action)
+      return
+    }
     const details =
       issue.missingDetails.length > 0
         ? issue.missingDetails.map((item) => `${item}: captured via “${action}”`)
         : [`Resolved via “${action}”`]
     onResolveIssue?.(focusedSubmission.id, issue.id, details)
     setActiveIssueId(issue.id)
+  }
+
+  const handleSendProducerEmail = () => {
+    if (!focusedSubmission || !producerEmail) return
+    const issue = producerEmail.issue
+    if (issue && !issue.resolvedAt && issue.severity === 'blocking') {
+      onResolveIssue?.(
+        focusedSubmission.id,
+        issue.id,
+        producerRequestResolvedDetails(issue, producerEmail.action),
+      )
+      setActiveIssueId(issue.id)
+    }
+    setProducerEmail(null)
+  }
+
+  const handleSaveIssueNote = () => {
+    if (!issueNote) return
+    // Note is captured in the compose flow; keep the issue open for follow-up resolution.
+    setActiveIssueId(issueNote.issue.id)
+    setIssueNote(null)
   }
 
   const composerPlaceholder =
@@ -928,6 +992,82 @@ export function SubmissionsCopilotPanel({
     requestAnimationFrame(() => setSeedComposerMessage(message))
   }
 
+  if (producerEmail || issueNote) {
+    const isNote = Boolean(issueNote)
+    const attachMode = {
+      target: (isNote ? 'note' : 'email') as 'note' | 'email',
+      documents: [],
+    }
+    return (
+      <Box
+        sx={{
+          height: '100%',
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          bgcolor: 'background.paper',
+          overflow: 'hidden',
+        }}
+      >
+        <Stack
+          direction="row"
+          alignItems="flex-start"
+          justifyContent="space-between"
+          spacing={1}
+          sx={{
+            px: `${layoutTokens.contentPaddingX}px`,
+            pt: layoutTokens.policyHeaderTopPadding,
+            pb: layoutTokens.contentPaddingX / 8,
+            bgcolor: 'background.paper',
+            borderBottom: 1,
+            borderColor: 'divider',
+            flexShrink: 0,
+          }}
+        >
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography variant="h5" component="h2" sx={{ lineHeight: 1.35, mb: 0.5 }}>
+              {targetLabels[attachMode.target]}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={bodySx}>
+              {isNote ? 'Submission note' : 'Producer follow-up'} · {focusedSubmission?.submissionNumber}
+            </Typography>
+          </Box>
+          {onClose ? (
+            <IconButton size="small" aria-label="Close panel" onClick={onClose} sx={{ mt: -0.25 }}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          ) : null}
+        </Stack>
+
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            px: `${layoutTokens.contentPaddingX}px`,
+            pt: layoutTokens.contentPaddingX / 8,
+            pb: layoutTokens.contentPaddingX / 8,
+            overflow: 'hidden',
+          }}
+        >
+          <DocumentAttachPanelContent
+            attachMode={attachMode}
+            contextLabel={focusedSubmission?.submissionNumber}
+            initialSubject={isNote ? issueNote!.subject : producerEmail!.subject}
+            initialBody={isNote ? issueNote!.body : producerEmail!.body}
+            initialTo={isNote ? undefined : producerEmail!.to}
+            onCancel={() => {
+              setProducerEmail(null)
+              setIssueNote(null)
+            }}
+            onSave={isNote ? handleSaveIssueNote : handleSendProducerEmail}
+          />
+        </Box>
+      </Box>
+    )
+  }
+
   return (
     <CopilotDrawerShell
       onClose={onClose}
@@ -967,6 +1107,7 @@ export function SubmissionsCopilotPanel({
             submission={focusedSubmission}
             onViewStatus={() => onEntryModeChange?.('status')}
             onSeedComposer={seedComposer}
+            onDraftProducerEmail={() => openProducerEmail('Draft producer follow-up', null)}
           />
         ) : activeIssue ? (
           <IssueDetailCard

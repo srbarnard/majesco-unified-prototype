@@ -21,15 +21,13 @@ import {
 import {
   quoteDocumentsCopilotInsights,
   quoteDocumentsCopilotSummary,
-  quoteDocumentStoryImpactInsights,
-  quoteDocumentStoryImpactSummary,
 } from '@/pages/policies/data/documentsCopilotContent'
 import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
 import { emptyDocumentsFilters, type DocumentsFilters } from '@/pages/policies/filters/documentsFilterTypes'
 import { QuoteHeader, type QuoteRightPanel } from '@/pages/quotes/components/QuoteHeader'
 import { QuoteOverviewTab } from '@/pages/quotes/components/QuoteOverviewTab'
 import type { QuoteTab } from '@/pages/quotes/components/QuoteTabs'
-import { getQuoteDocumentStory, getQuoteDocuments } from '@/pages/quotes/data/mockQuoteDocuments'
+import { getQuoteDocuments } from '@/pages/quotes/data/mockQuoteDocuments'
 import {
   getQuoteOverviewStats,
   getQuoteUnderwritingNotes,
@@ -53,7 +51,6 @@ export function QuoteDetails() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const quote = resolveQuoteContext(quoteId)
-  const documentStory = getQuoteDocumentStory(quote.quoteNumber)
   const isDesktop = useIsDesktopLayout()
   const [activeTab, setActiveTab] = useState<QuoteTab>(() => parseQuoteTab(searchParams.get('tab')) ?? 'overview')
   const [starred, setStarred] = useState(false)
@@ -61,10 +58,9 @@ export function QuoteDetails() {
   const [documentsFilterOpen, setDocumentsFilterOpen] = useState(false)
   const [appliedDocumentsFilters, setAppliedDocumentsFilters] = useState<DocumentsFilters>(emptyDocumentsFilters)
   const [copilotDocumentFocus, setCopilotDocumentFocus] = useState<PolicyDocument | null>(null)
-  const [documentsCopilotMode, setDocumentsCopilotMode] = useState<'workspace' | 'impact'>('workspace')
   const [attachMode, setAttachMode] = useState<DocumentAttachMode | null>(null)
 
-  useDesktopCopilotInitialOpen(isDesktop, activeTab === 'overview', 'copilot', setActiveRightPanel)
+  useDesktopCopilotInitialOpen(isDesktop, activeTab === 'overview' || activeTab === 'documents', 'copilot', setActiveRightPanel)
   useCloseCopilotWhenMobile(isDesktop, activeRightPanel, 'copilot', setActiveRightPanel)
 
   useEffect(() => {
@@ -74,7 +70,6 @@ export function QuoteDetails() {
     setActiveTab(tab)
     setCopilotDocumentFocus(null)
     setDocumentsFilterOpen(false)
-    setDocumentsCopilotMode('workspace')
     setAttachMode(null)
 
     if (tab === 'overview') {
@@ -83,7 +78,7 @@ export function QuoteDetails() {
     }
 
     if (tab === 'documents') {
-      setActiveRightPanel(null)
+      setActiveRightPanel(isDesktop ? 'copilot' : null)
       return
     }
 
@@ -92,7 +87,6 @@ export function QuoteDetails() {
 
   const handleToggleRightPanel = useCallback((panel: QuoteRightPanel) => {
     if (panel === 'copilot') {
-      setDocumentsCopilotMode('workspace')
       setCopilotDocumentFocus(null)
       setAttachMode(null)
     }
@@ -133,7 +127,6 @@ export function QuoteDetails() {
     setActiveTab(tab)
     setCopilotDocumentFocus(null)
     setDocumentsFilterOpen(false)
-    setDocumentsCopilotMode('workspace')
     setAttachMode(null)
 
     if (tab === 'overview') {
@@ -142,7 +135,7 @@ export function QuoteDetails() {
     }
 
     if (tab === 'documents') {
-      setActiveRightPanel(null)
+      setActiveRightPanel(isDesktop ? 'copilot' : null)
       return
     }
 
@@ -164,7 +157,6 @@ export function QuoteDetails() {
   const handleAttachTo = useCallback((target: DocumentAttachTarget, documents: PolicyDocument[]) => {
     setAttachMode({ target, documents })
     setDocumentsFilterOpen(false)
-    setDocumentsCopilotMode('workspace')
     setCopilotDocumentFocus(documents[0] ?? null)
     setActiveRightPanel('copilot')
   }, [])
@@ -175,14 +167,6 @@ export function QuoteDetails() {
 
   const handleAttachSave = useCallback(() => {
     setAttachMode(null)
-  }, [])
-
-  const handleShowStoryImpact = useCallback(() => {
-    setCopilotDocumentFocus(null)
-    setAttachMode(null)
-    setDocumentsCopilotMode('impact')
-    setDocumentsFilterOpen(false)
-    setActiveRightPanel('copilot')
   }, [])
 
   const showCopilotPanel = activeRightPanel === 'copilot'
@@ -250,16 +234,11 @@ export function QuoteDetails() {
           {isDocumentsTab && (
             <DocumentsTab
               documents={getQuoteDocuments(quote.quoteNumber)}
-              documentStory={documentStory.story}
-              documentStorySyncedAt={documentStory.syncedAt}
-              documentStoryHighlights={documentStory.highlights}
               appliedFilters={appliedDocumentsFilters}
               onDocumentOpen={handleDocumentOpen}
               getDocumentHref={getDocumentHref}
               onAttachTo={handleAttachTo}
               activeCopilotDocumentId={copilotDocumentFocus?.id ?? null}
-              impactLinkLabel="Show how this impacts the quote"
-              onShowStoryImpact={handleShowStoryImpact}
             />
           )}
           {activeTab === 'overview' && (
@@ -305,17 +284,12 @@ export function QuoteDetails() {
             focusedDocument={copilotDocumentFocus}
             documentsWorkspaceSummary={quoteDocumentsCopilotSummary}
             documentsWorkspaceInsights={quoteDocumentsCopilotInsights}
-            documentsImpactSummary={quoteDocumentStoryImpactSummary}
-            documentsImpactInsights={quoteDocumentStoryImpactInsights}
-            documentsCopilotMode={documentsCopilotMode}
-            documentsImpactTitle="Quote impact"
             attachMode={attachMode}
             attachContextLabel={quote.quoteNumber}
             onCloseAttach={handleCloseAttach}
             onAttachSave={handleAttachSave}
             onClose={() => {
               setCopilotDocumentFocus(null)
-              setDocumentsCopilotMode('workspace')
               setAttachMode(null)
               handleCloseRightPanel()
             }}

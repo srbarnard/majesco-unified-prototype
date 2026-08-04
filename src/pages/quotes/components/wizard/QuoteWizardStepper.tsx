@@ -3,12 +3,14 @@ import Box from '@mui/material/Box'
 import MuiButton from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import type { ReactNode } from 'react'
+import { keyframes } from '@mui/material/styles'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { CopilotIcon } from '@/design-system/components'
 import { getPanelToggleButtonStyles, isDarkMode } from '@/design-system/theme/themeSurfaces'
 import { QUOTE_WIZARD_STEPS } from '@/pages/quotes/data/quoteWizardTypes'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { motionTokens } from '@/design-system/tokens/motion'
 
 type QuoteWizardStepperProps = {
   activeStep: number
@@ -16,18 +18,79 @@ type QuoteWizardStepperProps = {
   compact?: boolean
 }
 
+const STEP_LINE_MS = 520
+const STEP_POP_MS = 650
+/** Fire the arrive pop as the line visually reaches the next step (ease-out finishes softly after). */
+const STEP_ARRIVE_AT_MS = Math.round(STEP_LINE_MS * 0.78)
+const ELASTIC_EASE = 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+const motionSafe = '@media (prefers-reduced-motion: no-preference)'
+
+/** Elastic settle after the progress line connects — mirrors Copilot confidence hover feel. */
+const stepArrivePop = keyframes`
+  0% { transform: scale(1); }
+  18% { transform: scale(1.48); }
+  40% { transform: scale(0.92); }
+  62% { transform: scale(1.16); }
+  82% { transform: scale(0.98); }
+  100% { transform: scale(1); }
+`
+
+const stepHoverBounce = keyframes`
+  0% { transform: scale(1); }
+  45% { transform: scale(1.42); }
+  62% { transform: scale(1.12); }
+  78% { transform: scale(1.26); }
+  90% { transform: scale(1.18); }
+  100% { transform: scale(1.2); }
+`
+
 export function QuoteWizardStepper({ activeStep, onStepClick, compact = false }: QuoteWizardStepperProps) {
+  const prevActiveStep = useRef(activeStep)
+  const popClearTimerRef = useRef<number | null>(null)
+  const [poppingIndex, setPoppingIndex] = useState<number | null>(null)
+  const indicatorSize = compact ? 24 : 28
+  /** Room for elastic scale (~1.48 peak) so edge circles aren’t clipped by the scrollport. */
+  const scalePadPx = Math.ceil(indicatorSize * 0.3) + 4
+
+  useEffect(() => {
+    if (activeStep > prevActiveStep.current) {
+      const arrivingIndex = activeStep
+      const lineTimer = window.setTimeout(() => {
+        setPoppingIndex(arrivingIndex)
+        if (popClearTimerRef.current) window.clearTimeout(popClearTimerRef.current)
+        popClearTimerRef.current = window.setTimeout(() => {
+          setPoppingIndex(null)
+          popClearTimerRef.current = null
+        }, STEP_POP_MS)
+      }, STEP_ARRIVE_AT_MS)
+      prevActiveStep.current = activeStep
+      return () => {
+        window.clearTimeout(lineTimer)
+        if (popClearTimerRef.current) {
+          window.clearTimeout(popClearTimerRef.current)
+          popClearTimerRef.current = null
+        }
+      }
+    }
+    prevActiveStep.current = activeStep
+  }, [activeStep])
+
   return (
     <Box
+      className="quote-wizard-stepper"
       sx={{
         flex: compact ? 1 : undefined,
         minWidth: 0,
-        overflowX: 'auto',
+        py: `${scalePadPx}px`,
+        my: compact ? `-${scalePadPx}px` : 0,
+        // Compact lives in the header: keep overflow visible so edge scales aren’t clipped.
+        // Non-compact can scroll horizontally on narrow viewports.
+        overflowX: compact ? 'visible' : 'auto',
+        overflowY: 'visible',
+        px: compact ? `${scalePadPx}px` : `${layoutTokens.contentPaddingX}px`,
         ...(compact
           ? {}
           : {
-              px: `${layoutTokens.contentPaddingX}px`,
-              py: 1.5,
               borderBottom: 1,
               borderColor: 'divider',
               bgcolor: 'background.paper',
@@ -38,19 +101,23 @@ export function QuoteWizardStepper({ activeStep, onStepClick, compact = false }:
         direction="row"
         alignItems="center"
         spacing={0}
-        sx={{ minWidth: compact ? 480 : 720 }}
+        sx={{
+          minWidth: compact ? 480 : 720,
+          overflow: 'visible',
+        }}
       >
         {QUOTE_WIZARD_STEPS.map((step, index) => {
           const completed = index < activeStep
           const active = index === activeStep
           const clickable = index <= activeStep
+          const isPopping = poppingIndex === index
 
           return (
             <Stack
               key={step.id}
               direction="row"
               alignItems="center"
-              sx={{ flex: index < QUOTE_WIZARD_STEPS.length - 1 ? 1 : '0 0 auto' }}
+              sx={{ flex: index < QUOTE_WIZARD_STEPS.length - 1 ? 1 : '0 0 auto', overflow: 'visible' }}
             >
               <Stack
                 component={clickable ? 'button' : 'div'}
@@ -65,35 +132,65 @@ export function QuoteWizardStepper({ activeStep, onStepClick, compact = false }:
                   cursor: clickable ? 'pointer' : 'default',
                   p: 0,
                   textAlign: 'left',
+                  overflow: 'visible',
+                  '@media (hover: hover)': clickable
+                    ? {
+                        [motionSafe]: {
+                          '&:hover .quote-step-indicator': {
+                            animation: `${stepHoverBounce} 0.65s ${ELASTIC_EASE} forwards`,
+                          },
+                        },
+                      }
+                    : undefined,
                 }}
               >
                 <Box
-                  sx={(theme) => ({
-                    width: compact ? 24 : 28,
-                    height: compact ? 24 : 28,
-                    borderRadius: '50%',
+                  sx={{
+                    width: indicatorSize,
+                    height: indicatorSize,
+                    flexShrink: 0,
                     display: 'grid',
                     placeItems: 'center',
-                    flexShrink: 0,
-                    fontFamily: figmaFontFamilyStack.heading,
-                    fontWeight: 600,
-                    fontSize: compact ? '0.75rem' : '0.8125rem',
-                    bgcolor:
-                      completed || active
-                        ? 'primary.main'
-                        : isDarkMode(theme)
-                          ? theme.figmaPalette.grey[800]
-                          : theme.figmaPalette.grey[100],
-                    color:
-                      completed || active
-                        ? 'primary.contrastText'
-                        : isDarkMode(theme)
-                          ? theme.figmaPalette.grey[400]
-                          : theme.figmaPalette.grey[600],
-                    border: 'none',
-                  })}
+                    overflow: 'visible',
+                  }}
                 >
-                  {completed ? <CheckIcon sx={{ fontSize: compact ? 14 : 16 }} /> : index + 1}
+                  <Box
+                    className="quote-step-indicator"
+                    sx={(theme) => ({
+                      width: indicatorSize,
+                      height: indicatorSize,
+                      borderRadius: '50%',
+                      display: 'grid',
+                      placeItems: 'center',
+                      fontFamily: figmaFontFamilyStack.heading,
+                      fontWeight: 600,
+                      fontSize: compact ? '0.75rem' : '0.8125rem',
+                      bgcolor:
+                        completed || active
+                          ? 'primary.main'
+                          : isDarkMode(theme)
+                            ? theme.figmaPalette.grey[800]
+                            : theme.figmaPalette.grey[100],
+                      color:
+                        completed || active
+                          ? 'primary.contrastText'
+                          : isDarkMode(theme)
+                            ? theme.figmaPalette.grey[400]
+                            : theme.figmaPalette.grey[600],
+                      border: 'none',
+                      transform: 'scale(1)',
+                      transformOrigin: 'center',
+                      willChange: 'transform',
+                      transition: `transform 0.5s ${ELASTIC_EASE}, background-color ${motionTokens.durationMs}ms ${motionTokens.easing}, color ${motionTokens.durationMs}ms ${motionTokens.easing}`,
+                      [motionSafe]: isPopping
+                        ? {
+                            animation: `${stepArrivePop} ${STEP_POP_MS}ms ${ELASTIC_EASE} both`,
+                          }
+                        : undefined,
+                    })}
+                  >
+                    {completed ? <CheckIcon sx={{ fontSize: compact ? 14 : 16 }} /> : index + 1}
+                  </Box>
                 </Box>
                 <Typography
                   variant="body2"
@@ -104,6 +201,7 @@ export function QuoteWizardStepper({ activeStep, onStepClick, compact = false }:
                     color: active ? 'primary.main' : completed ? 'text.primary' : 'text.secondary',
                     whiteSpace: 'nowrap',
                     display: { xs: active ? 'block' : 'none', lg: 'block' },
+                    transition: `color ${motionTokens.durationMs}ms ${motionTokens.easing}`,
                   }}
                 >
                   {step.label}
@@ -117,9 +215,25 @@ export function QuoteWizardStepper({ activeStep, onStepClick, compact = false }:
                     mx: compact ? 0.75 : 1,
                     minWidth: compact ? 16 : 24,
                     borderRadius: 1,
-                    bgcolor: index < activeStep ? 'primary.main' : theme.palette.divider,
+                    bgcolor: theme.palette.divider,
+                    overflow: 'hidden',
+                    position: 'relative',
                   })}
-                />
+                >
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      bgcolor: 'primary.main',
+                      borderRadius: 'inherit',
+                      transformOrigin: 'left center',
+                      transform: index < activeStep ? 'scaleX(1)' : 'scaleX(0)',
+                      [motionSafe]: {
+                        transition: `transform ${STEP_LINE_MS}ms cubic-bezier(0.32, 0.72, 0, 1)`,
+                      },
+                    }}
+                  />
+                </Box>
               )}
             </Stack>
           )
@@ -193,6 +307,7 @@ export function QuoteWizardPageHeader({
         borderColor: 'divider',
         flexShrink: 0,
         minWidth: 0,
+        overflow: 'visible',
       }}
     >
       <Typography
@@ -208,7 +323,7 @@ export function QuoteWizardPageHeader({
       >
         New quote
       </Typography>
-      <Box sx={{ flex: 1, minWidth: 0 }}>
+      <Box sx={{ flex: 1, minWidth: 0, px: { xs: 1.5, md: 3, lg: 4 }, overflow: 'visible' }}>
         <QuoteWizardStepper activeStep={activeStep} onStepClick={onStepClick} compact />
       </Box>
       <PanelToggleButton

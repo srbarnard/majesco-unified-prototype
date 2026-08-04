@@ -10,28 +10,38 @@ import { DocumentViewerHeader } from '@/pages/policies/components/DocumentViewer
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { getDocumentPreviewContent } from '@/pages/policies/data/documentPreviewData'
 import { policyDetailsMock } from '@/pages/policies/data/mockPolicyDetails'
-import { resolvePolicyDocument, resolveQuoteDocument } from '@/pages/policies/data/resolveDocument'
+import {
+  resolvePolicyDocument,
+  resolveQuoteDocument,
+  resolveSubmissionDocument,
+} from '@/pages/policies/data/resolveDocument'
 import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
 import { resolveQuoteContext } from '@/pages/quotes/data/resolveQuoteContext'
+import { resolveSubmissionContext } from '@/pages/submissions/data/resolveSubmissionContext'
 
 type DocumentViewerPageProps = {
-  context: 'policy' | 'quote-detail'
+  context: 'policy' | 'quote-detail' | 'submission-detail'
 }
 
 export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
   const navigate = useNavigate()
   const isDesktop = useIsDesktopLayout()
-  const { policyId, quoteId, docId = '' } = useParams<{
+  const { policyId, quoteId, submissionId, docId = '' } = useParams<{
     policyId?: string
     quoteId?: string
+    submissionId?: string
     docId: string
   }>()
 
   const isQuote = context === 'quote-detail'
+  const isSubmission = context === 'submission-detail'
   const quote = isQuote ? resolveQuoteContext(quoteId) : null
+  const submission = isSubmission ? resolveSubmissionContext(submissionId) : null
   const document = isQuote && quote
     ? resolveQuoteDocument(quote.quoteNumber, docId)
-    : resolvePolicyDocument(docId)
+    : isSubmission && submission
+      ? resolveSubmissionDocument(submission.id, docId)
+      : resolvePolicyDocument(docId)
 
   const [copilotOpen, setCopilotOpen] = useState(false)
   const [attachMode, setAttachMode] = useState<DocumentAttachMode | null>(null)
@@ -51,15 +61,21 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
   const preview = document ? getDocumentPreviewContent(document) : null
   const entityLabel = isQuote
     ? `Quote ${quote?.quoteNumber ?? quoteId}`
-    : `Policy ${policyDetailsMock.policyNumber}`
+    : isSubmission
+      ? `Submission ${submission?.submissionNumber ?? submissionId}`
+      : `Policy ${policyDetailsMock.policyNumber}`
 
   const handleBackToDocuments = useCallback(() => {
     if (isQuote && quoteId) {
       navigate(`/quotes/${quoteId}?tab=documents`)
       return
     }
+    if (isSubmission && submissionId) {
+      navigate(`/submissions/${submissionId}?tab=documents`)
+      return
+    }
     navigate(`/policies/${policyId ?? policyDetailsMock.policyNumber}?tab=documents`)
-  }, [isQuote, navigate, policyId, quoteId])
+  }, [isQuote, isSubmission, navigate, policyId, quoteId, submissionId])
 
   const handleViewerAction = useCallback(
     (action: DocumentViewerAction) => {

@@ -5,7 +5,11 @@ import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { TaskDetailAccordion } from '@/pages/tasks/components/TaskDetailSection'
-import type { OperationalExposure, QuoteWizardFormData } from '@/pages/quotes/data/quoteWizardTypes'
+import type {
+  OperationalExposure,
+  QuoteWizardFormData,
+  QuoteWizardUploadedFile,
+} from '@/pages/quotes/data/quoteWizardTypes'
 import {
   QuoteWizardFormCard,
   QuoteWizardFormField,
@@ -17,6 +21,8 @@ type StepProps = {
   form: QuoteWizardFormData
   onChange: (updates: Partial<QuoteWizardFormData>) => void
   onNaturalLanguageSubmit: (text: string) => void
+  onFilesAdd?: (files: QuoteWizardUploadedFile[]) => void
+  onFileRemove?: (fileId: string) => void
   focusField?: string | null
 }
 
@@ -35,17 +41,26 @@ function toggleExposure(
   onChange({ operationalExposures: next })
 }
 
-export function RiskProfileStep({ form, onChange, onNaturalLanguageSubmit, focusField }: StepProps) {
+export function RiskProfileStep({
+  form,
+  onChange,
+  onNaturalLanguageSubmit,
+  onFilesAdd,
+  onFileRemove,
+  focusField,
+}: StepProps) {
   return (
     <Box>
       <QuoteWizardStepHeading>Let&apos;s refine the risk profile</QuoteWizardStepHeading>
 
       <QuoteWizardNaturalLanguageInput
         value=""
-        placeholder="e.g., Estimated revenue of $850,000 with 25 employees"
+        placeholder="e.g., Estimated revenue of $850,000 with 25 employees — or drop payroll and exposure docs here"
+        files={form.uploadedFiles}
         onChange={() => undefined}
         onSubmit={onNaturalLanguageSubmit}
-        enableAttachments={false}
+        onFilesAdd={onFilesAdd}
+        onFileRemove={onFileRemove}
       />
 
       <QuoteWizardFormCard>

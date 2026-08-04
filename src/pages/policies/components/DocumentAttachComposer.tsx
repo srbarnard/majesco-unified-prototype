@@ -183,6 +183,10 @@ function AttachedDocumentChips({
 type DocumentAttachPanelContentProps = {
   attachMode: DocumentAttachMode
   contextLabel?: string
+  /** Optional overrides — used for producer follow-ups without attached documents. */
+  initialTo?: string
+  initialSubject?: string
+  initialBody?: string
   onCancel?: () => void
   onSave?: (attachMode: DocumentAttachMode) => void
 }
@@ -190,6 +194,9 @@ type DocumentAttachPanelContentProps = {
 export function DocumentAttachPanelContent({
   attachMode,
   contextLabel,
+  initialTo,
+  initialSubject,
+  initialBody,
   onCancel,
   onSave,
 }: DocumentAttachPanelContentProps) {
@@ -199,10 +206,10 @@ export function DocumentAttachPanelContent({
   const [body, setBody] = useState('')
 
   useEffect(() => {
-    setTo('')
-    setSubject(defaultAttachSubject(target, documents, contextLabel))
-    setBody(defaultAttachBody(target, documents))
-  }, [target, documents, contextLabel])
+    setTo(initialTo ?? '')
+    setSubject(initialSubject ?? defaultAttachSubject(target, documents, contextLabel))
+    setBody(initialBody ?? defaultAttachBody(target, documents))
+  }, [target, documents, contextLabel, initialTo, initialSubject, initialBody])
 
   const saveLabel = target === 'email' ? 'Send' : target === 'task' ? 'Create Task' : 'Save Note'
   const bodySectionTitle =

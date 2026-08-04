@@ -11,14 +11,6 @@ import { applyDocumentsFilters } from '@/pages/policies/filters/applyDocumentsFi
 import type { DocumentsFilters } from '@/pages/policies/filters/documentsFilterTypes'
 import { countActiveDocumentsFilters } from '@/pages/policies/filters/documentsFilterTypes'
 import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
-import {
-  buildDocumentStoryHighlights,
-  buildDocumentStoryStats,
-  buildDocumentStorySummary,
-  remainingHighlightCount,
-} from '@/pages/policies/data/documentStoryUtils'
-import type { DocumentStoryHighlight } from '@/pages/policies/components/DocumentStoryCard'
-import { DocumentStoryCard } from '@/pages/policies/components/DocumentStoryCard'
 import type { DocumentAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
 import { DocumentsActionBar } from '@/pages/policies/components/DocumentsActionBar'
 import { DocumentsDataGrid } from '@/pages/policies/components/DocumentsDataGrid'
@@ -41,17 +33,12 @@ function documentsGridShellSx(theme: Theme) {
 
 type DocumentsTabProps = {
   documents: PolicyDocument[]
-  documentStory: string
-  documentStorySyncedAt: string
-  documentStoryHighlights?: DocumentStoryHighlight[]
   appliedFilters: DocumentsFilters
   onDocumentOpen?: (document: PolicyDocument) => void
   getDocumentHref?: (document: PolicyDocument) => string
   onAttachTo?: (target: DocumentAttachTarget, documents: PolicyDocument[]) => void
   activePreviewDocumentId?: string | null
   activeCopilotDocumentId?: string | null
-  impactLinkLabel?: string
-  onShowStoryImpact?: () => void
 }
 
 function matchesSearch(row: PolicyDocument, query: string) {
@@ -74,17 +61,12 @@ function matchesSearch(row: PolicyDocument, query: string) {
 
 export function DocumentsTab({
   documents,
-  documentStory,
-  documentStorySyncedAt,
-  documentStoryHighlights,
   appliedFilters,
   onDocumentOpen,
   getDocumentHref,
   onAttachTo,
   activePreviewDocumentId,
   activeCopilotDocumentId,
-  impactLinkLabel,
-  onShowStoryImpact,
 }: DocumentsTabProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
@@ -101,28 +83,6 @@ export function DocumentsTab({
   const selectedDocuments = useMemo(
     () => rows.filter((row) => rowSelectionModel.includes(row.id)),
     [rows, rowSelectionModel],
-  )
-
-  const storyStats = useMemo(
-    () => buildDocumentStoryStats(rows, filteredRows),
-    [rows, filteredRows],
-  )
-
-  const storySummary = useMemo(
-    () => buildDocumentStorySummary(filteredRows, documentStory),
-    [filteredRows, documentStory],
-  )
-
-  const storyHighlights = useMemo(() => {
-    if (filteredRows.length > 0) {
-      return buildDocumentStoryHighlights(filteredRows)
-    }
-    return documentStoryHighlights ?? []
-  }, [filteredRows, documentStoryHighlights])
-
-  const extraHighlights = useMemo(
-    () => remainingHighlightCount(filteredRows.length > 0 ? filteredRows : rows),
-    [filteredRows, rows],
   )
 
   const handleRemoveSelected = () => {
@@ -146,16 +106,6 @@ export function DocumentsTab({
         gap: GUTTER,
       }}
     >
-      <DocumentStoryCard
-        summary={storySummary}
-        syncedAt={documentStorySyncedAt}
-        highlights={storyHighlights}
-        stats={storyStats}
-        remainingHighlightCount={extraHighlights}
-        impactLinkLabel={impactLinkLabel}
-        onShowImpact={onShowStoryImpact}
-      />
-
       <Box sx={{ flexShrink: 0 }}>
         <DocumentsActionBar
           searchQuery={searchQuery}

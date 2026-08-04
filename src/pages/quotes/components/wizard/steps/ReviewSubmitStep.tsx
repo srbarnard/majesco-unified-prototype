@@ -2,13 +2,21 @@ import Box from '@mui/material/Box'
 import Divider from '@mui/material/Divider'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { COVERAGE_OPTIONS, type QuoteWizardFormData } from '@/pages/quotes/data/quoteWizardTypes'
+import {
+  COVERAGE_OPTIONS,
+  type QuoteWizardFormData,
+  type QuoteWizardUploadedFile,
+} from '@/pages/quotes/data/quoteWizardTypes'
 import { estimatePremium, formatCurrency } from '@/pages/quotes/utils/parseQuoteWizardInput'
 import { TaskDetailAccordion } from '@/pages/tasks/components/TaskDetailSection'
 import { QuoteWizardStepHeading } from '../QuoteWizardFormField'
+import { QuoteWizardNaturalLanguageInput } from '../QuoteWizardNaturalLanguageInput'
 
 type StepProps = {
   form: QuoteWizardFormData
+  onNaturalLanguageSubmit: (text: string) => void
+  onFilesAdd?: (files: QuoteWizardUploadedFile[]) => void
+  onFileRemove?: (fileId: string) => void
 }
 
 function ReviewRow({ label, value }: { label: string; value: string }) {
@@ -25,7 +33,7 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-export function ReviewSubmitStep({ form }: StepProps) {
+export function ReviewSubmitStep({ form, onNaturalLanguageSubmit, onFilesAdd, onFileRemove }: StepProps) {
   const premium = estimatePremium(form)
   const coverageLabels = COVERAGE_OPTIONS.filter((option) => form.selectedCoverages.includes(option.id)).map(
     (option) => option.label,
@@ -34,6 +42,17 @@ export function ReviewSubmitStep({ form }: StepProps) {
   return (
     <Box>
       <QuoteWizardStepHeading>Review and submit</QuoteWizardStepHeading>
+
+      <QuoteWizardNaturalLanguageInput
+        value=""
+        placeholder="Drop any final documents here — ACORDs, schedules, loss runs, or endorsements"
+        files={form.uploadedFiles}
+        onChange={() => undefined}
+        onSubmit={onNaturalLanguageSubmit}
+        onFilesAdd={onFilesAdd}
+        onFileRemove={onFileRemove}
+      />
+
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Confirm the submission details below. Copilot has pre-filled fields where confidence was high — you can go back
         to any step to override.

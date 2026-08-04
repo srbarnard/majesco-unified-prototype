@@ -444,8 +444,12 @@ export function CopilotComposer({
                 px: 1.75,
                 pt: 1.25,
                 pb: files.length > 0 ? 0.75 : 1,
+                // Outer composer shell owns focus — suppress InputBase ring / underline.
                 '&.Mui-focused': {
                   outline: 'none',
+                },
+                '&:before, &:after': {
+                  display: 'none',
                 },
               },
             },

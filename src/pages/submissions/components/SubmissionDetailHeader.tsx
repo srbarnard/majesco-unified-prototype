@@ -1,4 +1,5 @@
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
+import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import StarBorderIcon from '@mui/icons-material/StarBorder'
@@ -29,6 +30,8 @@ type SubmissionDetailHeaderProps = {
   onTabChange: (tab: SubmissionDetailTab) => void
   activeRightPanel: SubmissionRightPanel | null
   onToggleRightPanel: (panel: SubmissionRightPanel) => void
+  documentsFilterOpen?: boolean
+  onToggleDocumentsFilter?: () => void
   onStatusClick?: () => void
   starred?: boolean
   onToggleStar?: () => void
@@ -78,11 +81,14 @@ export function SubmissionDetailHeader({
   onTabChange,
   activeRightPanel,
   onToggleRightPanel,
+  documentsFilterOpen = false,
+  onToggleDocumentsFilter,
   onStatusClick,
   starred = false,
   onToggleStar,
 }: SubmissionDetailHeaderProps) {
   const contentPx = `${layoutTokens.contentPaddingX}px`
+  const isDocumentsTab = activeTab === 'documents'
 
   return (
     <Box sx={{ bgcolor: 'background.paper', width: '100%' }}>
@@ -165,6 +171,15 @@ export function SubmissionDetailHeader({
             <SubmissionDetailTabs value={activeTab} onChange={onTabChange} />
           </Box>
           <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexShrink: 0 }}>
+            {isDocumentsTab && (
+              <PanelToggleButton
+                label="Filter"
+                icon={<FilterListOutlinedIcon sx={{ fontSize: 18 }} />}
+                active={documentsFilterOpen}
+                onClick={() => onToggleDocumentsFilter?.()}
+                hideLabelOnMobile
+              />
+            )}
             <PanelToggleButton
               label="Parties"
               icon={<GroupsOutlinedIcon sx={{ fontSize: 18 }} />}

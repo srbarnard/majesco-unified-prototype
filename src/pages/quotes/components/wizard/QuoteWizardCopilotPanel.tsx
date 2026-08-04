@@ -4,6 +4,7 @@ import Divider from '@mui/material/Divider'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { useEffect, useRef } from 'react'
 import { Button } from '@/design-system/components'
 import {
   accentSubtle,
@@ -19,7 +20,10 @@ import {
   type QuoteWizardFormData,
 } from '@/pages/quotes/data/quoteWizardTypes'
 import { applyDocumentExtraction } from '@/pages/quotes/utils/quoteWizardDocuments'
-import { buildWizardCopilotState, getRecommendedCoverageIds } from '@/pages/quotes/utils/quoteWizardCopilotContent'
+import {
+  buildWizardCopilotState,
+  getRecommendedCoverageIds,
+} from '@/pages/quotes/utils/quoteWizardCopilotContent'
 import { CopilotConfidenceIndicator } from '@/pages/policies/components/copilot/CopilotConfidenceIndicator'
 import { CopilotDrawerShell } from '@/pages/policies/components/copilot/CopilotDrawerShell'
 import { copilotSectionHeadingSx, copilotSubtitleSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
@@ -99,6 +103,18 @@ export function QuoteWizardCopilotPanel({
   const insights = wizardInsights(form, copilot)
   const animatedConfidence = useAnimatedConfidence(copilot.confidence, stepIndex)
   const displayedConfidence = Math.round(animatedConfidence)
+  const didPreselectCommercialAuto = useRef(false)
+
+  useEffect(() => {
+    if (!copilot.showCoverageBundle) {
+      didPreselectCommercialAuto.current = false
+      return
+    }
+    if (didPreselectCommercialAuto.current) return
+    didPreselectCommercialAuto.current = true
+    if (form.selectedCoverages.includes('ca')) return
+    onUpdateForm({ selectedCoverages: [...form.selectedCoverages, 'ca'] })
+  }, [copilot.showCoverageBundle, form.selectedCoverages, onUpdateForm])
 
   const handleAction = (action: QuoteWizardCopilotAction) => {
     if (action.field === 'continue') {
@@ -189,7 +205,7 @@ export function QuoteWizardCopilotPanel({
       </Typography>
       <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }}>
         {insights.map((insight) => (
-          <Typography component="li" variant="body2" color="text.secondary" key={insight} sx={{ ...bodySx, mb: 0.5 }}>
+          <Typography component="li" variant="body2" color="text.primary" key={insight} sx={{ ...bodySx, mb: 0.5 }}>
             {insight}
           </Typography>
         ))}
@@ -217,11 +233,16 @@ export function QuoteWizardCopilotPanel({
                   />
                 }
                 label={
-                  <Typography variant="body2" color="text.secondary" sx={bodySx}>
+                  <Typography variant="body2" color="text.primary" sx={bodySx}>
                     {option.label}
                   </Typography>
                 }
-                sx={{ ml: 0, alignItems: 'flex-start' }}
+                sx={{
+                  ml: 0,
+                  alignItems: 'center',
+                  color: 'text.primary',
+                  '& .MuiFormControlLabel-label': { color: 'text.primary' },
+                }}
               />
             ))}
           </Stack>
@@ -231,7 +252,7 @@ export function QuoteWizardCopilotPanel({
       {copilot.actions.length > 0 && (
         <>
           <Divider sx={{ mb: 2 }} />
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1 }}>
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1, fontWeight: 600}}>
             Quick actions
           </Typography>
           <Stack direction="row" flexWrap="wrap" gap={1}>

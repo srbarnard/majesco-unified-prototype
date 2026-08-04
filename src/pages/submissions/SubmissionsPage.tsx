@@ -2,7 +2,7 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useGridApiRef, type GridRowSelectionModel } from '@mui/x-data-grid-premium'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
@@ -56,6 +56,7 @@ function formatResolvedTimestamp(date = new Date()) {
 }
 
 export function SubmissionsPage() {
+  const navigate = useNavigate()
   const apiRef = useGridApiRef()
   const [searchParams, setSearchParams] = useSearchParams()
   const [rows, setRows] = useState<SubmissionListRecord[]>(submissionsMock)
@@ -349,12 +350,7 @@ export function SubmissionsPage() {
             onToggleNotes={handleToggleNotes}
             copilotOpen={copilotOpen}
             onToggleCopilot={handleToggleCopilot}
-            onCreateSubmission={() => {
-              setFilterOpen(false)
-              setNotesOpen(false)
-              setCopilotSubmissionFocus(null)
-              setCopilotOpen(true)
-            }}
+            onCreateSubmission={() => navigate('/quotes/new')}
           />
         </Box>
 

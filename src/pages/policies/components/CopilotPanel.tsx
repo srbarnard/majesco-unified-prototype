@@ -48,7 +48,7 @@ import {
 
 type CopilotPanelProps = {
   activePolicyTab?: PolicyTab
-  context?: 'policy' | 'quotes' | 'quote-detail' | 'insured' | 'policies-list' | 'tasks' | 'customers' | 'global'
+  context?: 'policy' | 'quotes' | 'quote-detail' | 'submission-detail' | 'insured' | 'policies-list' | 'tasks' | 'customers' | 'global'
   globalView?: GlobalCopilotView
   agenticPrompt?: string | null
   focusedDocument?: PolicyDocument | null
@@ -722,7 +722,7 @@ export function CopilotPanel({
             </Typography>
             <Box component="ul" sx={{ m: 0, pl: 2.5, mb: isTasksContext && !focusedTask ? 2 : 2 }}>
               {insights.map((insight) => (
-                <Typography component="li" variant="body2" color="text.secondary" key={insight} sx={{ ...bodySx, mb: 0.5 }}>
+                <Typography component="li" variant="body2" color="text.primary" key={insight} sx={{ ...bodySx, mb: 0.5 }}>
                   {insight}
                 </Typography>
               ))}
@@ -735,7 +735,7 @@ export function CopilotPanel({
                 </Typography>
                 <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }}>
                   {tasksNextSteps.map((step) => (
-                    <Typography component="li" variant="body2" color="text.secondary" key={step} sx={{ ...bodySx, mb: 0.5 }}>
+                    <Typography component="li" variant="body2" color="text.primary" key={step} sx={{ ...bodySx, mb: 0.5 }}>
                       {step}
                     </Typography>
                   ))}
@@ -745,7 +745,7 @@ export function CopilotPanel({
 
             <Divider sx={{ mb: 2 }} />
 
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1 }}>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1, fontWeight: 600}}>
               Quick actions
             </Typography>
             <Stack direction="row" flexWrap="wrap" gap={1}>

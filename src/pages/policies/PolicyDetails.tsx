@@ -26,8 +26,6 @@ import { layoutTokens } from '@/design-system/tokens/layout'
 import {
   policyDocumentsCopilotInsights,
   policyDocumentsCopilotSummary,
-  policyDocumentStoryImpactInsights,
-  policyDocumentStoryImpactSummary,
 } from '@/pages/policies/data/documentsCopilotContent'
 import { policyDocumentsMock, type PolicyDocument } from '@/pages/policies/data/mockDocuments'
 import {
@@ -58,10 +56,9 @@ export function PolicyDetails() {
   const [documentsFilterOpen, setDocumentsFilterOpen] = useState(false)
   const [appliedDocumentsFilters, setAppliedDocumentsFilters] = useState<DocumentsFilters>(emptyDocumentsFilters)
   const [copilotDocumentFocus, setCopilotDocumentFocus] = useState<PolicyDocument | null>(null)
-  const [documentsCopilotMode, setDocumentsCopilotMode] = useState<'workspace' | 'impact'>('workspace')
   const [attachMode, setAttachMode] = useState<DocumentAttachMode | null>(null)
 
-  useDesktopCopilotInitialOpen(isDesktop, activeTab === 'overview', 'copilot', setActiveRightPanel)
+  useDesktopCopilotInitialOpen(isDesktop, activeTab === 'overview' || activeTab === 'documents', 'copilot', setActiveRightPanel)
   useCloseCopilotWhenMobile(isDesktop, activeRightPanel, 'copilot', setActiveRightPanel)
 
   useEffect(() => {
@@ -71,7 +68,6 @@ export function PolicyDetails() {
     setActiveTab(tab)
     setCopilotDocumentFocus(null)
     setDocumentsFilterOpen(false)
-    setDocumentsCopilotMode('workspace')
     setAttachMode(null)
 
     if (tab === 'overview') {
@@ -80,7 +76,7 @@ export function PolicyDetails() {
     }
 
     if (tab === 'documents') {
-      setActiveRightPanel(null)
+      setActiveRightPanel(isDesktop ? 'copilot' : null)
       return
     }
 
@@ -89,7 +85,6 @@ export function PolicyDetails() {
 
   const handleToggleRightPanel = useCallback((panel: RightPanel) => {
     if (panel === 'copilot') {
-      setDocumentsCopilotMode('workspace')
       setCopilotDocumentFocus(null)
       setAttachMode(null)
     }
@@ -130,7 +125,6 @@ export function PolicyDetails() {
     setActiveTab(tab)
     setCopilotDocumentFocus(null)
     setDocumentsFilterOpen(false)
-    setDocumentsCopilotMode('workspace')
     setAttachMode(null)
 
     if (tab === 'overview') {
@@ -139,7 +133,7 @@ export function PolicyDetails() {
     }
 
     if (tab === 'documents') {
-      setActiveRightPanel(null)
+      setActiveRightPanel(isDesktop ? 'copilot' : null)
       return
     }
 
@@ -161,7 +155,6 @@ export function PolicyDetails() {
   const handleAttachTo = useCallback((target: DocumentAttachTarget, documents: PolicyDocument[]) => {
     setAttachMode({ target, documents })
     setDocumentsFilterOpen(false)
-    setDocumentsCopilotMode('workspace')
     setCopilotDocumentFocus(documents[0] ?? null)
     setActiveRightPanel('copilot')
   }, [])
@@ -172,14 +165,6 @@ export function PolicyDetails() {
 
   const handleAttachSave = useCallback(() => {
     setAttachMode(null)
-  }, [])
-
-  const handleShowStoryImpact = useCallback(() => {
-    setCopilotDocumentFocus(null)
-    setAttachMode(null)
-    setDocumentsCopilotMode('impact')
-    setDocumentsFilterOpen(false)
-    setActiveRightPanel('copilot')
   }, [])
 
   const showCopilotPanel = activeRightPanel === 'copilot'
@@ -250,15 +235,11 @@ export function PolicyDetails() {
           {isDocumentsTab && (
             <DocumentsTab
               documents={policyDocumentsMock}
-              documentStory={policyDetailsMock.documentStory}
-              documentStorySyncedAt={policyDetailsMock.documentStorySyncedAt}
-              documentStoryHighlights={policyDetailsMock.documentStoryHighlights}
               appliedFilters={appliedDocumentsFilters}
               onDocumentOpen={handleDocumentOpen}
               getDocumentHref={getDocumentHref}
               onAttachTo={handleAttachTo}
               activeCopilotDocumentId={copilotDocumentFocus?.id ?? null}
-              onShowStoryImpact={handleShowStoryImpact}
             />
           )}
           {activeTab === 'overview' && (
@@ -295,16 +276,12 @@ export function PolicyDetails() {
             focusedDocument={copilotDocumentFocus}
             documentsWorkspaceSummary={policyDocumentsCopilotSummary}
             documentsWorkspaceInsights={policyDocumentsCopilotInsights}
-            documentsImpactSummary={policyDocumentStoryImpactSummary}
-            documentsImpactInsights={policyDocumentStoryImpactInsights}
-            documentsCopilotMode={documentsCopilotMode}
             attachMode={attachMode}
             attachContextLabel={policyDetailsMock.policyNumber}
             onCloseAttach={handleCloseAttach}
             onAttachSave={handleAttachSave}
             onClose={() => {
               setCopilotDocumentFocus(null)
-              setDocumentsCopilotMode('workspace')
               setAttachMode(null)
               handleCloseRightPanel()
             }}
