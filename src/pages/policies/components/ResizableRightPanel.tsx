@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box'
+import Drawer from '@mui/material/Drawer'
 import Slide from '@mui/material/Slide'
-import SwipeableDrawer from '@mui/material/SwipeableDrawer'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useTheme } from '@mui/material/styles'
 import type { ReactNode } from 'react'
@@ -78,18 +78,16 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
 
   return (
     <>
-      {/* Phones / tablets: always bottom sheet. CSS display is the hard gate below lg. */}
-      <SwipeableDrawer
+      {/* Phones / tablets: bottom sheet with the same Slide enter/exit as side drawers. */}
+      <Drawer
         anchor="bottom"
+        variant="temporary"
         open={open && !isDesktop}
         slots={{ transition: Slide }}
         onClose={handleClose}
-        onOpen={() => {}}
-        disableSwipeToOpen
-        disableDiscovery
         transitionDuration={prefersReducedMotion ? 0 : drawerTransitionDuration}
         slotProps={{
-          ...getDrawerTransitionSlotProps(prefersReducedMotion),
+          ...getDrawerTransitionSlotProps(prefersReducedMotion, { direction: 'up' }),
           paper: {
             sx: bottomSheetPaperSx(),
           },
@@ -114,7 +112,7 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
           <BottomSheetDragHandle />
           <PanelContent>{children}</PanelContent>
         </Box>
-      </SwipeableDrawer>
+      </Drawer>
 
       {/* Desktop: docked right panel. Hidden below lg even if JS mismatch. */}
       {mounted ? (

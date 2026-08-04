@@ -19,6 +19,7 @@ import { useMemo, useState } from 'react'
 import type { MutableRefObject } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { Link as RouterLink } from 'react-router'
+import { useResponsivePinnedColumns } from '@/design-system/hooks/useResponsivePinnedColumns'
 import {
   CopilotIcon,
   copilotActiveIconSx,
@@ -352,6 +353,11 @@ export function TasksDataGrid({
     [activeCopilotTaskId, activeTaskId, onTaskComplete, onTaskCopilot, onTaskOpen],
   )
 
+  const pinnedColumns = useResponsivePinnedColumns({
+    left: ['__check__', 'taskName'],
+    right: ['actions'],
+  })
+
   return (
     <Box sx={listDataGridContainerSx({ headerFilters: true, footer: true })}>
       <DataGridPremium
@@ -369,7 +375,7 @@ export function TasksDataGrid({
           pagination: { paginationModel: { pageSize: 10, page: 0 } },
         }}
         pageSizeOptions={[10, 25, 50]}
-        pinnedColumns={{ left: ['__check__', 'taskName'], right: ['actions'] }}
+        pinnedColumns={pinnedColumns}
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}

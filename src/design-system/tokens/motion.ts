@@ -70,10 +70,18 @@ export const backdropTransitionDuration = {
  *   slotProps={getDrawerTransitionSlotProps(prefersReducedMotion)}
  * />
  */
-export function getDrawerTransitionSlotProps(reducedMotion = false) {
+export function getDrawerTransitionSlotProps(
+  reducedMotion = false,
+  options?: { direction?: 'left' | 'right' | 'up' | 'down' },
+) {
+  const direction = options?.direction
+
   if (reducedMotion) {
     return {
-      transition: { duration: 0 },
+      transition: {
+        timeout: 0,
+        ...(direction ? { direction } : {}),
+      },
       backdrop: { transitionDuration: 0 },
     } as const
   }
@@ -81,6 +89,8 @@ export function getDrawerTransitionSlotProps(reducedMotion = false) {
   return {
     transition: {
       easing: drawerTransitionEasing,
+      timeout: drawerTransitionDuration,
+      ...(direction ? { direction } : {}),
     },
     backdrop: {
       transitionDuration: backdropTransitionDuration,
@@ -252,5 +262,6 @@ export function bottomSheetPaperSx(): SxProps<Theme> {
     overflow: 'hidden',
     boxShadow: (theme) => theme.shadows[16],
     willChange: 'transform',
+    backfaceVisibility: 'hidden',
   }
 }

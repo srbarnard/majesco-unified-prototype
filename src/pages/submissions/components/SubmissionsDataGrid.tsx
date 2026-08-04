@@ -21,6 +21,7 @@ import { useMemo, useState } from 'react'
 import type { MutableRefObject } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { useNavigate } from 'react-router'
+import { useResponsivePinnedColumns } from '@/design-system/hooks/useResponsivePinnedColumns'
 import { insuredIdFromName } from '@/pages/shared/insuredId'
 import {
   CopilotIcon,
@@ -365,6 +366,11 @@ export function SubmissionsDataGrid({
     [activeCopilotSubmissionId, onAddNote, onAskCopilot, onAssign, onDiscard, onOpenStatusCopilot],
   )
 
+  const pinnedColumns = useResponsivePinnedColumns({
+    left: ['__check__', 'submissionNumber'],
+    right: ['actions'],
+  })
+
   return (
     <Box sx={listDataGridContainerSx({ headerFilters: true, footer: true })}>
       <DataGridPremium
@@ -382,7 +388,7 @@ export function SubmissionsDataGrid({
           pagination: { paginationModel: { pageSize: 25, page: 0 } },
         }}
         pageSizeOptions={[10, 25, 50, 100]}
-        pinnedColumns={{ left: ['__check__', 'submissionNumber'], right: ['actions'] }}
+        pinnedColumns={pinnedColumns}
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}

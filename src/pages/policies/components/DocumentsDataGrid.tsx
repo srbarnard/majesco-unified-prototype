@@ -18,6 +18,7 @@ import { useMemo, useState } from 'react'
 import type { MouseEvent } from 'react'
 import { Link as RouterLink } from 'react-router'
 import type { SxProps, Theme } from '@mui/material/styles'
+import { useResponsivePinnedColumns } from '@/design-system/hooks/useResponsivePinnedColumns'
 import {
   Chip,
   CopilotIcon,
@@ -322,6 +323,11 @@ export function DocumentsDataGrid({
     [activeCopilotDocumentId, activePreviewDocumentId, getDocumentHref, onDocumentOpen],
   )
 
+  const pinnedColumns = useResponsivePinnedColumns({
+    left: ['__check__', 'fileName'],
+    right: ['actions'],
+  })
+
   return (
     <Box sx={listDataGridContainerSx({ headerFilters: true, footer: true })}>
       <DataGridPremium
@@ -338,7 +344,7 @@ export function DocumentsDataGrid({
           pagination: { paginationModel: { pageSize: 15, page: 0 } },
         }}
         pageSizeOptions={[10, 15, 25, 50]}
-        pinnedColumns={{ left: ['__check__', 'fileName'], right: ['actions'] }}
+        pinnedColumns={pinnedColumns}
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}

@@ -18,6 +18,7 @@ import {
 import { useMemo, useState } from 'react'
 import type { MutableRefObject } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
+import { useResponsivePinnedColumns } from '@/design-system/hooks/useResponsivePinnedColumns'
 import {
   CopilotIcon,
   copilotActiveIconSx,
@@ -373,6 +374,11 @@ export function PoliciesListDataGrid({
     [activeCopilotPolicyId, onPolicyCopilot],
   )
 
+  const pinnedColumns = useResponsivePinnedColumns({
+    left: ['policyNumber'],
+    right: ['actions'],
+  })
+
   return (
     <Box sx={listDataGridContainerSx({ headerFilters: true })}>
       <DataGridPremium
@@ -384,7 +390,7 @@ export function PoliciesListDataGrid({
         initialState={{
           sorting: { sortModel: [{ field: 'effectiveDate', sort: 'desc' }] },
         }}
-        pinnedColumns={{ left: ['policyNumber'], right: ['actions'] }}
+        pinnedColumns={pinnedColumns}
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}
