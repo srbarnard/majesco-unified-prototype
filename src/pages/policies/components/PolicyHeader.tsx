@@ -184,7 +184,7 @@ export function PolicyHeader({
                 lineHeight: 1.3,
                 fontSize: { xs: '0.8125rem', md: '0.875rem' },
                 color: 'text.secondary',
-                mt: 0.25,
+                mt: 0.125,
               }}
               noWrap
             >

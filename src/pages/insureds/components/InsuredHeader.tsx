@@ -137,7 +137,7 @@ export function InsuredHeader({
               </Stack>
             </Stack>
 
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.25, flexWrap: 'wrap', gap: 0.75 }}>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.125, flexWrap: 'wrap', gap: 0.75 }}>
               <Typography
                 variant="subtitle2"
                 component="p"
