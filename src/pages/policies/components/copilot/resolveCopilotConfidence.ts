@@ -55,8 +55,6 @@ function policyTabConfidence(tab: PolicyTab) {
       return 71
     case 'analytics':
       return 68
-    case 'communications':
-      return 64
     default:
       return 74
   }

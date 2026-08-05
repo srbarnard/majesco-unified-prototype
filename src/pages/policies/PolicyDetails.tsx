@@ -1,8 +1,6 @@
 import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
-import { Card } from '@/design-system/components'
 import { PolicyAnalyticsDashboard } from '@/pages/policies/components/PolicyAnalyticsDashboard'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { type DocumentAttachMode, type DocumentAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
@@ -38,7 +36,7 @@ import { policyDetailsMock } from '@/pages/policies/data/mockPolicyDetails'
 import { emptyDocumentsFilters, type DocumentsFilters } from '@/pages/policies/filters/documentsFilterTypes'
 
 function parsePolicyTab(value: string | null): PolicyTab | null {
-  if (value === 'overview' || value === 'documents' || value === 'analytics' || value === 'communications') {
+  if (value === 'overview' || value === 'documents' || value === 'analytics') {
     return value
   }
   return null
@@ -251,13 +249,6 @@ export function PolicyDetails() {
             />
           )}
           {activeTab === 'analytics' && <PolicyAnalyticsDashboard policyId={policyId} />}
-          {activeTab === 'communications' && (
-            <Card title="Communications">
-              <Typography variant="body2" color="text.secondary">
-                Policy communications history will appear here.
-              </Typography>
-            </Card>
-          )}
         </Box>
       </Box>
 
