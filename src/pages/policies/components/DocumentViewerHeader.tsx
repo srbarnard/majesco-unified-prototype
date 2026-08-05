@@ -2,11 +2,9 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
 import Box from '@mui/material/Box'
 import MuiButton from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
-import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import { CopilotIcon } from '@/design-system/components'
-import { getPanelToggleButtonStyles, isDarkMode } from '@/design-system/theme/themeSurfaces'
-import { getFigmaColors } from '@/design-system/tokens/figma-colors'
+import { CopilotIcon, EntityListHomeButton } from '@/design-system/components'
+import { getPanelToggleButtonStyles } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
@@ -33,47 +31,6 @@ function formatReceivedTime(document: PolicyDocument) {
   return `received ${document.relativeTime}`
 }
 
-function DocumentsHomeButton({ onClick }: { onClick: () => void }) {
-  return (
-    <Tooltip title="All documents">
-      <Box
-        component="button"
-        type="button"
-        onClick={onClick}
-        aria-label="Back to documents"
-        sx={(theme) => {
-          const secondary = getFigmaColors(theme.palette.mode).secondary
-
-          return {
-            width: 40,
-            height: 40,
-            borderRadius: 1.5,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            border: 0,
-            p: 0,
-            cursor: 'pointer',
-            bgcolor: isDarkMode(theme) ? theme.figmaPalette.teal[900] : theme.figmaPalette.teal[100],
-            color: secondary.main,
-            transition: 'background-color 0.15s ease',
-            '&:hover': {
-              bgcolor: isDarkMode(theme) ? theme.figmaPalette.teal[800] : theme.figmaPalette.teal[200],
-            },
-            '&:focus-visible': {
-              outline: `2px solid ${theme.palette.primary.main}`,
-              outlineOffset: 2,
-            },
-          }
-        }}
-      >
-        <DescriptionOutlinedIcon sx={{ fontSize: 22 }} />
-      </Box>
-    </Tooltip>
-  )
-}
-
 export function DocumentViewerHeader({
   document,
   entityLabel,
@@ -98,7 +55,11 @@ export function DocumentViewerHeader({
       }}
     >
       <Stack direction="row" spacing={1.25} alignItems="flex-start" sx={{ minWidth: 0, flex: 1 }}>
-        <DocumentsHomeButton onClick={onBack} />
+        <EntityListHomeButton
+          label="All documents"
+          icon={DescriptionOutlinedIcon}
+          onClick={onBack}
+        />
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography variant="h6" sx={{ ...headingSx, fontSize: { xs: '1rem', md: '1.125rem' }, lineHeight: 1.35 }}>
             {document.name}

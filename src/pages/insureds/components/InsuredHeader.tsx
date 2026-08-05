@@ -11,7 +11,7 @@ import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
-import { CopilotIcon, StatusChip } from '@/design-system/components'
+import { CopilotIcon, EntityListHomeButton, StatusChip } from '@/design-system/components'
 import { getPanelToggleButtonStyles, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -89,22 +89,25 @@ export function InsuredHeader({
     <Box sx={{ bgcolor: 'background.paper', width: '100%' }}>
       <Box sx={{ px: contentPx, pt: layoutTokens.policyHeaderTopPadding, pb: 0.75 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-          <Typography
-            variant="subtitle2"
-            component="h1"
-            sx={{
-              fontFamily: figmaFontFamilyStack.heading,
-              fontWeight: 600,
-              lineHeight: 1.35,
-              fontSize: { xs: '1rem', md: '1.0625rem' },
-              color: 'text.primary',
-              minWidth: 0,
-              flex: 1,
-            }}
-            noWrap
-          >
-            {insured.name}
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={1.25} sx={{ minWidth: 0, flex: 1 }}>
+            <EntityListHomeButton to="/insureds" label="All insureds" icon={GroupsOutlinedIcon} />
+            <Typography
+              variant="subtitle2"
+              component="h1"
+              sx={{
+                fontFamily: figmaFontFamilyStack.heading,
+                fontWeight: 600,
+                lineHeight: 1.35,
+                fontSize: { xs: '1rem', md: '1.0625rem' },
+                color: 'text.primary',
+                minWidth: 0,
+                flex: 1,
+              }}
+              noWrap
+            >
+              {insured.name}
+            </Typography>
+          </Stack>
 
           <Stack direction="row" spacing={0.25} alignItems="center" sx={{ flexShrink: 0 }}>
             <Tooltip title="Copy insured name">

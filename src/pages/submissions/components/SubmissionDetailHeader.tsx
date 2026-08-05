@@ -2,6 +2,7 @@ import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
+import MoveToInboxOutlinedIcon from '@mui/icons-material/MoveToInboxOutlined'
 import StarBorderIcon from '@mui/icons-material/StarBorder'
 import StarIcon from '@mui/icons-material/Star'
 import Box from '@mui/material/Box'
@@ -11,7 +12,7 @@ import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
-import { CopilotIcon } from '@/design-system/components'
+import { CopilotIcon, EntityListHomeButton } from '@/design-system/components'
 import { getPanelToggleButtonStyles, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -94,22 +95,29 @@ export function SubmissionDetailHeader({
     <Box sx={{ bgcolor: 'background.paper', width: '100%' }}>
       <Box sx={{ px: contentPx, pt: layoutTokens.policyHeaderTopPadding, pb: 0.75 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-          <Typography
-            variant="subtitle2"
-            component="h1"
-            sx={{
-              fontFamily: figmaFontFamilyStack.heading,
-              fontWeight: 600,
-              lineHeight: 1.35,
-              fontSize: { xs: '1rem', md: '1.0625rem' },
-              color: 'text.primary',
-              minWidth: 0,
-              flex: 1,
-            }}
-            noWrap
-          >
-            {submission.insuredName}
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={1.25} sx={{ minWidth: 0, flex: 1 }}>
+            <EntityListHomeButton
+              to="/submissions"
+              label="All submissions"
+              icon={MoveToInboxOutlinedIcon}
+            />
+            <Typography
+              variant="subtitle2"
+              component="h1"
+              sx={{
+                fontFamily: figmaFontFamilyStack.heading,
+                fontWeight: 600,
+                lineHeight: 1.35,
+                fontSize: { xs: '1rem', md: '1.0625rem' },
+                color: 'text.primary',
+                minWidth: 0,
+                flex: 1,
+              }}
+              noWrap
+            >
+              {submission.insuredName}
+            </Typography>
+          </Stack>
 
           <Stack direction="row" spacing={0.25} alignItems="center" sx={{ flexShrink: 0 }}>
             <Tooltip title="Copy submission number">
