@@ -90,7 +90,7 @@ export function QuoteHeader({
   return (
     <Box sx={{ bgcolor: 'background.paper', width: '100%' }}>
       <Box sx={{ px: contentPx, pt: layoutTokens.policyHeaderTopPadding, pb: 0.75 }}>
-        <Stack direction="row" spacing={1.25} alignItems="flex-start">
+        <Stack direction="row" spacing={1.25} alignItems="center">
           <EntityListHomeButton to="/quotes" label="All quotes" icon={RequestQuoteOutlinedIcon} />
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
@@ -100,7 +100,7 @@ export function QuoteHeader({
                 sx={{
                   fontFamily: figmaFontFamilyStack.heading,
                   fontWeight: 600,
-                  lineHeight: 1.35,
+                  lineHeight: 1.3,
                   fontSize: { xs: '1rem', md: '1.0625rem' },
                   color: 'text.primary',
                   minWidth: 0,
@@ -139,15 +139,15 @@ export function QuoteHeader({
               </Stack>
             </Stack>
 
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.75, flexWrap: 'wrap', gap: 0.75 }}>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.25, flexWrap: 'wrap', gap: 0.75 }}>
               <Typography
                 variant="subtitle2"
                 component="p"
                 sx={{
                   fontFamily: figmaFontFamilyStack.heading,
                   fontWeight: 500,
-                  lineHeight: 1.35,
-                  fontSize: { xs: '0.875rem', md: '0.9375rem' },
+                  lineHeight: 1.3,
+                  fontSize: { xs: '0.8125rem', md: '0.875rem' },
                   color: 'text.secondary',
                 }}
               >
