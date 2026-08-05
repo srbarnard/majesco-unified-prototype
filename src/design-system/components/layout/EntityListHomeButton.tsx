@@ -5,17 +5,36 @@ import type { SystemStyleObject } from '@mui/system'
 import type { SvgIconComponent } from '@mui/icons-material'
 import { Link as RouterLink } from 'react-router'
 import { isDarkMode } from '@/design-system/theme/themeSurfaces'
-import type { FigmaPaletteName } from '@/design-system/tokens/figma-palette'
+import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 
-/** Distinct tile color per product section. */
+/** Distinct tile color per product section — mapped to Figma semantic tokens. */
 export type EntityListHomeTone = 'submissions' | 'quotes' | 'policies' | 'insureds' | 'documents'
 
-const tonePalette: Record<EntityListHomeTone, FigmaPaletteName> = {
-  submissions: 'indigo',
-  quotes: 'purple',
-  policies: 'teal',
-  insureds: 'orange',
-  documents: 'lightBlue',
+type SemanticTone = 'primary' | 'secondary' | 'success' | 'warning' | 'info'
+
+const toneSemantic: Record<EntityListHomeTone, SemanticTone> = {
+  submissions: 'primary',
+  quotes: 'warning',
+  policies: 'secondary',
+  insureds: 'success',
+  documents: 'info',
+}
+
+/** Soft fill scales already used by StatusChip / accent surfaces. */
+function softScale(theme: Theme, semantic: SemanticTone) {
+  const { figmaPalette: palette } = theme
+  switch (semantic) {
+    case 'primary':
+      return palette.blue
+    case 'secondary':
+      return palette.teal
+    case 'success':
+      return palette.green
+    case 'warning':
+      return palette.amber
+    case 'info':
+      return palette.lightBlue
+  }
 }
 
 type EntityListHomeButtonBase = {
@@ -31,7 +50,9 @@ export type EntityListHomeButtonProps = EntityListHomeButtonBase &
   ({ to: string; onClick?: never } | { to?: never; onClick: () => void })
 
 function tileSx(theme: Theme, tone: EntityListHomeTone): SystemStyleObject<Theme> {
-  const scale = theme.figmaPalette[tonePalette[tone]]
+  const semantic = toneSemantic[tone]
+  const tokens = getFigmaColors(theme.palette.mode)[semantic]
+  const soft = softScale(theme, semantic)
   const dark = isDarkMode(theme)
 
   return {
@@ -46,11 +67,11 @@ function tileSx(theme: Theme, tone: EntityListHomeTone): SystemStyleObject<Theme
     border: 0,
     p: 0,
     cursor: 'pointer',
-    bgcolor: dark ? scale[900] : scale[100],
-    color: dark ? scale[200] : scale[800],
+    bgcolor: dark ? soft[900] : soft[100],
+    color: dark ? tokens.light : tokens.dark,
     transition: 'background-color 0.15s ease, color 0.15s ease',
     '&:hover': {
-      bgcolor: dark ? scale[800] : scale[200],
+      bgcolor: dark ? soft[800] : soft[200],
     },
     '&:focus-visible': {
       outline: `2px solid ${theme.palette.primary.main}`,
