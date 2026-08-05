@@ -2,9 +2,13 @@ import Box from '@mui/material/Box'
 import Modal from '@mui/material/Modal'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useTheme } from '@mui/material/styles'
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { useAnimatedPanelPresence } from '@/design-system/hooks/useAnimatedPanelPresence'
 import { useBottomSheetPresence } from '@/design-system/hooks/useBottomSheetPresence'
+import {
+  useBottomSheetBackdropAnimation,
+  useBottomSheetElementAnimation,
+} from '@/design-system/hooks/useBottomSheetElementAnimation'
 import { isDarkMode } from '@/design-system/theme/themeSurfaces'
 import {
   bottomSheetBackdropMotionSx,
@@ -66,12 +70,17 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
   const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)', { noSsr: true })
   const { width, startResize } = useRightPanelWidth(variant)
   const handleClose = onClose ?? (() => {})
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const backdropRef = useRef<HTMLDivElement>(null)
 
   const mobileOpen = open && !isDesktop
   const { mounted: sheetMounted, phase: sheetPhase } = useBottomSheetPresence(
     mobileOpen,
     prefersReducedMotion,
   )
+  useBottomSheetElementAnimation(sheetRef, sheetPhase, sheetMounted, prefersReducedMotion)
+  useBottomSheetBackdropAnimation(backdropRef, sheetPhase, sheetMounted, prefersReducedMotion)
+
   const { mounted, entered } = useAnimatedPanelPresence(open && isDesktop, prefersReducedMotion)
 
   const { shellSx, innerSx } = dockedPanelMotionSx({
@@ -84,14 +93,17 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
   return (
     <>
       {/*
-        Phones / tablets: keyframe bottom sheet.
-        Transitions often never paint a "from" frame on iOS Chrome; keyframes do.
+        Phones / tablets: WAAPI-driven bottom sheet.
+        CSS transitions/keyframes inside MUI Modal often no-op on iOS Chrome.
       */}
       {sheetMounted ? (
         <Modal
           open
           onClose={handleClose}
           hideBackdrop
+          disableAutoFocus
+          disableEnforceFocus
+          disableRestoreFocus
           disableScrollLock={false}
           sx={{
             display: { xs: 'block', lg: 'none' },
@@ -108,6 +120,7 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
             }}
           >
             <Box
+              ref={backdropRef}
               aria-hidden
               onClick={handleClose}
               sx={{
@@ -115,20 +128,15 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
                 inset: 0,
                 bgcolor: (t) =>
                   t.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.55)' : 'rgba(0, 0, 0, 0.32)',
-                ...bottomSheetBackdropMotionSx({
-                  phase: sheetPhase,
-                  reducedMotion: prefersReducedMotion,
-                }),
+                ...bottomSheetBackdropMotionSx({ reducedMotion: prefersReducedMotion }),
               }}
             />
             <Box
+              ref={sheetRef}
               role="dialog"
               aria-modal="true"
               sx={{
-                ...bottomSheetMotionSx({
-                  phase: sheetPhase,
-                  reducedMotion: prefersReducedMotion,
-                }),
+                ...bottomSheetMotionSx({ reducedMotion: prefersReducedMotion }),
                 position: 'relative',
                 zIndex: 1,
                 bgcolor: 'background.paper',

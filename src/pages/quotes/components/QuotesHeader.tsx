@@ -8,6 +8,7 @@ import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { Button, CopilotIcon } from '@/design-system/components'
 import { getPanelToggleButtonStyles, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
+import { listPageCreateButtonSx } from '@/design-system/tokens/listPageHeader'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { QuotesTabs, type QuotesTab } from './QuotesTabs'
@@ -73,8 +74,8 @@ export function QuotesHeader({
   return (
     <Box sx={{ bgcolor: 'background.paper', width: '100%', flexShrink: 0 }}>
       <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        direction="row"
+        alignItems="center"
         justifyContent="space-between"
         spacing={1.5}
         sx={{ px: contentPx, pt: layoutTokens.policyHeaderTopPadding, pb: 1.5 }}
@@ -87,6 +88,7 @@ export function QuotesHeader({
             fontWeight: 600,
             fontSize: { xs: '1.25rem', md: '1.375rem' },
             lineHeight: 1.3,
+            minWidth: 0,
           }}
         >
           Quotes
@@ -95,10 +97,11 @@ export function QuotesHeader({
           variant="contained"
           color="primary"
           startIcon={<AddIcon />}
-          sx={{ flexShrink: 0 }}
+          aria-label="Create quote"
+          sx={listPageCreateButtonSx}
           onClick={() => navigate('/quotes/new')}
         >
-          Create quote
+          <span className="create-btn-label">Create quote</span>
         </Button>
       </Stack>
 
