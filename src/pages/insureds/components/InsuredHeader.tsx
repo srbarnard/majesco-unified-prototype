@@ -88,70 +88,72 @@ export function InsuredHeader({
   return (
     <Box sx={{ bgcolor: 'background.paper', width: '100%' }}>
       <Box sx={{ px: contentPx, pt: layoutTokens.policyHeaderTopPadding, pb: 0.75 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-          <Stack direction="row" alignItems="center" spacing={1.25} sx={{ minWidth: 0, flex: 1 }}>
-            <EntityListHomeButton to="/insureds" label="All insureds" icon={GroupsOutlinedIcon} />
-            <Typography
-              variant="subtitle2"
-              component="h1"
-              sx={{
-                fontFamily: figmaFontFamilyStack.heading,
-                fontWeight: 600,
-                lineHeight: 1.35,
-                fontSize: { xs: '1rem', md: '1.0625rem' },
-                color: 'text.primary',
-                minWidth: 0,
-                flex: 1,
-              }}
-              noWrap
-            >
-              {insured.name}
-            </Typography>
-          </Stack>
+        <Stack direction="row" spacing={1.25} alignItems="flex-start">
+          <EntityListHomeButton to="/insureds" label="All insureds" icon={GroupsOutlinedIcon} />
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+              <Typography
+                variant="subtitle2"
+                component="h1"
+                sx={{
+                  fontFamily: figmaFontFamilyStack.heading,
+                  fontWeight: 600,
+                  lineHeight: 1.35,
+                  fontSize: { xs: '1rem', md: '1.0625rem' },
+                  color: 'text.primary',
+                  minWidth: 0,
+                  flex: 1,
+                }}
+                noWrap
+              >
+                {insured.name}
+              </Typography>
 
-          <Stack direction="row" spacing={0.25} alignItems="center" sx={{ flexShrink: 0 }}>
-            <Tooltip title="Copy insured name">
-              <IconButton size="small" aria-label="Copy insured name" sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
-                <ContentCopyOutlinedIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={starred ? 'Remove from favorites' : 'Add to favorites'}>
-              <IconButton size="small" onClick={onToggleStar} aria-label="Toggle favorite">
-                {starred ? (
-                  <StarIcon sx={{ fontSize: 18, color: 'warning.main' }} />
-                ) : (
-                  <StarBorderIcon sx={{ fontSize: 18 }} />
-                )}
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Edit insured">
-              <IconButton size="small" aria-label="Edit insured" sx={{ display: { xs: 'none', md: 'inline-flex' } }}>
-                <EditOutlinedIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="More actions">
-              <IconButton size="small" aria-label="More actions">
-                <MoreHorizIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        </Stack>
+              <Stack direction="row" spacing={0.25} alignItems="center" sx={{ flexShrink: 0 }}>
+                <Tooltip title="Copy insured name">
+                  <IconButton size="small" aria-label="Copy insured name" sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
+                    <ContentCopyOutlinedIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={starred ? 'Remove from favorites' : 'Add to favorites'}>
+                  <IconButton size="small" onClick={onToggleStar} aria-label="Toggle favorite">
+                    {starred ? (
+                      <StarIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                    ) : (
+                      <StarBorderIcon sx={{ fontSize: 18 }} />
+                    )}
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Edit insured">
+                  <IconButton size="small" aria-label="Edit insured" sx={{ display: { xs: 'none', md: 'inline-flex' } }}>
+                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="More actions">
+                  <IconButton size="small" aria-label="More actions">
+                    <MoreHorizIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            </Stack>
 
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.75, flexWrap: 'wrap', gap: 0.75 }}>
-          <Typography
-            variant="subtitle2"
-            component="p"
-            sx={{
-              fontFamily: figmaFontFamilyStack.heading,
-              fontWeight: 500,
-              lineHeight: 1.35,
-              fontSize: { xs: '0.875rem', md: '0.9375rem' },
-              color: 'text.secondary',
-            }}
-          >
-            Insured · {insured.policyCount} {insured.policyCount === 1 ? 'policy' : 'policies'}
-          </Typography>
-          <StatusChip label={insured.status} status={insuredStatusVariant(insured.status)} />
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.75, flexWrap: 'wrap', gap: 0.75 }}>
+              <Typography
+                variant="subtitle2"
+                component="p"
+                sx={{
+                  fontFamily: figmaFontFamilyStack.heading,
+                  fontWeight: 500,
+                  lineHeight: 1.35,
+                  fontSize: { xs: '0.875rem', md: '0.9375rem' },
+                  color: 'text.secondary',
+                }}
+              >
+                Insured · {insured.policyCount} {insured.policyCount === 1 ? 'policy' : 'policies'}
+              </Typography>
+              <StatusChip label={insured.status} status={insuredStatusVariant(insured.status)} />
+            </Stack>
+          </Box>
         </Stack>
       </Box>
 

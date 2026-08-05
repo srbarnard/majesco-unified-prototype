@@ -41,9 +41,6 @@ export function SubmissionStatusChip({ status, onClick, selected = false }: Subm
       : undefined,
     sx: {
       cursor: interactive ? 'pointer' : undefined,
-      outline: selected ? '2px solid' : undefined,
-      outlineColor: selected ? 'primary.main' : undefined,
-      outlineOffset: selected ? 1 : undefined,
       ...(interactive
         ? {
             position: 'relative' as const,

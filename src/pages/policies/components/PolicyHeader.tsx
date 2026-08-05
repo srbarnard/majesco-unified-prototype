@@ -146,50 +146,52 @@ export function PolicyHeader({
   return (
     <Box sx={{ bgcolor: 'background.paper', width: '100%' }}>
       <Box sx={{ px: contentPx, pt: layoutTokens.policyHeaderTopPadding, pb: 0.75 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-          <Stack direction="row" alignItems="center" spacing={1.25} sx={{ minWidth: 0, flex: 1 }}>
-            <EntityListHomeButton to="/policies" label="All policies" icon={PolicyOutlinedIcon} />
+        <Stack direction="row" spacing={1.25} alignItems="flex-start">
+          <EntityListHomeButton to="/policies" label="All policies" icon={PolicyOutlinedIcon} />
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+              <Typography
+                variant="subtitle2"
+                component="h1"
+                sx={{
+                  fontFamily: figmaFontFamilyStack.heading,
+                  fontWeight: 600,
+                  lineHeight: 1.35,
+                  fontSize: { xs: '1rem', md: '1.0625rem' },
+                  color: 'text.primary',
+                  minWidth: 0,
+                  flex: 1,
+                }}
+                noWrap
+              >
+                {companyName}
+              </Typography>
+
+              <PolicyHeaderActions
+                starred={starred}
+                onToggleStar={onToggleStar}
+                emergency={emergency}
+                onToggleEmergency={onToggleEmergency}
+              />
+            </Stack>
+
             <Typography
               variant="subtitle2"
-              component="h1"
+              component="p"
               sx={{
                 fontFamily: figmaFontFamilyStack.heading,
-                fontWeight: 600,
+                fontWeight: 500,
                 lineHeight: 1.35,
-                fontSize: { xs: '1rem', md: '1.0625rem' },
-                color: 'text.primary',
-                minWidth: 0,
-                flex: 1,
+                fontSize: { xs: '0.875rem', md: '0.9375rem' },
+                color: 'text.secondary',
+                mt: 0.5,
               }}
               noWrap
             >
-              {companyName}
+              Policy: #{policyNumber}
             </Typography>
-          </Stack>
-
-          <PolicyHeaderActions
-            starred={starred}
-            onToggleStar={onToggleStar}
-            emergency={emergency}
-            onToggleEmergency={onToggleEmergency}
-          />
+          </Box>
         </Stack>
-
-        <Typography
-          variant="subtitle2"
-          component="p"
-          sx={{
-            fontFamily: figmaFontFamilyStack.heading,
-            fontWeight: 500,
-            lineHeight: 1.35,
-            fontSize: { xs: '0.875rem', md: '0.9375rem' },
-            color: 'text.secondary',
-            mt: 0.5,
-          }}
-          noWrap
-        >
-          Policy: #{policyNumber}
-        </Typography>
       </Box>
 
       <Box sx={sectionTabRowBorderSx}>
