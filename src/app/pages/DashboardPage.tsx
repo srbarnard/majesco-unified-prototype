@@ -46,6 +46,7 @@ function PanelToggleButton({
       disableRipple
       startIcon={icon}
       onClick={onClick}
+      aria-label={label}
       sx={(theme) => ({
         ...getPanelToggleButtonStyles(theme, active),
         fontFamily: figmaFontFamilyStack.body,
@@ -54,9 +55,12 @@ function PanelToggleButton({
           overflow: 'visible',
           color: 'inherit',
         },
+        '& .panel-toggle-label': {
+          display: { xs: 'none', sm: 'inline' },
+        },
       })}
     >
-      {label}
+      <span className="panel-toggle-label">{label}</span>
     </MuiButton>
   )
 }
