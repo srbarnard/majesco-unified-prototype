@@ -265,3 +265,42 @@ export function bottomSheetPaperSx(): SxProps<Theme> {
     backfaceVisibility: 'hidden',
   }
 }
+
+/**
+ * Mobile bottom sheet motion — same CSS transform approach as docked panels.
+ * Avoids MUI Slide, which often skips transitions on iOS Chrome/WebKit.
+ */
+export function bottomSheetMotionSx(options: {
+  entered: boolean
+  reducedMotion?: boolean
+}): SxProps<Theme> {
+  const { entered, reducedMotion = false } = options
+  const { enterMs, exitMs, enterEasing, exitEasing, panelFadeFrom } = drawerMotion
+  const durationMs = entered ? enterMs : exitMs
+  const easing = entered ? enterEasing : exitEasing
+  const opacityMs = Math.round(durationMs * 0.9)
+  const paper = bottomSheetPaperSx()
+
+  if (reducedMotion) {
+    return {
+      ...paper,
+      width: '100%',
+      maxWidth: '100%',
+      outline: 'none',
+      transform: 'none',
+      opacity: 1,
+    }
+  }
+
+  return {
+    ...paper,
+    width: '100%',
+    maxWidth: '100%',
+    outline: 'none',
+    // translate3d keeps the compositor path active on iOS WebKit.
+    transform: entered ? 'translate3d(0, 0, 0)' : 'translate3d(0, 100%, 0)',
+    opacity: entered ? 1 : panelFadeFrom,
+    transition: `transform ${durationMs}ms ${easing}, opacity ${opacityMs}ms ${easing}`,
+    WebkitFontSmoothing: 'antialiased',
+  }
+}

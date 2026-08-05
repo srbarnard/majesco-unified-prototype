@@ -1,16 +1,15 @@
 import Box from '@mui/material/Box'
-import Drawer from '@mui/material/Drawer'
-import Slide from '@mui/material/Slide'
+import Modal from '@mui/material/Modal'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useTheme } from '@mui/material/styles'
 import type { ReactNode } from 'react'
 import { useAnimatedPanelPresence } from '@/design-system/hooks/useAnimatedPanelPresence'
 import { isDarkMode } from '@/design-system/theme/themeSurfaces'
 import {
-  bottomSheetPaperSx,
+  backdropTransitionDuration,
+  bottomSheetMotionSx,
   dockedPanelMotionSx,
-  drawerTransitionDuration,
-  getDrawerTransitionSlotProps,
+  drawerMotion,
 } from '@/design-system/tokens/motion'
 import {
   useRightPanelWidth,
@@ -66,8 +65,14 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
   const isDesktop = useIsDesktopLayout()
   const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)', { noSsr: true })
   const { width, startResize } = useRightPanelWidth(variant)
-  const { mounted, entered } = useAnimatedPanelPresence(open && isDesktop, prefersReducedMotion)
   const handleClose = onClose ?? (() => {})
+
+  const mobileOpen = open && !isDesktop
+  const { mounted: sheetMounted, entered: sheetEntered } = useAnimatedPanelPresence(
+    mobileOpen,
+    prefersReducedMotion,
+  )
+  const { mounted, entered } = useAnimatedPanelPresence(open && isDesktop, prefersReducedMotion)
 
   const { shellSx, innerSx } = dockedPanelMotionSx({
     side: 'right',
@@ -76,43 +81,72 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
     reducedMotion: prefersReducedMotion,
   })
 
+  const backdropMs = sheetEntered
+    ? backdropTransitionDuration.enter
+    : backdropTransitionDuration.exit
+  const backdropEasing = sheetEntered ? drawerMotion.enterEasing : drawerMotion.exitEasing
+
   return (
     <>
-      {/* Phones / tablets: bottom sheet with the same Slide enter/exit as side drawers. */}
-      <Drawer
-        anchor="bottom"
-        variant="temporary"
-        open={open && !isDesktop}
-        slots={{ transition: Slide }}
-        onClose={handleClose}
-        transitionDuration={prefersReducedMotion ? 0 : drawerTransitionDuration}
-        slotProps={{
-          ...getDrawerTransitionSlotProps(prefersReducedMotion, { direction: 'up' }),
-          paper: {
-            sx: bottomSheetPaperSx(),
-          },
-        }}
-        ModalProps={{
-          keepMounted: true,
-        }}
-        sx={{
-          display: { xs: 'block', lg: 'none' },
-          zIndex: theme.zIndex.drawer + 1,
-        }}
-      >
-        <Box
+      {/*
+        Phones / tablets: CSS transform bottom sheet (not MUI Slide).
+        iOS Chrome/WebKit often skips Drawer Slide transitions; this matches docked panel motion.
+      */}
+      {sheetMounted ? (
+        <Modal
+          open
+          onClose={handleClose}
+          hideBackdrop
+          disableScrollLock={false}
           sx={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
+            display: { xs: 'block', lg: 'none' },
+            zIndex: theme.zIndex.drawer + 1,
           }}
         >
-          <BottomSheetDragHandle />
-          <PanelContent>{children}</PanelContent>
-        </Box>
-      </Drawer>
+          <Box
+            sx={{
+              position: 'fixed',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'flex-end',
+              outline: 'none',
+            }}
+          >
+            <Box
+              aria-hidden
+              onClick={handleClose}
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                bgcolor: (t) =>
+                  t.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.55)' : 'rgba(0, 0, 0, 0.32)',
+                opacity: prefersReducedMotion || sheetEntered ? 1 : 0,
+                transition: prefersReducedMotion
+                  ? undefined
+                  : `opacity ${backdropMs}ms ${backdropEasing}`,
+              }}
+            />
+            <Box
+              role="dialog"
+              aria-modal="true"
+              sx={{
+                ...bottomSheetMotionSx({
+                  entered: sheetEntered,
+                  reducedMotion: prefersReducedMotion,
+                }),
+                position: 'relative',
+                zIndex: 1,
+                bgcolor: 'background.paper',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <BottomSheetDragHandle />
+              <PanelContent>{children}</PanelContent>
+            </Box>
+          </Box>
+        </Modal>
+      ) : null}
 
       {/* Desktop: docked right panel. Hidden below lg even if JS mismatch. */}
       {mounted ? (
