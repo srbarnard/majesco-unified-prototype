@@ -119,6 +119,7 @@ export function PoliciesListHeader({
                   icon={<CopilotIcon size={18} active={copilotOpen} />}
                   active={copilotOpen}
                   onClick={onToggleCopilot}
+                  hideLabelOnMobile
                 />
               </>
             )}

@@ -146,6 +146,7 @@ export function SubmissionsHeader({
                   icon={<CopilotIcon size={18} active={copilotOpen} />}
                   active={copilotOpen}
                   onClick={onToggleCopilot}
+                  hideLabelOnMobile
                 />
               </>
             )}

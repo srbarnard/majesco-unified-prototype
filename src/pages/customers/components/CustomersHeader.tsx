@@ -121,6 +121,7 @@ export function CustomersHeader({
               icon={<CopilotIcon size={18} active={copilotOpen} />}
               active={copilotOpen}
               onClick={onToggleCopilot}
+              hideLabelOnMobile
             />
           </Stack>
         </Stack>

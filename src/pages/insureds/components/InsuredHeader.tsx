@@ -175,6 +175,7 @@ export function InsuredHeader({
               icon={<CopilotIcon size={18} active={activeRightPanel === 'copilot'} />}
               active={activeRightPanel === 'copilot'}
               onClick={() => onToggleRightPanel('copilot')}
+              hideLabelOnMobile
             />
           </Stack>
         </Stack>

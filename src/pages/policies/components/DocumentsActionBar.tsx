@@ -7,10 +7,9 @@ import Box from '@mui/material/Box'
 import Divider from '@mui/material/Divider'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
-import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useState } from 'react'
-import { Button, SearchField } from '@/design-system/components'
+import { Button, ExpandableSearchField } from '@/design-system/components'
 import { documentAttachMenuItems, type DocumentAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
 
 type DocumentsActionBarProps = {
@@ -44,74 +43,68 @@ export function DocumentsActionBar({
 
   return (
     <Box>
-      <Stack
-        direction={{ xs: 'column', lg: 'row' }}
-        spacing={1}
-        alignItems={{ xs: 'stretch', lg: 'center' }}
-        justifyContent="space-between"
-      >
-        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap alignItems="center">
-          <Button
-            size="small"
-            color="primary"
-            startIcon={<AddIcon />}
-            sx={{ textTransform: 'none', fontWeight: 600 }}
-          >
-            Add Document
-          </Button>
-          <Button
-            size="small"
-            color="inherit"
-            startIcon={<AttachFileOutlinedIcon />}
-            endIcon={<KeyboardArrowDownIcon />}
-            disabled={disableBulkActions}
-            onClick={(event) => setAttachMenuAnchor(event.currentTarget)}
-            sx={{ color: disableBulkActions ? 'text.disabled' : 'text.primary', textTransform: 'none' }}
-          >
-            Attach To
-          </Button>
-          <Menu
-            anchorEl={attachMenuAnchor}
-            open={Boolean(attachMenuAnchor)}
-            onClose={() => setAttachMenuAnchor(null)}
-          >
-            {documentAttachMenuItems.map((item) => (
-              <MenuItem key={item.target} onClick={() => handleAttachSelect(item.target)}>
-                {item.label}
-              </MenuItem>
-            ))}
-          </Menu>
-          <Divider orientation="vertical" flexItem sx={{ mx: 0.5, display: { xs: 'none', sm: 'block' } }} />
-          <Button
-            size="small"
-            color="inherit"
-            startIcon={<FileDownloadOutlinedIcon />}
-            disabled={disableBulkActions}
-            sx={{ color: disableBulkActions ? 'text.disabled' : 'text.primary', textTransform: 'none' }}
-          >
-            Export
-          </Button>
-          <Button
-            size="small"
-            color="inherit"
-            startIcon={<DeleteOutlineIcon />}
-            disabled={disableBulkActions}
-            onClick={onRemoveSelected}
-            sx={{ color: disableBulkActions ? 'text.disabled' : 'text.primary', textTransform: 'none' }}
-          >
-            Remove
-          </Button>
-        </Stack>
-        <SearchField
-          placeholder="Search documents"
-          value={searchQuery}
-          onSearchChange={onSearchChange}
-          enableVoice
-          sx={{
-            width: { xs: '100%', lg: 280 },
-          }}
-        />
-      </Stack>
+      <ExpandableSearchField
+        placeholder="Search documents"
+        value={searchQuery}
+        onSearchChange={onSearchChange}
+        enableVoice
+        expandFrom="lg"
+        desktopWidth={{ lg: 280 }}
+        startContent={
+          <>
+            <Button
+              size="small"
+              color="primary"
+              startIcon={<AddIcon />}
+              sx={{ textTransform: 'none', fontWeight: 600 }}
+            >
+              Add Document
+            </Button>
+            <Button
+              size="small"
+              color="inherit"
+              startIcon={<AttachFileOutlinedIcon />}
+              endIcon={<KeyboardArrowDownIcon />}
+              disabled={disableBulkActions}
+              onClick={(event) => setAttachMenuAnchor(event.currentTarget)}
+              sx={{ color: disableBulkActions ? 'text.disabled' : 'text.primary', textTransform: 'none' }}
+            >
+              Attach To
+            </Button>
+            <Menu
+              anchorEl={attachMenuAnchor}
+              open={Boolean(attachMenuAnchor)}
+              onClose={() => setAttachMenuAnchor(null)}
+            >
+              {documentAttachMenuItems.map((item) => (
+                <MenuItem key={item.target} onClick={() => handleAttachSelect(item.target)}>
+                  {item.label}
+                </MenuItem>
+              ))}
+            </Menu>
+            <Divider orientation="vertical" flexItem sx={{ mx: 0.5, display: { xs: 'none', sm: 'block' } }} />
+            <Button
+              size="small"
+              color="inherit"
+              startIcon={<FileDownloadOutlinedIcon />}
+              disabled={disableBulkActions}
+              sx={{ color: disableBulkActions ? 'text.disabled' : 'text.primary', textTransform: 'none' }}
+            >
+              Export
+            </Button>
+            <Button
+              size="small"
+              color="inherit"
+              startIcon={<DeleteOutlineIcon />}
+              disabled={disableBulkActions}
+              onClick={onRemoveSelected}
+              sx={{ color: disableBulkActions ? 'text.disabled' : 'text.primary', textTransform: 'none' }}
+            >
+              Remove
+            </Button>
+          </>
+        }
+      />
       <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
         {filterCount > 0 ? `${filterCount} filter${filterCount === 1 ? '' : 's'}` : '0 filters'}
         {typeof visibleCount === 'number' && typeof totalCount === 'number'
