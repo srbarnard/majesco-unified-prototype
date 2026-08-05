@@ -82,12 +82,14 @@ export function TasksActionBar({ apiRef, searchQuery, onSearchChange, hasSelecti
           >
             Mark as complete
           </Button>
-          <ListDataGridToolbarActions
-            apiRef={apiRef}
-            exportFileName="tasks"
-            exportAriaLabel="Download tasks"
-          />
         </>
+      }
+      endContent={
+        <ListDataGridToolbarActions
+          apiRef={apiRef}
+          exportFileName="tasks"
+          exportAriaLabel="Download tasks"
+        />
       }
     />
   )

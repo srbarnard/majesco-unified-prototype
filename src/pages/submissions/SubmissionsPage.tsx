@@ -385,6 +385,7 @@ export function SubmissionsPage() {
             >
               <Box sx={{ flexShrink: 0 }}>
                 <SubmissionsToolbar
+                  apiRef={apiRef}
                   searchQuery={searchQuery}
                   onSearchChange={setSearchQuery}
                   selectionCount={rowSelectionModel.length}

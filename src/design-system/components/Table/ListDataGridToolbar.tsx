@@ -26,7 +26,7 @@ export function ListDataGridToolbar({
       value={searchQuery}
       onSearchChange={onSearchChange}
       desktopWidth={{ sm: 220, lg: 280 }}
-      startContent={
+      endContent={
         <ListDataGridToolbarActions
           apiRef={apiRef}
           exportFileName={exportFileName}

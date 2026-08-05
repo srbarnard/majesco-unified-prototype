@@ -1,8 +1,11 @@
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
-import { Button, ExpandableSearchField } from '@/design-system/components'
+import type { GridApi } from '@mui/x-data-grid-premium'
+import type { MutableRefObject } from 'react'
+import { Button, ExpandableSearchField, ListDataGridToolbarActions } from '@/design-system/components'
 
 type SubmissionsToolbarProps = {
+  apiRef: MutableRefObject<GridApi>
   searchQuery: string
   onSearchChange: (query: string) => void
   selectionCount: number
@@ -11,6 +14,7 @@ type SubmissionsToolbarProps = {
 }
 
 export function SubmissionsToolbar({
+  apiRef,
   searchQuery,
   onSearchChange,
   selectionCount,
@@ -48,6 +52,13 @@ export function SubmissionsToolbar({
             Discard
           </Button>
         </>
+      }
+      endContent={
+        <ListDataGridToolbarActions
+          apiRef={apiRef}
+          exportFileName="submissions"
+          exportAriaLabel="Download submissions"
+        />
       }
     />
   )

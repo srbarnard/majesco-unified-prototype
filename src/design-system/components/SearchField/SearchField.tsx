@@ -99,7 +99,7 @@ export function SearchField({
             },
           },
         }}
-        sx={{ minWidth: 220, ...sx }}
+        sx={{ minWidth: fullWidth ? 0 : 220, width: fullWidth ? '100%' : undefined, ...sx }}
         {...props}
       />
       {isListening && enableVoice && (

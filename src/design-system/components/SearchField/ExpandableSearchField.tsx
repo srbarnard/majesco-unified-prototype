@@ -6,8 +6,13 @@ import { useState, type ReactNode } from 'react'
 import { SearchField, type SearchFieldProps } from './SearchField'
 
 type ExpandableSearchFieldProps = SearchFieldProps & {
-  /** Content to the left of the search control (export, bulk actions, etc.). */
+  /** Content on the left (bulk actions, etc.). */
   startContent?: ReactNode
+  /**
+   * Content grouped with search on the right (columns, export).
+   * Rendered before the search field, flush to the trailing edge.
+   */
+  endContent?: ReactNode
   /** Show the full field from this breakpoint up; icon-only below. Default `sm`. */
   expandFrom?: 'sm' | 'md' | 'lg'
   desktopWidth?: number | { sm?: number; md?: number; lg?: number }
@@ -16,16 +21,18 @@ type ExpandableSearchFieldProps = SearchFieldProps & {
 /**
  * List/toolbar search that matches global search UX: magnifying-glass toggle on
  * narrow viewports (expands a full-width field below), full input on larger screens.
+ * Columns/export sit with search on the right (DataGrid Premium-style).
  */
 export function ExpandableSearchField({
   startContent,
+  endContent,
   expandFrom = 'sm',
   desktopWidth = { sm: 220, lg: 280 },
   sx,
   ...searchProps
 }: ExpandableSearchFieldProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const hiddenBelow = { xs: 'none', [expandFrom]: 'block' } as const
+  const hiddenBelow = { xs: 'none', [expandFrom]: 'flex' } as const
   const shownBelow = { xs: 'inline-flex', [expandFrom]: 'none' } as const
   const collapseBelow = { xs: 'block', [expandFrom]: 'none' } as const
 
@@ -56,7 +63,14 @@ export function ExpandableSearchField({
         ) : (
           <span />
         )}
-        <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={0.5} sx={{ flexShrink: 0 }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="flex-end"
+          spacing={0.5}
+          sx={{ ml: 'auto', flexShrink: 0 }}
+        >
+          {endContent}
           <IconButton
             size="small"
             aria-label={mobileOpen ? 'Close search' : 'Open search'}
@@ -66,28 +80,40 @@ export function ExpandableSearchField({
           >
             <SearchIcon fontSize="small" />
           </IconButton>
-          <SearchField
-            {...searchProps}
+          <Stack
             sx={{
               display: hiddenBelow,
               minWidth: 0,
               ...widthSx,
+            }}
+          >
+            <SearchField
+              {...searchProps}
+              fullWidth
+              sx={{
+                minWidth: 0,
+                width: '100%',
+                ...sx,
+              }}
+            />
+          </Stack>
+        </Stack>
+      </Stack>
+      <Collapse in={mobileOpen} unmountOnExit sx={{ display: collapseBelow, width: '100%' }}>
+        <Stack direction="row" alignItems="center" spacing={0.5} sx={{ width: '100%' }}>
+          {endContent}
+          <SearchField
+            {...searchProps}
+            fullWidth
+            autoFocus={mobileOpen}
+            sx={{
+              width: '100%',
+              minWidth: 0,
+              flex: 1,
               ...sx,
             }}
           />
         </Stack>
-      </Stack>
-      <Collapse in={mobileOpen} unmountOnExit sx={{ display: collapseBelow, width: '100%' }}>
-        <SearchField
-          {...searchProps}
-          fullWidth
-          autoFocus={mobileOpen}
-          sx={{
-            width: '100%',
-            minWidth: 0,
-            ...sx,
-          }}
-        />
       </Collapse>
     </Stack>
   )
