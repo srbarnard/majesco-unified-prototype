@@ -5,8 +5,7 @@ import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { Button } from '@/design-system/components'
-import { accentSubtle, accentSubtleHover } from '@/design-system/theme/themeSurfaces'
+import { CopilotQuickActions } from '@/design-system/components'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { copilotSectionHeadingSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
@@ -20,26 +19,6 @@ const bodySx = {
 const headingSx = {
   fontFamily: figmaFontFamilyStack.heading,
   fontWeight: 600,
-} as const
-
-const suggestedActionChipSx = {
-  textTransform: 'none',
-  fontFamily: figmaFontFamilyStack.body,
-  fontWeight: 400,
-  fontSize: '0.75rem',
-  lineHeight: 1.3,
-  borderRadius: '30px',
-  border: 'none',
-  boxShadow: 'none',
-  color: 'primary.main',
-  bgcolor: (theme: Parameters<typeof accentSubtle>[0]) => accentSubtle(theme),
-  px: 1.25,
-  py: 0.5,
-  minHeight: 'auto',
-  '&:hover': {
-    bgcolor: (theme: Parameters<typeof accentSubtle>[0]) => accentSubtleHover(theme),
-    boxShadow: 'none',
-  },
 } as const
 
 type TaskRecommendationChatProps = {
@@ -126,18 +105,7 @@ export function TaskRecommendationChat({
         </Typography>
       </Box>
 
-      <Box>
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1 }}>
-          Suggested actions
-        </Typography>
-        <Stack direction="row" flexWrap="wrap" gap={1}>
-          {content.actions.map((action) => (
-            <Button key={action} size="small" variant="text" disableRipple sx={suggestedActionChipSx}>
-              {action}
-            </Button>
-          ))}
-        </Stack>
-      </Box>
+      <CopilotQuickActions actions={content.actions} label="Suggested actions" />
     </Stack>
   )
 }
