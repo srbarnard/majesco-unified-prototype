@@ -1,5 +1,4 @@
 import Box from '@mui/material/Box'
-import Stack from '@mui/material/Stack'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -50,15 +49,10 @@ const bodyCellSx = {
 
 export function SubmissionsQueuePerformanceTable({ rows }: SubmissionsQueuePerformanceTableProps) {
   return (
-    <TableContainer
-      sx={(theme) => ({
-        bgcolor: surfaceMuted(theme),
-        ...tableInteractionSx,
-      })}
-    >
-      <Table size="small" aria-label="Submission queue performance">
+    <TableContainer sx={{ overflowX: 'auto' }}>
+      <Table size="small" sx={tableInteractionSx} aria-label="Submission queue performance">
         <TableHead>
-          <TableRow>
+          <TableRow sx={{ bgcolor: (theme) => surfaceMuted(theme) }}>
             <TableCell sx={headCellSx}>Queue / assignee</TableCell>
             <TableCell align="right" sx={headCellSx}>
               Open
@@ -79,9 +73,9 @@ export function SubmissionsQueuePerformanceTable({ rows }: SubmissionsQueuePerfo
         </TableHead>
         <TableBody>
           {rows.map((row) => (
-            <TableRow key={row.id} hover>
+            <TableRow key={row.id} hover={false}>
               <TableCell sx={bodyCellSx}>
-                <Typography component="span" sx={{ ...analyticsBodySx, fontWeight: 600 }}>
+                <Typography variant="body2" sx={{ ...analyticsBodySx, fontWeight: 500 }}>
                   {row.queue}
                 </Typography>
               </TableCell>
@@ -91,28 +85,26 @@ export function SubmissionsQueuePerformanceTable({ rows }: SubmissionsQueuePerfo
               <TableCell align="right" sx={bodyCellSx}>
                 {row.blocked}
               </TableCell>
-              <TableCell align="right" sx={bodyCellSx}>
-                <Stack direction="row" justifyContent="flex-end">
-                  <StatusChip label={`${row.readyRate}%`} status={readyRateVariant(row.readyRate)} size="small" />
-                </Stack>
+              <TableCell sx={{ ...bodyCellSx, textAlign: 'right' }}>
+                <Box sx={{ display: 'inline-flex' }}>
+                  <StatusChip label={`${row.readyRate}%`} status={readyRateVariant(row.readyRate)} />
+                </Box>
               </TableCell>
               <TableCell align="right" sx={bodyCellSx}>
                 {row.avgDaysToReady.toFixed(1)}
               </TableCell>
-              <TableCell align="right" sx={bodyCellSx}>
-                <Stack direction="row" justifyContent="flex-end">
-                  <StatusChip label={String(row.pastSla)} status={slaVariant(row.pastSla)} size="small" />
-                </Stack>
+              <TableCell sx={{ ...bodyCellSx, textAlign: 'right' }}>
+                <Box sx={{ display: 'inline-flex' }}>
+                  <StatusChip
+                    label={row.pastSla === 0 ? 'None' : String(row.pastSla)}
+                    status={slaVariant(row.pastSla)}
+                  />
+                </Box>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      <Box sx={{ px: 2, py: 1.25 }}>
-        <Typography variant="caption" color="text.secondary" sx={analyticsBodySx}>
-          Past SLA = intakes still open more than 48 hours after receipt without Ready status.
-        </Typography>
-      </Box>
     </TableContainer>
   )
 }

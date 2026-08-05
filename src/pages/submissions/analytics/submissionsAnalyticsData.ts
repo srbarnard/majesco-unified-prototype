@@ -120,11 +120,11 @@ export const submissionsAnalyticsKpis: AnalyticsKpiMetric[] = [
 ]
 
 export const submissionsIntakeFunnel: AnalyticsFunnelStage[] = [
-  { id: 'received', label: 'Received', value: 186, color: STATUS_COLORS.queue },
-  { id: 'triaged', label: 'Triaged', value: 162, color: STATUS_COLORS.teal },
-  { id: 'issues-cleared', label: 'Issues cleared', value: 118, color: STATUS_COLORS.blue },
-  { id: 'ready', label: 'Ready for quote', value: 96, color: STATUS_COLORS.ready },
-  { id: 'quoted', label: 'Quoted', value: 71, color: STATUS_COLORS.purple },
+  { id: 'received', label: 'Received', value: 186, conversionLabel: '100%' },
+  { id: 'triaged', label: 'Triaged', value: 162, conversionLabel: '87%' },
+  { id: 'issues-cleared', label: 'Issues cleared', value: 118, conversionLabel: '63%' },
+  { id: 'ready', label: 'Ready for quote', value: 96, conversionLabel: '52%' },
+  { id: 'quoted', label: 'Quoted', value: 71, conversionLabel: '38%' },
 ]
 
 export const submissionsStatusBreakdown: AnalyticsDonutSegment[] = [
@@ -155,10 +155,10 @@ export const submissionsReadyRateTrend: AnalyticsTimeSeriesPoint[] = [
 ]
 
 export const submissionsVsReady: AnalyticsComboPoint[] = [
-  { label: 'Wk 1', bar: 28, line: 54 },
-  { label: 'Wk 2', bar: 31, line: 56 },
-  { label: 'Wk 3', bar: 27, line: 59 },
-  { label: 'Wk 4', bar: 38, line: 61 },
+  { label: 'Wk 1', created: 28, completionRate: 54 },
+  { label: 'Wk 2', created: 31, completionRate: 56 },
+  { label: 'Wk 3', created: 27, completionRate: 59 },
+  { label: 'Wk 4', created: 38, completionRate: 61 },
 ]
 
 export const submissionsAgingBottlenecks: TasksAgingBucket[] = [
