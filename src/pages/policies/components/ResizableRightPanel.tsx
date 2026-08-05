@@ -4,12 +4,12 @@ import useMediaQuery from '@mui/material/useMediaQuery'
 import { useTheme } from '@mui/material/styles'
 import type { ReactNode } from 'react'
 import { useAnimatedPanelPresence } from '@/design-system/hooks/useAnimatedPanelPresence'
+import { useBottomSheetPresence } from '@/design-system/hooks/useBottomSheetPresence'
 import { isDarkMode } from '@/design-system/theme/themeSurfaces'
 import {
-  backdropTransitionDuration,
+  bottomSheetBackdropMotionSx,
   bottomSheetMotionSx,
   dockedPanelMotionSx,
-  drawerMotion,
 } from '@/design-system/tokens/motion'
 import {
   useRightPanelWidth,
@@ -68,7 +68,7 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
   const handleClose = onClose ?? (() => {})
 
   const mobileOpen = open && !isDesktop
-  const { mounted: sheetMounted, entered: sheetEntered } = useAnimatedPanelPresence(
+  const { mounted: sheetMounted, phase: sheetPhase } = useBottomSheetPresence(
     mobileOpen,
     prefersReducedMotion,
   )
@@ -81,16 +81,11 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
     reducedMotion: prefersReducedMotion,
   })
 
-  const backdropMs = sheetEntered
-    ? backdropTransitionDuration.enter
-    : backdropTransitionDuration.exit
-  const backdropEasing = sheetEntered ? drawerMotion.enterEasing : drawerMotion.exitEasing
-
   return (
     <>
       {/*
-        Phones / tablets: CSS transform bottom sheet (not MUI Slide).
-        iOS Chrome/WebKit often skips Drawer Slide transitions; this matches docked panel motion.
+        Phones / tablets: keyframe bottom sheet.
+        Transitions often never paint a "from" frame on iOS Chrome; keyframes do.
       */}
       {sheetMounted ? (
         <Modal
@@ -120,10 +115,10 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
                 inset: 0,
                 bgcolor: (t) =>
                   t.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.55)' : 'rgba(0, 0, 0, 0.32)',
-                opacity: prefersReducedMotion || sheetEntered ? 1 : 0,
-                transition: prefersReducedMotion
-                  ? undefined
-                  : `opacity ${backdropMs}ms ${backdropEasing}`,
+                ...bottomSheetBackdropMotionSx({
+                  phase: sheetPhase,
+                  reducedMotion: prefersReducedMotion,
+                }),
               }}
             />
             <Box
@@ -131,7 +126,7 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
               aria-modal="true"
               sx={{
                 ...bottomSheetMotionSx({
-                  entered: sheetEntered,
+                  phase: sheetPhase,
                   reducedMotion: prefersReducedMotion,
                 }),
                 position: 'relative',

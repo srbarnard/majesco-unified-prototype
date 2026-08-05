@@ -261,24 +261,22 @@ export function bottomSheetPaperSx(): SxProps<Theme> {
     borderTopRightRadius: bottomSheetTopRadiusPx,
     overflow: 'hidden',
     boxShadow: (theme) => theme.shadows[16],
-    willChange: 'transform',
+    WebkitBackfaceVisibility: 'hidden',
     backfaceVisibility: 'hidden',
   }
 }
 
 /**
- * Mobile bottom sheet motion — same CSS transform approach as docked panels.
- * Avoids MUI Slide, which often skips transitions on iOS Chrome/WebKit.
+ * Mobile bottom sheet motion via CSS keyframes (not transitions).
+ * iOS Chrome/WebKit often skips transform transitions when the "from" frame
+ * never paints; keyframes always interpolate from their `from` keyframe.
  */
 export function bottomSheetMotionSx(options: {
-  entered: boolean
+  phase: 'enter' | 'exit'
   reducedMotion?: boolean
 }): SxProps<Theme> {
-  const { entered, reducedMotion = false } = options
+  const { phase, reducedMotion = false } = options
   const { enterMs, exitMs, enterEasing, exitEasing, panelFadeFrom } = drawerMotion
-  const durationMs = entered ? enterMs : exitMs
-  const easing = entered ? enterEasing : exitEasing
-  const opacityMs = Math.round(durationMs * 0.9)
   const paper = bottomSheetPaperSx()
 
   if (reducedMotion) {
@@ -287,20 +285,74 @@ export function bottomSheetMotionSx(options: {
       width: '100%',
       maxWidth: '100%',
       outline: 'none',
-      transform: 'none',
+      transform: 'translate3d(0, 0, 0)',
       opacity: 1,
     }
   }
+
+  const isEnter = phase === 'enter'
+  const durationMs = isEnter ? enterMs : exitMs
+  const easing = isEnter ? enterEasing : exitEasing
+  const animationName = isEnter ? 'majescoBottomSheetIn' : 'majescoBottomSheetOut'
 
   return {
     ...paper,
     width: '100%',
     maxWidth: '100%',
     outline: 'none',
-    // translate3d keeps the compositor path active on iOS WebKit.
-    transform: entered ? 'translate3d(0, 0, 0)' : 'translate3d(0, 100%, 0)',
-    opacity: entered ? 1 : panelFadeFrom,
-    transition: `transform ${durationMs}ms ${easing}, opacity ${opacityMs}ms ${easing}`,
-    WebkitFontSmoothing: 'antialiased',
+    transform: isEnter ? 'translate3d(0, 0, 0)' : 'translate3d(0, 100%, 0)',
+    opacity: isEnter ? 1 : panelFadeFrom,
+    animation: `${animationName} ${durationMs}ms ${easing} both`,
+    '@keyframes majescoBottomSheetIn': {
+      from: {
+        transform: 'translate3d(0, 100%, 0)',
+        opacity: panelFadeFrom,
+      },
+      to: {
+        transform: 'translate3d(0, 0, 0)',
+        opacity: 1,
+      },
+    },
+    '@keyframes majescoBottomSheetOut': {
+      from: {
+        transform: 'translate3d(0, 0, 0)',
+        opacity: 1,
+      },
+      to: {
+        transform: 'translate3d(0, 100%, 0)',
+        opacity: panelFadeFrom,
+      },
+    },
+  }
+}
+
+/** Backdrop fade paired with bottom sheet keyframe phases. */
+export function bottomSheetBackdropMotionSx(options: {
+  phase: 'enter' | 'exit'
+  reducedMotion?: boolean
+}): SxProps<Theme> {
+  const { phase, reducedMotion = false } = options
+  const durationMs =
+    phase === 'enter' ? backdropTransitionDuration.enter : backdropTransitionDuration.exit
+  const easing = phase === 'enter' ? drawerMotion.enterEasing : drawerMotion.exitEasing
+
+  if (reducedMotion) {
+    return { opacity: 1 }
+  }
+
+  const animationName =
+    phase === 'enter' ? 'majescoBottomSheetBackdropIn' : 'majescoBottomSheetBackdropOut'
+
+  return {
+    opacity: phase === 'enter' ? 1 : 0,
+    animation: `${animationName} ${durationMs}ms ${easing} both`,
+    '@keyframes majescoBottomSheetBackdropIn': {
+      from: { opacity: 0 },
+      to: { opacity: 1 },
+    },
+    '@keyframes majescoBottomSheetBackdropOut': {
+      from: { opacity: 1 },
+      to: { opacity: 0 },
+    },
   }
 }
