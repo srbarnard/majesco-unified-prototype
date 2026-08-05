@@ -53,6 +53,7 @@ type SubmissionsDataGridProps = {
   onAssign?: (submission: SubmissionListRecord) => void
   onAddNote?: (submission: SubmissionListRecord) => void
   onDiscard?: (submission: SubmissionListRecord) => void
+  onToggleAlert?: (submission: SubmissionListRecord) => void
   activeCopilotSubmissionId?: string | null
 }
 
@@ -122,6 +123,7 @@ function RowActionsMenu({
   onAssign,
   onAddNote,
   onDiscard,
+  onToggleAlert,
   onViewDetails,
   isCopilotActive,
 }: {
@@ -130,18 +132,26 @@ function RowActionsMenu({
   onAssign?: (submission: SubmissionListRecord) => void
   onAddNote?: (submission: SubmissionListRecord) => void
   onDiscard?: (submission: SubmissionListRecord) => void
+  onToggleAlert?: (submission: SubmissionListRecord) => void
   onViewDetails?: (submission: SubmissionListRecord) => void
   isCopilotActive?: boolean
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const alertLabel = row.hasAlert ? 'Turn off alerts' : 'Turn on alerts'
 
   return (
     <>
       <Stack direction="row" spacing={0.25} justifyContent="flex-end" alignItems="center" sx={{ width: '100%' }}>
-        <Tooltip title={row.hasAlert ? 'Alert active' : 'No alerts'}>
+        <Tooltip title={alertLabel}>
           <IconButton
             size="small"
-            aria-label={row.hasAlert ? `Alerts for ${row.submissionNumber}` : `No alerts for ${row.submissionNumber}`}
+            aria-label={`${alertLabel} for ${row.submissionNumber}`}
+            aria-pressed={row.hasAlert}
+            onClick={(event) => {
+              event.stopPropagation()
+              onToggleAlert?.(row)
+            }}
+            onMouseDown={(event) => event.stopPropagation()}
             sx={{
               ...tableActionIconButtonSx,
               color: row.hasAlert ? 'primary.main' : 'text.secondary',
@@ -245,6 +255,7 @@ export function SubmissionsDataGrid({
   onAssign,
   onAddNote,
   onDiscard,
+  onToggleAlert,
   activeCopilotSubmissionId,
 }: SubmissionsDataGridProps) {
   const navigate = useNavigate()
@@ -357,13 +368,22 @@ export function SubmissionsDataGrid({
             onAssign={onAssign}
             onAddNote={onAddNote}
             onDiscard={onDiscard}
+            onToggleAlert={onToggleAlert}
             onViewDetails={handleViewDetails}
             isCopilotActive={activeCopilotSubmissionId === row.id}
           />
         ),
       },
     ],
-    [activeCopilotSubmissionId, onAddNote, onAskCopilot, onAssign, onDiscard, onOpenStatusCopilot],
+    [
+      activeCopilotSubmissionId,
+      onAddNote,
+      onAskCopilot,
+      onAssign,
+      onDiscard,
+      onOpenStatusCopilot,
+      onToggleAlert,
+    ],
   )
 
   const { pinnedColumns, disableColumnPinning } = useResponsivePinnedColumns({

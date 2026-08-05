@@ -309,6 +309,14 @@ export function SubmissionsPage() {
     }
   }, [copilotSubmissionFocus])
 
+  const handleToggleAlert = useCallback((submission: SubmissionListRecord) => {
+    setRows((current) =>
+      current.map((row) =>
+        row.id === submission.id ? { ...row, hasAlert: !row.hasAlert } : row,
+      ),
+    )
+  }, [])
+
   const isAllTab = activeTab === 'all'
   const contentPx = `${layoutTokens.contentPaddingX}px`
   const rightPanelOpen = filterOpen || notesOpen || copilotOpen
@@ -405,6 +413,7 @@ export function SubmissionsPage() {
                   onOpenStatusCopilot={handleOpenStatusCopilot}
                   onAddNote={handleAddNote}
                   onDiscard={handleDiscardOne}
+                  onToggleAlert={handleToggleAlert}
                   activeCopilotSubmissionId={focusedSubmission?.id ?? null}
                 />
               </Box>
