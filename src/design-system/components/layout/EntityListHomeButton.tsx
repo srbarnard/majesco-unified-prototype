@@ -5,20 +5,34 @@ import type { SystemStyleObject } from '@mui/system'
 import type { SvgIconComponent } from '@mui/icons-material'
 import { Link as RouterLink } from 'react-router'
 import { isDarkMode } from '@/design-system/theme/themeSurfaces'
-import { getFigmaColors } from '@/design-system/tokens/figma-colors'
+import type { FigmaPaletteName } from '@/design-system/tokens/figma-palette'
+
+/** Distinct tile color per product section. */
+export type EntityListHomeTone = 'submissions' | 'quotes' | 'policies' | 'insureds' | 'documents'
+
+const tonePalette: Record<EntityListHomeTone, FigmaPaletteName> = {
+  submissions: 'indigo',
+  quotes: 'purple',
+  policies: 'teal',
+  insureds: 'orange',
+  documents: 'lightBlue',
+}
 
 type EntityListHomeButtonBase = {
   /** Tooltip + accessible label, e.g. "All submissions". */
   label: string
   /** Same icon family used in primary nav for that list. */
   icon: SvgIconComponent
+  /** Section color for the tile background + icon. */
+  tone: EntityListHomeTone
 }
 
 export type EntityListHomeButtonProps = EntityListHomeButtonBase &
   ({ to: string; onClick?: never } | { to?: never; onClick: () => void })
 
-function tileSx(theme: Theme): SystemStyleObject<Theme> {
-  const secondary = getFigmaColors(theme.palette.mode).secondary
+function tileSx(theme: Theme, tone: EntityListHomeTone): SystemStyleObject<Theme> {
+  const scale = theme.figmaPalette[tonePalette[tone]]
+  const dark = isDarkMode(theme)
 
   return {
     width: 40,
@@ -32,11 +46,11 @@ function tileSx(theme: Theme): SystemStyleObject<Theme> {
     border: 0,
     p: 0,
     cursor: 'pointer',
-    bgcolor: isDarkMode(theme) ? theme.figmaPalette.teal[900] : theme.figmaPalette.teal[100],
-    color: secondary.main,
-    transition: 'background-color 0.15s ease',
+    bgcolor: dark ? scale[900] : scale[100],
+    color: dark ? scale[200] : scale[800],
+    transition: 'background-color 0.15s ease, color 0.15s ease',
     '&:hover': {
-      bgcolor: isDarkMode(theme) ? theme.figmaPalette.teal[800] : theme.figmaPalette.teal[200],
+      bgcolor: dark ? scale[800] : scale[200],
     },
     '&:focus-visible': {
       outline: `2px solid ${theme.palette.primary.main}`,
@@ -47,17 +61,19 @@ function tileSx(theme: Theme): SystemStyleObject<Theme> {
 
 /**
  * Google Docs–style “return to list” control for entity detail headers.
- * Teal tile + entity icon — not a back arrow.
+ * Colored tile + entity icon — not a back arrow.
  */
-export function EntityListHomeButton({ to, onClick, label, icon: Icon }: EntityListHomeButtonProps) {
+export function EntityListHomeButton({ to, onClick, label, icon: Icon, tone }: EntityListHomeButtonProps) {
+  const sx = (theme: Theme) => tileSx(theme, tone)
+
   return (
     <Tooltip title={label}>
       {to ? (
-        <Box component={RouterLink} to={to} aria-label={label} sx={tileSx}>
+        <Box component={RouterLink} to={to} aria-label={label} sx={sx}>
           <Icon sx={{ fontSize: 22 }} />
         </Box>
       ) : (
-        <Box component="button" type="button" onClick={onClick} aria-label={label} sx={tileSx}>
+        <Box component="button" type="button" onClick={onClick} aria-label={label} sx={sx}>
           <Icon sx={{ fontSize: 22 }} />
         </Box>
       )}

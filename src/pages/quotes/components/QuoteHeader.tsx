@@ -91,7 +91,7 @@ export function QuoteHeader({
     <Box sx={{ bgcolor: 'background.paper', width: '100%' }}>
       <Box sx={{ px: contentPx, pt: layoutTokens.policyHeaderTopPadding, pb: 0.75 }}>
         <Stack direction="row" spacing={1.25} alignItems="center">
-          <EntityListHomeButton to="/quotes" label="All quotes" icon={RequestQuoteOutlinedIcon} />
+          <EntityListHomeButton to="/quotes" label="All quotes" icon={RequestQuoteOutlinedIcon} tone="quotes" />
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
               <Typography

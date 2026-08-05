@@ -99,6 +99,7 @@ export function SubmissionDetailHeader({
             to="/submissions"
             label="All submissions"
             icon={MoveToInboxOutlinedIcon}
+            tone="submissions"
           />
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>

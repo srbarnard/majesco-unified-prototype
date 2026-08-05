@@ -58,6 +58,7 @@ export function DocumentViewerHeader({
         <EntityListHomeButton
           label="All documents"
           icon={DescriptionOutlinedIcon}
+          tone="documents"
           onClick={onBack}
         />
         <Box sx={{ minWidth: 0, flex: 1 }}>
