@@ -267,32 +267,62 @@ export function bottomSheetPaperSx(): SxProps<Theme> {
 }
 
 /**
- * Mobile bottom sheet surface styles. Motion is driven by
- * `useBottomSheetElementAnimation` (Web Animations API) for iOS reliability.
+ * Bottom sheet show/hide — same entered-driven CSS transform pattern as docked panels.
+ * Resting transform follows `entered`, so the sheet stays visible even if the
+ * transition is skipped (iOS) or WAAPI never attaches (Modal ref timing).
  */
-export function bottomSheetMotionSx(options?: {
+export function bottomSheetMotionSx(options: {
+  entered: boolean
   reducedMotion?: boolean
 }): SxProps<Theme> {
+  const { entered, reducedMotion = false } = options
+  const { enterMs, exitMs, enterEasing, exitEasing, panelFadeFrom } = drawerMotion
+  const durationMs = entered ? enterMs : exitMs
+  const easing = entered ? enterEasing : exitEasing
+  const opacityMs = Math.round(durationMs * 0.9)
   const paper = bottomSheetPaperSx()
-  const reduced = options?.reducedMotion ?? false
+
+  if (reducedMotion) {
+    return {
+      ...paper,
+      width: '100%',
+      maxWidth: '100%',
+      outline: 'none',
+      transform: 'translate3d(0, 0, 0)',
+      opacity: 1,
+    }
+  }
 
   return {
     ...paper,
     width: '100%',
     maxWidth: '100%',
     outline: 'none',
-    transform: reduced ? 'translate3d(0, 0, 0)' : 'translate3d(0, 100%, 0)',
-    opacity: reduced ? 1 : drawerMotion.panelFadeFrom,
+    transform: entered ? 'translate3d(0, 0, 0)' : 'translate3d(0, 100%, 0)',
+    opacity: entered ? 1 : panelFadeFrom,
+    transition: `transform ${durationMs}ms ${easing}, opacity ${opacityMs}ms ${easing}`,
     willChange: 'transform, opacity',
+    WebkitFontSmoothing: 'antialiased',
   }
 }
 
-/** Static backdrop surface — opacity animated via WAAPI. */
-export function bottomSheetBackdropMotionSx(options?: {
+/** Backdrop fade paired with bottom sheet presence. */
+export function bottomSheetBackdropMotionSx(options: {
+  entered: boolean
   reducedMotion?: boolean
 }): SxProps<Theme> {
+  const { entered, reducedMotion = false } = options
+  const durationMs = entered
+    ? backdropTransitionDuration.enter
+    : backdropTransitionDuration.exit
+  const easing = entered ? drawerMotion.enterEasing : drawerMotion.exitEasing
+
+  if (reducedMotion) {
+    return { opacity: 1 }
+  }
+
   return {
-    opacity: options?.reducedMotion ? 1 : 0,
-    willChange: 'opacity',
+    opacity: entered ? 1 : 0,
+    transition: `opacity ${durationMs}ms ${easing}`,
   }
 }

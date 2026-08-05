@@ -2,13 +2,8 @@ import Box from '@mui/material/Box'
 import Modal from '@mui/material/Modal'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useTheme } from '@mui/material/styles'
-import { useRef, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { useAnimatedPanelPresence } from '@/design-system/hooks/useAnimatedPanelPresence'
-import { useBottomSheetPresence } from '@/design-system/hooks/useBottomSheetPresence'
-import {
-  useBottomSheetBackdropAnimation,
-  useBottomSheetElementAnimation,
-} from '@/design-system/hooks/useBottomSheetElementAnimation'
 import { isDarkMode } from '@/design-system/theme/themeSurfaces'
 import {
   bottomSheetBackdropMotionSx,
@@ -70,18 +65,17 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
   const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)', { noSsr: true })
   const { width, startResize } = useRightPanelWidth(variant)
   const handleClose = onClose ?? (() => {})
-  const sheetRef = useRef<HTMLDivElement>(null)
-  const backdropRef = useRef<HTMLDivElement>(null)
 
+  // JS breakpoint only — do not also gate with CSS display on the Modal
+  // (that combo left the sheet mounted but translateY(100%) / display:none).
   const mobileOpen = open && !isDesktop
-  const { mounted: sheetMounted, phase: sheetPhase } = useBottomSheetPresence(
+  const desktopOpen = open && isDesktop
+
+  const { mounted: sheetMounted, entered: sheetEntered } = useAnimatedPanelPresence(
     mobileOpen,
     prefersReducedMotion,
   )
-  useBottomSheetElementAnimation(sheetRef, sheetPhase, sheetMounted, prefersReducedMotion)
-  useBottomSheetBackdropAnimation(backdropRef, sheetPhase, sheetMounted, prefersReducedMotion)
-
-  const { mounted, entered } = useAnimatedPanelPresence(open && isDesktop, prefersReducedMotion)
+  const { mounted, entered } = useAnimatedPanelPresence(desktopOpen, prefersReducedMotion)
 
   const { shellSx, innerSx } = dockedPanelMotionSx({
     side: 'right',
@@ -92,10 +86,6 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
 
   return (
     <>
-      {/*
-        Phones / tablets: WAAPI-driven bottom sheet.
-        CSS transitions/keyframes inside MUI Modal often no-op on iOS Chrome.
-      */}
       {sheetMounted ? (
         <Modal
           open
@@ -105,10 +95,7 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
           disableEnforceFocus
           disableRestoreFocus
           disableScrollLock={false}
-          sx={{
-            display: { xs: 'block', lg: 'none' },
-            zIndex: theme.zIndex.drawer + 1,
-          }}
+          sx={{ zIndex: theme.zIndex.drawer + 1 }}
         >
           <Box
             sx={{
@@ -120,7 +107,6 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
             }}
           >
             <Box
-              ref={backdropRef}
               aria-hidden
               onClick={handleClose}
               sx={{
@@ -128,15 +114,20 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
                 inset: 0,
                 bgcolor: (t) =>
                   t.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.55)' : 'rgba(0, 0, 0, 0.32)',
-                ...bottomSheetBackdropMotionSx({ reducedMotion: prefersReducedMotion }),
+                ...bottomSheetBackdropMotionSx({
+                  entered: sheetEntered,
+                  reducedMotion: prefersReducedMotion,
+                }),
               }}
             />
             <Box
-              ref={sheetRef}
               role="dialog"
               aria-modal="true"
               sx={{
-                ...bottomSheetMotionSx({ reducedMotion: prefersReducedMotion }),
+                ...bottomSheetMotionSx({
+                  entered: sheetEntered,
+                  reducedMotion: prefersReducedMotion,
+                }),
                 position: 'relative',
                 zIndex: 1,
                 bgcolor: 'background.paper',
@@ -151,7 +142,6 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
         </Modal>
       ) : null}
 
-      {/* Desktop: docked right panel. Hidden below lg even if JS mismatch. */}
       {mounted ? (
         <Box
           sx={{
