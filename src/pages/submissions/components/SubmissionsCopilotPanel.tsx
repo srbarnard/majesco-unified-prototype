@@ -8,7 +8,7 @@ import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Button } from '@/design-system/components'
+import { CopilotQuickActions } from '@/design-system/components'
 import { accentSubtle, accentSubtleHover } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -69,26 +69,6 @@ const bodySx = {
 const headingSx = {
   fontFamily: figmaFontFamilyStack.heading,
   fontWeight: 600,
-} as const
-
-const quickActionChipSx = {
-  textTransform: 'none',
-  fontFamily: figmaFontFamilyStack.body,
-  fontWeight: 400,
-  fontSize: '0.75rem',
-  lineHeight: 1.3,
-  borderRadius: '30px',
-  border: 'none',
-  boxShadow: 'none',
-  color: 'primary.main',
-  bgcolor: (theme: Parameters<typeof accentSubtle>[0]) => accentSubtle(theme),
-  px: 1.25,
-  py: 0.5,
-  minHeight: 'auto',
-  '&:hover': {
-    bgcolor: (theme: Parameters<typeof accentSubtle>[0]) => accentSubtleHover(theme),
-    boxShadow: 'none',
-  },
 } as const
 
 function renderSummaryText(text: string) {
@@ -327,39 +307,26 @@ function IssueDetailCard({
 
       <Divider sx={{ mb: 2 }} />
 
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1, fontWeight: 600}}>
-        Quick actions
-      </Typography>
-      <Stack direction="row" flexWrap="wrap" gap={1}>
-        {quickActions.map((action) => (
-          <Button
-            key={action}
-            size="small"
-            variant="text"
-            disableRipple
-            sx={quickActionChipSx}
-            onClick={() => {
-              if (isResolved) {
-                if (action === 'Continue to next issue') onBack()
-                return
-              }
-              if (isUploadGuidedAction(action)) {
-                onRequestAttach?.()
-                return
-              }
-              if (isProducerRequestAction(action) || isAddNoteAction(action)) {
-                onGuidedResolve?.(issue, action)
-                return
-              }
-              if (isGuided || action !== 'Resolve with details below') {
-                onGuidedResolve?.(issue, action)
-              }
-            }}
-          >
-            {action}
-          </Button>
-        ))}
-      </Stack>
+      <CopilotQuickActions
+        actions={quickActions}
+        onAction={(action) => {
+          if (isResolved) {
+            if (action === 'Continue to next issue') onBack()
+            return
+          }
+          if (isUploadGuidedAction(action)) {
+            onRequestAttach?.()
+            return
+          }
+          if (isProducerRequestAction(action) || isAddNoteAction(action)) {
+            onGuidedResolve?.(issue, action)
+            return
+          }
+          if (isGuided || action !== 'Resolve with details below') {
+            onGuidedResolve?.(issue, action)
+          }
+        }}
+      />
     </Stack>
   )
 }
@@ -410,43 +377,30 @@ function SubmissionInsightView({
       </Box>
 
       <Divider sx={{ mb: 2 }} />
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1, fontWeight: 600}}>
-        Quick actions
-      </Typography>
-      <Stack direction="row" flexWrap="wrap" gap={1}>
-        {quickActions.map((action) => (
-          <Button
-            key={action}
-            size="small"
-            variant="text"
-            disableRipple
-            sx={quickActionChipSx}
-            onClick={() => {
-              if (action === briefing.statusQuickActionLabel) {
-                onViewStatus()
-                return
-              }
-              if (action === 'Draft producer follow-up') {
-                onDraftProducerEmail?.()
-                return
-              }
-              if (action === 'Summarize for underwriter') {
-                onSeedComposer?.(
-                  `Summarize ${submission.submissionNumber} for underwriting handoff — account fit, confidence, and recommended next step.`,
-                )
-                return
-              }
-              if (action === 'Ask about exposure') {
-                onSeedComposer?.(
-                  `What exposure and appetite considerations should I watch on ${submission.submissionNumber} (${submission.linesOfBusiness.join(', ')})?`,
-                )
-              }
-            }}
-          >
-            {action}
-          </Button>
-        ))}
-      </Stack>
+      <CopilotQuickActions
+        actions={quickActions}
+        onAction={(action) => {
+          if (action === briefing.statusQuickActionLabel) {
+            onViewStatus()
+            return
+          }
+          if (action === 'Draft producer follow-up') {
+            onDraftProducerEmail?.()
+            return
+          }
+          if (action === 'Summarize for underwriter') {
+            onSeedComposer?.(
+              `Summarize ${submission.submissionNumber} for underwriting handoff — account fit, confidence, and recommended next step.`,
+            )
+            return
+          }
+          if (action === 'Ask about exposure') {
+            onSeedComposer?.(
+              `What exposure and appetite considerations should I watch on ${submission.submissionNumber} (${submission.linesOfBusiness.join(', ')})?`,
+            )
+          }
+        }}
+      />
     </>
   )
 }
@@ -665,58 +619,45 @@ function ReadyStructureOptionsView({
           ) : null}
 
           <Divider sx={{ my: 2 }} />
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1, fontWeight: 600}}>
-            Quick actions
-          </Typography>
-          <Stack direction="row" flexWrap="wrap" gap={1}>
-            {quickActions.map((action) => (
-              <Button
-                key={action}
-                size="small"
-                variant="text"
-                disableRipple
-                sx={quickActionChipSx}
-                onClick={() => {
-                  if (!selected) return
-                  if (action.startsWith('Approve')) {
-                    onApprove?.(selected)
-                    return
-                  }
-                  if (action === 'Compare options') {
-                    const comparison = options
-                      .map(
-                        (option) =>
-                          `${option.label}${option.recommended ? ' (recommended)' : ''}: ${option.range} — ${option.rationale}`,
-                      )
-                      .join('\n')
-                    onSeedComposer?.(
-                      `Compare the ${options.length} structure options for ${submission.submissionNumber}:\n${comparison}\n\nWhich should I prefer and why?`,
-                    )
-                    return
-                  }
-                  if (action === 'Ask for adjustments') {
-                    onSeedComposer?.(
-                      `Adjust the ${selected.label} structure (${selected.range}) for ${submission.submissionNumber}. I'd like to change…`,
-                    )
-                    return
-                  }
-                  if (action.startsWith('More detail') || action === 'Ask for more detail') {
-                    onSeedComposer?.(
-                      `Explain the ${selected.label} option (${selected.range}) for ${submission.submissionNumber} in more detail — coverage terms, deductibles, and key drivers.`,
-                    )
-                    return
-                  }
-                  if (action === 'Summarize approved structure') {
-                    onSeedComposer?.(
-                      `Summarize the approved ${approvedLabel} structure for ${submission.submissionNumber}.`,
-                    )
-                  }
-                }}
-              >
-                {action}
-              </Button>
-            ))}
-          </Stack>
+          <CopilotQuickActions
+            actions={quickActions}
+            onAction={(action) => {
+              if (!selected) return
+              if (action.startsWith('Approve')) {
+                onApprove?.(selected)
+                return
+              }
+              if (action === 'Compare options') {
+                const comparison = options
+                  .map(
+                    (option) =>
+                      `${option.label}${option.recommended ? ' (recommended)' : ''}: ${option.range} — ${option.rationale}`,
+                  )
+                  .join('\n')
+                onSeedComposer?.(
+                  `Compare the ${options.length} structure options for ${submission.submissionNumber}:\n${comparison}\n\nWhich should I prefer and why?`,
+                )
+                return
+              }
+              if (action === 'Ask for adjustments') {
+                onSeedComposer?.(
+                  `Adjust the ${selected.label} structure (${selected.range}) for ${submission.submissionNumber}. I'd like to change…`,
+                )
+                return
+              }
+              if (action.startsWith('More detail') || action === 'Ask for more detail') {
+                onSeedComposer?.(
+                  `Explain the ${selected.label} option (${selected.range}) for ${submission.submissionNumber} in more detail — coverage terms, deductibles, and key drivers.`,
+                )
+                return
+              }
+              if (action === 'Summarize approved structure') {
+                onSeedComposer?.(
+                  `Summarize the approved ${approvedLabel} structure for ${submission.submissionNumber}.`,
+                )
+              }
+            }}
+          />
         </>
       </CopilotContentTransition>
     </>
@@ -764,16 +705,7 @@ function SummarizeView({ submissions }: { submissions: SubmissionListRecord[] })
         ))}
       </Box>
       <Divider sx={{ mb: 2 }} />
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1, fontWeight: 600}}>
-        Quick actions
-      </Typography>
-      <Stack direction="row" flexWrap="wrap" gap={1}>
-        {['Assign blocked submission', 'Summarize blockers', 'Open first blocked'].map((action) => (
-          <Button key={action} size="small" variant="text" disableRipple sx={quickActionChipSx}>
-            {action}
-          </Button>
-        ))}
-      </Stack>
+      <CopilotQuickActions actions={['Assign blocked submission', 'Summarize blockers', 'Open first blocked']} />
     </>
   )
 }
@@ -818,16 +750,7 @@ function WorkspaceView() {
         ))}
       </Box>
       <Divider sx={{ mb: 2 }} />
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1, fontWeight: 600}}>
-        Quick actions
-      </Typography>
-      <Stack direction="row" flexWrap="wrap" gap={1}>
-        {['Assign blocked submission', 'Show blocked only', 'Open intake summary'].map((action) => (
-          <Button key={action} size="small" variant="text" disableRipple sx={quickActionChipSx}>
-            {action}
-          </Button>
-        ))}
-      </Stack>
+      <CopilotQuickActions actions={['Assign blocked submission', 'Show blocked only', 'Open intake summary']} />
     </>
   )
 }

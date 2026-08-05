@@ -5,12 +5,8 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useEffect, useRef } from 'react'
-import { Button } from '@/design-system/components'
-import {
-  accentSubtle,
-  accentSubtleHover,
-  surfaceMuted,
-} from '@/design-system/theme/themeSurfaces'
+import { CopilotQuickActions } from '@/design-system/components'
+import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { markAiFilled } from '@/pages/quotes/data/quoteWizardDefaults'
@@ -42,26 +38,6 @@ type QuoteWizardCopilotPanelProps = {
 const bodySx = {
   fontFamily: figmaFontFamilyStack.body,
   fontWeight: 400,
-} as const
-
-const quickActionChipSx = {
-  textTransform: 'none',
-  fontFamily: figmaFontFamilyStack.body,
-  fontWeight: 400,
-  fontSize: '0.75rem',
-  lineHeight: 1.3,
-  borderRadius: '30px',
-  border: 'none',
-  boxShadow: 'none',
-  color: 'primary.main',
-  bgcolor: (theme: { palette: { mode: string } }) => accentSubtle(theme as Parameters<typeof accentSubtle>[0]),
-  px: 1.25,
-  py: 0.5,
-  minHeight: 'auto',
-  '&:hover': {
-    bgcolor: (theme: { palette: { mode: string } }) => accentSubtleHover(theme as Parameters<typeof accentSubtleHover>[0]),
-    boxShadow: 'none',
-  },
 } as const
 
 function mergeApplyUpdates(form: QuoteWizardFormData, apply?: Partial<QuoteWizardFormData>) {
@@ -252,23 +228,13 @@ export function QuoteWizardCopilotPanel({
       {copilot.actions.length > 0 && (
         <>
           <Divider sx={{ mb: 2 }} />
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 1, fontWeight: 600}}>
-            Quick actions
-          </Typography>
-          <Stack direction="row" flexWrap="wrap" gap={1}>
-            {copilot.actions.map((action) => (
-              <Button
-                key={action.label}
-                size="small"
-                variant="text"
-                disableRipple
-                sx={quickActionChipSx}
-                onClick={() => handleAction(action)}
-              >
-                {action.label}
-              </Button>
-            ))}
-          </Stack>
+          <CopilotQuickActions
+            actions={copilot.actions.map((action) => action.label)}
+            onAction={(label) => {
+              const action = copilot.actions.find((item) => item.label === label)
+              if (action) handleAction(action)
+            }}
+          />
         </>
       )}
     </CopilotDrawerShell>
