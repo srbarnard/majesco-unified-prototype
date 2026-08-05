@@ -353,7 +353,7 @@ export function TasksDataGrid({
     [activeCopilotTaskId, activeTaskId, onTaskComplete, onTaskCopilot, onTaskOpen],
   )
 
-  const pinnedColumns = useResponsivePinnedColumns({
+  const { pinnedColumns, disableColumnPinning } = useResponsivePinnedColumns({
     left: ['__check__', 'taskName'],
     right: ['actions'],
   })
@@ -376,6 +376,7 @@ export function TasksDataGrid({
         }}
         pageSizeOptions={[10, 25, 50]}
         pinnedColumns={pinnedColumns}
+        disableColumnPinning={disableColumnPinning}
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}

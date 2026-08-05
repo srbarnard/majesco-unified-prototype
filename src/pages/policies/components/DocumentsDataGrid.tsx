@@ -323,7 +323,7 @@ export function DocumentsDataGrid({
     [activeCopilotDocumentId, activePreviewDocumentId, getDocumentHref, onDocumentOpen],
   )
 
-  const pinnedColumns = useResponsivePinnedColumns({
+  const { pinnedColumns, disableColumnPinning } = useResponsivePinnedColumns({
     left: ['__check__', 'fileName'],
     right: ['actions'],
   })
@@ -345,6 +345,7 @@ export function DocumentsDataGrid({
         }}
         pageSizeOptions={[10, 15, 25, 50]}
         pinnedColumns={pinnedColumns}
+        disableColumnPinning={disableColumnPinning}
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}

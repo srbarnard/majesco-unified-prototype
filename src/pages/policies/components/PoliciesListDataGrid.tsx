@@ -374,7 +374,7 @@ export function PoliciesListDataGrid({
     [activeCopilotPolicyId, onPolicyCopilot],
   )
 
-  const pinnedColumns = useResponsivePinnedColumns({
+  const { pinnedColumns, disableColumnPinning } = useResponsivePinnedColumns({
     left: ['policyNumber'],
     right: ['actions'],
   })
@@ -391,6 +391,7 @@ export function PoliciesListDataGrid({
           sorting: { sortModel: [{ field: 'effectiveDate', sort: 'desc' }] },
         }}
         pinnedColumns={pinnedColumns}
+        disableColumnPinning={disableColumnPinning}
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}

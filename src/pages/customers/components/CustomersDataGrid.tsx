@@ -295,7 +295,7 @@ export function CustomersDataGrid({
     [activeCopilotCustomerId, onCustomerCopilot],
   )
 
-  const pinnedColumns = useResponsivePinnedColumns({
+  const { pinnedColumns, disableColumnPinning } = useResponsivePinnedColumns({
     left: ['customerNumber', 'name'],
     right: ['actions'],
   })
@@ -312,6 +312,7 @@ export function CustomersDataGrid({
           sorting: { sortModel: [{ field: 'attention', sort: 'asc' }] },
         }}
         pinnedColumns={pinnedColumns}
+        disableColumnPinning={disableColumnPinning}
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}

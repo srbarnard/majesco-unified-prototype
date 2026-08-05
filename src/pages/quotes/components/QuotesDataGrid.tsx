@@ -348,7 +348,7 @@ export function QuotesDataGrid({
     [activeCopilotQuoteId, onQuoteCopilot],
   )
 
-  const pinnedColumns = useResponsivePinnedColumns({
+  const { pinnedColumns, disableColumnPinning } = useResponsivePinnedColumns({
     left: ['quoteNumber'],
     right: ['actions'],
   })
@@ -365,6 +365,7 @@ export function QuotesDataGrid({
           sorting: { sortModel: [{ field: 'effectiveDate', sort: 'desc' }] },
         }}
         pinnedColumns={pinnedColumns}
+        disableColumnPinning={disableColumnPinning}
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}

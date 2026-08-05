@@ -366,7 +366,7 @@ export function SubmissionsDataGrid({
     [activeCopilotSubmissionId, onAddNote, onAskCopilot, onAssign, onDiscard, onOpenStatusCopilot],
   )
 
-  const pinnedColumns = useResponsivePinnedColumns({
+  const { pinnedColumns, disableColumnPinning } = useResponsivePinnedColumns({
     left: ['__check__', 'submissionNumber'],
     right: ['actions'],
   })
@@ -389,6 +389,7 @@ export function SubmissionsDataGrid({
         }}
         pageSizeOptions={[10, 25, 50, 100]}
         pinnedColumns={pinnedColumns}
+        disableColumnPinning={disableColumnPinning}
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}
