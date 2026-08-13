@@ -10,6 +10,7 @@ import { SettingsPage } from '@/app/pages/SettingsPage'
 import { PolicyDetails } from '@/pages/policies/PolicyDetails'
 import { DocumentViewerPage } from '@/pages/policies/DocumentViewerPage'
 import { InsuredDetails } from '@/pages/insureds/InsuredDetails'
+import { InsuredsPage } from '@/pages/insureds/InsuredsPage'
 import { QuoteDetails } from '@/pages/quotes/QuoteDetails'
 import { NewQuoteWizardPage } from '@/pages/quotes/NewQuoteWizardPage'
 import { QuotesPage } from '@/pages/quotes/QuotesPage'
@@ -33,7 +34,7 @@ export const router = createBrowserRouter([
       { path: 'submissions', element: <SubmissionsPage /> },
       { path: 'submissions/:submissionId', element: <SubmissionDetails /> },
       { path: 'submissions/:submissionId/documents/:docId', element: <DocumentViewerPage context="submission-detail" /> },
-      { path: 'insureds', element: <PlaceholderPage title="Insureds" description="Search and manage insured accounts." /> },
+      { path: 'insureds', element: <InsuredsPage /> },
       { path: 'insureds/:insuredId', element: <InsuredDetails /> },
       { path: 'producers', element: <PlaceholderPage title="Producers" description="Producer appointments and hierarchies." /> },
       { path: 'sub-producers', element: <PlaceholderPage title="Sub producers" description="Sub-producer relationships and commissions." /> },

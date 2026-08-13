@@ -2,7 +2,7 @@ import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { chatBubbleIncoming, chatBubbleOutgoing } from '@/design-system/theme/themeSurfaces'
+import { chatAuthorAvatarSx, chatBubbleIncoming, chatBubbleOutgoing } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { CopilotDrawerSubHeader } from '@/pages/policies/components/copilot/CopilotDrawerSubHeader'
 import type { NoteMessage, SubmissionNoteThread } from '@/pages/submissions/data/mockSubmissionNotes'
@@ -34,16 +34,7 @@ function NoteBubble({ message, side }: { message: NoteMessage; side: 'left' | 'r
         }}
       >
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
-          <Avatar
-            sx={{
-              width: 24,
-              height: 24,
-              fontSize: '0.625rem',
-              fontWeight: 600,
-              bgcolor: (theme) => theme.figmaPalette.grey[200],
-              color: 'text.secondary',
-            }}
-          >
+          <Avatar sx={(theme) => chatAuthorAvatarSx(theme)}>
             {message.author.initials}
           </Avatar>
           <Typography
@@ -59,6 +50,7 @@ function NoteBubble({ message, side }: { message: NoteMessage; side: 'left' | 'r
             py: 1.25,
             borderRadius: 2,
             bgcolor: isRight ? chatBubbleOutgoing(theme) : chatBubbleIncoming(theme),
+            color: 'text.primary',
           })}
         >
           <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.55 }}>

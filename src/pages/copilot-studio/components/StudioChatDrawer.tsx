@@ -22,6 +22,7 @@ import {
 import { useAnimatedPanelPresence } from '@/design-system/hooks/useAnimatedPanelPresence'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { copilotDrawerHeadingSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 
 type StudioChatDrawerProps = {
   open: boolean
@@ -63,9 +64,9 @@ function ChatDrawerContent({
         direction="row"
         alignItems="center"
         justifyContent="space-between"
-        sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}
+        sx={{ px: 2, py: 1.5, flexShrink: 0 }}
       >
-        <Typography variant="subtitle1" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600 }}>
+        <Typography variant="subtitle1" component="h2" sx={copilotDrawerHeadingSx}>
           History
         </Typography>
         <IconButton size="small" onClick={onClose} aria-label="Close history">

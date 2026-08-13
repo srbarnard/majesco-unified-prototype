@@ -12,6 +12,7 @@ import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
+import { copilotDrawerHeadingSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import { policyPartiesMock, type PolicyParty } from '@/pages/policies/data/mockPolicyDetails'
 
 type PartiesPanelProps = {
@@ -69,9 +70,9 @@ export function PartiesPanel({ onClose, title = 'Parties', parties = policyParti
         direction="row"
         alignItems="center"
         justifyContent="space-between"
-        sx={{ px: 2, pt: layoutTokens.policyHeaderTopPadding, pb: 1, borderBottom: 1, borderColor: 'divider' }}
+        sx={{ px: 2, pt: layoutTokens.policyHeaderTopPadding, pb: 1 }}
       >
-        <Typography variant="subtitle1" fontWeight={600}>
+        <Typography variant="subtitle1" component="h2" sx={copilotDrawerHeadingSx}>
           {title}
         </Typography>
         {onClose && (
@@ -90,8 +91,12 @@ export function PartiesPanel({ onClose, title = 'Parties', parties = policyParti
             elevation={0}
             sx={{
               '&:before': { display: 'none' },
+              border: 'none',
               borderBottom: 1,
               borderColor: 'divider',
+              borderRadius: 0,
+              bgcolor: 'transparent',
+              boxShadow: 'none',
             }}
           >
             <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2 }}>

@@ -2,6 +2,7 @@ import type { MouseEvent, ReactNode } from 'react'
 import Link from '@mui/material/Link'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { Link as RouterLink } from 'react-router'
+import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { tableLinkSx } from './DataTable'
 
 type ListDataGridLinkProps = {
@@ -33,7 +34,13 @@ export function ListDataGridLink({
       onMouseDown={stopGridNavigation}
       sx={[
         tableLinkSx,
-        { fontWeight, textAlign: 'left', py: 0.25 },
+        {
+          fontFamily: figmaFontFamilyStack.body,
+          fontSize: '0.8125rem',
+          fontWeight,
+          textAlign: 'left',
+          py: 0.25,
+        },
         ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
       ]}
     >

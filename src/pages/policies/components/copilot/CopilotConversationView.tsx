@@ -4,7 +4,7 @@ import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
-import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { chatAuthorAvatarSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { CopilotDrawerSubHeader } from './CopilotDrawerSubHeader'
 import { copilotHistoryKindLabel, type CopilotHistoryEntry, type CopilotHistoryMessage } from './copilotDrawerData'
@@ -26,16 +26,7 @@ function UserMessage({ message }: { message: CopilotHistoryMessage }) {
         }}
       >
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
-          <Avatar
-            sx={{
-              width: 24,
-              height: 24,
-              fontSize: '0.625rem',
-              fontWeight: 600,
-              bgcolor: (theme) => theme.figmaPalette.grey[200],
-              color: 'text.secondary',
-            }}
-          >
+          <Avatar sx={(theme) => chatAuthorAvatarSx(theme)}>
             SB
           </Avatar>
           <Typography

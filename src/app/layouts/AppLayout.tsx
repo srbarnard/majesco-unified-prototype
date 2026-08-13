@@ -26,6 +26,7 @@ function AppLayoutContent() {
     location.pathname === '/tasks' ||
     location.pathname === '/submissions' ||
     location.pathname === '/policies' ||
+    location.pathname === '/insureds' ||
     location.pathname === '/copilot-studio' ||
     /\/policies\/[^/]+/.test(location.pathname) ||
     /\/quotes\/[^/]+/.test(location.pathname) ||

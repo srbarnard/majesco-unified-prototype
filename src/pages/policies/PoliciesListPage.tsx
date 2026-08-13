@@ -7,6 +7,7 @@ import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { usePoliciesLookupFromUrl } from '@/hooks/useLookupFromUrl'
+import { useSearchQueryFromUrl } from '@/hooks/useSearchQueryFromUrl'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { FilterPanel } from '@/pages/policies/components/FilterPanel'
 import { PoliciesListAnalyticsDashboard } from '@/pages/policies/components/PoliciesListAnalyticsDashboard'
@@ -58,6 +59,10 @@ export function PoliciesListPage() {
   }, [])
 
   usePoliciesLookupFromUrl(setAppliedFilters, handleLookupApplied)
+
+  useSearchQueryFromUrl(useCallback((query) => {
+    setSearchQuery(query)
+  }, []))
 
   const filteredRows = useMemo(() => {
     const withFilters = applyPoliciesListFilters(policiesListMock, appliedFilters)

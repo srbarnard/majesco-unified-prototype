@@ -41,12 +41,26 @@ export function accentSubtleHover(theme: Theme) {
 
 /** Incoming note/chat bubble — Majesco secondary (teal) wash. */
 export function chatBubbleIncoming(theme: Theme) {
-  return isDarkMode(theme) ? theme.figmaPalette.teal[900] : theme.figmaPalette.teal[50]
+  return isDarkMode(theme) ? theme.figmaPalette.teal[700] : theme.figmaPalette.teal[50]
 }
 
 /** Outgoing note/chat bubble — Majesco primary (blue) wash. */
 export function chatBubbleOutgoing(theme: Theme) {
-  return isDarkMode(theme) ? theme.figmaPalette.blue[900] : theme.figmaPalette.blue[100]
+  return isDarkMode(theme) ? theme.figmaPalette.blue[800] : theme.figmaPalette.blue[100]
+}
+
+/** Initials avatar for people in chat / notes threads. */
+export function chatAuthorAvatarSx(theme: Theme) {
+  return {
+    width: 24,
+    height: 24,
+    fontSize: '0.625rem',
+    fontWeight: 600,
+    bgcolor: isDarkMode(theme)
+      ? theme.figmaPalette.grey[600]
+      : theme.figmaPalette.grey[200],
+    color: isDarkMode(theme) ? theme.palette.common.white : theme.palette.text.secondary,
+  } as const
 }
 
 /** Light-blue insight / callout surfaces — no chrome border or shadow. */

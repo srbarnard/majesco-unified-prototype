@@ -1,6 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close'
 import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
+import Checkbox from '@mui/material/Checkbox'
 import Chip from '@mui/material/Chip'
 import FormControl from '@mui/material/FormControl'
 import IconButton from '@mui/material/IconButton'
@@ -133,11 +134,25 @@ export function FilterMultiSelect({
       <Autocomplete
         multiple
         disableCloseOnSelect
+        openOnFocus
+        forcePopupIcon
+        autoSelect={false}
+        autoHighlight={false}
         id={fieldId}
         options={[...options]}
         value={value}
-        onChange={(_, next) => onChange(next)}
+        onChange={(_, next) => onChange(next ?? [])}
+        isOptionEqualToValue={(option, selected) => option === selected}
         getOptionLabel={(option) => option}
+        renderOption={(props, option, { selected }) => {
+          const { key, ...optionProps } = props
+          return (
+            <li key={key} {...optionProps}>
+              <Checkbox size="small" checked={selected} tabIndex={-1} sx={{ mr: 1, p: 0.5 }} />
+              {option}
+            </li>
+          )
+        }}
         renderInput={(params) => (
           <TextField
             {...params}
@@ -272,6 +287,72 @@ export function FilterPresetField({
   )
 }
 
+export function FilterMinMaxSelect({
+  label,
+  options,
+  min,
+  max,
+  onMinChange,
+  onMaxChange,
+}: {
+  label: string
+  options: readonly { value: string; label: string }[]
+  min: string
+  max: string
+  onMinChange: (value: string) => void
+  onMaxChange: (value: string) => void
+}) {
+  const minFieldId = useId()
+  const maxFieldId = useId()
+
+  const renderBoundValue = (prefix: string, selected: string) => {
+    const optionLabel = options.find((option) => option.value === selected)?.label ?? 'Any'
+    return (
+      <Typography component="span" sx={filterInputTextSx} noWrap>
+        {prefix} {optionLabel}
+      </Typography>
+    )
+  }
+
+  return (
+    <Box>
+      <FilterFieldLabel fieldId={minFieldId}>{label}</FilterFieldLabel>
+      <Stack direction="row" spacing={1.5}>
+        <FormControl fullWidth size="small" sx={(theme) => filterInputSx(theme)}>
+          <Select
+            id={minFieldId}
+            value={min}
+            displayEmpty
+            onChange={(event) => onMinChange(event.target.value)}
+            renderValue={(selected) => renderBoundValue('Min:', selected)}
+          >
+            {options.map((option) => (
+              <MenuItem key={`min-${option.value || 'any'}`} value={option.value} sx={filterMenuItemSx}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl fullWidth size="small" sx={(theme) => filterInputSx(theme)}>
+          <Select
+            id={maxFieldId}
+            value={max}
+            displayEmpty
+            onChange={(event) => onMaxChange(event.target.value)}
+            renderValue={(selected) => renderBoundValue('Max:', selected)}
+          >
+            {options.map((option) => (
+              <MenuItem key={`max-${option.value || 'any'}`} value={option.value} sx={filterMenuItemSx}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Stack>
+    </Box>
+  )
+}
+
 type FilterPanelShellProps = {
   onClose?: () => void
   onClearAll: () => void
@@ -291,12 +372,10 @@ export function FilterPanelShell({ onClose, onClearAll, onApply, children }: Fil
           pt: layoutTokens.policyHeaderTopPadding,
           pb: 1.5,
           bgcolor: 'background.paper',
-          borderBottom: 1,
-          borderColor: 'divider',
           flexShrink: 0,
         }}
       >
-        <Typography variant="h5" component="h2">
+        <Typography variant="subtitle1" component="h2" sx={filterHeadingSx}>
           Filter
         </Typography>
         {onClose && (

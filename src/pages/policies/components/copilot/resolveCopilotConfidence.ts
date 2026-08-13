@@ -10,7 +10,7 @@ import type { QuoteDetailsRecord } from '@/pages/quotes/data/mockQuoteDetails'
 import type { Quote, QuoteStatus } from '@/pages/quotes/data/mockQuotes'
 
 type ResolveCopilotConfidenceInput = {
-  context?: 'policy' | 'quotes' | 'quote-detail' | 'submission-detail' | 'insured' | 'policies-list' | 'tasks' | 'customers' | 'global'
+  context?: 'policy' | 'quotes' | 'quote-detail' | 'submission-detail' | 'insured' | 'insureds' | 'policies-list' | 'tasks' | 'customers' | 'global'
   activePolicyTab?: PolicyTab
   globalView?: GlobalCopilotView
   agenticPrompt?: string | null
@@ -79,7 +79,7 @@ export function resolveCopilotConfidence(input: ResolveCopilotConfidenceInput): 
   if (context === 'global' || globalView === 'agentic-search' || globalView === 'daily-summary' || agenticPrompt) {
     return null
   }
-  if (context === 'insured' || context === 'policies-list' || context === 'tasks' || context === 'customers') {
+  if (context === 'insured' || context === 'insureds' || context === 'policies-list' || context === 'tasks' || context === 'customers') {
     return null
   }
   if (context === 'quotes' && !focusedQuote) {

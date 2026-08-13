@@ -77,8 +77,6 @@ export function TaskDetailsPanel({
           pt: layoutTokens.policyHeaderTopPadding,
           pb: 1.5,
           bgcolor: 'background.paper',
-          borderBottom: 1,
-          borderColor: 'divider',
           flexShrink: 0,
         }}
       >

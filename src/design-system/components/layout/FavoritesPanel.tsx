@@ -12,6 +12,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { Link } from 'react-router'
 import { useSidebar } from '@/app/contexts/SidebarContext'
+import { filterHeadingSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
 import { surfacePanel } from '@/design-system/theme/themeSurfaces'
 import { insuredIdFromName } from '@/pages/shared/insuredId'
 
@@ -59,9 +60,9 @@ export function FavoritesPanel() {
         direction="row"
         alignItems="center"
         justifyContent="space-between"
-        sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
+        sx={{ px: 2, py: 1.5 }}
       >
-        <Typography variant="subtitle1" fontWeight={600}>
+        <Typography variant="subtitle1" component="h2" sx={filterHeadingSx}>
           Favorites
         </Typography>
         <IconButton size="small" onClick={closeSecondaryPanel} aria-label="Close favorites panel">

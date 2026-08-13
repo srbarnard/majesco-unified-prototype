@@ -7,6 +7,7 @@ import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { useQuotesLookupFromUrl } from '@/hooks/useLookupFromUrl'
+import { useSearchQueryFromUrl } from '@/hooks/useSearchQueryFromUrl'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { QuotesAnalyticsTab } from '@/pages/quotes/components/QuotesAnalyticsTab'
@@ -45,6 +46,10 @@ export function QuotesPage() {
     setFilterOpen(true)
     setCopilotOpen(false)
     setCopilotQuoteFocus(null)
+  }, []))
+
+  useSearchQueryFromUrl(useCallback((query) => {
+    setSearchQuery(query)
   }, []))
 
   const filteredRows = useMemo(() => {

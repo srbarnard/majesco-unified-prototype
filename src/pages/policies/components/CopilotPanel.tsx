@@ -14,7 +14,7 @@ import type { GlobalCopilotView } from '@/app/contexts/GlobalSearchContext'
 import { AgenticSearchResults, DailySummaryContent } from '@/pages/policies/components/AgenticSearchResults'
 import { CopilotConfidenceIndicator } from '@/pages/policies/components/copilot/CopilotConfidenceIndicator'
 import { CopilotDrawerShell } from '@/pages/policies/components/copilot/CopilotDrawerShell'
-import { copilotSectionHeadingSx, copilotSubtitleSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
+import { copilotDrawerHeadingSx, copilotSectionHeadingSx, copilotSubtitleSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import { resolveCopilotConfidence } from '@/pages/policies/components/copilot/resolveCopilotConfidence'
 import { useAnimatedConfidence } from '@/pages/policies/components/copilot/useAnimatedConfidence'
 import {
@@ -41,10 +41,16 @@ import {
   customersWorkspaceInsights,
   customersWorkspaceSummary,
 } from '@/pages/customers/data/mockCustomers'
+import {
+  insuredsListQuickActions,
+  insuredsNextSteps,
+  insuredsWorkspaceInsights,
+  insuredsWorkspaceSummary,
+} from '@/pages/insureds/data/mockInsureds'
 
 type CopilotPanelProps = {
   activePolicyTab?: PolicyTab
-  context?: 'policy' | 'quotes' | 'quote-detail' | 'submission-detail' | 'insured' | 'policies-list' | 'tasks' | 'customers' | 'global'
+  context?: 'policy' | 'quotes' | 'quote-detail' | 'submission-detail' | 'insured' | 'insureds' | 'policies-list' | 'tasks' | 'customers' | 'global'
   globalView?: GlobalCopilotView
   agenticPrompt?: string | null
   focusedDocument?: PolicyDocument | null
@@ -271,6 +277,7 @@ export function CopilotPanel({
   const isQuotesContext = context === 'quotes'
   const isQuoteDetailContext = context === 'quote-detail'
   const isInsuredContext = context === 'insured'
+  const isInsuredsContext = context === 'insureds'
   const isPoliciesListContext = context === 'policies-list'
   const isTasksContext = context === 'tasks'
   const isCustomersContext = context === 'customers'
@@ -358,6 +365,8 @@ export function CopilotPanel({
                 ? taskQuickActions
                 : isCustomersContext
                   ? customersListQuickActions
+                : isInsuredsContext
+                  ? insuredsListQuickActions
                 : isQuotesContext
                   ? ['Pipeline summary', 'Quotes needing action', 'Compare premiums']
                   : isInsuredContext
@@ -392,6 +401,8 @@ export function CopilotPanel({
                 ? 'Summarize'
                 : isCustomersContext
                   ? 'Customers workspace'
+                : isInsuredsContext
+                  ? 'Summarize'
                 : isQuotesContext
                   ? 'Quotes workspace'
                   : isInsuredContext
@@ -424,6 +435,8 @@ export function CopilotPanel({
                 ? tasksWorkspaceSummary
                 : isCustomersContext
                   ? customersWorkspaceSummary
+                : isInsuredsContext
+                  ? insuredsWorkspaceSummary
                 : isQuotesContext
                   ? quotesWorkspaceSummary
                   : isInsuredContext && focusedInsured
@@ -458,6 +471,8 @@ export function CopilotPanel({
                 ? tasksWorkspaceInsights
                 : isCustomersContext
                   ? customersWorkspaceInsights
+                : isInsuredsContext
+                  ? insuredsWorkspaceInsights
                 : isQuotesContext
                   ? quotesWorkspaceInsights
                   : isInsuredContext && focusedInsured
@@ -508,6 +523,8 @@ export function CopilotPanel({
               ? 'Ask about this quote…'
               : isTasksContext
                 ? 'Ask more…'
+                : isInsuredsContext
+                  ? 'Ask more…'
                 : isQuotesContext
                   ? 'Ask about your quotes pipeline…'
                   : isInsuredContext
@@ -536,16 +553,14 @@ export function CopilotPanel({
               pt: layoutTokens.policyHeaderTopPadding,
               pb: layoutTokens.contentPaddingX / 8,
               bgcolor: 'background.paper',
-              borderBottom: 1,
-              borderColor: 'divider',
               flexShrink: 0,
             }}
           >
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Typography
-                variant="h5"
+                variant="subtitle1"
                 component="h2"
-                sx={{ lineHeight: 1.35, mb: 0.5 }}
+                sx={{ ...copilotDrawerHeadingSx, lineHeight: 1.35, mb: 0.5 }}
               >
                 {(documentPreviewMode
                   ? documentViewerAttachLabels[activeAttachMode.target]
@@ -694,9 +709,11 @@ export function CopilotPanel({
               </>
             )}
             <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
-              {isTasksContext && !focusedTask ? 'At a glance' : 'Key insights'}
+              {(isTasksContext && !focusedTask) || (isInsuredsContext && !focusedInsured)
+                ? 'At a glance'
+                : 'Key insights'}
             </Typography>
-            <Box component="ul" sx={{ m: 0, pl: 2.5, mb: isTasksContext && !focusedTask ? 2 : 2 }}>
+            <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }}>
               {insights.map((insight) => (
                 <Typography component="li" variant="body2" color="text.primary" key={insight} sx={{ ...bodySx, mb: 0.5 }}>
                   {insight}
@@ -704,13 +721,13 @@ export function CopilotPanel({
               ))}
             </Box>
 
-            {isTasksContext && !focusedTask && (
+            {((isTasksContext && !focusedTask) || (isInsuredsContext && !focusedInsured)) && (
               <>
                 <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
                   Next steps
                 </Typography>
                 <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }}>
-                  {tasksNextSteps.map((step) => (
+                  {(isInsuredsContext ? insuredsNextSteps : tasksNextSteps).map((step) => (
                     <Typography component="li" variant="body2" color="text.primary" key={step} sx={{ ...bodySx, mb: 0.5 }}>
                       {step}
                     </Typography>

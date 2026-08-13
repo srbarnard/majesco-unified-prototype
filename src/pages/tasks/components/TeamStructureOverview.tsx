@@ -8,7 +8,7 @@ import { useMemo } from 'react'
 import { dataGridInteractionSx } from '@/design-system/components'
 import { listDataGridContainerSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { dataGridShellSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { dataGridShellSx, isDarkMode, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { teamMembersMock, type TeamMemberRecord } from '@/pages/tasks/data/mockTasks'
 
 type TeamStructureOverviewProps = {
@@ -38,14 +38,16 @@ export function TeamStructureOverview({ searchQuery }: TeamStructureOverviewProp
         renderCell: ({ row }) => (
           <Stack direction="row" spacing={1.25} alignItems="center" sx={{ py: 0.25 }}>
             <Avatar
-              sx={{
+              sx={(theme) => ({
                 width: 32,
                 height: 32,
                 fontSize: '0.75rem',
                 fontWeight: 600,
-                bgcolor: (theme) => theme.figmaPalette.grey[200],
-                color: 'text.secondary',
-              }}
+                bgcolor: isDarkMode(theme)
+                  ? theme.figmaPalette.grey[600]
+                  : theme.figmaPalette.grey[200],
+                color: isDarkMode(theme) ? theme.palette.common.white : theme.palette.text.secondary,
+              })}
             >
               {row.initials}
             </Avatar>

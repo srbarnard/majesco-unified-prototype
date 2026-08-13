@@ -6,6 +6,7 @@ import {
   insuredRecentActivityMock,
   type InsuredDetailsRecord,
 } from '@/pages/insureds/data/mockInsuredDetails'
+import { insuredsMock } from '@/pages/insureds/data/mockInsureds'
 
 export function resolveInsuredContext(insuredId: string | undefined): InsuredDetailsRecord {
   if (!insuredId || insuredId === insuredDetailsMock.id) {
@@ -16,21 +17,40 @@ export function resolveInsuredContext(insuredId: string | undefined): InsuredDet
   const fromList = policiesListMock.find(
     (row) => insuredIdFromName(row.insuredName) === decoded || row.insuredName === decoded,
   )
+  const fromInsureds = insuredsMock.find(
+    (row) => insuredIdFromName(row.name) === decoded || row.name === decoded,
+  )
 
-  if (fromList) {
+  if (fromList || fromInsureds) {
+    const name = fromList?.insuredName ?? fromInsureds!.name
+    const premium = fromInsureds
+      ? fromInsureds.premiumInForce.toLocaleString('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          maximumFractionDigits: 0,
+        })
+      : '$1.24M'
+
     return {
       ...insuredDetailsMock,
-      id: insuredIdFromName(fromList.insuredName),
-      name: fromList.insuredName,
-      policyCount: 1,
-      totalPremium: '$1.24M',
-      openClaims: 0,
-      primaryState: 'Multi-state',
-      copilotSummary: `**${fromList.insuredName}** has **1 active policy** with **${fromList.agency}**. Review renewal timing and billing activity before producer outreach.`,
+      id: insuredIdFromName(name),
+      name,
+      policyCount: fromInsureds?.upcomingRenewals ? Math.max(1, fromInsureds.upcomingRenewals) : 1,
+      totalPremium: premium,
+      openClaims: fromInsureds?.openClaims ?? 0,
+      primaryState: fromInsureds?.cityStateZip.match(/\b([A-Z]{2})\s+\d{5}\b/)?.[1] ?? 'Multi-state',
+      address: fromInsureds ? `${fromInsureds.addressLine1}, ${fromInsureds.cityStateZip}` : insuredDetailsMock.address,
+      phone: fromInsureds?.contactPhone ?? insuredDetailsMock.phone,
+      email: fromInsureds?.contactEmail ?? insuredDetailsMock.email,
+      copilotSummary: `**${name}** has **${fromInsureds?.insuredType.toLowerCase() ?? 'commercial'}** coverage in force${fromInsureds ? ` totaling **${premium}**` : ''}. Review renewal timing and claims activity before producer outreach.`,
       copilotInsights: [
-        `Policy ${fromList.policyNumber} · ${fromList.agency}`,
-        `Underwriter: ${fromList.underwriter}`,
-        `Effective ${fromList.effectiveDate} – Expires ${fromList.expirationDate}`,
+        fromList ? `Policy ${fromList.policyNumber} · ${fromList.agency}` : `${fromInsureds?.insuredType} insured`,
+        fromInsureds
+          ? `Contact ${fromInsureds.contactName} · ${fromInsureds.contactPhone}`
+          : `Underwriter: ${fromList?.underwriter}`,
+        fromInsureds
+          ? `${fromInsureds.openQuotes ?? 0} open quotes · ${fromInsureds.openClaims ?? 0} open claims`
+          : `Effective ${fromList?.effectiveDate} – Expires ${fromList?.expirationDate}`,
       ],
     }
   }

@@ -24,6 +24,7 @@ import { CopilotConfidenceIndicator } from '@/pages/policies/components/copilot/
 import { CopilotDrawerShell } from '@/pages/policies/components/copilot/CopilotDrawerShell'
 import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import {
+  copilotDrawerHeadingSx,
   copilotSectionHeadingSx,
   copilotSubtitleSx,
 } from '@/pages/policies/components/copilot/copilotDrawerStyles'
@@ -939,13 +940,11 @@ export function SubmissionsCopilotPanel({
             pt: layoutTokens.policyHeaderTopPadding,
             pb: layoutTokens.contentPaddingX / 8,
             bgcolor: 'background.paper',
-            borderBottom: 1,
-            borderColor: 'divider',
             flexShrink: 0,
           }}
         >
           <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="h5" component="h2" sx={{ lineHeight: 1.35, mb: 0.5 }}>
+            <Typography variant="subtitle1" component="h2" sx={{ ...copilotDrawerHeadingSx, lineHeight: 1.35, mb: 0.5 }}>
               {targetLabels[attachMode.target]}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={bodySx}>
