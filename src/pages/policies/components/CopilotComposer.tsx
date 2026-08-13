@@ -267,6 +267,8 @@ export type CopilotComposerProps = {
   onSelectorChange?: (value: string) => void
   /** When true (default), paperclip + drag/drop attachments match New Quote input. */
   enableAttachments?: boolean
+  /** Fast / Thinking selector. Hide for non-chat composers such as Notes. */
+  showModeSelector?: boolean
   /** Increment / change to programmatically open the file picker (e.g. guided “Upload…”). */
   attachRequestKey?: number | string | null
   /** When this changes, clear staged attachments (e.g. switching Copilot focus). */
@@ -289,6 +291,7 @@ export function CopilotComposer({
   selectorOptions,
   onSelectorChange,
   enableAttachments = true,
+  showModeSelector = true,
   attachRequestKey = null,
   attachmentResetKey = null,
   onSubmit,
@@ -513,9 +516,9 @@ export function CopilotComposer({
                 onChange={onSelectorChange}
                 showModelRow={false}
               />
-            ) : (
+            ) : showModeSelector ? (
               <ModePopover mode={mode} onChange={setMode} />
-            )}
+            ) : null}
           </Stack>
 
           <Stack direction="row" spacing={0.25} alignItems="center">

@@ -1,31 +1,61 @@
-import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
+import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { CopilotIcon } from '@/design-system/components'
+import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import type { StudioChatMessage } from '@/pages/copilot-studio/data/mockCopilotStudio'
 import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+
+const bodySx = {
+  fontFamily: figmaFontFamilyStack.body,
+  fontWeight: 400,
+} as const
 
 function UserMessage({ message }: { message: StudioChatMessage }) {
   return (
     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2.5 }}>
       <Box
-        sx={(theme) => ({
+        sx={{
           maxWidth: '85%',
-          px: 2,
-          py: 1.5,
-          borderRadius: 2,
-          bgcolor: surfaceMuted(theme),
-        })}
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+        }}
       >
-        <Typography
-          variant="body2"
-          sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.875rem', lineHeight: 1.55 }}
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
+          <Avatar
+            sx={{
+              width: 24,
+              height: 24,
+              fontSize: '0.625rem',
+              fontWeight: 600,
+              bgcolor: (theme) => theme.figmaPalette.grey[200],
+              color: 'text.secondary',
+            }}
+          >
+            SB
+          </Avatar>
+          <Typography
+            variant="body2"
+            sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.8125rem' }}
+          >
+            You
+          </Typography>
+        </Stack>
+        <Box
+          sx={(theme) => ({
+            px: 2,
+            py: 1.5,
+            borderRadius: 2,
+            bgcolor: surfaceMuted(theme),
+          })}
         >
-          {message.content}
-        </Typography>
+          <Typography variant="body2" sx={{ ...bodySx, fontSize: '0.875rem', lineHeight: 1.55 }}>
+            {message.content}
+          </Typography>
+        </Box>
       </Box>
     </Box>
   )
@@ -34,19 +64,10 @@ function UserMessage({ message }: { message: StudioChatMessage }) {
 function AssistantMessage({ message }: { message: StudioChatMessage }) {
   return (
     <Box sx={{ mb: 3 }}>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-        <CopilotIcon size={18} />
-        <Typography
-          variant="body2"
-          sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.8125rem' }}
-        >
-          Assistant
-        </Typography>
-      </Stack>
       <Typography
         variant="body2"
         sx={{
-          fontFamily: figmaFontFamilyStack.body,
+          ...bodySx,
           fontSize: '0.875rem',
           lineHeight: 1.6,
           color: 'text.primary',
@@ -60,7 +81,7 @@ function AssistantMessage({ message }: { message: StudioChatMessage }) {
           <ContentCopyOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
         </IconButton>
         {message.elapsedSeconds !== undefined && (
-          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
+          <Typography variant="caption" color="text.secondary" sx={bodySx}>
             {message.elapsedSeconds.toFixed(2)}s
           </Typography>
         )}

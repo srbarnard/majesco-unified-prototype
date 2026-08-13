@@ -2,12 +2,9 @@ import MoreVertIcon from '@mui/icons-material/MoreVert'
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive'
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
 import Box from '@mui/material/Box'
-import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
-import ListItemIcon from '@mui/material/ListItemIcon'
-import ListItemText from '@mui/material/ListItemText'
 import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
@@ -40,6 +37,14 @@ import { SubmissionStatusChip } from '@/pages/submissions/components/SubmissionS
 import type { SubmissionListRecord } from '@/pages/submissions/data/mockSubmissions'
 
 const CHECKBOX_COLUMN_WIDTH = 50
+
+const tableMenuItemSx = {
+  fontFamily: figmaFontFamilyStack.body,
+  fontSize: '0.8125rem',
+  lineHeight: 1.4,
+  minHeight: 36,
+  py: 0.75,
+} as const
 
 type SubmissionsDataGridProps = {
   apiRef: MutableRefObject<GridApi>
@@ -194,7 +199,17 @@ function RowActionsMenu({
           </IconButton>
         </Tooltip>
       </Stack>
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => setAnchorEl(null)}
+        MenuListProps={{
+          sx: {
+            py: 0.5,
+            '& .MuiMenuItem-root': tableMenuItemSx,
+          },
+        }}
+      >
         <MenuItem
           onClick={() => {
             setAnchorEl(null)
@@ -226,19 +241,6 @@ function RowActionsMenu({
           }}
         >
           Discard
-        </MenuItem>
-        <Divider />
-        <MenuItem
-          selected={isCopilotActive}
-          onClick={() => {
-            setAnchorEl(null)
-            onAskCopilot?.(row)
-          }}
-        >
-          <ListItemIcon sx={{ minWidth: 32 }}>
-            <CopilotIcon size={18} active={isCopilotActive} />
-          </ListItemIcon>
-          <ListItemText>Ask Copilot</ListItemText>
         </MenuItem>
       </Menu>
     </>

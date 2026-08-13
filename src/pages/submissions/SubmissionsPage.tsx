@@ -10,6 +10,7 @@ import { SubmissionsCopilotPanel } from '@/pages/submissions/components/Submissi
 import { SubmissionsDataGrid } from '@/pages/submissions/components/SubmissionsDataGrid'
 import { SubmissionsFilterPanel } from '@/pages/submissions/components/SubmissionsFilterPanel'
 import { SubmissionsHeader } from '@/pages/submissions/components/SubmissionsHeader'
+import { DiscardSubmissionDialog } from '@/pages/submissions/components/DiscardSubmissionDialog'
 import { SubmissionsNotesPanel } from '@/pages/submissions/components/SubmissionsNotesPanel'
 import type { SubmissionsTab } from '@/pages/submissions/components/SubmissionsTabs'
 import { SubmissionsToolbar } from '@/pages/submissions/components/SubmissionsToolbar'
@@ -61,6 +62,8 @@ export function SubmissionsPage() {
   const [filterOpen, setFilterOpen] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
   const [copilotSubmissionFocus, setCopilotSubmissionFocus] = useState<SubmissionListRecord | null>(null)
+  const [notesTarget, setNotesTarget] = useState<SubmissionListRecord | null>(null)
+  const [discardTargets, setDiscardTargets] = useState<SubmissionListRecord[] | null>(null)
   const [copilotEntryMode, setCopilotEntryMode] = useState<'insight' | 'status'>('insight')
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<SubmissionsListFilters>(emptySubmissionsListFilters)
@@ -108,6 +111,11 @@ export function SubmissionsPage() {
     return rows.find((row) => row.id === copilotSubmissionFocus.id) ?? null
   }, [copilotSubmissionFocus, rows])
 
+  const notesSubmission = useMemo(() => {
+    if (!notesTarget) return null
+    return rows.find((row) => row.id === notesTarget.id) ?? notesTarget
+  }, [notesTarget, rows])
+
   const closeSidePanels = useCallback(() => {
     setFilterOpen(false)
     setNotesOpen(false)
@@ -131,6 +139,7 @@ export function SubmissionsPage() {
       if (!current) {
         setCopilotOpen(false)
         setFilterOpen(false)
+        setNotesTarget(null)
       }
       return !current
     })
@@ -195,10 +204,19 @@ export function SubmissionsPage() {
   }, [rows])
 
   const handleAddNote = useCallback((submission: SubmissionListRecord) => {
-    setCopilotSubmissionFocus(submission)
+    setNotesTarget(submission)
     setFilterOpen(false)
     setCopilotOpen(false)
     setNotesOpen(true)
+  }, [])
+
+  const handleSaveNote = useCallback((submissionId: string, note: string) => {
+    const stamped = `${formatResolvedTimestamp()} — ${note}`
+    setRows((current) =>
+      current.map((row) =>
+        row.id === submissionId ? { ...row, notes: [stamped, ...row.notes] } : row,
+      ),
+    )
   }, [])
 
   const handleTabChange = useCallback((tab: SubmissionsTab) => {
@@ -289,21 +307,29 @@ export function SubmissionsPage() {
   }, [])
 
   const handleDiscardSelected = useCallback(() => {
-    const selectedIds = new Set(rowSelectionModel.map(String))
-    setRows((current) => current.filter((row) => !selectedIds.has(row.id)))
-    setRowSelectionModel([])
-    if (copilotSubmissionFocus && selectedIds.has(copilotSubmissionFocus.id)) {
-      setCopilotSubmissionFocus(null)
-    }
-  }, [copilotSubmissionFocus, rowSelectionModel])
+    if (selectedSubmissions.length === 0) return
+    setDiscardTargets(selectedSubmissions)
+  }, [selectedSubmissions])
 
   const handleDiscardOne = useCallback((submission: SubmissionListRecord) => {
-    setRows((current) => current.filter((row) => row.id !== submission.id))
-    setRowSelectionModel((current) => current.filter((id) => String(id) !== submission.id))
-    if (copilotSubmissionFocus?.id === submission.id) {
+    setDiscardTargets([submission])
+  }, [])
+
+  const handleConfirmDiscard = useCallback((_reason: string) => {
+    const targets = discardTargets ?? []
+    const discardedIds = new Set(targets.map((row) => row.id))
+    if (discardedIds.size === 0) return
+
+    setRows((current) => current.filter((row) => !discardedIds.has(row.id)))
+    setRowSelectionModel((current) => current.filter((id) => !discardedIds.has(String(id))))
+    if (copilotSubmissionFocus && discardedIds.has(copilotSubmissionFocus.id)) {
       setCopilotSubmissionFocus(null)
     }
-  }, [copilotSubmissionFocus])
+    if (notesTarget && discardedIds.has(notesTarget.id)) {
+      setNotesTarget(null)
+    }
+    setDiscardTargets(null)
+  }, [copilotSubmissionFocus, discardTargets, notesTarget])
 
   const handleToggleAlert = useCallback((submission: SubmissionListRecord) => {
     setRows((current) =>
@@ -431,7 +457,9 @@ export function SubmissionsPage() {
         )}
         {notesOpen && (
           <SubmissionsNotesPanel
-            focusedSubmission={focusedSubmission}
+            focusedSubmission={notesSubmission}
+            submissions={rows}
+            onSaveNote={handleSaveNote}
             onClose={handleCloseNotes}
           />
         )}
@@ -447,6 +475,13 @@ export function SubmissionsPage() {
           />
         )}
       </ResizableRightPanel>
+
+      <DiscardSubmissionDialog
+        open={Boolean(discardTargets?.length)}
+        submissions={discardTargets ?? []}
+        onClose={() => setDiscardTargets(null)}
+        onConfirm={handleConfirmDiscard}
+      />
     </Box>
   )
 }

@@ -9,6 +9,7 @@ import { SearchField } from '@/design-system/components'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import {
   copilotHistoryEntries,
+  copilotHistoryKindLabel,
   type CopilotHistoryEntry,
   type CopilotHistoryKind,
 } from './copilotDrawerData'
@@ -30,7 +31,11 @@ export function CopilotHistoryView({ onSelectEntry }: CopilotHistoryViewProps) {
   const entries = useMemo(() => {
     const normalized = search.trim().toLowerCase()
     if (!normalized) return copilotHistoryEntries
-    return copilotHistoryEntries.filter((entry) => entry.title.toLowerCase().includes(normalized))
+    return copilotHistoryEntries.filter(
+      (entry) =>
+        entry.title.toLowerCase().includes(normalized) ||
+        copilotHistoryKindLabel(entry.kind).toLowerCase().includes(normalized),
+    )
   }, [search])
 
   return (
@@ -67,13 +72,22 @@ export function CopilotHistoryView({ onSelectEntry }: CopilotHistoryViewProps) {
             }}
           >
             <HistoryKindIcon kind={entry.kind} />
-            <Typography
-              variant="body2"
-              noWrap
-              sx={{ fontFamily: figmaFontFamilyStack.body, flex: 1, minWidth: 0 }}
-            >
-              {entry.title}
-            </Typography>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography
+                variant="body2"
+                noWrap
+                sx={{ fontFamily: figmaFontFamilyStack.body, minWidth: 0 }}
+              >
+                {entry.title}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.25 }}
+              >
+                {copilotHistoryKindLabel(entry.kind)}
+              </Typography>
+            </Box>
           </Box>
         ))}
 

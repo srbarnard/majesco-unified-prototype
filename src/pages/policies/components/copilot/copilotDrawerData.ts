@@ -85,6 +85,10 @@ export const copilotDrawerAgentGroups: CopilotDrawerAgentGroup[] = [
 
 export type CopilotHistoryKind = 'chat' | 'agent' | 'action'
 
+export function copilotHistoryKindLabel(kind: CopilotHistoryKind) {
+  return kind === 'agent' ? 'Agent' : 'Prompt'
+}
+
 export type CopilotHistoryEntry = {
   id: string
   title: string

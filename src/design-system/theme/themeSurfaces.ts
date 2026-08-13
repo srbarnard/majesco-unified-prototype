@@ -39,6 +39,16 @@ export function accentSubtleHover(theme: Theme) {
   return isDarkMode(theme) ? theme.figmaPalette.blue[800] : theme.figmaPalette.blue[100]
 }
 
+/** Incoming note/chat bubble — Majesco secondary (teal) wash. */
+export function chatBubbleIncoming(theme: Theme) {
+  return isDarkMode(theme) ? theme.figmaPalette.teal[900] : theme.figmaPalette.teal[50]
+}
+
+/** Outgoing note/chat bubble — Majesco primary (blue) wash. */
+export function chatBubbleOutgoing(theme: Theme) {
+  return isDarkMode(theme) ? theme.figmaPalette.blue[900] : theme.figmaPalette.blue[100]
+}
+
 /** Light-blue insight / callout surfaces — no chrome border or shadow. */
 export function accentSurfaceCardSx(theme: Theme) {
   return {

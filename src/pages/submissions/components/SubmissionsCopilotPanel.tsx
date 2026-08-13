@@ -304,7 +304,6 @@ function IssueDetailCard({
           </Typography>
         ))}
       </Box>
-
       <Divider sx={{ mb: 2 }} />
 
       <CopilotQuickActions
@@ -375,7 +374,6 @@ function SubmissionInsightView({
           </Typography>
         ))}
       </Box>
-
       <Divider sx={{ mb: 2 }} />
       <CopilotQuickActions
         actions={quickActions}
@@ -607,7 +605,6 @@ function ReadyStructureOptionsView({
           )
         })}
       </Stack>
-
       <CopilotContentTransition
         contentKey={`${submission.id}:${selected?.label ?? 'none'}:${approvedLabel ?? 'open'}`}
       >
