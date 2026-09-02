@@ -384,16 +384,8 @@ function SidebarContent({
 
 function MobileDrawerContent({ onClose }: { onClose: () => void }) {
   return (
-    <MobileNavDrawerShell
-      title="Navigation"
-      onClose={onClose}
-      footer={
-        <Box sx={{ px: 2, py: 2 }}>
-          <ThemeModeToggle fullWidth />
-        </Box>
-      }
-    >
-      <SidebarContent layout="drawer" onNavigate={onClose} hideThemeToggle />
+    <MobileNavDrawerShell title="Navigation" onClose={onClose}>
+      <SidebarContent layout="drawer" onNavigate={onClose} />
     </MobileNavDrawerShell>
   )
 }
