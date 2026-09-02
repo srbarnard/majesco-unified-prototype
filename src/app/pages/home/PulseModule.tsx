@@ -10,7 +10,7 @@ import {
   type PulseFilter,
 } from '@/app/data/pulseMock'
 import { PulseChart } from '@/app/pages/home/PulseChart'
-import { PulseToolbar } from '@/app/pages/home/PulseToolbar'
+import { PulseChartControls, PulseFilterChips } from '@/app/pages/home/PulseToolbar'
 import { usePulsePreferences } from '@/app/pages/home/pulseChartPalettes'
 import { accentSubtle } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -99,16 +99,43 @@ export function PulseModule({ onActivitySelect }: PulseModuleProps) {
 
   return (
     <Box sx={{ width: '100%' }}>
-      <PulseToolbar
-        filter={filter}
-        onFilterChange={setFilter}
-        range={range}
-        onRangeChange={setRange}
-        paletteId={paletteId}
-        onPaletteChange={setPaletteId}
-      />
+      <Box
+        sx={{
+          display: 'grid',
+          columnGap: 1.5,
+          rowGap: 2,
+          gridTemplateColumns: { xs: '1fr', md: '1fr auto' },
+          gridTemplateAreas: {
+            xs: `
+              "filters"
+              "chart"
+              "controls"
+            `,
+            md: `
+              "filters controls"
+              "chart chart"
+            `,
+          },
+          alignItems: 'center',
+        }}
+      >
+        <Box sx={{ gridArea: 'filters', minWidth: 0 }}>
+          <PulseFilterChips filter={filter} onFilterChange={setFilter} />
+        </Box>
 
-      <PulseChart filter={filter} range={range} palette={palette} />
+        <Box sx={{ gridArea: 'controls', minWidth: 0 }}>
+          <PulseChartControls
+            range={range}
+            onRangeChange={setRange}
+            paletteId={paletteId}
+            onPaletteChange={setPaletteId}
+          />
+        </Box>
+
+        <Box sx={{ gridArea: 'chart', minWidth: 0 }}>
+          <PulseChart filter={filter} range={range} palette={palette} />
+        </Box>
+      </Box>
 
       <Box sx={{ mt: 5 }}>
         <Typography
