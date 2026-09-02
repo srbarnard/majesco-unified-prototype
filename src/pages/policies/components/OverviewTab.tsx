@@ -15,8 +15,21 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import type { ReactNode } from 'react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
+import {
+  getAnalyticsChartAxisStyle,
+  getAnalyticsChartGridStroke,
+} from '@/design-system/components/analytics/analyticsStyles'
 import type { AppTheme } from '@/design-system/theme'
 import { accentSubtle, accentSubtleHover, isDarkMode, surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -211,55 +224,15 @@ function StatBoxesSection({ stats }: { stats: OverviewStat[] }) {
   )
 }
 
-type ChartPoint = { x: number; y: number; index: number }
-
-function buildSmoothLinePath(points: ChartPoint[]): string {
-  if (points.length === 0) return ''
-  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`
-
-  let path = `M ${points[0].x} ${points[0].y}`
-  for (let i = 1; i < points.length; i += 1) {
-    const prev = points[i - 1]
-    const curr = points[i]
-    const cpX = (prev.x + curr.x) / 2
-    path += ` C ${cpX} ${prev.y}, ${cpX} ${curr.y}, ${curr.x} ${curr.y}`
-  }
-  return path
-}
-
 function TransactionsOverTimeChart({ data }: { data: OverviewTimeSeriesPoint[] }) {
   const theme = useTheme()
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null)
-
+  const axisStyle = getAnalyticsChartAxisStyle(theme)
+  const gridStroke = getAnalyticsChartGridStroke(theme)
+  const dark = theme.palette.mode === 'dark'
+  const lineColor = dark ? theme.figmaPalette.teal[400] : theme.figmaPalette.teal[500]
+  const fillColor = dark ? theme.figmaPalette.teal[900] : theme.figmaPalette.teal[100]
+  const dotStroke = theme.palette.background.paper
   const total = useMemo(() => data.reduce((sum, point) => sum + point.value, 0), [data])
-  const maxValue = Math.max(...data.map((point) => point.value), 1)
-  const yTicks = [0, Math.ceil(maxValue / 2), maxValue]
-
-  const chartWidth = 720
-  const chartHeight = 220
-  const padding = { top: 20, right: 24, bottom: 32, left: 52 }
-  const plotWidth = chartWidth - padding.left - padding.right
-  const plotHeight = chartHeight - padding.top - padding.bottom
-  const baseline = padding.top + plotHeight
-
-  const points: ChartPoint[] = data.map((point, index) => ({
-    x: padding.left + (index / Math.max(data.length - 1, 1)) * plotWidth,
-    y: padding.top + plotHeight - (point.value / maxValue) * plotHeight,
-    index,
-  }))
-
-  const linePath = buildSmoothLinePath(points)
-  const areaPath =
-    points.length > 0
-      ? `${linePath} L ${points[points.length - 1].x} ${baseline} L ${points[0].x} ${baseline} Z`
-      : ''
-
-  const lineColor = theme.figmaPalette.teal[500]
-  const fillColor = theme.figmaPalette.teal[100]
-  const gridColor = theme.palette.divider
-
-  const hoveredPoint = hoverIndex !== null ? data[hoverIndex] : null
-  const hoveredCoords = hoverIndex !== null ? points[hoverIndex] : null
 
   return (
     <Box
@@ -289,136 +262,82 @@ function TransactionsOverTimeChart({ data }: { data: OverviewTimeSeriesPoint[] }
         </Stack>
       </Box>
 
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', px: 1, pb: 1.5, pt: 0.5, minHeight: 0, position: 'relative' }}>
-        <Box
-          component="svg"
-          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-          preserveAspectRatio="xMidYMid meet"
-          sx={{ width: '100%', height: '100%', flex: 1, minHeight: 180, display: 'block', userSelect: 'none' }}
-          onMouseLeave={() => setHoverIndex(null)}
-        >
-          <defs>
-            <linearGradient id="transactions-area-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={fillColor} stopOpacity={0.85} />
-              <stop offset="100%" stopColor={fillColor} stopOpacity={0.05} />
-            </linearGradient>
-          </defs>
-
-          {yTicks.map((tick) => {
-            const y = padding.top + plotHeight - (tick / maxValue) * plotHeight
-            return (
-              <g key={tick}>
-                <line
-                  x1={padding.left}
-                  y1={y}
-                  x2={chartWidth - padding.right}
-                  y2={y}
-                  stroke={gridColor}
-                  strokeWidth={1}
-                  strokeDasharray="3 4"
-                />
-                <text
-                  x={padding.left - 10}
-                  y={y + 4}
-                  textAnchor="end"
-                  fill={theme.figmaPalette.grey[500]}
-                  fontSize={11}
-                  fontFamily={figmaFontFamilyStack.body}
-                >
-                  {tick}
-                </text>
-              </g>
-            )
-          })}
-
-          <text
-            x={14}
-            y={padding.top + plotHeight / 2}
-            textAnchor="middle"
-            fill={theme.figmaPalette.grey[500]}
-            fontSize={11}
-            fontFamily={figmaFontFamilyStack.body}
-            transform={`rotate(-90 14 ${padding.top + plotHeight / 2})`}
-          >
-            Transactions
-          </text>
-
-          {areaPath && <path d={areaPath} fill="url(#transactions-area-fill)" />}
-          {linePath && (
-            <path d={linePath} fill="none" stroke={lineColor} strokeWidth={2.5} strokeLinecap="round" />
-          )}
-
-          {points.map((point) => (
-            <circle
-              key={point.index}
-              cx={point.x}
-              cy={point.y}
-              r={hoverIndex === point.index ? 5 : 3.5}
-              fill={lineColor}
-              stroke="#fff"
-              strokeWidth={1.5}
-              style={{ cursor: 'pointer' }}
-              onMouseEnter={() => setHoverIndex(point.index)}
+      <Box sx={{ flex: 1, minHeight: 180, px: 1, pb: 1.5, pt: 0.5 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 12, right: 16, left: 4, bottom: 4 }}>
+            <defs>
+              <linearGradient id="transactions-area-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={fillColor} stopOpacity={0.85} />
+                <stop offset="100%" stopColor={fillColor} stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
+            <XAxis
+              dataKey="label"
+              tick={axisStyle}
+              tickLine={false}
+              axisLine={false}
+              interval="preserveStartEnd"
+              minTickGap={28}
             />
-          ))}
-
-          {hoveredCoords && (
-            <line
-              x1={hoveredCoords.x}
-              y1={padding.top}
-              x2={hoveredCoords.x}
-              y2={baseline}
-              stroke={theme.figmaPalette.grey[400]}
-              strokeWidth={1}
+            <YAxis
+              tick={axisStyle}
+              tickLine={false}
+              axisLine={false}
+              width={40}
+              allowDecimals={false}
+              label={{
+                value: 'Transactions',
+                angle: -90,
+                position: 'insideLeft',
+                style: { ...axisStyle, textAnchor: 'middle' },
+              }}
             />
-          )}
-
-          {data.map((point, index) => {
-            if (!point.label) return null
-            const x = points[index]?.x ?? padding.left
-            return (
-              <text
-                key={point.label}
-                x={x}
-                y={chartHeight - 10}
-                textAnchor="middle"
-                fill={theme.figmaPalette.grey[600]}
-                fontSize={11}
-                fontFamily={figmaFontFamilyStack.body}
-              >
-                {point.label}
-              </text>
-            )
-          })}
-        </Box>
-
-        {hoveredPoint && hoveredCoords && (
-          <Box
-            sx={{
-              position: 'absolute',
-              left: `calc(${(hoveredCoords.x / chartWidth) * 100}% - 72px)`,
-              top: `${(hoveredCoords.y / chartHeight) * 100 - 18}%`,
-              bgcolor: 'grey.900',
-              color: 'common.white',
-              borderRadius: 1,
-              px: 1.25,
-              py: 0.75,
-              pointerEvents: 'none',
-              minWidth: 140,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            }}
-          >
-            <Typography variant="caption" sx={{ ...bodySx, display: 'block', color: 'grey.300', mb: 0.25 }}>
-              {hoveredPoint.date ?? hoveredPoint.label}
-            </Typography>
-            <Stack direction="row" spacing={0.75} alignItems="center">
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: lineColor }} />
-              <Typography variant="caption" sx={{ ...bodySx, color: 'common.white' }}>
-                Transactions {hoveredPoint.value}
-              </Typography>
-            </Stack>
-          </Box>
-        )}
+            <Tooltip
+              cursor={{ stroke: theme.figmaPalette.grey[400], strokeWidth: 1 }}
+              content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null
+                const point = payload[0]?.payload as OverviewTimeSeriesPoint | undefined
+                return (
+                  <Box
+                    sx={(t) => ({
+                      px: 1.25,
+                      py: 0.75,
+                      borderRadius: 1,
+                      bgcolor: 'background.paper',
+                      border: `1px solid ${t.palette.divider}`,
+                      boxShadow:
+                        t.palette.mode === 'dark'
+                          ? '0 4px 16px rgba(0,0,0,0.45)'
+                          : '0 4px 12px rgba(0,0,0,0.08)',
+                      minWidth: 140,
+                    })}
+                  >
+                    <Typography variant="caption" color="text.secondary" sx={{ ...bodySx, display: 'block' }}>
+                      {point?.date ?? String(label ?? '')}
+                    </Typography>
+                    <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.25 }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: lineColor }} />
+                      <Typography variant="body2" sx={{ ...bodySx, fontSize: '0.75rem', fontWeight: 600 }}>
+                        Transactions {payload[0]?.value ?? 0}
+                      </Typography>
+                    </Stack>
+                  </Box>
+                )
+              }}
+            />
+            <Area
+              type="monotone"
+              dataKey="value"
+              name="Transactions"
+              stroke={lineColor}
+              strokeWidth={2.5}
+              fill="url(#transactions-area-fill)"
+              dot={{ r: 3.5, fill: lineColor, stroke: dotStroke, strokeWidth: 1.5 }}
+              activeDot={{ r: 5, stroke: dotStroke }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
       </Box>
     </Box>
   )

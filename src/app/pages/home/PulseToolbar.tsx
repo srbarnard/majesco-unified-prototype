@@ -6,9 +6,11 @@ import IconButton from '@mui/material/IconButton'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
+import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import { PULSE_FILTERS, PULSE_RANGES, type PulseFilter, type PulseRange } from '@/app/data/pulseMock'
 import {
+  getPulsePaletteColors,
   PULSE_CHART_PALETTES,
   PULSE_PALETTE_ORDER,
   type PulseChartPaletteId,
@@ -71,6 +73,7 @@ export function PulseChartControls({
   paletteId,
   onPaletteChange,
 }: PulseChartControlsProps) {
+  const theme = useTheme()
   const [paletteAnchor, setPaletteAnchor] = useState<null | HTMLElement>(null)
   const paletteOpen = Boolean(paletteAnchor)
 
@@ -162,6 +165,7 @@ export function PulseChartControls({
         {PULSE_PALETTE_ORDER.map((id) => {
           const palette = PULSE_CHART_PALETTES[id]
           const selected = id === paletteId
+          const swatchColors = getPulsePaletteColors(palette, theme.palette.mode)
           return (
             <MenuItem
               key={id}
@@ -187,7 +191,7 @@ export function PulseChartControls({
               </Box>
               <Stack direction="row" alignItems="center" spacing={1} sx={{ flexShrink: 0 }}>
                 <Box sx={{ display: 'flex', gap: 0.375 }} aria-hidden>
-                  {palette.colors.slice(0, 4).map((color) => (
+                  {swatchColors.slice(0, 4).map((color) => (
                     <Box key={color} sx={{ width: 10, height: 10, borderRadius: 0.5, bgcolor: color }} />
                   ))}
                 </Box>

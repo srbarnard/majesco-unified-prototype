@@ -6,7 +6,10 @@ export type PulseChartPaletteId = 'majestic' | 'terra' | 'classic'
 export type PulseChartPalette = {
   id: PulseChartPaletteId
   label: string
+  /** Light-mode series colors */
   colors: readonly [string, string, string, string, string, string, string, string]
+  /** Dark-mode series colors — lifted for contrast on dark surfaces */
+  darkColors: readonly [string, string, string, string, string, string, string, string]
 }
 
 export const PULSE_CHART_PALETTES: Record<PulseChartPaletteId, PulseChartPalette> = {
@@ -14,17 +17,27 @@ export const PULSE_CHART_PALETTES: Record<PulseChartPaletteId, PulseChartPalette
     id: 'majestic',
     label: 'Majestic',
     colors: ['#0DA3A6', '#00294D', '#137835', '#4B017A', '#5229BC', '#FF7A00', '#D64550', '#D9B300'],
+    darkColors: ['#2EC4C7', '#6BB3E0', '#4ADE80', '#C084FC', '#A78BFA', '#FF9A3D', '#FB7185', '#FACC15'],
   },
   terra: {
     id: 'terra',
     label: 'Terra',
     colors: ['#56687A', '#5B8E7D', '#2A9D8F', '#8AB17D', '#E9C46A', '#F4A261', '#E76F51', '#A44A3F'],
+    darkColors: ['#9BB0C2', '#7DB8A6', '#3DBFB0', '#A8C994', '#E9C46A', '#F4A261', '#F08A72', '#E08A82'],
   },
   classic: {
     id: 'classic',
     label: 'Classic',
     colors: ['#1F77B4', '#AEC7E8', '#FF7F0E', '#FFBB78', '#2CA02C', '#98DF8A', '#9467BD', '#C5B0D5'],
+    darkColors: ['#5BA3E0', '#AEC7E8', '#FF9A40', '#FFBB78', '#52C25A', '#98DF8A', '#B48CDB', '#C5B0D5'],
   },
+}
+
+export function getPulsePaletteColors(
+  palette: PulseChartPalette,
+  mode: 'light' | 'dark' = 'light',
+): PulseChartPalette['colors'] {
+  return mode === 'dark' ? palette.darkColors : palette.colors
 }
 
 export const PULSE_PALETTE_ORDER: PulseChartPaletteId[] = ['majestic', 'terra', 'classic']
