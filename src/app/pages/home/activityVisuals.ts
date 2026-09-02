@@ -8,6 +8,7 @@ import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined
 import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined'
 import type { SvgIconComponent } from '@mui/icons-material'
 import type { Theme } from '@mui/material/styles'
+import type { StatusChipProps } from '@/design-system/components'
 import type { RecentActivityKind } from '@/app/data/homeMock'
 import { isDarkMode } from '@/design-system/theme/themeSurfaces'
 
@@ -72,4 +73,27 @@ export const activityVisuals: Record<RecentActivityKind, ActivityVisual> = {
     bgcolor: (theme) => (isDarkMode(theme) ? theme.figmaPalette.teal[900] : theme.figmaPalette.teal[100]),
     typeLabel: 'Quote',
   },
+}
+
+export function getActivityTypeChipStatus(kind: RecentActivityKind): StatusChipProps['status'] {
+  switch (kind) {
+    case 'renewal':
+      return 'info'
+    case 'quote':
+      return 'info'
+    case 'claim':
+      return 'error'
+    case 'endorsement':
+      return 'info'
+    case 'task':
+      return 'success'
+    case 'document':
+      return 'warning'
+    case 'policy':
+      return 'info'
+    case 'billing':
+      return 'default'
+    default:
+      return 'default'
+  }
 }

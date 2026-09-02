@@ -1,7 +1,6 @@
 import MuiButton from '@mui/material/Button'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CopilotIcon } from '@/design-system/components'
@@ -12,8 +11,9 @@ import { resolvePriorityTaskRecord } from '@/app/data/resolvePriorityTask'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { ActivityDetailsPanel } from '@/app/pages/home/ActivityDetailsPanel'
-import { RecentActivityFeed } from '@/app/pages/home/RecentActivityFeed'
+import { HomeGreetingSection } from '@/app/pages/home/HomeGreetingSection'
 import { PriorityTasksCarousel } from '@/app/pages/home/PriorityTasksCarousel'
+import { PulseModule } from '@/app/pages/home/PulseModule'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
@@ -66,8 +66,14 @@ function PanelToggleButton({
 }
 
 export function DashboardPage() {
-  const { copilotOpen, copilotView, agenticPrompt, toggleCopilot, closeCopilot, openHomeCopilotDefault } =
-    useGlobalSearch()
+  const {
+    copilotOpen,
+    copilotView,
+    agenticPrompt,
+    toggleCopilot,
+    closeCopilot,
+    openHomeCopilotDefault,
+  } = useGlobalSearch()
   const isDesktop = useIsDesktopLayout()
   const contentPx = `${layoutTokens.contentPaddingX}px`
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
@@ -220,22 +226,11 @@ export function DashboardPage() {
             flexShrink: 0,
             px: contentPx,
             pt: layoutTokens.policyHeaderTopPadding,
-            pb: 1.5,
+            pb: 1,
           }}
         >
           <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-            <Typography
-              variant="h5"
-              component="h1"
-              sx={{
-                fontFamily: figmaFontFamilyStack.heading,
-                fontWeight: 600,
-                fontSize: { xs: '1.25rem', md: '1.375rem' },
-                lineHeight: 1.3,
-              }}
-            >
-              {getGreeting()}, Chris
-            </Typography>
+            <HomeGreetingSection greeting={getGreeting()} />
             <PanelToggleButton
               label="Copilot"
               icon={<CopilotIcon size={18} active={copilotOpen && !detailPanelOpen} />}
@@ -259,22 +254,19 @@ export function DashboardPage() {
             px: contentPx,
             pb: contentPx,
             width: '100%',
+            bgcolor: 'background.paper',
           }}
         >
-          <Stack spacing={3.5} sx={{ width: '100%' }}>
+          <Stack spacing={0} sx={{ width: '100%' }}>
             <PriorityTasksCarousel onTaskOpen={handleOpenPriorityTask} />
-            <RecentActivityFeed
-              activeActivityId={selectedActivity?.id}
-              onActivitySelect={handleOpenActivity}
-            />
+            <Box sx={{ mt: 4 }}>
+              <PulseModule onActivitySelect={handleOpenActivity} />
+            </Box>
           </Stack>
         </Box>
       </Box>
 
-      <ResizableRightPanel
-        open={copilotOpen || detailPanelOpen}
-        onClose={handleCloseRightPanel}
-      >
+      <ResizableRightPanel open={copilotOpen || detailPanelOpen} onClose={handleCloseRightPanel}>
         <CopilotContentTransition contentKey={rightPanelContentKey}>
           {taskDetailOpen && selectedTask ? (
             <TaskDetailsPanel

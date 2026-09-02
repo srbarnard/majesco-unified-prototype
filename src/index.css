@@ -15,3 +15,8 @@ body,
 #root {
   overflow: hidden;
 }
+
+/* Prototype: hide MUI X license watermark when VITE_MUI_X_LICENSE_KEY is unset */
+.MuiDataGrid-root > div[style*='letter-spacing'] {
+  display: none !important;
+}

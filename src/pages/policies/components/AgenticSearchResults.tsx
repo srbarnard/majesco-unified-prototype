@@ -1,6 +1,9 @@
 import Box from '@mui/material/Box'
+import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { Link as RouterLink } from 'react-router'
+import { homeDailySummaryBeats } from '@/app/data/homeMock'
 import { CopilotQuickActions } from '@/design-system/components'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
@@ -215,43 +218,32 @@ export function AgenticSearchResults({ prompt }: AgenticSearchResultsProps) {
 export function DailySummaryContent() {
   return (
     <Stack spacing={2}>
-      <Box>
-        <Typography variant="caption" color="error.main" sx={{ ...headingSx, display: 'block', mb: 0.5 }}>
-          Overdue (2)
-        </Typography>
-        <Typography variant="body2" sx={bodySx}>
-          Approve endorsement · Atlantic Ridge Construction
-        </Typography>
-        <Typography variant="body2" sx={bodySx}>
-          Finalize proposal · Midwest Fabrication Inc.
-        </Typography>
-      </Box>
+      <Typography variant="body2" color="text.secondary" sx={bodySx}>
+        Here&apos;s what needs your attention today.
+      </Typography>
 
-      <Box>
-        <Typography variant="caption" color="warning.main" sx={{ ...headingSx, display: 'block', mb: 0.5 }}>
-          Due Today (2)
-        </Typography>
-        <Typography variant="body2" sx={bodySx}>
-          Start renewal quote · Summit Outdoor Equipment
-        </Typography>
-        <Typography variant="body2" sx={bodySx}>
-          Review loss runs · Policy renewal batch
-        </Typography>
-      </Box>
+      <Stack component="ul" spacing={1.25} sx={{ m: 0, pl: 2.25 }}>
+        {homeDailySummaryBeats.bullets.map((bullet) => (
+          <Typography key={bullet.id} component="li" variant="body2" sx={{ ...bodySx, lineHeight: 1.55 }}>
+            <Link
+              component={RouterLink}
+              to={bullet.to}
+              underline="hover"
+              sx={{ fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 500, color: 'text.primary' }}
+            >
+              {bullet.text}
+            </Link>
+          </Typography>
+        ))}
+      </Stack>
 
-      <Box>
-        <Typography variant="caption" color="text.secondary" sx={{ ...headingSx, display: 'block', mb: 0.5 }}>
-          Business Risk
-        </Typography>
-        <Typography variant="body2" sx={bodySx}>
-          3 policies expiring within 14 days
-        </Typography>
-        <Typography variant="body2" sx={bodySx}>
-          4 claims need immediate action
-        </Typography>
-      </Box>
-
-      <SuggestedActions actions={['Start renewal quotes', 'Review overdue items']} />
+      <SuggestedActions
+        actions={[
+          'Summarize blocked submissions',
+          'Which renewals need pricing approval?',
+          'What can wait until tomorrow?',
+        ]}
+      />
     </Stack>
   )
 }

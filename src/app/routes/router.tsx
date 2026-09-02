@@ -3,6 +3,7 @@ import { AppLayout } from '@/app/layouts/AppLayout'
 import { ClaimsPage } from '@/app/pages/ClaimsPage'
 import { CustomersPage } from '@/pages/customers/CustomersPage'
 import { DashboardPage } from '@/app/pages/DashboardPage'
+import { ActivityPage } from '@/app/pages/ActivityPage'
 import { PlaceholderPage } from '@/app/pages/PlaceholderPage'
 import { CopilotStudioPage } from '@/pages/copilot-studio/CopilotStudioPage'
 import { PoliciesListPage } from '@/pages/policies/PoliciesListPage'
@@ -24,7 +25,7 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <DashboardPage /> },
-      { path: 'activity', element: <PlaceholderPage title="Activity" description="Recent policy and submission activity will appear here." /> },
+      { path: 'activity', element: <ActivityPage /> },
       { path: 'favorites', element: <PlaceholderPage title="Favorites" description="Saved policies, insureds, and watchlists will appear here." /> },
       { path: 'tasks', element: <TasksPage /> },
       { path: 'quotes', element: <QuotesPage /> },

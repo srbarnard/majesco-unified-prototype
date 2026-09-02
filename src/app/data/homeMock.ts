@@ -6,6 +6,22 @@ export type PriorityTaskCard = {
   priority: 'High' | 'Medium' | 'Low'
   dueLabel: string
   isPastDue?: boolean
+  insuredInitials: string
+  nextActionLabel: string
+}
+
+export type CopilotBriefingBullet = {
+  id: string
+  text: string
+  to: string
+}
+
+export type ActivityDayGroup = 'Today' | 'Yesterday' | 'Earlier'
+
+export function getActivityDayGroup(timestamp: string): ActivityDayGroup {
+  if (timestamp.startsWith('Today')) return 'Today'
+  if (timestamp.startsWith('Yesterday')) return 'Yesterday'
+  return 'Earlier'
 }
 
 export type AgenticActivityItem = {
@@ -66,6 +82,8 @@ export const priorityTasksMock: PriorityTaskCard[] = [
     policyNumber: '01-CA-000100005-0',
     priority: 'High',
     dueLabel: 'Due tomorrow',
+    insuredInitials: 'AR',
+    nextActionLabel: 'Send proposal',
   },
   {
     id: 'pt-2',
@@ -75,6 +93,8 @@ export const priorityTasksMock: PriorityTaskCard[] = [
     priority: 'High',
     dueLabel: 'Past due',
     isPastDue: true,
+    insuredInitials: 'MF',
+    nextActionLabel: 'Request updated runs',
   },
   {
     id: 'pt-3',
@@ -83,6 +103,8 @@ export const priorityTasksMock: PriorityTaskCard[] = [
     policyNumber: '01-BP-000028506-0',
     priority: 'Medium',
     dueLabel: 'Due today',
+    insuredInitials: 'NB',
+    nextActionLabel: 'Approve rate',
   },
   {
     id: 'pt-4',
@@ -91,6 +113,8 @@ export const priorityTasksMock: PriorityTaskCard[] = [
     policyNumber: '01-CP-000017810-0',
     priority: 'High',
     dueLabel: 'Due today',
+    insuredInitials: 'RO',
+    nextActionLabel: 'Complete referral',
   },
   {
     id: 'pt-5',
@@ -99,6 +123,8 @@ export const priorityTasksMock: PriorityTaskCard[] = [
     policyNumber: '01-CA-000100006-0',
     priority: 'Low',
     dueLabel: 'Due in 3 days',
+    insuredInitials: 'SO',
+    nextActionLabel: 'Email quote package',
   },
   {
     id: 'pt-6',
@@ -107,6 +133,8 @@ export const priorityTasksMock: PriorityTaskCard[] = [
     policyNumber: '01-CA-000100012-0',
     priority: 'Medium',
     dueLabel: 'Due tomorrow',
+    insuredInitials: 'HF',
+    nextActionLabel: 'Schedule inspection',
   },
   {
     id: 'pt-7',
@@ -116,6 +144,8 @@ export const priorityTasksMock: PriorityTaskCard[] = [
     priority: 'High',
     dueLabel: 'Past due',
     isPastDue: true,
+    insuredInitials: 'NM',
+    nextActionLabel: 'Issue endorsement',
   },
   {
     id: 'pt-8',
@@ -124,6 +154,8 @@ export const priorityTasksMock: PriorityTaskCard[] = [
     policyNumber: '01-BP-000028511-0',
     priority: 'Medium',
     dueLabel: 'Due in 5 days',
+    insuredInitials: 'KC',
+    nextActionLabel: 'Confirm certificate',
   },
   {
     id: 'pt-9',
@@ -132,6 +164,8 @@ export const priorityTasksMock: PriorityTaskCard[] = [
     policyNumber: '01-CP-000017809-0',
     priority: 'Low',
     dueLabel: 'Due next week',
+    insuredInitials: 'BH',
+    nextActionLabel: 'Post adjustment',
   },
   {
     id: 'pt-10',
@@ -140,8 +174,38 @@ export const priorityTasksMock: PriorityTaskCard[] = [
     policyNumber: '01-CP-000017813-0',
     priority: 'High',
     dueLabel: 'Due tomorrow',
+    insuredInitials: 'SM',
+    nextActionLabel: 'Upload loss runs',
   },
 ]
+
+export const homeDailySummaryBeats = {
+  bullets: [
+    {
+      id: 'bb-1',
+      text: 'Midwest Fabrication loss-run review is blocking renewal bind.',
+      to: '/policies/01-CP-000017809-0',
+    },
+    {
+      id: 'bb-2',
+      text: 'Horizon Fleet submission is on OFAC hold pending compliance clearance.',
+      to: '/submissions',
+    },
+    {
+      id: 'bb-3',
+      text: 'Red Oak Hospitality renewal package awaits pricing approval before producer delivery.',
+      to: '/quotes',
+    },
+    {
+      id: 'bb-4',
+      text: 'Keystone Commercial Realty is missing an SOV for the property schedule.',
+      to: '/submissions',
+    },
+  ] satisfies CopilotBriefingBullet[],
+}
+
+/** @deprecated Use homeDailySummaryBeats */
+export const homeCopilotBriefingMock = homeDailySummaryBeats
 
 /** User and system activity for the homepage Recent activity card. */
 export const recentActivityMock: RecentActivityItem[] = [

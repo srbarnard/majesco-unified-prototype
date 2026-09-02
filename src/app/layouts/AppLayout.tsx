@@ -21,6 +21,7 @@ function AppLayoutContent() {
 
   const isFullBleedPage =
     location.pathname === '/' ||
+    location.pathname === '/activity' ||
     location.pathname === '/quotes' ||
     location.pathname === '/quotes/new' ||
     location.pathname === '/tasks' ||

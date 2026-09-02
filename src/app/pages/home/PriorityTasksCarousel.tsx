@@ -5,54 +5,82 @@ import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useTheme } from '@mui/material/styles'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { priorityTasksMock, type PriorityTaskCard } from '@/app/data/homeMock'
+import {
+  getAnalyticsSurfaceToneStyles,
+  type AnalyticsSurfaceTone,
+} from '@/design-system/components/analytics/AnalyticsSurfaceCard'
+import type { AppTheme } from '@/design-system/theme'
+import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { motionTokens } from '@/design-system/tokens/motion'
-import { accentSubtleHover, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 
 const motionSafe = '@media (prefers-reduced-motion: no-preference)'
 
-const CARD_WIDTH = 272
 const CARD_GAP = 12
+const PEEK_PX = 32
+const VISIBLE_CARD_COUNT = 4
+const MIN_CARD_WIDTH = 200
+const RAIL_WIDTH = 4
+const CARD_INNER_PADDING = 16
 
-const priorityColors = {
-  High: '#DC2626',
-  Medium: '#EA580C',
-  Low: '#16A34A',
-} as const
+function getTaskRailTone(priority: PriorityTaskCard['priority'], isPastDue: boolean): AnalyticsSurfaceTone {
+  if (isPastDue || priority === 'High') return 'error'
+  if (priority === 'Medium') return 'warning'
+  if (priority === 'Low') return 'info'
+  return 'neutral'
+}
 
-function TaskCard({ task, onOpen }: { task: PriorityTaskCard; onOpen: (task: PriorityTaskCard) => void }) {
+function TaskCard({
+  task,
+  cardWidth,
+  onOpen,
+}: {
+  task: PriorityTaskCard
+  cardWidth: number
+  onOpen: (task: PriorityTaskCard) => void
+}) {
+  const theme = useTheme() as AppTheme
+  const isPastDue = Boolean(task.isPastDue)
+  const railTone = getTaskRailTone(task.priority, isPastDue)
+  const railColor = getAnalyticsSurfaceToneStyles(railTone, theme).accent
+
   return (
     <Box
       component="button"
       type="button"
       data-task-card
       onClick={() => onOpen(task)}
-      sx={{
-        width: CARD_WIDTH,
-        flex: `0 0 ${CARD_WIDTH}px`,
-        p: 2,
-        borderRadius: 2,
-        bgcolor: (theme) => surfaceMuted(theme),
+      sx={(t) => ({
+        width: cardWidth,
+        flex: `0 0 ${cardWidth}px`,
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: `${layoutTokens.cardRadius}px`,
+        bgcolor: surfaceMuted(t),
         border: 'none',
-        cursor: 'pointer',
+        boxShadow: 'none',
         textAlign: 'left',
-        display: 'block',
+        display: 'flex',
+        flexDirection: 'column',
+        cursor: 'pointer',
+        p: 0,
+        pl: `${RAIL_WIDTH + CARD_INNER_PADDING}px`,
+        pr: `${CARD_INNER_PADDING}px`,
+        pt: `${CARD_INNER_PADDING}px`,
+        pb: `${CARD_INNER_PADDING}px`,
         transition: `background-color 0.15s ease, transform ${motionTokens.durationFastMs}ms ${motionTokens.easing}`,
-        '& [data-task-title]': {
-          transition: 'color 0.15s ease',
-        },
+        '& [data-task-title]': { transition: 'color 0.15s ease' },
         '&:hover': {
-          bgcolor: (theme) => accentSubtleHover(theme),
-          '& [data-task-title]': {
-            color: 'primary.main',
-          },
+          '& [data-task-title]': { color: 'primary.main' },
+          bgcolor: surfaceSubtle(t),
         },
         [motionSafe]: {
           '&:hover': {
             transform: `translateY(${motionTokens.cardHoverTranslateY}px) scale(${motionTokens.cardHoverScale})`,
-            position: 'relative',
             zIndex: 1,
           },
         },
@@ -61,21 +89,54 @@ function TaskCard({ task, onOpen }: { task: PriorityTaskCard; onOpen: (task: Pri
           outlineColor: 'primary.main',
           outlineOffset: 2,
         },
-      }}
+      })}
     >
+      <Box
+        sx={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: RAIL_WIDTH,
+          bgcolor: railColor,
+          borderRadius: '2px 0 0 2px',
+        }}
+      />
+
       <Typography
         data-task-title
         variant="subtitle2"
-        sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, mb: 0.5, color: 'text.primary' }}
+        sx={{
+          fontFamily: figmaFontFamilyStack.heading,
+          fontWeight: 600,
+          fontSize: '0.8125rem',
+          lineHeight: 1.4,
+          color: 'text.primary',
+          mb: 0.75,
+        }}
       >
         {task.title}
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body, mb: 0.25 }}>
+
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{
+          fontFamily: figmaFontFamilyStack.body,
+          display: 'block',
+          mb: 0.25,
+        }}
+      >
         {task.account}
       </Typography>
-      <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mb: 1.5 }}>
-        Policy #: {task.policyNumber}
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mb: 1.25 }}
+      >
+        Policy # {task.policyNumber}
       </Typography>
+
       <Stack direction="row" alignItems="center" justifyContent="space-between">
         <Stack direction="row" alignItems="center" spacing={0.75}>
           <Box
@@ -83,22 +144,24 @@ function TaskCard({ task, onOpen }: { task: PriorityTaskCard; onOpen: (task: Pri
               width: 8,
               height: 8,
               borderRadius: '50%',
-              bgcolor: priorityColors[task.priority],
+              bgcolor: getAnalyticsSurfaceToneStyles(railTone, theme).value,
             }}
           />
-          <Typography variant="caption" sx={{ fontFamily: figmaFontFamilyStack.body }}>
+          <Typography variant="caption" sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.6875rem', color: 'text.secondary' }}>
             {task.priority}
           </Typography>
         </Stack>
         <Stack direction="row" alignItems="center" spacing={0.5}>
           <AccessTimeOutlinedIcon
-            sx={{ fontSize: 14, color: task.isPastDue ? 'error.main' : 'text.secondary' }}
+            sx={{ fontSize: 14, color: isPastDue ? 'error.main' : 'text.secondary' }}
           />
           <Typography
             variant="caption"
             sx={{
               fontFamily: figmaFontFamilyStack.body,
-              color: task.isPastDue ? 'error.main' : 'text.secondary',
+              fontSize: '0.6875rem',
+              fontWeight: isPastDue ? 600 : 400,
+              color: isPastDue ? 'error.main' : 'text.secondary',
             }}
           >
             {task.dueLabel}
@@ -109,6 +172,35 @@ function TaskCard({ task, onOpen }: { task: PriorityTaskCard; onOpen: (task: Pri
   )
 }
 
+function useCarouselWidth() {
+  const ref = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(0)
+
+  useEffect(() => {
+    const node = ref.current
+    if (!node) return
+
+    const update = () => {
+      const next = node.getBoundingClientRect().width
+      if (next > 0) setWidth(next)
+    }
+
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  const cardWidth = useMemo(() => {
+    if (width <= 0) return MIN_CARD_WIDTH
+    const gaps = CARD_GAP * (VISIBLE_CARD_COUNT - 1)
+    const next = (width - PEEK_PX - gaps) / VISIBLE_CARD_COUNT
+    return Math.max(MIN_CARD_WIDTH, Math.floor(next))
+  }, [width])
+
+  return { ref, cardWidth }
+}
+
 type PriorityTasksCarouselProps = {
   onTaskOpen?: (task: PriorityTaskCard) => void
 }
@@ -116,6 +208,12 @@ type PriorityTasksCarouselProps = {
 export function PriorityTasksCarousel({ onTaskOpen }: PriorityTasksCarouselProps) {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const isAdjustingScroll = useRef(false)
+  const [activeIndex, setActiveIndex] = useState(0)
+  const { ref: containerRef, cardWidth } = useCarouselWidth()
+
+  const taskCount = priorityTasksMock.length
+  const cardStep = cardWidth + CARD_GAP
+  const setWidth = taskCount * cardStep
 
   const loopedTasks = useMemo(
     () => [
@@ -126,7 +224,13 @@ export function PriorityTasksCarousel({ onTaskOpen }: PriorityTasksCarouselProps
     [],
   )
 
-  const setWidth = priorityTasksMock.length * (CARD_WIDTH + CARD_GAP)
+  const syncActiveIndex = useCallback(() => {
+    const node = scrollerRef.current
+    if (!node) return
+    const offsetIndex = Math.round((node.scrollLeft - setWidth) / cardStep)
+    const normalized = ((offsetIndex % taskCount) + taskCount) % taskCount
+    setActiveIndex(normalized)
+  }, [cardStep, setWidth, taskCount])
 
   const normalizeScroll = useCallback(() => {
     const node = scrollerRef.current
@@ -141,18 +245,23 @@ export function PriorityTasksCarousel({ onTaskOpen }: PriorityTasksCarouselProps
       node.scrollLeft -= setWidth
       isAdjustingScroll.current = false
     }
-  }, [setWidth])
+    syncActiveIndex()
+  }, [setWidth, syncActiveIndex])
 
   useEffect(() => {
     const node = scrollerRef.current
-    if (!node) return
+    if (!node || setWidth <= 0) return
     node.scrollLeft = setWidth
-  }, [setWidth])
+    syncActiveIndex()
+  }, [setWidth, syncActiveIndex])
 
   const scroll = (direction: 'left' | 'right') => {
     const node = scrollerRef.current
     if (!node) return
-    node.scrollBy({ left: direction === 'left' ? -(CARD_WIDTH + CARD_GAP) : CARD_WIDTH + CARD_GAP, behavior: 'smooth' })
+    node.scrollBy({
+      left: direction === 'left' ? -cardStep : cardStep,
+      behavior: 'smooth',
+    })
   }
 
   const handleOpen = useCallback(
@@ -164,27 +273,33 @@ export function PriorityTasksCarousel({ onTaskOpen }: PriorityTasksCarouselProps
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
-        <Stack direction="row" alignItems="center" spacing={0.5}>
-          <Typography variant="subtitle1" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600 }}>
-            Your priority tasks
-          </Typography>
-          <IconButton size="small" aria-label="Previous tasks" onClick={() => scroll('left')}>
-            <ChevronLeftIcon fontSize="small" />
-          </IconButton>
-          <IconButton size="small" aria-label="Next tasks" onClick={() => scroll('right')}>
-            <ChevronRightIcon fontSize="small" />
-          </IconButton>
-        </Stack>
+      <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 1.5 }}>
+        <Typography variant="subtitle1" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600 }}>
+          Priority tasks
+        </Typography>
+        <IconButton size="small" aria-label="Previous tasks" onClick={() => scroll('left')}>
+          <ChevronLeftIcon fontSize="small" />
+        </IconButton>
+        <IconButton size="small" aria-label="Next tasks" onClick={() => scroll('right')}>
+          <ChevronRightIcon fontSize="small" />
+        </IconButton>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.75rem', ml: 0.25 }}
+          aria-live="polite"
+        >
+          {activeIndex + 1} / {taskCount}
+        </Typography>
       </Stack>
 
       <Box
+        ref={containerRef}
         sx={{
-          overflow: 'visible',
-          mx: -0.5,
-          px: 0.5,
-          my: -1,
-          py: 1,
+          width: '100%',
+          overflow: 'hidden',
+          my: -0.5,
+          py: 0.5,
         }}
       >
         <Box
@@ -206,7 +321,7 @@ export function PriorityTasksCarousel({ onTaskOpen }: PriorityTasksCarouselProps
           }}
         >
           {loopedTasks.map((task) => (
-            <TaskCard key={task.id} task={task} onOpen={handleOpen} />
+            <TaskCard key={task.id} task={task} cardWidth={cardWidth} onOpen={handleOpen} />
           ))}
         </Box>
       </Box>
