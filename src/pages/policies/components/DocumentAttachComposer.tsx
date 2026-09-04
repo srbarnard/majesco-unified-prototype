@@ -220,7 +220,10 @@ export function DocumentAttachPanelContent({
 
   return (
     <>
-      <Stack spacing={target === 'email' ? 2 : 0} sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+      <Stack
+        spacing={target === 'email' || target === 'note' ? 2 : 0}
+        sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
+      >
         {target === 'email' ? (
           <>
             <QuoteWizardFormField
@@ -251,9 +254,31 @@ export function DocumentAttachPanelContent({
               <AttachedDocumentChips documents={documents} placement="below" />
             </Box>
           </>
+        ) : target === 'note' ? (
+          <>
+            <QuoteWizardFormField
+              label="Subject"
+              value={subject}
+              onChange={setSubject}
+              fullWidth
+              aiFilled
+            />
+            <Box>
+              <QuoteWizardFormField
+                label="Note"
+                value={body}
+                onChange={setBody}
+                multiline
+                minRows={8}
+                fullWidth
+                aiFilled
+              />
+              <AttachedDocumentChips documents={documents} placement="below" />
+            </Box>
+          </>
         ) : (
           <>
-            {(target === 'note' || target === 'task') && (
+            {target === 'task' && (
               <TaskDetailAccordion title={subjectSectionTitle} defaultExpanded>
                 <QuoteWizardFormField
                   label={subjectSectionTitle}
