@@ -9,7 +9,7 @@ import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import { EntityListHomeButton, StatusChip } from '@/design-system/components'
+import { EmergencyHomeIcon, EntityListHomeButton, StatusChip } from '@/design-system/components'
 import { sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -22,6 +22,8 @@ type InsuredHeaderProps = {
   onTabChange: (tab: InsuredTab) => void
   starred?: boolean
   onToggleStar?: () => void
+  emergency?: boolean
+  onToggleEmergency?: () => void
 }
 
 function insuredStatusVariant(status: InsuredDetailsRecord['status']) {
@@ -36,6 +38,8 @@ export function InsuredHeader({
   onTabChange,
   starred = false,
   onToggleStar,
+  emergency = false,
+  onToggleEmergency,
 }: InsuredHeaderProps) {
   const contentPx = `${layoutTokens.contentPaddingX}px`
 
@@ -78,6 +82,17 @@ export function InsuredHeader({
                     )}
                   </IconButton>
                 </Tooltip>
+                <Tooltip title={emergency ? 'Remove high risk flag' : 'Mark as high risk'}>
+                  <IconButton
+                    size="small"
+                    onClick={onToggleEmergency}
+                    aria-label="Toggle high risk"
+                    aria-pressed={emergency}
+                    sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+                  >
+                    <EmergencyHomeIcon active={emergency} sx={{ fontSize: 20 }} />
+                  </IconButton>
+                </Tooltip>
                 <Tooltip title="Edit insured">
                   <IconButton size="small" aria-label="Edit insured" sx={{ display: { xs: 'none', md: 'inline-flex' } }}>
                     <EditOutlinedIcon sx={{ fontSize: 18 }} />
@@ -118,9 +133,7 @@ export function InsuredHeader({
           justifyContent="space-between"
           sx={{ px: contentPx, minHeight: 44, gap: 1 }}
         >
-          <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
-            <InsuredTabs value={activeTab} onChange={onTabChange} />
-          </Box>
+          <InsuredTabs value={activeTab} onChange={onTabChange} />
         </Stack>
       </Box>
     </Box>

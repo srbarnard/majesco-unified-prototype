@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
+import { useFavorites } from '@/app/contexts/FavoritesContext'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import {
   useRegisterRightToolCopilot,
@@ -45,9 +46,11 @@ export function PolicyDetails() {
   const [searchParams] = useSearchParams()
   const isDesktop = useIsDesktopLayout()
   const { openTool, closeTool, activeTool } = useRightTool()
+  const { isFavorite, isHighRisk, toggleFavorite, toggleHighRisk } = useFavorites()
   const [activeTab, setActiveTab] = useState<PolicyTab>(() => parsePolicyTab(searchParams.get('tab')) ?? 'overview')
-  const [starred, setStarred] = useState(true)
-  const [emergency, setEmergency] = useState(false)
+  const resolvedPolicyId = decodeURIComponent(policyId)
+  const starred = isFavorite('policy', resolvedPolicyId)
+  const emergency = isHighRisk('policy', resolvedPolicyId)
   const [appliedDocumentsFilters, setAppliedDocumentsFilters] = useState<DocumentsFilters>(emptyDocumentsFilters)
   const [copilotDocumentFocus, setCopilotDocumentFocus] = useState<PolicyDocument | null>(null)
   const [attachMode, setAttachMode] = useState<DocumentAttachMode | null>(null)
@@ -194,13 +197,25 @@ export function PolicyDetails() {
         <Box sx={{ flexShrink: 0 }}>
           <PolicyHeader
             companyName={policyDetailsMock.companyName}
-            policyNumber={policyDetailsMock.policyNumber}
+            policyNumber={resolvedPolicyId}
             activeTab={activeTab}
             onTabChange={handleTabChange}
             starred={starred}
-            onToggleStar={() => setStarred((prev) => !prev)}
+            onToggleStar={() =>
+              toggleFavorite({
+                kind: 'policy',
+                id: resolvedPolicyId,
+                label: resolvedPolicyId,
+              })
+            }
             emergency={emergency}
-            onToggleEmergency={() => setEmergency((prev) => !prev)}
+            onToggleEmergency={() =>
+              toggleHighRisk({
+                kind: 'policy',
+                id: resolvedPolicyId,
+                label: resolvedPolicyId,
+              })
+            }
           />
         </Box>
 

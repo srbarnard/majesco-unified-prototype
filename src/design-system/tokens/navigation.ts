@@ -1,20 +1,23 @@
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
-import StarBorderOutlinedIcon from '@mui/icons-material/StarBorderOutlined'
+import ChecklistRtlOutlinedIcon from '@mui/icons-material/ChecklistRtlOutlined'
+import FormatQuoteOutlinedIcon from '@mui/icons-material/FormatQuoteOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import MoveToInboxOutlinedIcon from '@mui/icons-material/MoveToInboxOutlined'
-import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
 import PolicyOutlinedIcon from '@mui/icons-material/PolicyOutlined'
-import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined'
-import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined'
-import type { SvgIconComponent } from '@mui/icons-material'
+import StarBorderOutlinedIcon from '@mui/icons-material/StarBorderOutlined'
+import type { SvgIconProps } from '@mui/material/SvgIcon'
+import type { ComponentType } from 'react'
 import type { SecondaryPanel } from '@/app/contexts/SidebarContext'
+import { SearchActivityOutlinedIcon } from '@/design-system/icons/SearchActivityOutlined'
+
+export type NavIcon = ComponentType<SvgIconProps>
 
 export type NavItem = {
   label: string
   path?: string
-  icon?: SvgIconComponent
+  icon?: NavIcon
   copilotIcon?: boolean
   panel?: SecondaryPanel
   matchPaths?: string[]
@@ -24,17 +27,17 @@ export type NavItem = {
 export type MoreMenuItem = {
   label: string
   path: string
-  icon?: SvgIconComponent
+  icon?: NavIcon
   copilotIcon?: boolean
 }
 
 export const appShellNavItems: NavItem[] = [
   { label: 'Home', path: '/', icon: HomeOutlinedIcon },
-  { label: 'Activity', icon: NotificationsNoneOutlinedIcon, panel: 'activity' },
+  { label: 'Activity', icon: SearchActivityOutlinedIcon, panel: 'activity' },
   { label: 'Favorites', icon: StarBorderOutlinedIcon, panel: 'favorites' },
-  { label: 'Tasks', path: '/tasks', icon: TaskAltOutlinedIcon },
+  { label: 'Tasks', path: '/tasks', icon: ChecklistRtlOutlinedIcon },
   { label: 'Submissions', path: '/submissions', icon: MoveToInboxOutlinedIcon },
-  { label: 'Quotes', path: '/quotes', icon: RequestQuoteOutlinedIcon },
+  { label: 'Quotes', path: '/quotes', icon: FormatQuoteOutlinedIcon },
   { label: 'Policies', path: '/policies', icon: PolicyOutlinedIcon, matchPaths: ['/policies'] },
   { label: 'Copilot Studio', path: '/copilot-studio', copilotIcon: true },
 ]

@@ -1,7 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import StarIcon from '@mui/icons-material/Star'
-import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import List from '@mui/material/List'
@@ -11,48 +10,18 @@ import ListItemText from '@mui/material/ListItemText'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { Link } from 'react-router'
+import {
+  useFavorites,
+  type FavoriteEntity,
+} from '@/app/contexts/FavoritesContext'
 import { useSidebar } from '@/app/contexts/SidebarContext'
+import { EmergencyHomeIcon } from '@/design-system/components'
 import { filterHeadingSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
 import { surfacePanel } from '@/design-system/theme/themeSurfaces'
-import { insuredIdFromName } from '@/pages/shared/insuredId'
-
-type FavoriteItem = {
-  label: string
-  to: string
-  starred?: boolean
-  risk?: boolean
-}
-
-function policyPath(policyNumber: string) {
-  return `/policies/${encodeURIComponent(policyNumber)}`
-}
-
-function insuredPath(insuredName: string) {
-  return `/insureds/${encodeURIComponent(insuredIdFromName(insuredName))}`
-}
-
-const watchlist: FavoriteItem[] = [
-  { label: '01-BP-000009546-0', to: policyPath('01-BP-000009546-0'), starred: true },
-  {
-    label: 'Atlantic Ridge Construction, LLC',
-    to: insuredPath('Atlantic Ridge Construction, LLC'),
-    starred: true,
-  },
-  { label: 'Blue Harbor Logistics Inc.', to: insuredPath('Blue Harbor Logistics Inc.'), starred: true },
-]
-
-const renewals: FavoriteItem[] = [
-  { label: '01-CA-000100005-0', to: policyPath('01-CA-000100005-0'), starred: true },
-  { label: '01-GL-000045821-0', to: policyPath('01-GL-000045821-0'), starred: true },
-]
-
-const highRisk: FavoriteItem[] = [
-  { label: '01-WC-000078234-0', to: policyPath('01-WC-000078234-0'), risk: true },
-  { label: 'Red Oak Hospitality Group', to: insuredPath('Red Oak Hospitality Group'), risk: true },
-]
 
 export function FavoritesPanel() {
   const { closeSecondaryPanel } = useSidebar()
+  const { watchlist, renewals, highRisk, hrefFor } = useFavorites()
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: (theme) => surfacePanel(theme) }}>
@@ -70,9 +39,25 @@ export function FavoritesPanel() {
         </IconButton>
       </Stack>
       <Box sx={{ flex: 1, overflowY: 'auto', py: 1 }}>
-        <FavoriteSection title="Watchlist" items={watchlist} onNavigate={closeSecondaryPanel} />
-        <FavoriteSection title="Renewals" items={renewals} onNavigate={closeSecondaryPanel} />
-        <FavoriteSection title="High risk" items={highRisk} showRisk onNavigate={closeSecondaryPanel} />
+        <FavoriteSection
+          title="Watchlist"
+          items={watchlist}
+          hrefFor={hrefFor}
+          onNavigate={closeSecondaryPanel}
+        />
+        <FavoriteSection
+          title="Renewals"
+          items={renewals}
+          hrefFor={hrefFor}
+          onNavigate={closeSecondaryPanel}
+        />
+        <FavoriteSection
+          title="High risk"
+          items={highRisk}
+          hrefFor={hrefFor}
+          showRisk
+          onNavigate={closeSecondaryPanel}
+        />
       </Box>
     </Box>
   )
@@ -82,11 +67,13 @@ function FavoriteSection({
   title,
   items,
   showRisk = false,
+  hrefFor,
   onNavigate,
 }: {
   title: string
-  items: FavoriteItem[]
+  items: FavoriteEntity[]
   showRisk?: boolean
+  hrefFor: (entity: FavoriteEntity) => string
   onNavigate?: () => void
 }) {
   return (
@@ -99,35 +86,43 @@ function FavoriteSection({
         <ExpandMoreIcon fontSize="small" color="action" />
       </ListItemButton>
       <List dense disablePadding>
-        {items.map((item) => (
-          <ListItemButton
-            key={item.label}
-            component={Link}
-            to={item.to}
-            onClick={onNavigate}
-            sx={{
-              py: 0.75,
-              pl: 2.5,
-              color: 'text.primary',
-              textDecoration: 'none',
-              '&:hover': {
-                bgcolor: 'action.hover',
-              },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 32 }}>
-              {showRisk ? (
-                <WarningAmberOutlinedIcon sx={{ fontSize: 18, color: 'warning.main' }} />
-              ) : (
-                <StarIcon sx={{ fontSize: 18, color: 'warning.main' }} />
-              )}
-            </ListItemIcon>
-            <ListItemText
-              primary={item.label}
-              primaryTypographyProps={{ variant: 'body2', noWrap: true }}
-            />
-          </ListItemButton>
-        ))}
+        {items.length === 0 ? (
+          <ListItemText
+            primary="None"
+            primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+            sx={{ px: 2.5, py: 0.75 }}
+          />
+        ) : (
+          items.map((item) => (
+            <ListItemButton
+              key={`${item.kind}:${item.id}`}
+              component={Link}
+              to={hrefFor(item)}
+              onClick={onNavigate}
+              sx={{
+                py: 0.75,
+                pl: 2.5,
+                color: 'text.primary',
+                textDecoration: 'none',
+                '&:hover': {
+                  bgcolor: 'action.hover',
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 32 }}>
+                {showRisk ? (
+                  <EmergencyHomeIcon active sx={{ fontSize: 18 }} />
+                ) : (
+                  <StarIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                )}
+              </ListItemIcon>
+              <ListItemText
+                primary={item.label}
+                primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+              />
+            </ListItemButton>
+          ))
+        )}
       </List>
     </Box>
   )

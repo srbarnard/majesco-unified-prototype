@@ -240,7 +240,7 @@ function SidebarContent({
               }}
             >
               {item.copilotIcon ? (
-                <CopilotIcon size={isDrawer ? 20 : 22} active={active} />
+                <CopilotIcon size={18} active={active} />
               ) : (
                 Icon && <Icon sx={{ fontSize: isDrawer ? 20 : 22 }} />
               )}
@@ -303,7 +303,7 @@ function SidebarContent({
               >
                 <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
                   {item.copilotIcon ? (
-                    <CopilotIcon size={20} active={moreActive} />
+                    <CopilotIcon size={18} active={moreActive} />
                   ) : (
                     item.icon && <item.icon sx={{ fontSize: 20 }} />
                   )}

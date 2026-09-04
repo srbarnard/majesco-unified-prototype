@@ -2,6 +2,7 @@ import Box from '@mui/material/Box'
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { GlobalSearchProvider } from '@/app/contexts/GlobalSearchContext'
+import { FavoritesProvider } from '@/app/contexts/FavoritesContext'
 import { RightToolProvider } from '@/app/contexts/RightToolContext'
 import { SidebarProvider } from '@/app/contexts/SidebarContext'
 import {
@@ -103,11 +104,13 @@ function AppLayoutContent() {
 export function AppLayout() {
   return (
     <SidebarProvider>
-      <GlobalSearchProvider>
-        <RightToolProvider>
-          <AppLayoutContent />
-        </RightToolProvider>
-      </GlobalSearchProvider>
+      <FavoritesProvider>
+        <GlobalSearchProvider>
+          <RightToolProvider>
+            <AppLayoutContent />
+          </RightToolProvider>
+        </GlobalSearchProvider>
+      </FavoritesProvider>
     </SidebarProvider>
   )
 }

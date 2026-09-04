@@ -2,6 +2,7 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router'
+import { useFavorites } from '@/app/contexts/FavoritesContext'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import {
   useRegisterRightToolCopilot,
@@ -26,8 +27,11 @@ export function InsuredDetails() {
   const insured = resolveInsuredContext(insuredId)
   const isDesktop = useIsDesktopLayout()
   const { openTool, closeTool, activeTool } = useRightTool()
+  const { isFavorite, isHighRisk, toggleFavorite, toggleHighRisk } = useFavorites()
   const [activeTab, setActiveTab] = useState<InsuredTab>('overview')
-  const [starred, setStarred] = useState(false)
+  const resolvedInsuredId = decodeURIComponent(insuredId ?? insured.id)
+  const starred = isFavorite('insured', resolvedInsuredId)
+  const emergency = isHighRisk('insured', resolvedInsuredId)
   const didInitCopilot = useRef(false)
   const wasDesktop = useRef(isDesktop)
 
@@ -113,7 +117,21 @@ export function InsuredDetails() {
             activeTab={activeTab}
             onTabChange={handleTabChange}
             starred={starred}
-            onToggleStar={() => setStarred((prev) => !prev)}
+            onToggleStar={() =>
+              toggleFavorite({
+                kind: 'insured',
+                id: resolvedInsuredId,
+                label: insured.name,
+              })
+            }
+            emergency={emergency}
+            onToggleEmergency={() =>
+              toggleHighRisk({
+                kind: 'insured',
+                id: resolvedInsuredId,
+                label: insured.name,
+              })
+            }
           />
         </Box>
 

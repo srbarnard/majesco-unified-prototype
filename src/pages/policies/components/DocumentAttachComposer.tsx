@@ -310,7 +310,7 @@ export function DocumentAttachPanelContent({
         }}
       >
         <Stack direction="row" spacing={1}>
-          <Button variant="outlined" color="inherit" fullWidth onClick={onCancel} sx={filterFooterButtonSx}>
+          <Button variant="outlined" color="primary" fullWidth onClick={onCancel} sx={filterFooterButtonSx}>
             Cancel
           </Button>
           <Button

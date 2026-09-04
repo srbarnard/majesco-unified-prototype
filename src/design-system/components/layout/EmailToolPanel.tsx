@@ -65,7 +65,7 @@ export function EmailToolPanel() {
         sx={{
           px: `${layoutTokens.contentPaddingX}px`,
           pt: layoutTokens.policyHeaderTopPadding,
-          pb: layoutTokens.contentPaddingX / 8,
+          pb: 0.5,
           bgcolor: 'background.paper',
           flexShrink: 0,
         }}
@@ -74,7 +74,7 @@ export function EmailToolPanel() {
           <Typography
             variant="subtitle1"
             component="h2"
-            sx={{ ...copilotDrawerHeadingSx, lineHeight: 1.35, mb: 0.5 }}
+            sx={{ ...copilotDrawerHeadingSx, lineHeight: 1.35, mb: 0.25 }}
           >
             {documentViewerAttachLabels.email ?? targetLabels.email}
           </Typography>
@@ -90,7 +90,7 @@ export function EmailToolPanel() {
       <Box
         sx={{
           px: `${layoutTokens.contentPaddingX}px`,
-          pt: layoutTokens.contentPaddingX / 8,
+          pt: 0.75,
           pb: layoutTokens.contentPaddingX / 8,
           flex: 1,
           minHeight: 0,
