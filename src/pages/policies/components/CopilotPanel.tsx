@@ -6,6 +6,7 @@ import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useState } from 'react'
+import { resolveDailySummaryQuickAction } from '@/app/data/resolveDailySummaryQuickAction'
 import { CopilotQuickActions, RoutineIcon } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -16,6 +17,7 @@ import type { RecentActivityItem } from '@/app/data/homeMock'
 import { AgenticSearchResults, DailySummaryContent } from '@/pages/policies/components/AgenticSearchResults'
 import { CopilotConfidenceIndicator } from '@/pages/policies/components/copilot/CopilotConfidenceIndicator'
 import { CopilotDrawerShell } from '@/pages/policies/components/copilot/CopilotDrawerShell'
+import type { CopilotHistoryEntry } from '@/pages/policies/components/copilot/copilotDrawerData'
 import { copilotDrawerHeadingSx, copilotSectionHeadingSx, copilotSubtitleSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import { resolveCopilotConfidence } from '@/pages/policies/components/copilot/resolveCopilotConfidence'
 import { useAnimatedConfidence } from '@/pages/policies/components/copilot/useAnimatedConfidence'
@@ -130,16 +132,53 @@ function formatQuoteDate(value: string) {
 }
 
 function quoteInsights(quote: Quote): string[] {
-  return [
-    `${quote.status} · ${quote.products.join(', ')}`,
-    `Producer: ${quote.producer}`,
-    `Effective ${formatQuoteDate(quote.effectiveDate)} · Premium ${formatQuotePremium(quote.premium)}`,
-  ]
+  return buildQuoteRecordBriefing(quote).lines
 }
 
 function buildQuoteSummary(quote: Quote) {
-  const products = quote.products.join(', ')
-  return `**${quote.insured}** — Quote **${quote.quoteNumber}** covers **${products}** effective **${formatQuoteDate(quote.effectiveDate)}**. Status is **${quote.status}** with a quoted premium of **${formatQuotePremium(quote.premium)}**.`
+  return buildQuoteRecordBriefing(quote).summary
+}
+
+type ListRecordBriefing = {
+  header: string
+  subhead: string
+  summary: string
+  lines: string[]
+  quickActions: string[]
+}
+
+function buildQuoteRecordBriefing(quote: Quote): ListRecordBriefing {
+  const header = `${quote.insured} · ${quote.quoteNumber}`
+  if (quote.status === 'Pending pricing approval') {
+    return {
+      header,
+      subhead: 'Blocked · Pricing approval',
+      summary: `**${quote.insured}** renewal package awaits pricing approval before producer delivery.`,
+      lines: [
+        'The rated package is complete, but pricing sign-off is required before it can leave underwriting.',
+        `Hold owner · Underwriting · Producer ${quote.producer}`,
+        'Missing · Final pricing approval on package terms and premium',
+        'If this stays blocked, producer delivery slips and the insured renewal window compresses.',
+      ],
+      quickActions: [
+        'Explain the pricing hold',
+        'Draft a note to underwriting',
+        'What can proceed vs what is frozen',
+      ],
+    }
+  }
+
+  return {
+    header,
+    subhead: quote.status,
+    summary: `**${quote.insured}** — Quote **${quote.quoteNumber}** covers **${quote.products.join(', ')}** effective **${formatQuoteDate(quote.effectiveDate)}**. Status is **${quote.status}** with a quoted premium of **${formatQuotePremium(quote.premium)}**.`,
+    lines: [
+      `${quote.status} · ${quote.products.join(', ')}`,
+      `Producer: ${quote.producer}`,
+      `Effective ${formatQuoteDate(quote.effectiveDate)} · Premium ${formatQuotePremium(quote.premium)}`,
+    ],
+    quickActions: ['Summarize quote', 'Compare versions', 'Send to producer', 'Check rating factors'],
+  }
 }
 
 function buildQuoteDetailSummary(quote: QuoteDetailsRecord) {
@@ -170,18 +209,46 @@ const quotesWorkspaceInsights = [
   'Average quoted premium: $412,000',
 ]
 
-const quoteQuickActions = ['Summarize quote', 'Compare versions', 'Send to producer', 'Check rating factors']
-
 function policyListInsights(policy: PolicyListRecord): string[] {
-  return [
-    `${policy.agency} · Agency #${policy.agencyNumber}`,
-    `Underwriter: ${policy.underwriter}`,
-    `Effective ${formatQuoteDate(policy.effectiveDate)} – Expires ${formatQuoteDate(policy.expirationDate)}`,
-  ]
+  return buildPolicyRecordBriefing(policy).lines
 }
 
 function buildPolicyListSummary(policy: PolicyListRecord) {
-  return `**${policy.insuredName}** — Policy **${policy.policyNumber}** with **${policy.agency}** effective **${formatQuoteDate(policy.effectiveDate)}** through **${formatQuoteDate(policy.expirationDate)}**. TWP **${formatQuotePremium(policy.twp)}** · FTP **${formatQuotePremium(policy.ftp)}**.`
+  return buildPolicyRecordBriefing(policy).summary
+}
+
+function buildPolicyRecordBriefing(policy: PolicyListRecord): ListRecordBriefing {
+  const header = `${policy.insuredName} · ${policy.policyNumber}`
+  if (/midwest fabrication/i.test(policy.insuredName)) {
+    return {
+      header,
+      subhead: 'Blocked · Loss-run review',
+      summary: `**${policy.insuredName}** renewal bind is blocked pending loss-run review.`,
+      lines: [
+        'Five-year loss runs must be reviewed before renewal terms can bind on this package.',
+        `Hold owner · ${policy.underwriter} (Commercial UW)`,
+        'Missing · Completed loss-run review sign-off for the current term',
+        'If this stays blocked, renewal bind slips and the producer cannot deliver final terms.',
+      ],
+      quickActions: [
+        'Explain the loss-run block',
+        'Draft a note to the producer',
+        'What can proceed vs what is frozen',
+      ],
+    }
+  }
+
+  return {
+    header,
+    subhead: policy.status,
+    summary: `**${policy.insuredName}** — Policy **${policy.policyNumber}** with **${policy.agency}** effective **${formatQuoteDate(policy.effectiveDate)}** through **${formatQuoteDate(policy.expirationDate)}**. TWP **${formatQuotePremium(policy.twp)}** · FTP **${formatQuotePremium(policy.ftp)}**.`,
+    lines: [
+      `${policy.agency} · Agency #${policy.agencyNumber}`,
+      `Underwriter: ${policy.underwriter}`,
+      `Effective ${formatQuoteDate(policy.effectiveDate)} – Expires ${formatQuoteDate(policy.expirationDate)}`,
+    ],
+    quickActions: ['Renewal summary', 'Billing status', 'Endorsement history', 'Coverage overview'],
+  }
 }
 
 const policiesListWorkspaceSummary =
@@ -193,6 +260,7 @@ const policiesListWorkspaceInsights = [
   'Average TWP: $1.42M across active commercial lines',
 ]
 
+const quoteQuickActions = ['Summarize quote', 'Compare versions', 'Send to producer', 'Check rating factors']
 const policyListQuickActions = ['Renewal summary', 'Billing status', 'Endorsement history', 'Coverage overview']
 
 function taskInsights(task: TaskRecord): string[] {
@@ -309,6 +377,8 @@ export function CopilotPanel({
   onClose,
 }: CopilotPanelProps) {
   const [internalAttachMode, setInternalAttachMode] = useState<DocumentAttachMode | null>(null)
+  const [launchConversation, setLaunchConversation] = useState<CopilotHistoryEntry | null>(null)
+  const [launchConversationKey, setLaunchConversationKey] = useState(0)
   const isDocumentsTab = activePolicyTab === 'documents'
   const isQuotesContext = context === 'quotes'
   const isQuoteDetailContext = context === 'quote-detail'
@@ -366,6 +436,15 @@ export function CopilotPanel({
   const isAttachView = Boolean(activeAttachMode)
 
   const handleQuickActionClick = (action: string) => {
+    if (isDailySummaryView) {
+      const entry = resolveDailySummaryQuickAction(action)
+      if (entry) {
+        setLaunchConversation(entry)
+        setLaunchConversationKey((key) => key + 1)
+        return
+      }
+    }
+
     const attachTarget = quickActionToAttachTarget(action)
     const documents = activeAttachMode?.documents ?? (focusedDocument ? [focusedDocument] : [])
 
@@ -410,13 +489,13 @@ export function CopilotPanel({
     : focusedCustomer
       ? customerQuickActions
     : focusedPolicyList
-      ? policyListQuickActions
+      ? buildPolicyRecordBriefing(focusedPolicyList).quickActions
       : focusedQuoteDetail
         ? quoteDetailQuickActions
         : focusedInsured
           ? insuredQuickActions
           : focusedQuote
-            ? quoteQuickActions
+            ? buildQuoteRecordBriefing(focusedQuote).quickActions
             : isDocumentsTab
               ? ['Summary', 'Add Note', 'Send Email', 'Explanation to Underwriters']
               : isTasksContext
@@ -434,6 +513,12 @@ export function CopilotPanel({
                       : isPoliciesListContext
                         ? ['Renewals due', 'Billing exceptions', 'Portfolio summary']
                         : ['See endorsements', 'Review documents']
+
+  const focusedListBriefing = focusedPolicyList
+    ? buildPolicyRecordBriefing(focusedPolicyList)
+    : focusedQuote
+      ? buildQuoteRecordBriefing(focusedQuote)
+      : null
 
   const isDocumentsImpact = isDocumentsTab && !focusedDocument && documentsCopilotMode === 'impact'
 
@@ -668,6 +753,8 @@ export function CopilotPanel({
           seedComposerMessage={isTaskRecommendationView ? seedComposerMessage : null}
           chatFocusKey={attachMode ? null : chatFocusKey}
           contentKey={panelContentKey}
+          launchConversation={launchConversation}
+          launchConversationKey={launchConversationKey}
           headerTrailing={
             confidenceState && !isAgenticView && !isDailySummaryView && !isTaskRecommendationView ? (
               <CopilotConfidenceIndicator
@@ -712,7 +799,7 @@ export function CopilotPanel({
           {isAgenticView && agenticPrompt ? (
             <AgenticSearchResults prompt={agenticPrompt} />
           ) : isDailySummaryView ? (
-            <DailySummaryContent />
+            <DailySummaryContent onQuickAction={handleQuickActionClick} />
           ) : isTaskRecommendationView && focusedTask && seedComposerMessage ? (
             <TaskRecommendationChat
               insight={seedComposerMessage}
@@ -737,34 +824,49 @@ export function CopilotPanel({
                 {focusedInsured.name}
               </Typography>
             )}
-            {focusedQuote && (
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
-                {focusedQuote.quoteNumber}
-              </Typography>
+            {focusedListBriefing ? (
+              <>
+                <Typography variant="subtitle2" sx={{ ...copilotSubtitleSx, mb: 0.25 }}>
+                  {focusedListBriefing.header}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ ...bodySx, mb: 1.5 }}>
+                  {focusedListBriefing.subhead}
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  {focusedListBriefing.lines.map((line) => (
+                    <Typography
+                      key={line}
+                      variant="body2"
+                      color="text.primary"
+                      sx={{ ...bodySx, lineHeight: 1.55, mb: 0.75 }}
+                    >
+                      {renderSummaryText(line)}
+                    </Typography>
+                  ))}
+                </Box>
+              </>
+            ) : (
+              <>
+                {focusedTask && (
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
+                    {focusedTask.refNumber}
+                  </Typography>
+                )}
+                {focusedCustomer && (
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
+                    {focusedCustomer.customerNumber}
+                  </Typography>
+                )}
+                {focusedActivity && (
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
+                    {focusedActivity.referenceId}
+                  </Typography>
+                )}
+                <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2 }}>
+                  {renderSummaryText(summaryText)}
+                </Typography>
+              </>
             )}
-            {focusedPolicyList && (
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
-                {focusedPolicyList.policyNumber}
-              </Typography>
-            )}
-            {focusedTask && (
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
-                {focusedTask.refNumber}
-              </Typography>
-            )}
-            {focusedCustomer && (
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
-                {focusedCustomer.customerNumber}
-              </Typography>
-            )}
-            {focusedActivity && (
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
-                {focusedActivity.referenceId}
-              </Typography>
-            )}
-            <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2 }}>
-              {renderSummaryText(summaryText)}
-            </Typography>
             {documentPreviewMode && documentExtractedText && (
               <>
                 <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
@@ -791,6 +893,8 @@ export function CopilotPanel({
                 </Box>
               </>
             )}
+            {!focusedListBriefing && (
+              <>
             <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
               {(isTasksContext && !focusedTask) || (isInsuredsContext && !focusedInsured)
                 ? 'At a glance'
@@ -816,6 +920,8 @@ export function CopilotPanel({
                     </Typography>
                   ))}
                 </Box>
+              </>
+            )}
               </>
             )}
 

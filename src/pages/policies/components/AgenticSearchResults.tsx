@@ -3,7 +3,8 @@ import Divider from '@mui/material/Divider'
 import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { Link as RouterLink } from 'react-router'
+import { useNavigate } from 'react-router'
+import { useRightTool } from '@/app/contexts/RightToolContext'
 import { homeDailySummaryBeats } from '@/app/data/homeMock'
 import { CopilotQuickActions } from '@/design-system/components'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -18,11 +19,13 @@ const bodySx = {
 function SuggestedActions({
   actions,
   label = 'Quick actions',
+  onAction,
 }: {
   actions: string[]
   label?: string | null
+  onAction?: (action: string) => void
 }) {
-  return <CopilotQuickActions actions={actions} label={label} />
+  return <CopilotQuickActions actions={actions} label={label} onAction={onAction} />
 }
 
 type ResultItem = {
@@ -216,7 +219,20 @@ export function AgenticSearchResults({ prompt }: AgenticSearchResultsProps) {
   )
 }
 
-export function DailySummaryContent() {
+export function DailySummaryContent({
+  onQuickAction,
+}: {
+  onQuickAction?: (action: string) => void
+}) {
+  const navigate = useNavigate()
+  const { openTool } = useRightTool()
+
+  const handleRecordLink = (to: string) => {
+    navigate(to)
+    // Keep the Copilot drawer open after navigating to the matched record/list.
+    openTool('copilot')
+  }
+
   return (
     <Stack spacing={2}>
       <Typography variant="body2" color="text.secondary" sx={bodySx}>
@@ -226,14 +242,34 @@ export function DailySummaryContent() {
       <Stack component="ul" spacing={1.25} sx={{ m: 0, pl: 2.25 }}>
         {homeDailySummaryBeats.bullets.map((bullet) => (
           <Typography key={bullet.id} component="li" variant="body2" sx={{ ...bodySx, lineHeight: 1.55 }}>
-            <Link
-              component={RouterLink}
-              to={bullet.to}
-              underline="hover"
-              sx={{ fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 500, color: 'text.primary' }}
-            >
-              {bullet.text}
-            </Link>
+            {bullet.parts.map((part, index) =>
+              part.to ? (
+                <Link
+                  key={`${bullet.id}-${index}`}
+                  component="button"
+                  type="button"
+                  onClick={() => handleRecordLink(part.to!)}
+                  underline="hover"
+                  sx={{
+                    fontFamily: 'inherit',
+                    fontSize: 'inherit',
+                    fontWeight: 500,
+                    color: 'primary.main',
+                    verticalAlign: 'baseline',
+                    p: 0,
+                    border: 0,
+                    bgcolor: 'transparent',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {part.text}
+                </Link>
+              ) : (
+                <Box key={`${bullet.id}-${index}`} component="span" sx={{ color: 'text.primary' }}>
+                  {part.text}
+                </Box>
+              ),
+            )}
           </Typography>
         ))}
       </Stack>
@@ -246,6 +282,7 @@ export function DailySummaryContent() {
           'Which renewals need pricing approval?',
           'What can wait until tomorrow?',
         ]}
+        onAction={onQuickAction}
       />
     </Stack>
   )

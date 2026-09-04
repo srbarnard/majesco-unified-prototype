@@ -37,6 +37,7 @@ function quoteStatusConfidence(status: QuoteStatus) {
     case 'Setup in progress':
       return 58
     case 'Referred':
+    case 'Pending pricing approval':
       return 48
     case 'Draft':
       return 38

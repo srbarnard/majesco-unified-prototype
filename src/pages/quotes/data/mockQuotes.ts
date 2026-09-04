@@ -9,6 +9,7 @@ export type QuoteStatus =
   | 'Referred'
   | 'Rating blocked'
   | 'Pending issuance'
+  | 'Pending pricing approval'
   | 'Issued'
 
 export type Quote = {
@@ -120,11 +121,11 @@ export const quotesMock: Quote[] = [
   {
     id: 'q-8',
     quoteNumber: '01-CP-000017810-0',
-    insured: 'Ironclad Security Systems Inc.',
-    producer: 'Red Oak Hospitality Group',
-    products: ['BOP', 'General Liability', 'Umbrella'],
+    insured: 'Red Oak Hospitality Group',
+    producer: 'Harborview Agency',
+    products: ['Commercial Package', 'Umbrella'],
     effectiveDate: '2026-07-15',
-    status: 'Pending issuance',
+    status: 'Pending pricing approval',
     filterStatus: 'In review',
     premium: 5420300,
     updatedLabel: '5 days ago',

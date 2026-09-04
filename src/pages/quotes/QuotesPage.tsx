@@ -1,7 +1,8 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useGridApiRef } from '@mui/x-data-grid-premium'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import {
   useRegisterRightToolCopilot,
@@ -38,6 +39,7 @@ function matchesSearch(row: Quote, query: string) {
 
 export function QuotesPage() {
   const apiRef = useGridApiRef()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { activeTool, openTool, closeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<QuotesTab>('all')
   const [copilotQuoteFocus, setCopilotQuoteFocus] = useState<Quote | null>(null)
@@ -54,6 +56,38 @@ export function QuotesPage() {
   useSearchQueryFromUrl(useCallback((query) => {
     setSearchQuery(query)
   }, []))
+
+  useEffect(() => {
+    const focusParam = searchParams.get('quote')
+    if (!focusParam) return
+
+    const match = quotesMock.find(
+      (row) =>
+        row.quoteNumber.toLowerCase() === focusParam.toLowerCase() ||
+        row.id.toLowerCase() === focusParam.toLowerCase(),
+    )
+    if (!match) return
+
+    setCopilotQuoteFocus(match)
+    openTool('copilot')
+
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        next.delete('quote')
+        return next
+      },
+      { replace: true },
+    )
+  }, [openTool, searchParams, setSearchParams])
+
+  const previousSearchQueryRef = useRef(searchQuery)
+  useEffect(() => {
+    const previous = previousSearchQueryRef.current
+    previousSearchQueryRef.current = searchQuery
+    if (!previous.trim() || searchQuery.trim()) return
+    setCopilotQuoteFocus(null)
+  }, [searchQuery])
 
   const filteredRows = useMemo(() => {
     const withFilters = applyQuotesListFilters(quotesMock, appliedFilters)

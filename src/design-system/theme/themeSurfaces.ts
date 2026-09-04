@@ -32,11 +32,16 @@ export function surfaceApp(theme: Theme) {
 
 /** Primary-tinted selection / active nav / chip backgrounds. */
 export function accentSubtle(theme: Theme) {
-  // Same light-blue wash in light and dark so active states stay consistent.
+  if (isDarkMode(theme)) {
+    return getFigmaColors('dark').primary.selected
+  }
   return theme.figmaPalette.blue[50]
 }
 
 export function accentSubtleHover(theme: Theme) {
+  if (isDarkMode(theme)) {
+    return getFigmaColors('dark').primary.focusVisible
+  }
   return theme.figmaPalette.blue[100]
 }
 
@@ -208,9 +213,9 @@ const dataGridShellBaseSx = {
     boxShadow: (theme: Theme) => dataGridPinnedShadow(theme, 'right'),
   },
   '& .MuiDataGrid-row.Mui-selected': {
-    bgcolor: (theme: Theme) => accentSubtle(theme),
+    bgcolor: (theme: Theme) => `${accentSubtle(theme)} !important`,
     '&:hover': {
-      bgcolor: (theme: Theme) => accentSubtleHover(theme),
+      bgcolor: (theme: Theme) => `${accentSubtleHover(theme)} !important`,
     },
   },
   '& .MuiDataGrid-row.Mui-selected .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-row.Mui-selected .MuiDataGrid-cell--pinnedRight': {

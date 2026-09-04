@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box'
 import { useGridApiRef, type GridRowSelectionModel } from '@mui/x-data-grid-premium'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import {
@@ -8,6 +8,7 @@ import {
   useRegisterRightToolFilter,
   useRegisterRightToolRecordContext,
 } from '@/app/hooks/useRightToolRegistration'
+import { useSearchQueryFromUrl } from '@/hooks/useSearchQueryFromUrl'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { SubmissionsAnalyticsTab } from '@/pages/submissions/components/SubmissionsAnalyticsTab'
@@ -67,9 +68,14 @@ export function SubmissionsPage() {
   const [notesTarget, setNotesTarget] = useState<SubmissionListRecord | null>(null)
   const [discardTargets, setDiscardTargets] = useState<SubmissionListRecord[] | null>(null)
   const [copilotEntryMode, setCopilotEntryMode] = useState<'insight' | 'status'>('insight')
+  const [copilotIssueFocusId, setCopilotIssueFocusId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<SubmissionsListFilters>(emptySubmissionsListFilters)
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
+
+  useSearchQueryFromUrl(useCallback((query) => {
+    setSearchQuery(query)
+  }, []))
 
   useEffect(() => {
     const focusParam =
@@ -85,17 +91,48 @@ export function SubmissionsPage() {
     )
     if (!match) return
 
+    const issueParam = searchParams.get('issue')
+    const matchedIssue = issueParam
+      ? match.issues.find((issue) => {
+          const needle = issueParam.toLowerCase()
+          return (
+            issue.id.toLowerCase() === needle ||
+            issue.title.toLowerCase() === needle ||
+            issue.title.toLowerCase().includes(needle)
+          )
+        })
+      : null
+
     setCopilotSubmissionFocus(match)
-    setCopilotEntryMode('insight')
+    setRowSelectionModel([match.id])
+    setCopilotEntryMode(matchedIssue ? 'status' : 'insight')
+    setCopilotIssueFocusId(matchedIssue?.id ?? null)
     setNotesTarget(null)
     openTool('copilot')
 
-    const next = new URLSearchParams(searchParams)
-    next.delete('submission')
-    next.delete('askCopilot')
-    next.delete('copilot')
-    setSearchParams(next, { replace: true })
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        next.delete('submission')
+        next.delete('askCopilot')
+        next.delete('copilot')
+        next.delete('issue')
+        return next
+      },
+      { replace: true },
+    )
   }, [openTool, rows, searchParams, setSearchParams])
+
+  const previousSearchQueryRef = useRef(searchQuery)
+  useEffect(() => {
+    const previous = previousSearchQueryRef.current
+    previousSearchQueryRef.current = searchQuery
+    if (!previous.trim() || searchQuery.trim()) return
+    setCopilotSubmissionFocus(null)
+    setCopilotEntryMode('insight')
+    setCopilotIssueFocusId(null)
+    setRowSelectionModel([])
+  }, [searchQuery])
 
   const filteredRows = useMemo(() => {
     const withFilters = applySubmissionsListFilters(rows, appliedFilters)
@@ -120,13 +157,16 @@ export function SubmissionsPage() {
   const closeSidePanels = useCallback(() => {
     closeTool()
     setCopilotSubmissionFocus(null)
+    setCopilotIssueFocusId(null)
     setNotesTarget(null)
   }, [closeTool])
 
   const handleAskCopilot = useCallback(
     (submission: SubmissionListRecord) => {
       setCopilotSubmissionFocus(submission)
+      setRowSelectionModel([submission.id])
       setCopilotEntryMode('insight')
+      setCopilotIssueFocusId(null)
       setNotesTarget(null)
       openTool('copilot')
     },
@@ -136,7 +176,9 @@ export function SubmissionsPage() {
   const handleOpenStatusCopilot = useCallback(
     (submission: SubmissionListRecord) => {
       setCopilotSubmissionFocus(submission)
+      setRowSelectionModel([submission.id])
       setCopilotEntryMode('status')
+      setCopilotIssueFocusId(null)
       setNotesTarget(null)
       openTool('copilot')
     },
@@ -146,21 +188,27 @@ export function SubmissionsPage() {
   const handleRowSelectionModelChange = useCallback(
     (model: GridRowSelectionModel) => {
       setRowSelectionModel(model)
+      if (model.length === 0) {
+        setCopilotSubmissionFocus(null)
+        setCopilotEntryMode('insight')
+        setCopilotIssueFocusId(null)
+        return
+      }
       if (model.length > 1) {
         setCopilotSubmissionFocus(null)
         setCopilotEntryMode('insight')
+        setCopilotIssueFocusId(null)
         setNotesTarget(null)
         openTool('copilot')
         return
       }
-      if (model.length === 1) {
-        const selected = rows.find((row) => row.id === String(model[0]))
-        if (selected) {
-          setCopilotSubmissionFocus(selected)
-          setCopilotEntryMode('insight')
-          setNotesTarget(null)
-          openTool('copilot')
-        }
+      const selected = rows.find((row) => row.id === String(model[0]))
+      if (selected) {
+        setCopilotSubmissionFocus(selected)
+        setCopilotEntryMode('insight')
+        setCopilotIssueFocusId(null)
+        setNotesTarget(null)
+        openTool('copilot')
       }
     },
     [openTool, rows],
@@ -271,6 +319,8 @@ export function SubmissionsPage() {
     setRowSelectionModel((current) => current.filter((id) => !discardedIds.has(String(id))))
     if (copilotSubmissionFocus && discardedIds.has(copilotSubmissionFocus.id)) {
       setCopilotSubmissionFocus(null)
+      setCopilotIssueFocusId(null)
+      setCopilotEntryMode('insight')
     }
     if (notesTarget && discardedIds.has(notesTarget.id)) {
       setNotesTarget(null)
@@ -308,12 +358,15 @@ export function SubmissionsPage() {
       focusedSubmission={copilotFocusForPanel}
       selectedSubmissions={selectedSubmissions}
       entryMode={copilotEntryMode}
+      initialIssueId={copilotIssueFocusId}
       onEntryModeChange={setCopilotEntryMode}
       onResolveIssue={handleResolveIssue}
       onApprovePremiumOption={handleApprovePremiumOption}
       onClearFocus={() => {
         setCopilotSubmissionFocus(null)
         setCopilotEntryMode('insight')
+        setCopilotIssueFocusId(null)
+        setRowSelectionModel([])
       }}
       onClose={closeTool}
     />,
@@ -321,6 +374,7 @@ export function SubmissionsPage() {
       closeTool,
       copilotEntryMode,
       copilotFocusForPanel?.id,
+      copilotIssueFocusId,
       handleApprovePremiumOption,
       handleResolveIssue,
       selectedSubmissionKey,

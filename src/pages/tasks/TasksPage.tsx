@@ -12,6 +12,7 @@ import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { useTasksLookupFromUrl } from '@/hooks/useLookupFromUrl'
+import { useSearchQueryFromUrl } from '@/hooks/useSearchQueryFromUrl'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { TaskDetailsPanel } from '@/pages/tasks/components/TaskDetailsPanel'
 import { TasksActionBar } from '@/pages/tasks/components/TasksActionBar'
@@ -62,6 +63,10 @@ export function TasksPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<TasksFilters>(emptyTasksFilters)
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
+
+  useSearchQueryFromUrl(useCallback((query) => {
+    setSearchQuery(query)
+  }, []))
 
   const handleLookupApplied = useCallback(() => {
     setTaskDetailOpen(false)

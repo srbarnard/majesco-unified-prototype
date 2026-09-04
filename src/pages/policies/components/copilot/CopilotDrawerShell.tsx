@@ -29,6 +29,9 @@ type CopilotDrawerShellProps = {
    * Tab / prompts / agents / history swaps always animate via the shell.
    */
   contentKey?: string | null
+  /** Launch a chat thread (e.g. Daily summary quick action) and clear the composer. */
+  launchConversation?: CopilotHistoryEntry | null
+  launchConversationKey?: number | string | null
   /** Rendered inside scrollable chat content when on the default chat view. */
   banner?: ReactNode
   /** Optional slot beside the Copilot title in the drawer header. */
@@ -50,6 +53,8 @@ export function CopilotDrawerShell({
   hideComposer = false,
   chatFocusKey = null,
   contentKey = null,
+  launchConversation = null,
+  launchConversationKey = null,
   banner,
   headerTrailing,
   toolbarLeading,
@@ -61,6 +66,7 @@ export function CopilotDrawerShell({
   const [copilotTab, setCopilotTab] = useState<'chat' | 'history'>('chat')
   const [drawerView, setDrawerView] = useState<'prompts' | 'agents' | null>(null)
   const [activeConversation, setActiveConversation] = useState<CopilotHistoryEntry | null>(null)
+  const [conversationSource, setConversationSource] = useState<'history' | 'launch' | null>(null)
   const [composerMessage, setComposerMessage] = useState('')
 
   useEffect(() => {
@@ -74,19 +80,31 @@ export function CopilotDrawerShell({
       setCopilotTab('chat')
       setDrawerView(null)
       setActiveConversation(null)
+      setConversationSource(null)
     }
   }, [chatFocusKey])
+
+  useEffect(() => {
+    if (!launchConversation || launchConversationKey == null) return
+    setActiveConversation(launchConversation)
+    setConversationSource('launch')
+    setComposerMessage('')
+    setCopilotTab('chat')
+    setDrawerView(null)
+  }, [launchConversation, launchConversationKey])
 
   const handleTabChange = (_: unknown, value: 'chat' | 'history') => {
     setCopilotTab(value)
     setDrawerView(null)
     if (value === 'history') {
       setActiveConversation(null)
+      setConversationSource(null)
     }
   }
 
   const handleSelectHistoryEntry = (entry: CopilotHistoryEntry) => {
     setActiveConversation(entry)
+    setConversationSource('history')
     setDrawerView(null)
     setCopilotTab('chat')
   }
@@ -95,6 +113,14 @@ export function CopilotDrawerShell({
     setComposerMessage(message)
     setDrawerView(null)
     setCopilotTab('chat')
+  }
+
+  const handleConversationBack = () => {
+    setActiveConversation(null)
+    if (conversationSource === 'history') {
+      setCopilotTab('history')
+    }
+    setConversationSource(null)
   }
 
   const isDefaultChat = copilotTab === 'chat' && !drawerView && !activeConversation
@@ -121,10 +147,8 @@ export function CopilotDrawerShell({
   ) : activeConversation ? (
     <CopilotConversationView
       entry={activeConversation}
-      onBack={() => {
-        setActiveConversation(null)
-        setCopilotTab('history')
-      }}
+      onBack={handleConversationBack}
+      backLabel={conversationSource === 'launch' ? 'Daily summary' : undefined}
     />
   ) : (
     <>

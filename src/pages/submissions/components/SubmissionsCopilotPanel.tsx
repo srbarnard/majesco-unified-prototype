@@ -56,6 +56,8 @@ type SubmissionsCopilotPanelProps = {
   focusedSubmission?: SubmissionListRecord | null
   selectedSubmissions?: SubmissionListRecord[]
   entryMode?: SubmissionCopilotEntryMode
+  /** Opens directly into this issue (status mode) when set. */
+  initialIssueId?: string | null
   onEntryModeChange?: (mode: SubmissionCopilotEntryMode) => void
   onResolveIssue?: (submissionId: string, issueId: string, resolvedDetails: string[]) => void
   onApprovePremiumOption?: (submissionId: string, option: PremiumEstimate) => void
@@ -345,47 +347,63 @@ function SubmissionInsightView({
 }) {
   const briefing = useMemo(() => buildSubmissionInsightBriefing(submission), [submission])
 
-  const quickActions = [
-    briefing.statusQuickActionLabel,
-    submission.status === 'Blocked' ? 'Draft producer follow-up' : 'Summarize for underwriter',
-    'Ask about exposure',
-  ]
-
   return (
     <>
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
-        {submission.submissionNumber}
+      <Typography variant="subtitle2" sx={{ ...copilotSubtitleSx, mb: 0.25 }}>
+        {briefing.header}
       </Typography>
-      <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2 }}>
-        {renderSummaryText(briefing.summary)}
+      <Typography variant="body2" color="text.secondary" sx={{ ...bodySx, mb: 1.5 }}>
+        {briefing.subhead}
       </Typography>
-
-      <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
-        Key insights
-      </Typography>
-      <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }}>
-        {briefing.insights.map((insight) => (
+      <Box sx={{ mb: 2 }}>
+        {briefing.lines.map((line) => (
           <Typography
-            component="li"
+            key={line}
             variant="body2"
             color="text.primary"
-            key={insight}
-            sx={{ ...bodySx, mb: 0.5 }}
+            sx={{ ...bodySx, lineHeight: 1.55, mb: 0.75 }}
           >
-            {insight}
+            {renderSummaryText(line)}
           </Typography>
         ))}
       </Box>
       <Divider sx={{ mb: 2 }} />
       <CopilotQuickActions
-        actions={quickActions}
+        actions={briefing.quickActions}
         onAction={(action) => {
-          if (action === briefing.statusQuickActionLabel) {
+          if (action === briefing.statusQuickActionLabel || action === 'View status & resolve issues') {
             onViewStatus()
             return
           }
-          if (action === 'Draft producer follow-up') {
+          if (
+            action === 'Draft producer follow-up' ||
+            action === 'Draft a note to the producer' ||
+            action === 'Draft a note to compliance'
+          ) {
             onDraftProducerEmail?.()
+            onSeedComposer?.(
+              action === 'Draft a note to compliance'
+                ? `Draft a note to compliance about the OFAC hold on ${submission.submissionNumber} (${submission.insuredName}).`
+                : `Draft a producer follow-up for ${submission.submissionNumber} (${submission.insuredName}) about the open blocker.`,
+            )
+            return
+          }
+          if (action === 'Explain the OFAC hold') {
+            onSeedComposer?.(
+              `Explain the OFAC hold on ${submission.submissionNumber} — why it triggered, what Compliance needs, and how clearance works.`,
+            )
+            return
+          }
+          if (action === 'Explain the SOV gap') {
+            onSeedComposer?.(
+              `Explain the Statement of Values gap on ${submission.submissionNumber} and what the producer must provide to unblock property rating.`,
+            )
+            return
+          }
+          if (action === 'What can proceed vs what is frozen') {
+            onSeedComposer?.(
+              `For ${submission.submissionNumber}, what work can proceed while this blocker remains, and what is frozen until it clears?`,
+            )
             return
           }
           if (action === 'Summarize for underwriter') {
@@ -758,6 +776,7 @@ export function SubmissionsCopilotPanel({
   focusedSubmission = null,
   selectedSubmissions = [],
   entryMode = 'insight',
+  initialIssueId = null,
   onEntryModeChange,
   onResolveIssue,
   onApprovePremiumOption,
@@ -780,11 +799,21 @@ export function SubmissionsCopilotPanel({
   const statusMode = entryMode === 'status'
 
   useEffect(() => {
-    setActiveIssueId(null)
     setSeedComposerMessage(null)
     setProducerEmail(null)
     setIssueNote(null)
-  }, [focusKey, entryMode])
+    if (
+      statusMode &&
+      initialIssueId &&
+      focusedSubmission?.issues.some((issue) => issue.id === initialIssueId)
+    ) {
+      setActiveIssueId(initialIssueId)
+      return
+    }
+    setActiveIssueId(null)
+    // Apply deep-linked issue when focus/entry mode changes; do not re-pin if the user leaves the issue.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initialIssueId read intentionally on focus/entry change only
+  }, [focusKey, entryMode, statusMode])
 
   const confidence = focusedSubmission?.confidence ?? 0
   const showConfidence = Boolean(focusedSubmission && !multiSelectMode)

@@ -11,6 +11,7 @@ const quoteStatusToneMap: Record<QuoteStatus, StatusChipProps['status']> = {
   Referred: 'warning',
   'Rating blocked': 'error',
   'Pending issuance': 'warning',
+  'Pending pricing approval': 'warning',
   Issued: 'success',
 }
 

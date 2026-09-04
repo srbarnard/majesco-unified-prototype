@@ -17,8 +17,13 @@ export function useSearchQueryFromUrl(onQuery: (query: string) => void) {
     appliedRef.current = query
     onQuery(query)
 
-    const nextParams = new URLSearchParams(searchParams)
-    nextParams.delete('q')
-    setSearchParams(nextParams, { replace: true })
+    setSearchParams(
+      (current) => {
+        const nextParams = new URLSearchParams(current)
+        nextParams.delete('q')
+        return nextParams
+      },
+      { replace: true },
+    )
   }, [onQuery, searchParams, setSearchParams])
 }

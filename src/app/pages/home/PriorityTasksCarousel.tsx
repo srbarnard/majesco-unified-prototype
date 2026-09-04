@@ -1,12 +1,10 @@
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined'
 import Box from '@mui/material/Box'
-import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router'
 import { priorityTasksMock, type PriorityTaskCard } from '@/app/data/homeMock'
 import {
   getAnalyticsSurfaceToneStyles,
@@ -208,7 +206,6 @@ type PriorityTasksCarouselProps = {
 export function PriorityTasksCarousel({ onTaskOpen }: PriorityTasksCarouselProps) {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const isAdjustingScroll = useRef(false)
-  const [activeIndex, setActiveIndex] = useState(0)
   const { ref: containerRef, cardWidth } = useCarouselWidth()
 
   const taskCount = priorityTasksMock.length
@@ -224,14 +221,6 @@ export function PriorityTasksCarousel({ onTaskOpen }: PriorityTasksCarouselProps
     [],
   )
 
-  const syncActiveIndex = useCallback(() => {
-    const node = scrollerRef.current
-    if (!node) return
-    const offsetIndex = Math.round((node.scrollLeft - setWidth) / cardStep)
-    const normalized = ((offsetIndex % taskCount) + taskCount) % taskCount
-    setActiveIndex(normalized)
-  }, [cardStep, setWidth, taskCount])
-
   const normalizeScroll = useCallback(() => {
     const node = scrollerRef.current
     if (!node || isAdjustingScroll.current) return
@@ -245,24 +234,13 @@ export function PriorityTasksCarousel({ onTaskOpen }: PriorityTasksCarouselProps
       node.scrollLeft -= setWidth
       isAdjustingScroll.current = false
     }
-    syncActiveIndex()
-  }, [setWidth, syncActiveIndex])
+  }, [setWidth])
 
   useEffect(() => {
     const node = scrollerRef.current
     if (!node || setWidth <= 0) return
     node.scrollLeft = setWidth
-    syncActiveIndex()
-  }, [setWidth, syncActiveIndex])
-
-  const scroll = (direction: 'left' | 'right') => {
-    const node = scrollerRef.current
-    if (!node) return
-    node.scrollBy({
-      left: direction === 'left' ? -cardStep : cardStep,
-      behavior: 'smooth',
-    })
-  }
+  }, [setWidth])
 
   const handleOpen = useCallback(
     (task: PriorityTaskCard) => {
@@ -273,23 +251,28 @@ export function PriorityTasksCarousel({ onTaskOpen }: PriorityTasksCarouselProps
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 1.5 }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{ mb: 1.5 }}
+      >
         <Typography variant="subtitle1" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600 }}>
           Priority tasks
         </Typography>
-        <IconButton size="small" aria-label="Previous tasks" onClick={() => scroll('left')}>
-          <ChevronLeftIcon fontSize="small" />
-        </IconButton>
-        <IconButton size="small" aria-label="Next tasks" onClick={() => scroll('right')}>
-          <ChevronRightIcon fontSize="small" />
-        </IconButton>
         <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.75rem', ml: 0.25 }}
-          aria-live="polite"
+          component={Link}
+          to="/tasks"
+          variant="body2"
+          color="primary"
+          sx={{
+            fontFamily: figmaFontFamilyStack.body,
+            textDecoration: 'none',
+            fontSize: '0.8125rem',
+            '&:hover': { textDecoration: 'underline' },
+          }}
         >
-          {activeIndex + 1} / {taskCount}
+          View all
         </Typography>
       </Stack>
 

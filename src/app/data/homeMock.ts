@@ -10,10 +10,16 @@ export type PriorityTaskCard = {
   nextActionLabel: string
 }
 
+export type CopilotBriefingLinkPart = {
+  text: string
+  /** When set, this phrase is a link to the matching record or filtered list. */
+  to?: string
+}
+
 export type CopilotBriefingBullet = {
   id: string
-  text: string
-  to: string
+  /** Inline text segments — only parts with `to` are linked (not the whole sentence). */
+  parts: CopilotBriefingLinkPart[]
 }
 
 export type ActivityDayGroup = 'Today' | 'Yesterday' | 'Earlier'
@@ -183,23 +189,63 @@ export const homeDailySummaryBeats = {
   bullets: [
     {
       id: 'bb-1',
-      text: 'Midwest Fabrication loss-run review is blocking renewal bind.',
-      to: '/policies/01-CP-000017809-0',
+      parts: [
+        {
+          text: 'Midwest Fabrication',
+          to: '/policies?q=Midwest%20Fabrication&policy=01-CP-000017809-0',
+        },
+        { text: ' ' },
+        {
+          text: 'loss-run review',
+          to: '/policies?q=Midwest%20Fabrication&policy=01-CP-000017809-0',
+        },
+        { text: ' is blocking renewal bind.' },
+      ],
     },
     {
       id: 'bb-2',
-      text: 'Horizon Fleet submission is on OFAC hold pending compliance clearance.',
-      to: '/submissions',
+      parts: [
+        {
+          text: 'Horizon Fleet',
+          to: '/submissions?q=Horizon%20Fleet&submission=SUB-00117',
+        },
+        { text: ' submission is on ' },
+        {
+          text: 'OFAC hold',
+          to: '/submissions?q=Horizon%20Fleet&submission=SUB-00117&issue=iss-ofac',
+        },
+        { text: ' pending compliance clearance.' },
+      ],
     },
     {
       id: 'bb-3',
-      text: 'Red Oak Hospitality renewal package awaits pricing approval before producer delivery.',
-      to: '/quotes',
+      parts: [
+        {
+          text: 'Red Oak Hospitality',
+          to: '/quotes?q=Red%20Oak%20Hospitality&quote=01-CP-000017810-0',
+        },
+        { text: ' renewal package awaits ' },
+        {
+          text: 'pricing approval',
+          to: '/quotes?q=Red%20Oak%20Hospitality&quote=01-CP-000017810-0',
+        },
+        { text: ' before producer delivery.' },
+      ],
     },
     {
       id: 'bb-4',
-      text: 'Keystone Commercial Realty is missing an SOV for the property schedule.',
-      to: '/submissions',
+      parts: [
+        {
+          text: 'Keystone Commercial Realty',
+          to: '/submissions?q=Keystone%20Commercial%20Realty&submission=SUB-00121',
+        },
+        { text: ' is missing an ' },
+        {
+          text: 'SOV',
+          to: '/submissions?q=Keystone%20Commercial%20Realty&submission=SUB-00121&issue=iss-keystone-sov',
+        },
+        { text: ' for the property schedule.' },
+      ],
     },
   ] satisfies CopilotBriefingBullet[],
 }

@@ -1,7 +1,8 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useGridApiRef } from '@mui/x-data-grid-premium'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import {
   useRegisterRightToolCopilot,
@@ -48,6 +49,7 @@ function matchesSearch(row: PolicyListRecord, query: string) {
 
 export function PoliciesListPage() {
   const apiRef = useGridApiRef()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { activeTool, openTool, closeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<PoliciesListTab>('all')
   const [copilotPolicyFocus, setCopilotPolicyFocus] = useState<PolicyListRecord | null>(null)
@@ -64,6 +66,38 @@ export function PoliciesListPage() {
   useSearchQueryFromUrl(useCallback((query) => {
     setSearchQuery(query)
   }, []))
+
+  useEffect(() => {
+    const focusParam = searchParams.get('policy')
+    if (!focusParam) return
+
+    const match = policiesListMock.find(
+      (row) =>
+        row.policyNumber.toLowerCase() === focusParam.toLowerCase() ||
+        row.id.toLowerCase() === focusParam.toLowerCase(),
+    )
+    if (!match) return
+
+    setCopilotPolicyFocus(match)
+    openTool('copilot')
+
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        next.delete('policy')
+        return next
+      },
+      { replace: true },
+    )
+  }, [openTool, searchParams, setSearchParams])
+
+  const previousSearchQueryRef = useRef(searchQuery)
+  useEffect(() => {
+    const previous = previousSearchQueryRef.current
+    previousSearchQueryRef.current = searchQuery
+    if (!previous.trim() || searchQuery.trim()) return
+    setCopilotPolicyFocus(null)
+  }, [searchQuery])
 
   const filteredRows = useMemo(() => {
     const withFilters = applyPoliciesListFilters(policiesListMock, appliedFilters)

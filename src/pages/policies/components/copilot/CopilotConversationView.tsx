@@ -56,7 +56,7 @@ function UserMessage({ message }: { message: CopilotHistoryMessage }) {
 function AssistantMessage({ message }: { message: CopilotHistoryMessage }) {
   return (
     <Box sx={{ mb: 2.5 }}>
-      <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 0.5 }}>
+      <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 0.5, whiteSpace: 'pre-line' }}>
         {message.content}
       </Typography>
       <Stack direction="row" spacing={1} alignItems="center">
@@ -76,13 +76,15 @@ function AssistantMessage({ message }: { message: CopilotHistoryMessage }) {
 type CopilotConversationViewProps = {
   entry: CopilotHistoryEntry
   onBack: () => void
+  /** Overrides the subheader type label (e.g. "Daily summary" for launched quick actions). */
+  backLabel?: string
 }
 
-export function CopilotConversationView({ entry, onBack }: CopilotConversationViewProps) {
+export function CopilotConversationView({ entry, onBack, backLabel }: CopilotConversationViewProps) {
   return (
     <Box>
       <CopilotDrawerSubHeader
-        title={copilotHistoryKindLabel(entry.kind)}
+        title={backLabel ?? copilotHistoryKindLabel(entry.kind)}
         detail={entry.title}
         onBack={onBack}
       />
