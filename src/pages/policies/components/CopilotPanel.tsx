@@ -260,9 +260,6 @@ const policiesListWorkspaceInsights = [
   'Average TWP: $1.42M across active commercial lines',
 ]
 
-const quoteQuickActions = ['Summarize quote', 'Compare versions', 'Send to producer', 'Check rating factors']
-const policyListQuickActions = ['Renewal summary', 'Billing status', 'Endorsement history', 'Coverage overview']
-
 function taskInsights(task: TaskRecord): string[] {
   if (task.copilotInsights.length > 0) {
     return task.copilotInsights.slice(0, 3)
