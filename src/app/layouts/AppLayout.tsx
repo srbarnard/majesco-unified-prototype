@@ -1,4 +1,6 @@
 import Box from '@mui/material/Box'
+import { useTheme } from '@mui/material/styles'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { GlobalSearchProvider } from '@/app/contexts/GlobalSearchContext'
@@ -16,6 +18,8 @@ import { layoutTokens } from '@/design-system/tokens/layout'
 import { surfaceApp } from '@/design-system/theme/themeSurfaces'
 
 function AppLayoutContent() {
+  const theme = useTheme()
+  const isDesktopTools = useMediaQuery(theme.breakpoints.up('lg'))
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
 
@@ -73,6 +77,11 @@ function AppLayoutContent() {
             flexDirection: 'column',
             overflow: 'hidden',
             bgcolor: 'background.paper',
+            // Clear the fixed bottom tool bar on mobile/tablet.
+            pb: {
+              xs: `calc(${layoutTokens.toolRailBottomHeight}px + env(safe-area-inset-bottom, 0px))`,
+              lg: 0,
+            },
           }}
         >
           <Box
@@ -94,9 +103,20 @@ function AppLayoutContent() {
           </Box>
         </Box>
 
-        <AppRightToolDrawer />
-        <AppRightToolRail />
+        {isDesktopTools ? (
+          <>
+            <AppRightToolDrawer />
+            <AppRightToolRail />
+          </>
+        ) : null}
       </Box>
+
+      {!isDesktopTools ? (
+        <>
+          <AppRightToolDrawer />
+          <AppRightToolRail />
+        </>
+      ) : null}
     </Box>
   )
 }

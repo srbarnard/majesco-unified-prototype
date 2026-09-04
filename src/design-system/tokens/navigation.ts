@@ -1,15 +1,16 @@
-import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
-import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
+import AccountBoxOutlinedIcon from '@mui/icons-material/AccountBoxOutlined'
 import ChecklistRtlOutlinedIcon from '@mui/icons-material/ChecklistRtlOutlined'
 import FormatQuoteOutlinedIcon from '@mui/icons-material/FormatQuoteOutlined'
-import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import MoveToInboxOutlinedIcon from '@mui/icons-material/MoveToInboxOutlined'
 import PolicyOutlinedIcon from '@mui/icons-material/PolicyOutlined'
+import SensorOccupiedOutlinedIcon from '@mui/icons-material/SensorOccupiedOutlined'
 import StarBorderOutlinedIcon from '@mui/icons-material/StarBorderOutlined'
+import SwitchAccountOutlinedIcon from '@mui/icons-material/SwitchAccountOutlined'
 import type { SvgIconProps } from '@mui/material/SvgIcon'
 import type { ComponentType } from 'react'
 import type { SecondaryPanel } from '@/app/contexts/SidebarContext'
+import { DemographyOutlinedIcon } from '@/design-system/icons/DemographyOutlined'
 import { SearchActivityOutlinedIcon } from '@/design-system/icons/SearchActivityOutlined'
 
 export type NavIcon = ComponentType<SvgIconProps>
@@ -43,10 +44,10 @@ export const appShellNavItems: NavItem[] = [
 ]
 
 export const moreMenuItems: MoreMenuItem[] = [
-  { label: 'Customers', path: '/customers', icon: BusinessOutlinedIcon },
-  { label: 'Insureds', path: '/insureds', icon: GroupsOutlinedIcon },
-  { label: 'Producers', path: '/producers', icon: BadgeOutlinedIcon },
-  { label: 'Sub producers', path: '/sub-producers', icon: BadgeOutlinedIcon },
+  { label: 'Customers', path: '/customers', icon: SensorOccupiedOutlinedIcon },
+  { label: 'Insureds', path: '/insureds', icon: DemographyOutlinedIcon },
+  { label: 'Producers', path: '/producers', icon: AccountBoxOutlinedIcon },
+  { label: 'Sub producers', path: '/sub-producers', icon: SwitchAccountOutlinedIcon },
 ]
 
 export const visibleAppShellNavItems = appShellNavItems.filter((item) => !item.hidden)

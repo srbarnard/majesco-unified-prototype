@@ -6,7 +6,8 @@ import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
-import { useColorScheme } from '@mui/material/styles'
+import { useColorScheme, useTheme } from '@mui/material/styles'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import { CopilotIcon } from '@/design-system/components'
 import { useRightTool, type RightToolId } from '@/app/contexts/RightToolContext'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -50,8 +51,10 @@ function ToolIcon({
   return <GroupsOutlinedIcon sx={{ fontSize: 20 }} />
 }
 
-/** Persistent Acrobat-style vertical tool rail on the far right of the app chrome. */
+/** Persistent tool rail — vertical on desktop, fixed bottom bar on mobile/tablet. */
 export function AppRightToolRail() {
+  const theme = useTheme()
+  const isDesktopTools = useMediaQuery(theme.breakpoints.up('lg'))
   const { activeTool, toggleTool, filterContent, partiesContent } = useRightTool()
   const { mode, systemMode } = useColorScheme()
   const resolvedMode = mode === 'system' ? systemMode : mode
@@ -70,26 +73,59 @@ export function AppRightToolRail() {
       component="aside"
       aria-label="Tools"
       sx={{
-        width: layoutTokens.toolRailWidth,
-        flexShrink: 0,
-        alignSelf: 'stretch',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        pt: 1.5,
-        pb: 1.5,
-        gap: 1,
-        borderLeft: 1,
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
+        ...(isDesktopTools
+          ? {
+              width: layoutTokens.toolRailWidth,
+              flexShrink: 0,
+              alignSelf: 'stretch',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              pt: 1.5,
+              pb: 1.5,
+              gap: 1,
+              borderLeft: 1,
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+            }
+          : {
+              position: 'fixed',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: (t) => t.zIndex.drawer + 2,
+              height: `calc(${layoutTokens.toolRailBottomHeight}px + env(safe-area-inset-bottom, 0px))`,
+              pb: 'env(safe-area-inset-bottom, 0px)',
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderTop: 1,
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+              boxShadow: (t) =>
+                t.palette.mode === 'dark'
+                  ? '0 -4px 16px rgba(0, 0, 0, 0.35)'
+                  : '0 -4px 16px rgba(0, 0, 0, 0.08)',
+            }),
       }}
     >
-      <Stack spacing={1} alignItems="center" sx={{ width: '100%' }}>
+      <Stack
+        direction={isDesktopTools ? 'column' : 'row'}
+        spacing={isDesktopTools ? 1 : 0.5}
+        alignItems="center"
+        justifyContent={isDesktopTools ? 'flex-start' : 'space-evenly'}
+        sx={{ width: '100%', maxWidth: isDesktopTools ? '100%' : 420, px: isDesktopTools ? 0 : 1 }}
+      >
         {tools.map((tool) => {
           const active = activeTool === tool.id
           return (
-            <Tooltip key={tool.id} title={tool.label} placement="left">
+            <Tooltip
+              key={tool.id}
+              title={tool.label}
+              placement={isDesktopTools ? 'left' : 'top'}
+            >
               <IconButton
                 aria-label={tool.label}
                 aria-pressed={active}

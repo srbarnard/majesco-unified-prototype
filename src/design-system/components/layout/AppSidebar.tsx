@@ -69,6 +69,8 @@ function MobileNavDrawerShell({
         flexDirection: 'column',
         bgcolor: 'background.paper',
         overflow: 'hidden',
+        // Clear the fixed bottom tool bar so the theme toggle stays reachable.
+        pb: `calc(${layoutTokens.toolRailBottomHeight}px + env(safe-area-inset-bottom, 0px))`,
       }}
     >
       <Stack

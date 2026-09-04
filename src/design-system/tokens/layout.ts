@@ -4,6 +4,8 @@ export const layoutTokens = {
   navRailWidth: 88,
   /** Persistent right tool rail (Copilot / Notes / Email). */
   toolRailWidth: 48,
+  /** Fixed bottom tool bar height on mobile/tablet (below `lg`). */
+  toolRailBottomHeight: 56,
   /** Fixed width for the shell tool drawer beside the rail. */
   toolDrawerWidth: 380,
   secondaryPanelWidth: 280,
