@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box'
+import Divider from '@mui/material/Divider'
 import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
@@ -16,12 +17,12 @@ const bodySx = {
 
 function SuggestedActions({
   actions,
-  label,
+  label = 'Quick actions',
 }: {
   actions: string[]
-  label?: string
+  label?: string | null
 }) {
-  return <CopilotQuickActions actions={actions} label={label ?? null} />
+  return <CopilotQuickActions actions={actions} label={label} />
 }
 
 type ResultItem = {
@@ -236,6 +237,8 @@ export function DailySummaryContent() {
           </Typography>
         ))}
       </Stack>
+
+      <Divider sx={{ my: 0 }} />
 
       <SuggestedActions
         actions={[

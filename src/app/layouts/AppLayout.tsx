@@ -2,8 +2,11 @@ import Box from '@mui/material/Box'
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { GlobalSearchProvider } from '@/app/contexts/GlobalSearchContext'
+import { RightToolProvider } from '@/app/contexts/RightToolContext'
 import { SidebarProvider } from '@/app/contexts/SidebarContext'
 import {
+  AppRightToolDrawer,
+  AppRightToolRail,
   AppSidebar,
   AppTopNavbar,
   SecondaryNavPanel,
@@ -89,6 +92,9 @@ function AppLayoutContent() {
             <Outlet />
           </Box>
         </Box>
+
+        <AppRightToolDrawer />
+        <AppRightToolRail />
       </Box>
     </Box>
   )
@@ -98,7 +104,9 @@ export function AppLayout() {
   return (
     <SidebarProvider>
       <GlobalSearchProvider>
-        <AppLayoutContent />
+        <RightToolProvider>
+          <AppLayoutContent />
+        </RightToolProvider>
       </GlobalSearchProvider>
     </SidebarProvider>
   )

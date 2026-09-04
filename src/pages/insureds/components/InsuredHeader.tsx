@@ -5,67 +5,23 @@ import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import StarBorderIcon from '@mui/icons-material/StarBorder'
 import StarIcon from '@mui/icons-material/Star'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import type { ReactNode } from 'react'
-import { CopilotIcon, EntityListHomeButton, StatusChip } from '@/design-system/components'
-import { getPanelToggleButtonStyles, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
+import { EntityListHomeButton, StatusChip } from '@/design-system/components'
+import { sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import type { InsuredDetailsRecord } from '@/pages/insureds/data/mockInsuredDetails'
 import { InsuredTabs, type InsuredTab } from '@/pages/insureds/components/InsuredTabs'
 
-export type InsuredRightPanel = 'contacts' | 'copilot'
-
 type InsuredHeaderProps = {
   insured: InsuredDetailsRecord
   activeTab: InsuredTab
   onTabChange: (tab: InsuredTab) => void
-  activeRightPanel: InsuredRightPanel | null
-  onToggleRightPanel: (panel: InsuredRightPanel) => void
   starred?: boolean
   onToggleStar?: () => void
-}
-
-function PanelToggleButton({
-  label,
-  icon,
-  active,
-  onClick,
-  hideLabelOnMobile = false,
-}: {
-  label: string
-  icon: ReactNode
-  active: boolean
-  onClick: () => void
-  hideLabelOnMobile?: boolean
-}) {
-  return (
-    <Button
-      size="small"
-      variant="text"
-      disableRipple
-      startIcon={icon}
-      onClick={onClick}
-      sx={(theme) => ({
-        ...getPanelToggleButtonStyles(theme, active),
-        fontFamily: figmaFontFamilyStack.body,
-        '& .MuiButton-startIcon': {
-          marginRight: { xs: 0, sm: 0.75 },
-          overflow: 'visible',
-          color: 'inherit',
-        },
-        '& .panel-toggle-label': {
-          display: hideLabelOnMobile ? { xs: 'none', sm: 'inline' } : 'inline',
-        },
-      })}
-    >
-      <span className="panel-toggle-label">{label}</span>
-    </Button>
-  )
 }
 
 function insuredStatusVariant(status: InsuredDetailsRecord['status']) {
@@ -78,8 +34,6 @@ export function InsuredHeader({
   insured,
   activeTab,
   onTabChange,
-  activeRightPanel,
-  onToggleRightPanel,
   starred = false,
   onToggleStar,
 }: InsuredHeaderProps) {
@@ -167,22 +121,6 @@ export function InsuredHeader({
           <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
             <InsuredTabs value={activeTab} onChange={onTabChange} />
           </Box>
-          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexShrink: 0 }}>
-            <PanelToggleButton
-              label="Contacts"
-              icon={<GroupsOutlinedIcon sx={{ fontSize: 18 }} />}
-              active={activeRightPanel === 'contacts'}
-              onClick={() => onToggleRightPanel('contacts')}
-              hideLabelOnMobile
-            />
-            <PanelToggleButton
-              label="Copilot"
-              icon={<CopilotIcon size={18} active={activeRightPanel === 'copilot'} />}
-              active={activeRightPanel === 'copilot'}
-              onClick={() => onToggleRightPanel('copilot')}
-              hideLabelOnMobile
-            />
-          </Stack>
         </Stack>
       </Box>
     </Box>

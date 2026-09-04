@@ -32,11 +32,12 @@ export function surfaceApp(theme: Theme) {
 
 /** Primary-tinted selection / active nav / chip backgrounds. */
 export function accentSubtle(theme: Theme) {
-  return isDarkMode(theme) ? theme.figmaPalette.blue[900] : theme.figmaPalette.blue[50]
+  // Same light-blue wash in light and dark so active states stay consistent.
+  return theme.figmaPalette.blue[50]
 }
 
 export function accentSubtleHover(theme: Theme) {
-  return isDarkMode(theme) ? theme.figmaPalette.blue[800] : theme.figmaPalette.blue[100]
+  return theme.figmaPalette.blue[100]
 }
 
 /** Incoming note/chat bubble — Majesco secondary (teal) wash. */
@@ -73,11 +74,13 @@ export function accentSurfaceCardSx(theme: Theme) {
   }
 }
 
-/** Shared styles for filter/copilot panel toggle buttons in page headers. */
+/** Shared styles for filter/copilot panel toggle buttons in page headers.
+ * Matches Pulse pill active/inactive: solid primary when on, muted surface when off.
+ */
 export function getPanelToggleButtonStyles(theme: Theme, active: boolean) {
   return {
     textTransform: 'none' as const,
-    fontWeight: 400,
+    fontWeight: active ? 600 : 500,
     fontSize: '0.8125rem',
     minWidth: 'auto',
     px: { xs: 1, sm: 1.25 },
@@ -85,14 +88,15 @@ export function getPanelToggleButtonStyles(theme: Theme, active: boolean) {
     border: 'none',
     borderRadius: '30px',
     boxShadow: 'none',
-    color: active ? theme.palette.primary.main : theme.palette.text.secondary,
-    bgcolor: active ? accentSubtle(theme) : 'transparent',
+    color: active ? theme.palette.primary.contrastText : theme.palette.text.secondary,
+    bgcolor: active ? theme.palette.primary.main : surfaceMuted(theme),
     '&:hover': {
-      bgcolor: active ? accentSubtleHover(theme) : surfaceSubtle(theme),
+      bgcolor: active ? theme.palette.primary.dark : surfaceSubtle(theme),
       boxShadow: 'none',
     },
     '& .MuiButton-startIcon': {
       opacity: 1,
+      color: 'inherit',
     },
   }
 }

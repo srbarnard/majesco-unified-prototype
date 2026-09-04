@@ -3,7 +3,7 @@ import Button from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
-import { accentSubtle, accentSubtleHover } from '@/design-system/theme/themeSurfaces'
+import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 
 export type CopilotQuickActionsProps = {
@@ -74,7 +74,8 @@ export function CopilotQuickActions({
                 transition: 'color 0.15s ease',
               },
               '&:hover': {
-                bgcolor: accentSubtle(theme),
+                // Mode-aware primary wash — avoid accentSubtle (near-white) in dark mode.
+                bgcolor: getFigmaColors(theme.palette.mode).primary.hover,
                 color: 'primary.main',
                 boxShadow: 'none',
                 '& .MuiButton-startIcon': {
@@ -82,7 +83,7 @@ export function CopilotQuickActions({
                 },
               },
               '&:active': {
-                bgcolor: accentSubtleHover(theme),
+                bgcolor: getFigmaColors(theme.palette.mode).primary.selected,
               },
             })}
           >

@@ -1,8 +1,9 @@
 import Box from '@mui/material/Box'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { useRightTool } from '@/app/contexts/RightToolContext'
+import { useRegisterRightToolCopilotCustom } from '@/app/hooks/useRightToolRegistration'
 import { layoutTokens } from '@/design-system/tokens/layout'
-import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
 import { emptyQuoteWizardForm } from '@/pages/quotes/data/quoteWizardDefaults'
 import type { QuoteWizardFormData, QuoteWizardUploadedFile } from '@/pages/quotes/data/quoteWizardTypes'
@@ -56,12 +57,14 @@ function canAdvanceFromStep(stepIndex: number, form: QuoteWizardFormData) {
 export function NewQuoteWizardPage() {
   const navigate = useNavigate()
   const isDesktop = useIsDesktopLayout()
+  const { openTool, closeTool, activeTool } = useRightTool()
   const [activeStep, setActiveStep] = useState(0)
   const [form, setForm] = useState<QuoteWizardFormData>(emptyQuoteWizardForm)
   const [focusField, setFocusField] = useState<string | null>(null)
-  const [copilotOpen, setCopilotOpen] = useState(true)
   const [isParsingDocuments, setIsParsingDocuments] = useState(false)
   const parseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const didInitCopilot = useRef(false)
+  const wasDesktop = useRef(isDesktop)
 
   const updateForm = useCallback((updates: Partial<QuoteWizardFormData>) => {
     setForm((current) => ({ ...current, ...updates }))
@@ -110,19 +113,41 @@ export function NewQuoteWizardPage() {
     })
   }, [])
 
-  const handleToggleCopilot = useCallback(() => {
-    setCopilotOpen((current) => !current)
-  }, [])
-
-  const handleCloseCopilot = useCallback(() => {
-    setCopilotOpen(false)
-  }, [])
+  useRegisterRightToolCopilotCustom(
+    <QuoteWizardCopilotPanel
+      stepIndex={activeStep}
+      form={form}
+      isParsingDocuments={isParsingDocuments}
+      onUpdateForm={updateForm}
+      onContinue={() => {
+        if (activeStep === 4) {
+          navigate('/quotes')
+          return
+        }
+        if (!canAdvanceFromStep(activeStep, form)) return
+        setActiveStep((step) => Math.min(step + 1, 4))
+        setFocusField(null)
+      }}
+      onFieldFocus={setFocusField}
+      onClose={closeTool}
+    />,
+    [activeStep, closeTool, form, isParsingDocuments],
+  )
 
   useEffect(() => {
-    if (!isDesktop && copilotOpen) {
-      setCopilotOpen(false)
+    if (didInitCopilot.current) return
+    didInitCopilot.current = true
+    if (isDesktop) {
+      openTool('copilot')
     }
-  }, [isDesktop])
+  }, [isDesktop, openTool])
+
+  useEffect(() => {
+    if (wasDesktop.current && !isDesktop && activeTool === 'copilot') {
+      closeTool()
+    }
+    wasDesktop.current = isDesktop
+  }, [activeTool, closeTool, isDesktop])
 
   useEffect(() => {
     if (activeStep === 3 && form.selectedCoverages.length === 0) {
@@ -198,8 +223,6 @@ export function NewQuoteWizardPage() {
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden' }}>
       <QuoteWizardPageHeader
         activeStep={activeStep}
-        copilotOpen={copilotOpen}
-        onToggleCopilot={handleToggleCopilot}
         onStepClick={(step) => {
           if (step <= activeStep) setActiveStep(step)
         }}
@@ -219,20 +242,6 @@ export function NewQuoteWizardPage() {
             showContinue
           />
         </Box>
-
-        {copilotOpen && (
-          <ResizableRightPanel open={copilotOpen} variant="wide" onClose={handleCloseCopilot}>
-            <QuoteWizardCopilotPanel
-              stepIndex={activeStep}
-              form={form}
-              isParsingDocuments={isParsingDocuments}
-              onUpdateForm={updateForm}
-              onContinue={handleContinue}
-              onFieldFocus={setFocusField}
-              onClose={handleCloseCopilot}
-            />
-          </ResizableRightPanel>
-        )}
       </Box>
     </Box>
   )

@@ -1,25 +1,22 @@
 import Box from '@mui/material/Box'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
+import { useRightTool } from '@/app/contexts/RightToolContext'
+import {
+  useRegisterRightToolCopilot,
+  useRegisterRightToolFilter,
+  useRegisterRightToolParties,
+  useRegisterRightToolRecordContext,
+} from '@/app/hooks/useRightToolRegistration'
 import { PolicyAnalyticsDashboard } from '@/pages/policies/components/PolicyAnalyticsDashboard'
-import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { type DocumentAttachMode, type DocumentAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
 import { DocumentsFilterPanel } from '@/pages/policies/components/DocumentsFilterPanel'
 import { DocumentsTab } from '@/pages/policies/components/DocumentsTab'
 import { OverviewTab } from '@/pages/policies/components/OverviewTab'
 import { PartiesPanel } from '@/pages/policies/components/PartiesPanel'
-import {
-  PolicyHeader,
-  type RightPanel,
-} from '@/pages/policies/components/PolicyHeader'
-import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
+import { PolicyHeader } from '@/pages/policies/components/PolicyHeader'
 import type { PolicyTab } from '@/pages/policies/components/PolicyTabs'
 import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
-import {
-  resolveOverviewCopilotPanel,
-  useCloseCopilotWhenMobile,
-  useDesktopCopilotInitialOpen,
-} from '@/pages/policies/hooks/useResponsiveCopilotPanel'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import {
   policyDocumentsCopilotInsights,
@@ -47,17 +44,83 @@ export function PolicyDetails() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const isDesktop = useIsDesktopLayout()
+  const { openTool, closeTool, activeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<PolicyTab>(() => parsePolicyTab(searchParams.get('tab')) ?? 'overview')
   const [starred, setStarred] = useState(true)
   const [emergency, setEmergency] = useState(false)
-  const [activeRightPanel, setActiveRightPanel] = useState<RightPanel | null>(null)
-  const [documentsFilterOpen, setDocumentsFilterOpen] = useState(false)
   const [appliedDocumentsFilters, setAppliedDocumentsFilters] = useState<DocumentsFilters>(emptyDocumentsFilters)
   const [copilotDocumentFocus, setCopilotDocumentFocus] = useState<PolicyDocument | null>(null)
   const [attachMode, setAttachMode] = useState<DocumentAttachMode | null>(null)
+  const didInitCopilot = useRef(false)
+  const wasDesktop = useRef(isDesktop)
 
-  useDesktopCopilotInitialOpen(isDesktop, activeTab === 'overview' || activeTab === 'documents', 'copilot', setActiveRightPanel)
-  useCloseCopilotWhenMobile(isDesktop, activeRightPanel, 'copilot', setActiveRightPanel)
+  useRegisterRightToolRecordContext(
+    {
+      title: policyDetailsMock.companyName,
+      subtitle: policyDetailsMock.policyNumber,
+    },
+    [],
+  )
+
+  useRegisterRightToolCopilot(
+    {
+      activePolicyTab: activeTab,
+      focusedDocument: copilotDocumentFocus,
+      documentsWorkspaceSummary: policyDocumentsCopilotSummary,
+      documentsWorkspaceInsights: policyDocumentsCopilotInsights,
+      attachMode,
+      attachContextLabel: policyDetailsMock.policyNumber,
+      onCloseAttach: () => setAttachMode(null),
+      onAttachSave: () => setAttachMode(null),
+    },
+    [activeTab, attachMode, copilotDocumentFocus],
+  )
+
+  const handleApplyDocumentsFilters = useCallback((filters: DocumentsFilters) => {
+    setAppliedDocumentsFilters(filters)
+  }, [])
+
+  useRegisterRightToolFilter(
+    activeTab === 'documents' ? (
+      <DocumentsFilterPanel
+        appliedFilters={appliedDocumentsFilters}
+        onApply={handleApplyDocumentsFilters}
+        onClose={closeTool}
+      />
+    ) : null,
+    [activeTab, appliedDocumentsFilters, handleApplyDocumentsFilters, closeTool],
+  )
+
+  useRegisterRightToolParties(<PartiesPanel onClose={closeTool} />, [closeTool])
+
+  useEffect(() => {
+    if (didInitCopilot.current) return
+    didInitCopilot.current = true
+    if (isDesktop && (activeTab === 'overview' || activeTab === 'documents')) {
+      openTool('copilot')
+    }
+  }, [activeTab, isDesktop, openTool])
+
+  useEffect(() => {
+    if (wasDesktop.current && !isDesktop && activeTool === 'copilot') {
+      closeTool()
+      setAttachMode(null)
+      setCopilotDocumentFocus(null)
+    }
+    wasDesktop.current = isDesktop
+  }, [activeTool, closeTool, isDesktop])
+
+  const syncTabPanels = useCallback(
+    (tab: PolicyTab) => {
+      if (tab === 'overview' || tab === 'documents') {
+        if (activeTool === 'parties' || activeTool === 'filter') return
+        if (isDesktop) openTool('copilot')
+        return
+      }
+      closeTool()
+    },
+    [activeTool, closeTool, isDesktop, openTool],
+  )
 
   useEffect(() => {
     const tab = parsePolicyTab(searchParams.get('tab'))
@@ -65,78 +128,20 @@ export function PolicyDetails() {
 
     setActiveTab(tab)
     setCopilotDocumentFocus(null)
-    setDocumentsFilterOpen(false)
     setAttachMode(null)
+    syncTabPanels(tab)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, syncTabPanels])
 
-    if (tab === 'overview') {
-      setActiveRightPanel((current) => resolveOverviewCopilotPanel(isDesktop, current, 'copilot', 'parties'))
-      return
-    }
-
-    if (tab === 'documents') {
-      setActiveRightPanel(isDesktop ? 'copilot' : null)
-      return
-    }
-
-    setActiveRightPanel((current) => (current === 'copilot' ? null : current))
-  }, [isDesktop, searchParams])
-
-  const handleToggleRightPanel = useCallback((panel: RightPanel) => {
-    if (panel === 'copilot') {
+  const handleTabChange = useCallback(
+    (tab: PolicyTab) => {
+      setActiveTab(tab)
       setCopilotDocumentFocus(null)
       setAttachMode(null)
-    }
-    setActiveRightPanel((current) => {
-      if (current === panel) {
-        return null
-      }
-      setDocumentsFilterOpen(false)
-      return panel
-    })
-  }, [])
-
-  const handleToggleDocumentsFilter = useCallback(() => {
-    setDocumentsFilterOpen((current) => {
-      if (!current) {
-        setActiveRightPanel(null)
-        setCopilotDocumentFocus(null)
-      }
-      return !current
-    })
-  }, [])
-
-  const handleCloseRightPanel = useCallback(() => {
-    setActiveRightPanel(null)
-    setDocumentsFilterOpen(false)
-    setAttachMode(null)
-  }, [])
-
-  const handleCloseDocumentsFilter = useCallback(() => {
-    setDocumentsFilterOpen(false)
-  }, [])
-
-  const handleApplyDocumentsFilters = useCallback((filters: DocumentsFilters) => {
-    setAppliedDocumentsFilters(filters)
-  }, [])
-
-  const handleTabChange = useCallback((tab: PolicyTab) => {
-    setActiveTab(tab)
-    setCopilotDocumentFocus(null)
-    setDocumentsFilterOpen(false)
-    setAttachMode(null)
-
-    if (tab === 'overview') {
-      setActiveRightPanel((current) => resolveOverviewCopilotPanel(isDesktop, current, 'copilot', 'parties'))
-      return
-    }
-
-    if (tab === 'documents') {
-      setActiveRightPanel(isDesktop ? 'copilot' : null)
-      return
-    }
-
-    setActiveRightPanel((current) => (current === 'copilot' ? null : current))
-  }, [isDesktop])
+      syncTabPanels(tab)
+    },
+    [syncTabPanels],
+  )
 
   const handleDocumentOpen = useCallback(
     (document: PolicyDocument) => {
@@ -150,32 +155,18 @@ export function PolicyDetails() {
     [policyId],
   )
 
-  const handleAttachTo = useCallback((target: DocumentAttachTarget, documents: PolicyDocument[]) => {
-    setAttachMode({ target, documents })
-    setDocumentsFilterOpen(false)
-    setCopilotDocumentFocus(documents[0] ?? null)
-    setActiveRightPanel('copilot')
-  }, [])
+  const handleAttachTo = useCallback(
+    (target: DocumentAttachTarget, documents: PolicyDocument[]) => {
+      setAttachMode({ target, documents })
+      setCopilotDocumentFocus(documents[0] ?? null)
+      openTool('copilot')
+    },
+    [openTool],
+  )
 
-  const handleCloseAttach = useCallback(() => {
-    setAttachMode(null)
-  }, [])
-
-  const handleAttachSave = useCallback(() => {
-    setAttachMode(null)
-  }, [])
-
-  const showCopilotPanel = activeRightPanel === 'copilot'
   const isDocumentsTab = activeTab === 'documents'
-  const rightPanelOpen = documentsFilterOpen || activeRightPanel !== null
-
-  const handleCloseMobileRightPanel = useCallback(() => {
-    if (documentsFilterOpen) {
-      handleCloseDocumentsFilter()
-      return
-    }
-    handleCloseRightPanel()
-  }, [documentsFilterOpen, handleCloseDocumentsFilter, handleCloseRightPanel])
+  const activeCopilotDocumentId =
+    activeTool === 'copilot' && copilotDocumentFocus ? copilotDocumentFocus.id : null
 
   return (
     <Box
@@ -206,10 +197,6 @@ export function PolicyDetails() {
             policyNumber={policyDetailsMock.policyNumber}
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            activeRightPanel={activeRightPanel}
-            onToggleRightPanel={handleToggleRightPanel}
-            documentsFilterOpen={documentsFilterOpen}
-            onToggleDocumentsFilter={handleToggleDocumentsFilter}
             starred={starred}
             onToggleStar={() => setStarred((prev) => !prev)}
             emergency={emergency}
@@ -237,7 +224,7 @@ export function PolicyDetails() {
               onDocumentOpen={handleDocumentOpen}
               getDocumentHref={getDocumentHref}
               onAttachTo={handleAttachTo}
-              activeCopilotDocumentId={copilotDocumentFocus?.id ?? null}
+              activeCopilotDocumentId={activeCopilotDocumentId}
             />
           )}
           {activeTab === 'overview' && (
@@ -251,34 +238,6 @@ export function PolicyDetails() {
           {activeTab === 'analytics' && <PolicyAnalyticsDashboard policyId={policyId} />}
         </Box>
       </Box>
-
-      <ResizableRightPanel open={rightPanelOpen} onClose={handleCloseMobileRightPanel}>
-        {documentsFilterOpen && (
-          <DocumentsFilterPanel
-            appliedFilters={appliedDocumentsFilters}
-            onApply={handleApplyDocumentsFilters}
-            onClose={handleCloseDocumentsFilter}
-          />
-        )}
-        {activeRightPanel === 'parties' && <PartiesPanel onClose={handleCloseRightPanel} />}
-        {showCopilotPanel && (
-          <CopilotPanel
-            activePolicyTab={activeTab}
-            focusedDocument={copilotDocumentFocus}
-            documentsWorkspaceSummary={policyDocumentsCopilotSummary}
-            documentsWorkspaceInsights={policyDocumentsCopilotInsights}
-            attachMode={attachMode}
-            attachContextLabel={policyDetailsMock.policyNumber}
-            onCloseAttach={handleCloseAttach}
-            onAttachSave={handleAttachSave}
-            onClose={() => {
-              setCopilotDocumentFocus(null)
-              setAttachMode(null)
-              handleCloseRightPanel()
-            }}
-          />
-        )}
-      </ResizableRightPanel>
     </Box>
   )
 }

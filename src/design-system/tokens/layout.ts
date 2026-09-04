@@ -2,6 +2,10 @@ export const layoutTokens = {
   drawerWidth: 260,
   drawerCollapsedWidth: 72,
   navRailWidth: 88,
+  /** Persistent right tool rail (Copilot / Notes / Email). */
+  toolRailWidth: 48,
+  /** Fixed width for the shell tool drawer beside the rail. */
+  toolDrawerWidth: 380,
   secondaryPanelWidth: 280,
   headerHeight: 56,
   /** @deprecated Prefer detailPanel* — Copilot now shares the detail-panel width. */

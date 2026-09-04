@@ -1,77 +1,29 @@
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
-import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined'
-import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import PolicyOutlinedIcon from '@mui/icons-material/PolicyOutlined'
 import StarBorderIcon from '@mui/icons-material/StarBorder'
 import StarIcon from '@mui/icons-material/Star'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import type { ReactNode } from 'react'
-import { CopilotIcon, EmergencyHomeIcon, EntityListHomeButton } from '@/design-system/components'
-import { getPanelToggleButtonStyles, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
+import { EmergencyHomeIcon, EntityListHomeButton } from '@/design-system/components'
+import { sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { PolicyTabs, type PolicyTab } from './PolicyTabs'
-
-export type RightPanel = 'parties' | 'copilot'
 
 type PolicyHeaderProps = {
   companyName: string
   policyNumber: string
   activeTab: PolicyTab
   onTabChange: (tab: PolicyTab) => void
-  activeRightPanel: RightPanel | null
-  onToggleRightPanel: (panel: RightPanel) => void
-  documentsFilterOpen?: boolean
-  onToggleDocumentsFilter?: () => void
   starred?: boolean
   onToggleStar?: () => void
   emergency?: boolean
   onToggleEmergency?: () => void
-}
-
-function PanelToggleButton({
-  label,
-  icon,
-  active,
-  onClick,
-  hideLabelOnMobile = false,
-}: {
-  label: string
-  icon: ReactNode
-  active: boolean
-  onClick: () => void
-  hideLabelOnMobile?: boolean
-}) {
-  return (
-    <Button
-      size="small"
-      variant="text"
-      disableRipple
-      startIcon={icon}
-      onClick={onClick}
-      sx={(theme) => ({
-        ...getPanelToggleButtonStyles(theme, active),
-        fontFamily: figmaFontFamilyStack.body,
-        '& .MuiButton-startIcon': {
-          marginRight: { xs: 0, sm: 0.75 },
-          overflow: 'visible',
-          color: 'inherit',
-        },
-        '& .panel-toggle-label': {
-          display: hideLabelOnMobile ? { xs: 'none', sm: 'inline' } : 'inline',
-        },
-      })}
-    >
-      <span className="panel-toggle-label">{label}</span>
-    </Button>
-  )
 }
 
 function PolicyHeaderActions({
@@ -131,17 +83,12 @@ export function PolicyHeader({
   policyNumber,
   activeTab,
   onTabChange,
-  activeRightPanel,
-  onToggleRightPanel,
-  documentsFilterOpen = false,
-  onToggleDocumentsFilter,
   starred = false,
   onToggleStar,
   emergency = false,
   onToggleEmergency,
 }: PolicyHeaderProps) {
   const contentPx = `${layoutTokens.contentPaddingX}px`
-  const isDocumentsTab = activeTab === 'documents'
 
   return (
     <Box sx={{ bgcolor: 'background.paper', width: '100%' }}>
@@ -208,31 +155,6 @@ export function PolicyHeader({
           <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
             <PolicyTabs value={activeTab} onChange={onTabChange} />
           </Box>
-          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexShrink: 0 }}>
-            {isDocumentsTab && (
-              <PanelToggleButton
-                label="Filter"
-                icon={<FilterListOutlinedIcon sx={{ fontSize: 18 }} />}
-                active={documentsFilterOpen}
-                onClick={() => onToggleDocumentsFilter?.()}
-                hideLabelOnMobile
-              />
-            )}
-            <PanelToggleButton
-              label="Parties"
-              icon={<GroupsOutlinedIcon sx={{ fontSize: 18 }} />}
-              active={activeRightPanel === 'parties'}
-              onClick={() => onToggleRightPanel('parties')}
-              hideLabelOnMobile
-            />
-            <PanelToggleButton
-              label="Copilot"
-              icon={<CopilotIcon size={18} active={activeRightPanel === 'copilot'} />}
-              active={activeRightPanel === 'copilot'}
-              onClick={() => onToggleRightPanel('copilot')}
-              hideLabelOnMobile
-            />
-          </Stack>
         </Stack>
       </Box>
     </Box>

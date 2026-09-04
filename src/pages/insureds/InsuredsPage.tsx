@@ -1,10 +1,13 @@
 import Box from '@mui/material/Box'
 import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useMemo, useState } from 'react'
+import { useRightTool } from '@/app/contexts/RightToolContext'
+import {
+  useRegisterRightToolCopilot,
+  useRegisterRightToolFilter,
+} from '@/app/hooks/useRightToolRegistration'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
-import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
-import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { InsuredsAnalyticsTab } from '@/pages/insureds/components/InsuredsAnalyticsTab'
 import { InsuredsDataGrid } from '@/pages/insureds/components/InsuredsDataGrid'
 import { InsuredsFilterPanel } from '@/pages/insureds/components/InsuredsFilterPanel'
@@ -41,9 +44,8 @@ function matchesSearch(row: InsuredListRecord, query: string) {
 
 export function InsuredsPage() {
   const apiRef = useGridApiRef()
+  const { activeTool, openTool, closeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<InsuredsTab>('all')
-  const [copilotOpen, setCopilotOpen] = useState(false)
-  const [filterOpen, setFilterOpen] = useState(false)
   const [copilotInsuredFocus, setCopilotInsuredFocus] = useState<InsuredListRecord | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [insuredType, setInsuredType] = useState<InsuredTypeFilter>('All')
@@ -62,65 +64,56 @@ export function InsuredsPage() {
     return resolveInsuredContext(insuredIdFromName(copilotInsuredFocus.name))
   }, [copilotInsuredFocus])
 
-  const handleToggleFilter = useCallback(() => {
-    setFilterOpen((current) => {
-      if (!current) {
-        setCopilotOpen(false)
-        setCopilotInsuredFocus(null)
-      }
-      return !current
-    })
-  }, [])
-
-  const handleCloseFilter = useCallback(() => {
-    setFilterOpen(false)
-  }, [])
+  useRegisterRightToolCopilot(
+    {
+      context: 'insureds',
+      focusedInsured: focusedInsuredDetails,
+      onBackToSummary: focusedInsuredDetails
+        ? () => setCopilotInsuredFocus(null)
+        : undefined,
+      summaryBackLabel: 'Insureds workspace',
+    },
+    [focusedInsuredDetails],
+  )
 
   const handleApplyFilters = useCallback((filters: InsuredsListFilters) => {
     setAppliedFilters(filters)
   }, [])
 
-  const handleToggleCopilot = useCallback(() => {
-    setCopilotOpen((current) => {
-      if (current) {
+  useRegisterRightToolFilter(
+    activeTab === 'all' ? (
+      <InsuredsFilterPanel
+        appliedFilters={appliedFilters}
+        onApply={handleApplyFilters}
+        onClose={closeTool}
+      />
+    ) : null,
+    [activeTab, appliedFilters, handleApplyFilters, closeTool],
+  )
+
+  const handleInsuredCopilot = useCallback(
+    (insured: InsuredListRecord) => {
+      setCopilotInsuredFocus(insured)
+      openTool('copilot')
+    },
+    [openTool],
+  )
+
+  const handleTabChange = useCallback(
+    (tab: InsuredsTab) => {
+      setActiveTab(tab)
+      if (tab === 'analytics') {
+        closeTool()
         setCopilotInsuredFocus(null)
-        return false
       }
-      setFilterOpen(false)
-      return true
-    })
-  }, [])
-
-  const handleCloseCopilot = useCallback(() => {
-    setCopilotOpen(false)
-    setCopilotInsuredFocus(null)
-  }, [])
-
-  const handleInsuredCopilot = useCallback((insured: InsuredListRecord) => {
-    setCopilotInsuredFocus(insured)
-    setFilterOpen(false)
-    setCopilotOpen(true)
-  }, [])
-
-  const handleTabChange = useCallback((tab: InsuredsTab) => {
-    setActiveTab(tab)
-    if (tab === 'analytics') {
-      setCopilotOpen(false)
-      setFilterOpen(false)
-      setCopilotInsuredFocus(null)
-    }
-  }, [])
-
-  const handleCloseMobileRightPanel = useCallback(() => {
-    if (filterOpen) {
-      handleCloseFilter()
-      return
-    }
-    handleCloseCopilot()
-  }, [filterOpen, handleCloseFilter, handleCloseCopilot])
+    },
+    [closeTool],
+  )
 
   const isAllInsuredsTab = activeTab === 'all'
   const contentPx = `${layoutTokens.contentPaddingX}px`
+  const activeCopilotInsuredId =
+    activeTool === 'copilot' && copilotInsuredFocus ? copilotInsuredFocus.id : null
 
   return (
     <Box
@@ -146,14 +139,7 @@ export function InsuredsPage() {
         }}
       >
         <Box sx={{ flexShrink: 0 }}>
-          <InsuredsHeader
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            filterOpen={filterOpen}
-            onToggleFilter={handleToggleFilter}
-            copilotOpen={copilotOpen}
-            onToggleCopilot={handleToggleCopilot}
-          />
+          <InsuredsHeader activeTab={activeTab} onTabChange={handleTabChange} />
         </Box>
 
         <Box
@@ -203,7 +189,7 @@ export function InsuredsPage() {
                   apiRef={apiRef}
                   rows={filteredRows}
                   onInsuredCopilot={handleInsuredCopilot}
-                  activeCopilotInsuredId={copilotInsuredFocus?.id ?? null}
+                  activeCopilotInsuredId={activeCopilotInsuredId}
                 />
               </Box>
             </Box>
@@ -212,23 +198,6 @@ export function InsuredsPage() {
           )}
         </Box>
       </Box>
-
-      <ResizableRightPanel open={filterOpen || copilotOpen} onClose={handleCloseMobileRightPanel}>
-        {filterOpen && (
-          <InsuredsFilterPanel
-            appliedFilters={appliedFilters}
-            onApply={handleApplyFilters}
-            onClose={handleCloseFilter}
-          />
-        )}
-        {copilotOpen && (
-          <CopilotPanel
-            context="insureds"
-            focusedInsured={focusedInsuredDetails}
-            onClose={handleCloseCopilot}
-          />
-        )}
-      </ResizableRightPanel>
     </Box>
   )
 }

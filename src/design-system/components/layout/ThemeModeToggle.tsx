@@ -2,7 +2,8 @@ import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined'
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined'
 import Box from '@mui/material/Box'
 import { useColorScheme } from '@mui/material/styles'
-import { accentSubtle, isDarkMode, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
+import { isDarkMode, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
+import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 
 const options = [
   { value: 'light' as const, label: 'Light mode', Icon: LightModeOutlinedIcon },
@@ -70,7 +71,10 @@ export function ThemeModeToggle({ fullWidth = false }: ThemeModeToggleProps) {
                 transition: 'background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease',
                 '&:hover': {
                   color: active ? 'primary.main' : 'text.primary',
-                  bgcolor: active ? undefined : accentSubtle(theme),
+                  // Mode-aware primary hover — avoid accentSubtle (near-white) in dark mode.
+                  bgcolor: active
+                    ? undefined
+                    : getFigmaColors(theme.palette.mode).primary.hover,
                 },
                 '&:focus-visible': {
                   outline: `2px solid ${theme.palette.primary.main}`,

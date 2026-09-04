@@ -1,4 +1,5 @@
 import CloseIcon from '@mui/icons-material/Close'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import Box from '@mui/material/Box'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
@@ -11,6 +12,7 @@ import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import type { PolicyTab } from '@/pages/policies/components/PolicyTabs'
 import type { GlobalCopilotView } from '@/app/contexts/GlobalSearchContext'
+import type { RecentActivityItem } from '@/app/data/homeMock'
 import { AgenticSearchResults, DailySummaryContent } from '@/pages/policies/components/AgenticSearchResults'
 import { CopilotConfidenceIndicator } from '@/pages/policies/components/copilot/CopilotConfidenceIndicator'
 import { CopilotDrawerShell } from '@/pages/policies/components/copilot/CopilotDrawerShell'
@@ -48,7 +50,7 @@ import {
   insuredsWorkspaceSummary,
 } from '@/pages/insureds/data/mockInsureds'
 
-type CopilotPanelProps = {
+export type CopilotPanelProps = {
   activePolicyTab?: PolicyTab
   context?: 'policy' | 'quotes' | 'quote-detail' | 'submission-detail' | 'insured' | 'insureds' | 'policies-list' | 'tasks' | 'customers' | 'global'
   globalView?: GlobalCopilotView
@@ -60,9 +62,13 @@ type CopilotPanelProps = {
   focusedPolicyList?: PolicyListRecord | null
   focusedTask?: TaskRecord | null
   focusedCustomer?: CustomerRecord | null
+  focusedActivity?: RecentActivityItem | null
   seedComposerMessage?: string | null
   onBackToTaskDetails?: () => void
   taskDetailsBackLabel?: string
+  /** Clears entity focus and returns to the page/workspace default Copilot summary. */
+  onBackToSummary?: () => void
+  summaryBackLabel?: string
   documentsWorkspaceSummary?: string
   documentsWorkspaceInsights?: string[]
   documentsImpactSummary?: string
@@ -221,6 +227,33 @@ const tasksNextSteps = [
 
 const taskQuickActions = ['Show high priority', 'Show past due']
 const focusedTaskQuickActions = ['Summarize task', 'Reassign', 'Mark complete', 'Ask about ref #']
+const focusedActivityQuickActions = [
+  'Summarize activity',
+  'Draft follow-up',
+  'Open related record',
+  'Add note',
+]
+
+function buildActivitySummary(activity: RecentActivityItem) {
+  const subject =
+    activity.insuredName && activity.policyNumber
+      ? `**${activity.insuredName}** (${activity.policyNumber})`
+      : activity.insuredName
+        ? `**${activity.insuredName}**`
+        : `**${activity.referenceId}**`
+  return `${subject} — **${activity.label}**. ${activity.summary || activity.detail}`
+}
+
+function activityInsights(activity: RecentActivityItem): string[] {
+  if (activity.insights.length > 0) {
+    return activity.insights.slice(0, 4)
+  }
+  return [
+    `${activity.status} · ${activity.timestamp}`,
+    `Performed by ${activity.performedBy}`,
+    activity.detail,
+  ].filter(Boolean)
+}
 
 function formatCustomerCurrency(value: number) {
   return value.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
@@ -253,9 +286,12 @@ export function CopilotPanel({
   focusedPolicyList,
   focusedTask,
   focusedCustomer,
+  focusedActivity = null,
   seedComposerMessage = null,
   onBackToTaskDetails,
   taskDetailsBackLabel = 'Task details',
+  onBackToSummary,
+  summaryBackLabel = 'Summary',
   documentsWorkspaceSummary,
   documentsWorkspaceInsights,
   documentsImpactSummary,
@@ -283,8 +319,19 @@ export function CopilotPanel({
   const isCustomersContext = context === 'customers'
   const isGlobalContext = context === 'global'
   const isAgenticView = isGlobalContext && globalView === 'agentic-search' && Boolean(agenticPrompt)
-  const isDailySummaryView = isGlobalContext && globalView === 'daily-summary'
+  const isDailySummaryView = isGlobalContext && globalView === 'daily-summary' && !focusedActivity
   const isTaskRecommendationView = Boolean(focusedTask && seedComposerMessage && onBackToTaskDetails)
+  const hasFocusedEntity = Boolean(
+    focusedDocument ||
+      focusedQuote ||
+      focusedQuoteDetail ||
+      focusedInsured ||
+      focusedPolicyList ||
+      focusedTask ||
+      focusedCustomer ||
+      focusedActivity,
+  )
+  const showSummaryBack = Boolean(onBackToSummary && hasFocusedEntity && !isTaskRecommendationView)
 
   const chatFocusKey =
     focusedDocument?.id ??
@@ -294,12 +341,21 @@ export function CopilotPanel({
     focusedPolicyList?.policyNumber ??
     focusedTask?.id ??
     focusedCustomer?.id ??
+    focusedActivity?.id ??
     null
 
   const panelContentKey = [
     context,
     globalView ?? 'none',
-    isAgenticView ? 'agentic' : isDailySummaryView ? 'daily' : isTaskRecommendationView ? 'recommendation' : 'briefing',
+    isAgenticView
+      ? 'agentic'
+      : isDailySummaryView
+        ? 'daily'
+        : isTaskRecommendationView
+          ? 'recommendation'
+          : focusedActivity
+            ? 'activity'
+            : 'briefing',
     chatFocusKey ?? 'workspace',
     activePolicyTab,
     documentsCopilotMode,
@@ -347,6 +403,8 @@ export function CopilotPanel({
 
   const quickActions = documentPreviewMode && focusedDocument
     ? documentPreviewQuickActions
+    : focusedActivity
+      ? focusedActivityQuickActions
     : focusedTask
     ? focusedTaskQuickActions
     : focusedCustomer
@@ -385,6 +443,8 @@ export function CopilotPanel({
       ? documentsImpactTitle
       : isDocumentsTab
         ? 'Document summary'
+        : focusedActivity
+      ? 'Activity summary'
         : focusedTask
       ? 'Task summary'
       : focusedCustomer
@@ -419,6 +479,8 @@ export function CopilotPanel({
       ? documentsImpactSummary
       : isDocumentsTab && documentsWorkspaceSummary
         ? documentsWorkspaceSummary
+        : focusedActivity
+      ? buildActivitySummary(focusedActivity)
         : focusedTask
       ? buildTaskSummary(focusedTask)
       : focusedCustomer
@@ -455,6 +517,8 @@ export function CopilotPanel({
       ? documentsImpactInsights
       : isDocumentsTab && documentsWorkspaceInsights
         ? documentsWorkspaceInsights
+        : focusedActivity
+      ? activityInsights(focusedActivity)
         : focusedTask
       ? taskInsights(focusedTask)
       : focusedCustomer
@@ -601,7 +665,7 @@ export function CopilotPanel({
         <CopilotDrawerShell
           onClose={onClose}
           composerPlaceholder={composerPlaceholder}
-          seedComposerMessage={seedComposerMessage}
+          seedComposerMessage={isTaskRecommendationView ? seedComposerMessage : null}
           chatFocusKey={attachMode ? null : chatFocusKey}
           contentKey={panelContentKey}
           headerTrailing={
@@ -622,6 +686,20 @@ export function CopilotPanel({
                 <RoutineIcon sx={{ fontSize: '1.25rem' }} />
                 <Typography variant="subtitle2" sx={copilotSubtitleSx}>
                   Daily summary
+                </Typography>
+              </Stack>
+            ) : showSummaryBack && onBackToSummary ? (
+              <Stack direction="row" alignItems="center" spacing={0.25} sx={{ minWidth: 0 }}>
+                <IconButton
+                  size="small"
+                  onClick={onBackToSummary}
+                  aria-label={`Back to ${summaryBackLabel}`}
+                  sx={{ flexShrink: 0, ml: -0.75 }}
+                >
+                  <ArrowBackIcon fontSize="small" sx={{ color: 'secondary.main' }} />
+                </IconButton>
+                <Typography variant="subtitle2" noWrap sx={copilotSubtitleSx}>
+                  {summaryTitle}
                 </Typography>
               </Stack>
             ) : !isAgenticView && !(isTaskRecommendationView && focusedTask) ? (
@@ -677,6 +755,11 @@ export function CopilotPanel({
             {focusedCustomer && (
               <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
                 {focusedCustomer.customerNumber}
+              </Typography>
+            )}
+            {focusedActivity && (
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
+                {focusedActivity.referenceId}
               </Typography>
             )}
             <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2 }}>

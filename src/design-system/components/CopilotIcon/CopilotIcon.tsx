@@ -14,11 +14,17 @@ export type CopilotIconProps = {
 const COPILOT_ICONS = {
   inactive: '/assets/copilot-icon.png',
   active: '/assets/copilot-icon-active.png',
+  /** Charcoal line mark for active controls on light surfaces in dark mode. */
+  activeDark: '/assets/copilot-icon-active-dark.png',
   white: '/assets/copilot-icon-white.png',
 } as const
 
 function resolveCopilotIconSrc(active: boolean, inverted: boolean, isDarkMode: boolean) {
-  if (isDarkMode || inverted) return COPILOT_ICONS.white
+  if (inverted) return COPILOT_ICONS.white
+  if (isDarkMode) {
+    // Active selection chips stay light blue in dark mode — use the charcoal mark.
+    return active ? COPILOT_ICONS.activeDark : COPILOT_ICONS.white
+  }
   if (active) return COPILOT_ICONS.active
   return COPILOT_ICONS.inactive
 }

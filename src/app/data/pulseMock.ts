@@ -1,4 +1,5 @@
 import type { RecentActivityItem, RecentActivityKind } from '@/app/data/homeMock'
+import { getActivityDayGroup } from '@/app/data/homeMock'
 
 export type PulseFilter = 'renewals' | 'quotes' | 'claims' | 'endorsements' | 'tasks'
 
@@ -136,7 +137,7 @@ export const pulseActivityMock: RecentActivityItem[] = [
     statusVariant: 'info',
     performedBy: 'Renewal Agent · Automated',
     insuredName: 'Red Oak Hospitality Group',
-    policyNumber: '01-CP-000014332-0',
+    policyNumber: '01-CP-000017810-0',
     summary: '',
     fields: [],
     insights: [],
@@ -146,7 +147,7 @@ export const pulseActivityMock: RecentActivityItem[] = [
     kind: 'renewal',
     label: 'Renewal pricing approved',
     detail: 'Silverline Manufacturing rate locked for Aug 15 effective',
-    timestamp: 'Yesterday · 11:20 AM',
+    timestamp: 'Today · 11:20 AM',
     referenceId: 'RNW-2026-118710',
     status: 'Approved',
     statusVariant: 'success',
@@ -178,7 +179,7 @@ export const pulseActivityMock: RecentActivityItem[] = [
     kind: 'renewal',
     label: 'Renewal notice delivered',
     detail: 'Horizon Fleet Services received 60-day non-renewal notice',
-    timestamp: 'Aug 28, 2026',
+    timestamp: 'Yesterday · 3:40 PM',
     referenceId: 'RNW-2026-117902',
     status: 'Delivered',
     statusVariant: 'info',
@@ -194,7 +195,7 @@ export const pulseActivityMock: RecentActivityItem[] = [
     kind: 'renewal',
     label: 'Renewal loss runs requested',
     detail: 'Carrier loss runs queued for Keystone Commercial Realty',
-    timestamp: 'Aug 22, 2026',
+    timestamp: 'Yesterday · 1:10 PM',
     referenceId: 'RNW-2026-117801',
     status: 'Pending',
     statusVariant: 'warning',
@@ -562,12 +563,12 @@ export const pulseActivityMock: RecentActivityItem[] = [
 ]
 
 const pulseActivityTiming: Record<string, { daysAgo?: number; daysAhead?: number }> = {
-  // Renewals — mix of recent events + near-term lookahead
+  // Renewals — recent Today / Yesterday for ActivityRail
   'pa-1': { daysAgo: 0 },
-  'pa-2': { daysAgo: 1 },
+  'pa-2': { daysAgo: 0 },
   'pa-3': { daysAgo: 1 },
-  'pa-4': { daysAhead: 18 },
-  'pa-5': { daysAhead: 26 },
+  'pa-4': { daysAgo: 1 },
+  'pa-5': { daysAgo: 1 },
   'pa-26': { daysAgo: 9 },
   // Quotes — all within 30D so every range has 5 rows
   'pa-6': { daysAgo: 0 },
@@ -798,9 +799,24 @@ export function getPulseActivities(filter: PulseFilter, range: PulseRange, limit
   return sortActivities(items, mode).slice(0, limit)
 }
 
+/** Home ActivityRail: Today / Yesterday items for the selected chart chip (max 6). */
+export function getPulseRailActivities(filter: PulseFilter, limit = 6): RecentActivityItem[] {
+  const kinds = pulseKindsByFilter[filter]
+  const scoped = pulseActivityMock.filter((item) => kinds.includes(item.kind))
+
+  const today = scoped.filter((item) => getActivityDayGroup(item.timestamp) === 'Today')
+  const yesterday = scoped.filter((item) => getActivityDayGroup(item.timestamp) === 'Yesterday')
+  const earlier = scoped.filter((item) => getActivityDayGroup(item.timestamp) === 'Earlier')
+
+  return [...today, ...yesterday, ...earlier].slice(0, limit)
+}
+
 export function formatPulseTimestamp(timestamp: string): string {
   if (timestamp.startsWith('Today · ')) {
     return timestamp.replace('Today · ', '')
+  }
+  if (timestamp.startsWith('Yesterday · ')) {
+    return timestamp.replace('Yesterday · ', '')
   }
   if (timestamp.startsWith('Yesterday')) {
     return 'Yesterday'

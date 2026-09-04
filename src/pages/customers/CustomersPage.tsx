@@ -2,12 +2,15 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useMemo, useState } from 'react'
+import { useRightTool } from '@/app/contexts/RightToolContext'
+import {
+  useRegisterRightToolCopilot,
+  useRegisterRightToolFilter,
+} from '@/app/hooks/useRightToolRegistration'
 import { ListDataGridToolbar } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
-import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { CustomersDataGrid } from '@/pages/customers/components/CustomersDataGrid'
 import { CustomersFilterPanel } from '@/pages/customers/components/CustomersFilterPanel'
 import { CustomersHeader } from '@/pages/customers/components/CustomersHeader'
@@ -47,8 +50,7 @@ function matchesSearch(row: CustomerRecord, query: string) {
 
 export function CustomersPage() {
   const apiRef = useGridApiRef()
-  const [copilotOpen, setCopilotOpen] = useState(false)
-  const [filterOpen, setFilterOpen] = useState(false)
+  const { activeTool, openTool, closeTool } = useRightTool()
   const [copilotCustomerFocus, setCopilotCustomerFocus] = useState<CustomerRecord | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<CustomersListFilters>(emptyCustomersListFilters)
@@ -60,55 +62,42 @@ export function CustomersPage() {
 
   const filtersActive = hasActiveCustomersFilters(appliedFilters)
 
-  const handleToggleFilter = useCallback(() => {
-    setFilterOpen((current) => {
-      if (!current) {
-        setCopilotOpen(false)
-        setCopilotCustomerFocus(null)
-      }
-      return !current
-    })
-  }, [])
-
-  const handleCloseFilter = useCallback(() => {
-    setFilterOpen(false)
-  }, [])
+  useRegisterRightToolCopilot(
+    {
+      context: 'customers',
+      focusedCustomer: copilotCustomerFocus,
+      onBackToSummary: copilotCustomerFocus
+        ? () => setCopilotCustomerFocus(null)
+        : undefined,
+      summaryBackLabel: 'Customers workspace',
+    },
+    [copilotCustomerFocus],
+  )
 
   const handleApplyFilters = useCallback((filters: CustomersListFilters) => {
     setAppliedFilters(filters)
   }, [])
 
-  const handleToggleCopilot = useCallback(() => {
-    setCopilotOpen((current) => {
-      if (current) {
-        setCopilotCustomerFocus(null)
-        return false
-      }
-      setFilterOpen(false)
-      return true
-    })
-  }, [])
+  useRegisterRightToolFilter(
+    <CustomersFilterPanel
+      appliedFilters={appliedFilters}
+      onApply={handleApplyFilters}
+      onClose={closeTool}
+    />,
+    [appliedFilters, handleApplyFilters, closeTool],
+  )
 
-  const handleCloseCopilot = useCallback(() => {
-    setCopilotOpen(false)
-    setCopilotCustomerFocus(null)
-  }, [])
-
-  const handleCustomerCopilot = useCallback((customer: CustomerRecord) => {
-    setCopilotCustomerFocus(customer)
-    setFilterOpen(false)
-    setCopilotOpen(true)
-  }, [])
-
-  const handleCloseMobileRightPanel = useCallback(() => {
-    if (filterOpen) {
-      handleCloseFilter()
-      return
-    }
-    handleCloseCopilot()
-  }, [filterOpen, handleCloseFilter, handleCloseCopilot])
+  const handleCustomerCopilot = useCallback(
+    (customer: CustomerRecord) => {
+      setCopilotCustomerFocus(customer)
+      openTool('copilot')
+    },
+    [openTool],
+  )
 
   const contentPx = `${layoutTokens.contentPaddingX}px`
+  const activeCopilotCustomerId =
+    activeTool === 'copilot' && copilotCustomerFocus ? copilotCustomerFocus.id : null
 
   return (
     <Box
@@ -134,12 +123,7 @@ export function CustomersPage() {
         }}
       >
         <Box sx={{ flexShrink: 0 }}>
-          <CustomersHeader
-            filterOpen={filterOpen}
-            onToggleFilter={handleToggleFilter}
-            copilotOpen={copilotOpen}
-            onToggleCopilot={handleToggleCopilot}
-          />
+          <CustomersHeader />
         </Box>
 
         <Box
@@ -189,7 +173,7 @@ export function CustomersPage() {
                 apiRef={apiRef}
                 rows={filteredRows}
                 onCustomerCopilot={handleCustomerCopilot}
-                activeCopilotCustomerId={copilotCustomerFocus?.id ?? null}
+                activeCopilotCustomerId={activeCopilotCustomerId}
               />
             </Box>
             <Typography
@@ -202,23 +186,6 @@ export function CustomersPage() {
           </Box>
         </Box>
       </Box>
-
-      <ResizableRightPanel open={filterOpen || copilotOpen} onClose={handleCloseMobileRightPanel}>
-        {filterOpen && (
-          <CustomersFilterPanel
-            appliedFilters={appliedFilters}
-            onApply={handleApplyFilters}
-            onClose={handleCloseFilter}
-          />
-        )}
-        {copilotOpen && (
-          <CopilotPanel
-            context="customers"
-            focusedCustomer={copilotCustomerFocus}
-            onClose={handleCloseCopilot}
-          />
-        )}
-      </ResizableRightPanel>
     </Box>
   )
 }

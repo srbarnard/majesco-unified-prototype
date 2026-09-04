@@ -1,14 +1,17 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useGridApiRef } from '@mui/x-data-grid-premium'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { GridRowSelectionModel } from '@mui/x-data-grid-premium'
+import { useRightTool } from '@/app/contexts/RightToolContext'
+import {
+  useRegisterRightToolCopilot,
+  useRegisterRightToolFilter,
+} from '@/app/hooks/useRightToolRegistration'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { useTasksLookupFromUrl } from '@/hooks/useLookupFromUrl'
-import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
-import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { TaskDetailsPanel } from '@/pages/tasks/components/TaskDetailsPanel'
 import { TasksActionBar } from '@/pages/tasks/components/TasksActionBar'
@@ -50,22 +53,29 @@ function matchesSearch(row: TaskRecord, query: string) {
 
 export function TasksPage() {
   const apiRef = useGridApiRef()
+  const { activeTool, openTool, closeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<TasksTab>('all')
-  const [copilotOpen, setCopilotOpen] = useState(false)
-  const [filterOpen, setFilterOpen] = useState(false)
   const [copilotTaskFocus, setCopilotTaskFocus] = useState<TaskRecord | null>(null)
   const [copilotSeedMessage, setCopilotSeedMessage] = useState<string | null>(null)
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
   const [taskDetailOpen, setTaskDetailOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<TasksFilters>(emptyTasksFilters)
-
-  useTasksLookupFromUrl(setAppliedFilters, useCallback(() => {
-    setFilterOpen(true)
-    setCopilotOpen(false)
-    setCopilotTaskFocus(null)
-  }, []))
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
+
+  const handleLookupApplied = useCallback(() => {
+    setTaskDetailOpen(false)
+    openTool('filter')
+    setCopilotTaskFocus(null)
+  }, [openTool])
+
+  useTasksLookupFromUrl(setAppliedFilters, handleLookupApplied)
+
+  useEffect(() => {
+    if (activeTool === 'filter') {
+      setTaskDetailOpen(false)
+    }
+  }, [activeTool])
 
   const filteredRows = useMemo(() => {
     const withFilters = applyTasksFilters(tasksMock, appliedFilters)
@@ -75,87 +85,86 @@ export function TasksPage() {
   const filtersActive = hasActiveTasksFilters(appliedFilters)
   const hasSelection = rowSelectionModel.length > 0
 
-  const handleToggleFilter = useCallback(() => {
-    setFilterOpen((current) => {
-      if (!current) {
-        setCopilotOpen(false)
-        setCopilotTaskFocus(null)
-        setTaskDetailOpen(false)
-      }
-      return !current
-    })
-  }, [])
+  const handleBackToTaskDetails = useCallback(() => {
+    setCopilotSeedMessage(null)
+    setCopilotTaskFocus(null)
+    closeTool()
+    setTaskDetailOpen(true)
+  }, [closeTool])
 
-  const handleCloseFilter = useCallback(() => {
-    setFilterOpen(false)
-  }, [])
+  useRegisterRightToolCopilot(
+    {
+      context: 'tasks',
+      focusedTask: copilotTaskFocus,
+      seedComposerMessage: copilotSeedMessage,
+      onBackToTaskDetails: copilotSeedMessage ? handleBackToTaskDetails : undefined,
+      onBackToSummary:
+        copilotTaskFocus && !copilotSeedMessage
+          ? () => {
+              setCopilotTaskFocus(null)
+              setCopilotSeedMessage(null)
+            }
+          : undefined,
+      summaryBackLabel: 'Tasks workspace',
+    },
+    [copilotSeedMessage, copilotTaskFocus, handleBackToTaskDetails],
+  )
 
   const handleApplyFilters = useCallback((filters: TasksFilters) => {
     setAppliedFilters(filters)
   }, [])
 
+  const showFilter = activeTab === 'all' || activeTab === 'team'
+
+  useRegisterRightToolFilter(
+    showFilter ? (
+      <TasksFilterPanel
+        appliedFilters={appliedFilters}
+        onApply={handleApplyFilters}
+        onClose={closeTool}
+      />
+    ) : null,
+    [showFilter, appliedFilters, handleApplyFilters, closeTool],
+  )
+
   const handleBackToCopilotSummary = useCallback(() => {
     setTaskDetailOpen(false)
     setSelectedTask(null)
-    setFilterOpen(false)
     setCopilotTaskFocus(null)
     setCopilotSeedMessage(null)
-    setCopilotOpen(true)
-  }, [])
+    openTool('copilot')
+  }, [openTool])
 
-  const handleToggleCopilot = useCallback(() => {
-    if (taskDetailOpen) {
-      handleBackToCopilotSummary()
-      return
-    }
-    setCopilotOpen((current) => {
-      if (current) {
-        setCopilotTaskFocus(null)
-        return false
-      }
-      setFilterOpen(false)
+  const handleTaskCopilot = useCallback(
+    (task: TaskRecord) => {
+      setCopilotTaskFocus(task)
+      setCopilotSeedMessage(null)
       setTaskDetailOpen(false)
-      return true
-    })
-  }, [handleBackToCopilotSummary, taskDetailOpen])
+      openTool('copilot')
+    },
+    [openTool],
+  )
 
-  const handleCloseCopilot = useCallback(() => {
-    setCopilotOpen(false)
-    setCopilotTaskFocus(null)
-    setCopilotSeedMessage(null)
-  }, [])
+  const handleTaskRecommendation = useCallback(
+    (task: TaskRecord, insight: string) => {
+      setSelectedTask(task)
+      setCopilotTaskFocus(task)
+      setCopilotSeedMessage(insight)
+      setTaskDetailOpen(false)
+      openTool('copilot')
+    },
+    [openTool],
+  )
 
-  const handleTaskCopilot = useCallback((task: TaskRecord) => {
-    setCopilotTaskFocus(task)
-    setCopilotSeedMessage(null)
-    setFilterOpen(false)
-    setTaskDetailOpen(false)
-    setCopilotOpen(true)
-  }, [])
-
-  const handleTaskRecommendation = useCallback((task: TaskRecord, insight: string) => {
-    setSelectedTask(task)
-    setCopilotTaskFocus(task)
-    setCopilotSeedMessage(insight)
-    setFilterOpen(false)
-    setTaskDetailOpen(false)
-    setCopilotOpen(true)
-  }, [])
-
-  const handleBackToTaskDetails = useCallback(() => {
-    setCopilotOpen(false)
-    setCopilotSeedMessage(null)
-    setCopilotTaskFocus(null)
-    setTaskDetailOpen(true)
-  }, [])
-
-  const handleTaskOpen = useCallback((task: TaskRecord) => {
-    setSelectedTask(task)
-    setFilterOpen(false)
-    setCopilotOpen(false)
-    setCopilotTaskFocus(null)
-    setTaskDetailOpen(true)
-  }, [])
+  const handleTaskOpen = useCallback(
+    (task: TaskRecord) => {
+      setSelectedTask(task)
+      closeTool()
+      setCopilotTaskFocus(null)
+      setTaskDetailOpen(true)
+    },
+    [closeTool],
+  )
 
   const handleCloseTaskDetail = useCallback(() => {
     setTaskDetailOpen(false)
@@ -166,40 +175,24 @@ export function TasksPage() {
     void task
   }, [])
 
-  const handleTabChange = useCallback((tab: TasksTab) => {
-    setActiveTab(tab)
-    if (tab === 'analytics') {
-      setCopilotOpen(false)
-      setFilterOpen(false)
-      setCopilotTaskFocus(null)
-      setTaskDetailOpen(false)
-      setSelectedTask(null)
-    }
-  }, [])
-
-  const handleCloseMobileRightPanel = useCallback(() => {
-    if (taskDetailOpen) {
-      handleCloseTaskDetail()
-      return
-    }
-    if (filterOpen) {
-      handleCloseFilter()
-      return
-    }
-    handleCloseCopilot()
-  }, [taskDetailOpen, filterOpen, handleCloseTaskDetail, handleCloseFilter, handleCloseCopilot])
+  const handleTabChange = useCallback(
+    (tab: TasksTab) => {
+      setActiveTab(tab)
+      if (tab === 'analytics') {
+        closeTool()
+        setCopilotTaskFocus(null)
+        setTaskDetailOpen(false)
+        setSelectedTask(null)
+      }
+    },
+    [closeTool],
+  )
 
   const isAllTasksTab = activeTab === 'all'
   const isTeamTab = activeTab === 'team'
-
-  const rightPanelContentKey = taskDetailOpen
-    ? 'section:task'
-    : filterOpen
-      ? 'section:filter'
-      : copilotOpen
-        ? 'section:copilot'
-        : 'empty'
   const contentPx = `${layoutTokens.contentPaddingX}px`
+  const activeCopilotTaskId =
+    activeTool === 'copilot' && copilotTaskFocus ? copilotTaskFocus.id : null
 
   return (
     <Box
@@ -225,14 +218,7 @@ export function TasksPage() {
         }}
       >
         <Box sx={{ flexShrink: 0 }}>
-          <TasksHeader
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            filterOpen={filterOpen}
-            onToggleFilter={handleToggleFilter}
-            copilotOpen={copilotOpen && !taskDetailOpen}
-            onToggleCopilot={handleToggleCopilot}
-          />
+          <TasksHeader activeTab={activeTab} onTabChange={handleTabChange} />
         </Box>
 
         <Box
@@ -285,7 +271,7 @@ export function TasksPage() {
                   onTaskOpen={handleTaskOpen}
                   onTaskCopilot={handleTaskCopilot}
                   onTaskComplete={handleTaskComplete}
-                  activeCopilotTaskId={copilotTaskFocus?.id ?? null}
+                  activeCopilotTaskId={activeCopilotTaskId}
                   activeTaskId={selectedTask?.id ?? null}
                 />
               </Box>
@@ -307,35 +293,16 @@ export function TasksPage() {
         </Box>
       </Box>
 
-      <ResizableRightPanel
-        open={filterOpen || copilotOpen || taskDetailOpen}
-        onClose={handleCloseMobileRightPanel}
-      >
-        <CopilotContentTransition contentKey={rightPanelContentKey}>
-          {taskDetailOpen && selectedTask ? (
-            <TaskDetailsPanel
-              task={selectedTask}
-              onBack={handleBackToCopilotSummary}
-              onClose={handleCloseTaskDetail}
-              onMarkComplete={handleTaskComplete}
-              onRecommendationClick={(insight) => handleTaskRecommendation(selectedTask, insight)}
-            />
-          ) : filterOpen ? (
-            <TasksFilterPanel
-              appliedFilters={appliedFilters}
-              onApply={handleApplyFilters}
-              onClose={handleCloseFilter}
-            />
-          ) : copilotOpen ? (
-            <CopilotPanel
-              context="tasks"
-              focusedTask={copilotTaskFocus}
-              seedComposerMessage={copilotSeedMessage}
-              onBackToTaskDetails={copilotSeedMessage ? handleBackToTaskDetails : undefined}
-              onClose={handleCloseCopilot}
-            />
-          ) : null}
-        </CopilotContentTransition>
+      <ResizableRightPanel open={taskDetailOpen} onClose={handleCloseTaskDetail}>
+        {taskDetailOpen && selectedTask ? (
+          <TaskDetailsPanel
+            task={selectedTask}
+            onBack={handleBackToCopilotSummary}
+            onClose={handleCloseTaskDetail}
+            onMarkComplete={handleTaskComplete}
+            onRecommendationClick={(insight) => handleTaskRecommendation(selectedTask, insight)}
+          />
+        ) : null}
       </ResizableRightPanel>
     </Box>
   )

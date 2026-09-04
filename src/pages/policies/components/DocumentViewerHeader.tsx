@@ -1,10 +1,8 @@
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
 import Box from '@mui/material/Box'
-import MuiButton from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { CopilotIcon, EntityListHomeButton } from '@/design-system/components'
-import { getPanelToggleButtonStyles } from '@/design-system/theme/themeSurfaces'
+import { EntityListHomeButton } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
@@ -12,8 +10,6 @@ import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
 type DocumentViewerHeaderProps = {
   document: PolicyDocument
   entityLabel: string
-  copilotOpen: boolean
-  onToggleCopilot: () => void
   onBack: () => void
 }
 
@@ -34,8 +30,6 @@ function formatReceivedTime(document: PolicyDocument) {
 export function DocumentViewerHeader({
   document,
   entityLabel,
-  copilotOpen,
-  onToggleCopilot,
   onBack,
 }: DocumentViewerHeaderProps) {
   return (
@@ -74,28 +68,6 @@ export function DocumentViewerHeader({
           </Typography>
         </Box>
       </Stack>
-
-      <MuiButton
-        size="small"
-        variant="text"
-        disableRipple
-        startIcon={<CopilotIcon size={18} active={copilotOpen} />}
-        onClick={onToggleCopilot}
-        sx={(theme) => ({
-          ...getPanelToggleButtonStyles(theme, copilotOpen),
-          fontFamily: figmaFontFamilyStack.body,
-          flexShrink: 0,
-          alignSelf: { xs: 'flex-end', sm: 'flex-start' },
-          '& .MuiButton-startIcon': {
-            marginRight: { xs: 0, sm: 0.75 },
-          },
-          '& .document-viewer-copilot-label': {
-            display: { xs: 'none', sm: 'inline' },
-          },
-        })}
-      >
-        <span className="document-viewer-copilot-label">Copilot</span>
-      </MuiButton>
     </Stack>
   )
 }

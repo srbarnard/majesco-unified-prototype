@@ -1,20 +1,16 @@
-import MuiButton from '@mui/material/Button'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
-import type { ReactNode } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CopilotIcon } from '@/design-system/components'
-import { getPanelToggleButtonStyles } from '@/design-system/theme/themeSurfaces'
 import { useGlobalSearch } from '@/app/contexts/GlobalSearchContext'
+import { useRightTool } from '@/app/contexts/RightToolContext'
 import type { PriorityTaskCard, RecentActivityItem } from '@/app/data/homeMock'
 import { resolvePriorityTaskRecord } from '@/app/data/resolvePriorityTask'
+import { useRegisterRightToolCopilot } from '@/app/hooks/useRightToolRegistration'
 import { layoutTokens } from '@/design-system/tokens/layout'
-import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { ActivityDetailsPanel } from '@/app/pages/home/ActivityDetailsPanel'
 import { HomeGreetingSection } from '@/app/pages/home/HomeGreetingSection'
 import { PriorityTasksCarousel } from '@/app/pages/home/PriorityTasksCarousel'
 import { PulseModule } from '@/app/pages/home/PulseModule'
-import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
@@ -28,52 +24,9 @@ function getGreeting() {
   return 'Good evening'
 }
 
-function PanelToggleButton({
-  label,
-  icon,
-  active,
-  onClick,
-}: {
-  label: string
-  icon: ReactNode
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <MuiButton
-      size="small"
-      variant="text"
-      disableRipple
-      startIcon={icon}
-      onClick={onClick}
-      aria-label={label}
-      sx={(theme) => ({
-        ...getPanelToggleButtonStyles(theme, active),
-        fontFamily: figmaFontFamilyStack.body,
-        '& .MuiButton-startIcon': {
-          marginRight: { xs: 0, sm: 0.75 },
-          overflow: 'visible',
-          color: 'inherit',
-        },
-        '& .panel-toggle-label': {
-          display: { xs: 'none', sm: 'inline' },
-        },
-      })}
-    >
-      <span className="panel-toggle-label">{label}</span>
-    </MuiButton>
-  )
-}
-
 export function DashboardPage() {
-  const {
-    copilotOpen,
-    copilotView,
-    agenticPrompt,
-    toggleCopilot,
-    closeCopilot,
-    openHomeCopilotDefault,
-  } = useGlobalSearch()
+  const { copilotOpen, copilotView, agenticPrompt, closeCopilot, openHomeCopilotDefault } = useGlobalSearch()
+  const { openTool, closeTool } = useRightTool()
   const isDesktop = useIsDesktopLayout()
   const contentPx = `${layoutTokens.contentPaddingX}px`
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
@@ -83,6 +36,7 @@ export function DashboardPage() {
   const [returnToTask, setReturnToTask] = useState<TaskRecord | null>(null)
   const [selectedActivity, setSelectedActivity] = useState<RecentActivityItem | null>(null)
   const [activityDetailOpen, setActivityDetailOpen] = useState(false)
+  const [focusedActivity, setFocusedActivity] = useState<RecentActivityItem | null>(null)
 
   const detailPanelOpen = taskDetailOpen || activityDetailOpen
 
@@ -90,9 +44,7 @@ export function DashboardPage() {
     ? 'section:task'
     : activityDetailOpen
       ? 'section:activity'
-      : copilotOpen
-        ? 'section:copilot'
-        : 'empty'
+      : 'empty'
 
   const didInitCopilot = useRef(false)
   const wasDesktop = useRef(isDesktop)
@@ -107,28 +59,31 @@ export function DashboardPage() {
     setSelectedActivity(null)
   }, [])
 
+  const clearCopilotFocus = useCallback(() => {
+    setCopilotTaskFocus(null)
+    setCopilotSeedMessage(null)
+    setReturnToTask(null)
+    setFocusedActivity(null)
+  }, [])
+
   const handleBackToCopilotSummary = useCallback(() => {
     setTaskDetailOpen(false)
     setSelectedTask(null)
     setActivityDetailOpen(false)
     setSelectedActivity(null)
-    setCopilotTaskFocus(null)
-    setCopilotSeedMessage(null)
-    setReturnToTask(null)
-    openHomeCopilotDefault()
-  }, [openHomeCopilotDefault])
+    clearCopilotFocus()
+    openTool('copilot')
+  }, [clearCopilotFocus, openTool])
 
   const handleOpenPriorityTask = useCallback(
     (card: PriorityTaskCard) => {
       setSelectedTask(resolvePriorityTaskRecord(card))
-      setCopilotTaskFocus(null)
-      setCopilotSeedMessage(null)
-      setReturnToTask(null)
+      clearCopilotFocus()
       closeCopilot()
       handleCloseActivityDetail()
       setTaskDetailOpen(true)
     },
-    [closeCopilot, handleCloseActivityDetail],
+    [clearCopilotFocus, closeCopilot, handleCloseActivityDetail],
   )
 
   const handleTaskRecommendation = useCallback(
@@ -137,37 +92,48 @@ export function DashboardPage() {
       setReturnToTask(selectedTask)
       setCopilotTaskFocus(selectedTask)
       setCopilotSeedMessage(insight)
+      setFocusedActivity(null)
       setTaskDetailOpen(false)
-      openHomeCopilotDefault()
+      openTool('copilot')
     },
-    [openHomeCopilotDefault, selectedTask],
+    [openTool, selectedTask],
   )
 
   const handleBackToTaskDetails = useCallback(() => {
     if (!returnToTask) return
     setSelectedTask(returnToTask)
     setTaskDetailOpen(true)
-    setCopilotTaskFocus(null)
-    setCopilotSeedMessage(null)
-    setReturnToTask(null)
-    closeCopilot()
-  }, [closeCopilot, returnToTask])
+    clearCopilotFocus()
+    closeTool()
+  }, [clearCopilotFocus, closeTool, returnToTask])
 
-  const handleCloseCopilotWithTask = useCallback(() => {
-    setCopilotTaskFocus(null)
-    setCopilotSeedMessage(null)
-    setReturnToTask(null)
-    closeCopilot()
-  }, [closeCopilot])
+  const handleBackToDailySummary = useCallback(() => {
+    clearCopilotFocus()
+    openHomeCopilotDefault()
+  }, [clearCopilotFocus, openHomeCopilotDefault])
 
-  const handleOpenActivity = useCallback(
+  const handleActivityCopilot = useCallback(
     (activity: RecentActivityItem) => {
-      setSelectedActivity(activity)
-      closeCopilot()
+      // Toggle off → return to daily summary when this was the focused activity.
+      if (focusedActivity?.id === activity.id) {
+        handleBackToDailySummary()
+        return
+      }
       handleCloseTaskDetail()
-      setActivityDetailOpen(true)
+      handleCloseActivityDetail()
+      setCopilotTaskFocus(null)
+      setCopilotSeedMessage(null)
+      setReturnToTask(null)
+      setFocusedActivity(activity)
+      openTool('copilot')
     },
-    [closeCopilot, handleCloseTaskDetail],
+    [
+      focusedActivity?.id,
+      handleBackToDailySummary,
+      handleCloseActivityDetail,
+      handleCloseTaskDetail,
+      openTool,
+    ],
   )
 
   const handleCloseRightPanel = useCallback(() => {
@@ -177,10 +143,35 @@ export function DashboardPage() {
     }
     if (activityDetailOpen) {
       handleCloseActivityDetail()
-      return
     }
-    handleCloseCopilotWithTask()
-  }, [taskDetailOpen, activityDetailOpen, handleCloseTaskDetail, handleCloseActivityDetail, handleCloseCopilotWithTask])
+  }, [taskDetailOpen, activityDetailOpen, handleCloseTaskDetail, handleCloseActivityDetail])
+
+  const hasEntityFocus = Boolean(copilotTaskFocus || focusedActivity)
+
+  useRegisterRightToolCopilot(
+    {
+      context: copilotTaskFocus ? 'tasks' : 'global',
+      globalView: hasEntityFocus ? null : copilotView,
+      agenticPrompt: hasEntityFocus ? null : agenticPrompt,
+      focusedTask: copilotTaskFocus,
+      focusedActivity,
+      seedComposerMessage: copilotSeedMessage,
+      onBackToTaskDetails: copilotSeedMessage && returnToTask ? handleBackToTaskDetails : undefined,
+      onBackToSummary: focusedActivity ? handleBackToDailySummary : undefined,
+      summaryBackLabel: 'Daily summary',
+    },
+    [
+      agenticPrompt,
+      copilotSeedMessage,
+      copilotTaskFocus,
+      copilotView,
+      focusedActivity,
+      handleBackToDailySummary,
+      handleBackToTaskDetails,
+      hasEntityFocus,
+      returnToTask,
+    ],
+  )
 
   useEffect(() => {
     if (didInitCopilot.current) return
@@ -229,21 +220,7 @@ export function DashboardPage() {
             pb: 1,
           }}
         >
-          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-            <HomeGreetingSection greeting={getGreeting()} />
-            <PanelToggleButton
-              label="Copilot"
-              icon={<CopilotIcon size={18} active={copilotOpen && !detailPanelOpen} />}
-              active={copilotOpen && !detailPanelOpen}
-              onClick={() => {
-                if (detailPanelOpen) {
-                  handleBackToCopilotSummary()
-                  return
-                }
-                toggleCopilot()
-              }}
-            />
-          </Stack>
+          <HomeGreetingSection greeting={getGreeting()} />
         </Box>
 
         <Box
@@ -260,13 +237,16 @@ export function DashboardPage() {
           <Stack spacing={0} sx={{ width: '100%' }}>
             <PriorityTasksCarousel onTaskOpen={handleOpenPriorityTask} />
             <Box sx={{ mt: 4 }}>
-              <PulseModule onActivitySelect={handleOpenActivity} />
+              <PulseModule
+                onActivityCopilot={handleActivityCopilot}
+                activeCopilotActivityId={focusedActivity?.id ?? null}
+              />
             </Box>
           </Stack>
         </Box>
       </Box>
 
-      <ResizableRightPanel open={copilotOpen || detailPanelOpen} onClose={handleCloseRightPanel}>
+      <ResizableRightPanel open={detailPanelOpen} onClose={handleCloseRightPanel}>
         <CopilotContentTransition contentKey={rightPanelContentKey}>
           {taskDetailOpen && selectedTask ? (
             <TaskDetailsPanel
@@ -281,16 +261,6 @@ export function DashboardPage() {
               activity={selectedActivity}
               onBack={handleBackToCopilotSummary}
               onClose={handleCloseActivityDetail}
-            />
-          ) : copilotOpen ? (
-            <CopilotPanel
-              context={copilotTaskFocus ? 'tasks' : 'global'}
-              globalView={copilotTaskFocus ? null : copilotView}
-              agenticPrompt={copilotTaskFocus ? null : agenticPrompt}
-              focusedTask={copilotTaskFocus}
-              seedComposerMessage={copilotSeedMessage}
-              onBackToTaskDetails={copilotSeedMessage && returnToTask ? handleBackToTaskDetails : undefined}
-              onClose={handleCloseCopilotWithTask}
             />
           ) : null}
         </CopilotContentTransition>

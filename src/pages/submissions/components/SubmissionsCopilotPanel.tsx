@@ -59,6 +59,7 @@ type SubmissionsCopilotPanelProps = {
   onEntryModeChange?: (mode: SubmissionCopilotEntryMode) => void
   onResolveIssue?: (submissionId: string, issueId: string, resolvedDetails: string[]) => void
   onApprovePremiumOption?: (submissionId: string, option: PremiumEstimate) => void
+  onClearFocus?: () => void
   onClose?: () => void
 }
 
@@ -760,6 +761,7 @@ export function SubmissionsCopilotPanel({
   onEntryModeChange,
   onResolveIssue,
   onApprovePremiumOption,
+  onClearFocus,
   onClose,
 }: SubmissionsCopilotPanelProps) {
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null)
@@ -1009,7 +1011,21 @@ export function SubmissionsCopilotPanel({
         ) : undefined
       }
       toolbarLeading={
-        activeIssue ? undefined : (
+        activeIssue ? undefined : focusedSubmission && onClearFocus ? (
+          <Stack direction="row" alignItems="center" spacing={0.25} sx={{ minWidth: 0 }}>
+            <IconButton
+              size="small"
+              onClick={onClearFocus}
+              aria-label="Back to Submissions workspace"
+              sx={{ flexShrink: 0, ml: -0.75 }}
+            >
+              <ArrowBackIcon fontSize="small" sx={{ color: 'secondary.main' }} />
+            </IconButton>
+            <Typography variant="subtitle2" noWrap sx={copilotSubtitleSx}>
+              {summaryTitle}
+            </Typography>
+          </Stack>
+        ) : (
           <Typography variant="subtitle2" sx={copilotSubtitleSx}>
             {summaryTitle}
           </Typography>

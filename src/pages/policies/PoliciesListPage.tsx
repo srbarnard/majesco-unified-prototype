@@ -2,19 +2,22 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useMemo, useState } from 'react'
+import { useRightTool } from '@/app/contexts/RightToolContext'
+import {
+  useRegisterRightToolCopilot,
+  useRegisterRightToolFilter,
+} from '@/app/hooks/useRightToolRegistration'
 import { ListDataGridToolbar } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { usePoliciesLookupFromUrl } from '@/hooks/useLookupFromUrl'
 import { useSearchQueryFromUrl } from '@/hooks/useSearchQueryFromUrl'
-import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { FilterPanel } from '@/pages/policies/components/FilterPanel'
 import { PoliciesListAnalyticsDashboard } from '@/pages/policies/components/PoliciesListAnalyticsDashboard'
 import { PoliciesListDataGrid } from '@/pages/policies/components/PoliciesListDataGrid'
 import { PoliciesListHeader } from '@/pages/policies/components/PoliciesListHeader'
 import type { PoliciesListTab } from '@/pages/policies/components/PoliciesListTabs'
-import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import {
   POLICIES_TOTAL_ROWS,
   policiesListMock,
@@ -45,18 +48,16 @@ function matchesSearch(row: PolicyListRecord, query: string) {
 
 export function PoliciesListPage() {
   const apiRef = useGridApiRef()
+  const { activeTool, openTool, closeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<PoliciesListTab>('all')
-  const [copilotOpen, setCopilotOpen] = useState(false)
-  const [filterOpen, setFilterOpen] = useState(false)
   const [copilotPolicyFocus, setCopilotPolicyFocus] = useState<PolicyListRecord | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<PoliciesListFilters>(emptyPoliciesListFilters)
 
   const handleLookupApplied = useCallback(() => {
-    setFilterOpen(true)
-    setCopilotOpen(false)
+    openTool('filter')
     setCopilotPolicyFocus(null)
-  }, [])
+  }, [openTool])
 
   usePoliciesLookupFromUrl(setAppliedFilters, handleLookupApplied)
 
@@ -71,65 +72,56 @@ export function PoliciesListPage() {
 
   const filtersActive = hasActiveFilters(appliedFilters)
 
-  const handleToggleFilter = useCallback(() => {
-    setFilterOpen((current) => {
-      if (!current) {
-        setCopilotOpen(false)
-        setCopilotPolicyFocus(null)
-      }
-      return !current
-    })
-  }, [])
-
-  const handleCloseFilter = useCallback(() => {
-    setFilterOpen(false)
-  }, [])
+  useRegisterRightToolCopilot(
+    {
+      context: 'policies-list',
+      focusedPolicyList: copilotPolicyFocus,
+      onBackToSummary: copilotPolicyFocus
+        ? () => setCopilotPolicyFocus(null)
+        : undefined,
+      summaryBackLabel: 'Policies workspace',
+    },
+    [copilotPolicyFocus],
+  )
 
   const handleApplyFilters = useCallback((filters: PoliciesListFilters) => {
     setAppliedFilters(filters)
   }, [])
 
-  const handleToggleCopilot = useCallback(() => {
-    setCopilotOpen((current) => {
-      if (current) {
+  useRegisterRightToolFilter(
+    activeTab === 'all' ? (
+      <FilterPanel
+        appliedFilters={appliedFilters}
+        onApply={handleApplyFilters}
+        onClose={closeTool}
+      />
+    ) : null,
+    [activeTab, appliedFilters, handleApplyFilters, closeTool],
+  )
+
+  const handlePolicyCopilot = useCallback(
+    (policy: PolicyListRecord) => {
+      setCopilotPolicyFocus(policy)
+      openTool('copilot')
+    },
+    [openTool],
+  )
+
+  const handleTabChange = useCallback(
+    (tab: PoliciesListTab) => {
+      setActiveTab(tab)
+      if (tab === 'analytics') {
+        closeTool()
         setCopilotPolicyFocus(null)
-        return false
       }
-      setFilterOpen(false)
-      return true
-    })
-  }, [])
-
-  const handleCloseCopilot = useCallback(() => {
-    setCopilotOpen(false)
-    setCopilotPolicyFocus(null)
-  }, [])
-
-  const handlePolicyCopilot = useCallback((policy: PolicyListRecord) => {
-    setCopilotPolicyFocus(policy)
-    setFilterOpen(false)
-    setCopilotOpen(true)
-  }, [])
-
-  const handleTabChange = useCallback((tab: PoliciesListTab) => {
-    setActiveTab(tab)
-    if (tab === 'analytics') {
-      setCopilotOpen(false)
-      setFilterOpen(false)
-      setCopilotPolicyFocus(null)
-    }
-  }, [])
-
-  const handleCloseMobileRightPanel = useCallback(() => {
-    if (filterOpen) {
-      handleCloseFilter()
-      return
-    }
-    handleCloseCopilot()
-  }, [filterOpen, handleCloseFilter, handleCloseCopilot])
+    },
+    [closeTool],
+  )
 
   const isAllPoliciesTab = activeTab === 'all'
   const contentPx = `${layoutTokens.contentPaddingX}px`
+  const activeCopilotPolicyId =
+    activeTool === 'copilot' && copilotPolicyFocus ? copilotPolicyFocus.id : null
 
   return (
     <Box
@@ -155,14 +147,7 @@ export function PoliciesListPage() {
         }}
       >
         <Box sx={{ flexShrink: 0 }}>
-          <PoliciesListHeader
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            filterOpen={filterOpen}
-            onToggleFilter={handleToggleFilter}
-            copilotOpen={copilotOpen}
-            onToggleCopilot={handleToggleCopilot}
-          />
+          <PoliciesListHeader activeTab={activeTab} onTabChange={handleTabChange} />
         </Box>
 
         <Box
@@ -213,7 +198,7 @@ export function PoliciesListPage() {
                   apiRef={apiRef}
                   rows={filteredRows}
                   onPolicyCopilot={handlePolicyCopilot}
-                  activeCopilotPolicyId={copilotPolicyFocus?.id ?? null}
+                  activeCopilotPolicyId={activeCopilotPolicyId}
                 />
               </Box>
               <Typography
@@ -229,23 +214,6 @@ export function PoliciesListPage() {
           )}
         </Box>
       </Box>
-
-      <ResizableRightPanel open={filterOpen || copilotOpen} onClose={handleCloseMobileRightPanel}>
-        {filterOpen && (
-          <FilterPanel
-            appliedFilters={appliedFilters}
-            onApply={handleApplyFilters}
-            onClose={handleCloseFilter}
-          />
-        )}
-        {copilotOpen && (
-          <CopilotPanel
-            context="policies-list"
-            focusedPolicyList={copilotPolicyFocus}
-            onClose={handleCloseCopilot}
-          />
-        )}
-      </ResizableRightPanel>
     </Box>
   )
 }

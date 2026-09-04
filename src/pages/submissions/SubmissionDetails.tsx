@@ -1,30 +1,31 @@
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
+import { useRightTool } from '@/app/contexts/RightToolContext'
+import {
+  useRegisterRightToolCopilot,
+  useRegisterRightToolCopilotCustom,
+  useRegisterRightToolFilter,
+  useRegisterRightToolParties,
+  useRegisterRightToolRecordContext,
+} from '@/app/hooks/useRightToolRegistration'
 import { Card } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { type DocumentAttachMode, type DocumentAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
 import { DocumentsFilterPanel } from '@/pages/policies/components/DocumentsFilterPanel'
 import { DocumentsTab } from '@/pages/policies/components/DocumentsTab'
 import { PartiesPanel } from '@/pages/policies/components/PartiesPanel'
-import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
-import {
-  resolveOverviewCopilotPanel,
-  useCloseCopilotWhenMobile,
-  useDesktopCopilotInitialOpen,
-} from '@/pages/policies/hooks/useResponsiveCopilotPanel'
 import {
   submissionDocumentsCopilotInsights,
   submissionDocumentsCopilotSummary,
 } from '@/pages/policies/data/documentsCopilotContent'
 import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
 import { emptyDocumentsFilters, type DocumentsFilters } from '@/pages/policies/filters/documentsFilterTypes'
-import { SubmissionDetailHeader, type SubmissionRightPanel } from '@/pages/submissions/components/SubmissionDetailHeader'
+import { SubmissionDetailHeader } from '@/pages/submissions/components/SubmissionDetailHeader'
 import type { SubmissionDetailTab } from '@/pages/submissions/components/SubmissionDetailTabs'
 import { SubmissionOverviewTab } from '@/pages/submissions/components/SubmissionOverviewTab'
 import { SubmissionsCopilotPanel } from '@/pages/submissions/components/SubmissionsCopilotPanel'
@@ -64,6 +65,10 @@ function formatResolvedTimestamp(date = new Date()) {
     .replace(/\s+(AM|PM)/i, (_, meridiem: string) => meridiem.toLowerCase())
 }
 
+function shouldDefaultOpenCopilot(tab: SubmissionDetailTab) {
+  return tab === 'overview' || tab === 'documents'
+}
+
 export function SubmissionDetails() {
   const { submissionId } = useParams<{ submissionId: string }>()
   const navigate = useNavigate()
@@ -72,28 +77,167 @@ export function SubmissionDetails() {
     resolveSubmissionContext(submissionId),
   )
   const isDesktop = useIsDesktopLayout()
+  const { openTool, closeTool, activeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<SubmissionDetailTab>(
     () => parseSubmissionTab(searchParams.get('tab')) ?? 'overview',
   )
   const [starred, setStarred] = useState(false)
-  const [activeRightPanel, setActiveRightPanel] = useState<SubmissionRightPanel | null>(null)
   const [copilotEntryMode, setCopilotEntryMode] = useState<SubmissionCopilotEntryMode>('insight')
-  const [documentsFilterOpen, setDocumentsFilterOpen] = useState(false)
   const [appliedDocumentsFilters, setAppliedDocumentsFilters] = useState<DocumentsFilters>(emptyDocumentsFilters)
   const [copilotDocumentFocus, setCopilotDocumentFocus] = useState<PolicyDocument | null>(null)
   const [attachMode, setAttachMode] = useState<DocumentAttachMode | null>(null)
+  const didInitCopilot = useRef(false)
+  const wasDesktop = useRef(isDesktop)
 
   useEffect(() => {
     setSubmission(resolveSubmissionContext(submissionId))
   }, [submissionId])
 
-  useDesktopCopilotInitialOpen(
-    isDesktop,
-    activeTab === 'overview' || activeTab === 'documents',
-    'copilot',
-    setActiveRightPanel,
+  const focusedListRecord = useMemo(() => toSubmissionListRecord(submission), [submission])
+  const stats = useMemo(() => getSubmissionOverviewStats(submission), [submission])
+  const isDocumentsTab = activeTab === 'documents'
+
+  useRegisterRightToolRecordContext(
+    { title: submission.insuredName, subtitle: submission.submissionNumber },
+    [submission.insuredName, submission.submissionNumber],
   )
-  useCloseCopilotWhenMobile(isDesktop, activeRightPanel, 'copilot', setActiveRightPanel)
+
+  // Documents tab uses standard CopilotPanel; overview uses SubmissionsCopilotPanel.
+  useRegisterRightToolCopilot(
+    isDocumentsTab
+      ? {
+          context: 'submission-detail',
+          activePolicyTab: 'documents',
+          focusedDocument: copilotDocumentFocus,
+          documentsWorkspaceSummary: submissionDocumentsCopilotSummary,
+          documentsWorkspaceInsights: submissionDocumentsCopilotInsights,
+          attachMode,
+          attachContextLabel: submission.submissionNumber,
+          onCloseAttach: () => setAttachMode(null),
+          onAttachSave: () => setAttachMode(null),
+        }
+      : null,
+    [attachMode, copilotDocumentFocus, isDocumentsTab, submission.submissionNumber],
+  )
+
+  useRegisterRightToolCopilotCustom(
+    isDocumentsTab ? null : (
+      <SubmissionsCopilotPanel
+        focusedSubmission={focusedListRecord}
+        entryMode={copilotEntryMode}
+        onEntryModeChange={setCopilotEntryMode}
+        onResolveIssue={(_id, issueId, resolvedDetails) => {
+          setSubmission((current) => {
+            const issues = current.issues.map((issue) => {
+              if (issue.id !== issueId) return issue
+              return {
+                ...issue,
+                resolvedAt: formatResolvedTimestamp(),
+                resolvedDetails,
+                summary: 'Premium can now be estimated',
+              }
+            })
+
+            const remainingBlockers = issues.filter(
+              (issue) => issue.severity === 'blocking' && !issue.resolvedAt,
+            )
+            const remainingIssues = issues.filter((issue) => !issue.resolvedAt)
+            const nextConfidence = Math.min(96, current.confidence + 9)
+
+            if (remainingBlockers.length === 0) {
+              return {
+                ...current,
+                status: 'Ready' as const,
+                confidence: Math.max(nextConfidence, 88),
+                issues: remainingIssues,
+                hasAlert: remainingIssues.some((issue) => issue.severity === 'warning'),
+                premiumEstimates: current.premiumEstimates ?? [
+                  {
+                    label: 'Balanced' as const,
+                    range: '$900K - $1.1M',
+                    rationale: 'Best fit after blockers cleared — alternatives not yet differentiated.',
+                    recommended: true,
+                  },
+                ],
+                readyInsights: current.readyInsights ?? [
+                  {
+                    id: `${current.id}-depth`,
+                    title: 'Limited Loss History Depth',
+                    summary: 'Less than 3 years of claims data.',
+                    severity: 'warning' as const,
+                  },
+                ],
+              }
+            }
+
+            return {
+              ...current,
+              confidence: nextConfidence,
+              issues,
+              hasAlert: true,
+            }
+          })
+        }}
+        onApprovePremiumOption={(_id, option: PremiumEstimate) => {
+          setSubmission((current) => ({
+            ...current,
+            approvedPremiumLabel: option.label,
+          }))
+        }}
+        onClose={closeTool}
+      />
+    ),
+    [closeTool, copilotEntryMode, focusedListRecord, isDocumentsTab],
+  )
+
+  const handleApplyDocumentsFilters = useCallback((filters: DocumentsFilters) => {
+    setAppliedDocumentsFilters(filters)
+  }, [])
+
+  useRegisterRightToolFilter(
+    activeTab === 'documents' ? (
+      <DocumentsFilterPanel
+        appliedFilters={appliedDocumentsFilters}
+        onApply={handleApplyDocumentsFilters}
+        onClose={closeTool}
+      />
+    ) : null,
+    [activeTab, appliedDocumentsFilters, handleApplyDocumentsFilters, closeTool],
+  )
+
+  useRegisterRightToolParties(
+    <PartiesPanel parties={submission.parties} onClose={closeTool} />,
+    [submission.parties, closeTool],
+  )
+
+  useEffect(() => {
+    if (didInitCopilot.current) return
+    didInitCopilot.current = true
+    if (isDesktop && shouldDefaultOpenCopilot(activeTab)) {
+      openTool('copilot')
+    }
+  }, [activeTab, isDesktop, openTool])
+
+  useEffect(() => {
+    if (wasDesktop.current && !isDesktop && activeTool === 'copilot') {
+      closeTool()
+      setAttachMode(null)
+      setCopilotDocumentFocus(null)
+    }
+    wasDesktop.current = isDesktop
+  }, [activeTool, closeTool, isDesktop])
+
+  const syncTabPanels = useCallback(
+    (tab: SubmissionDetailTab) => {
+      if (shouldDefaultOpenCopilot(tab)) {
+        if (activeTool === 'parties' || activeTool === 'filter') return
+        if (isDesktop) openTool('copilot')
+        return
+      }
+      closeTool()
+    },
+    [activeTool, closeTool, isDesktop, openTool],
+  )
 
   useEffect(() => {
     const tab = parseSubmissionTab(searchParams.get('tab'))
@@ -101,103 +245,25 @@ export function SubmissionDetails() {
 
     setActiveTab(tab)
     setCopilotDocumentFocus(null)
-    setDocumentsFilterOpen(false)
     setAttachMode(null)
-
-    if (tab === 'overview') {
-      setActiveRightPanel((current) => resolveOverviewCopilotPanel(isDesktop, current, 'copilot', 'parties'))
-      return
-    }
-
-    if (tab === 'documents') {
-      setActiveRightPanel(isDesktop ? 'copilot' : null)
-      return
-    }
-
-    setActiveRightPanel((current) => (current === 'copilot' ? null : current))
-  }, [isDesktop, searchParams])
-
-  const focusedListRecord = useMemo(() => toSubmissionListRecord(submission), [submission])
-  const stats = useMemo(() => getSubmissionOverviewStats(submission), [submission])
-  const isDocumentsTab = activeTab === 'documents'
-  const showDocumentsCopilot = isDocumentsTab && activeRightPanel === 'copilot'
-  const showSubmissionCopilot = !isDocumentsTab && activeRightPanel === 'copilot'
-  const rightPanelOpen = documentsFilterOpen || activeRightPanel !== null
-
-  const handleToggleRightPanel = useCallback((panel: SubmissionRightPanel) => {
-    if (panel === 'copilot') {
-      setCopilotDocumentFocus(null)
-      setAttachMode(null)
-      setCopilotEntryMode('insight')
-    }
-    setActiveRightPanel((current) => {
-      if (current === panel) return null
-      setDocumentsFilterOpen(false)
-      return panel
-    })
-  }, [])
-
-  const handleToggleDocumentsFilter = useCallback(() => {
-    setDocumentsFilterOpen((current) => {
-      if (!current) {
-        setActiveRightPanel(null)
-        setCopilotDocumentFocus(null)
-      }
-      return !current
-    })
-  }, [])
-
-  const handleCloseRightPanel = useCallback(() => {
-    setActiveRightPanel(null)
-    setDocumentsFilterOpen(false)
-    setAttachMode(null)
-  }, [])
-
-  const handleCloseDocumentsFilter = useCallback(() => {
-    setDocumentsFilterOpen(false)
-  }, [])
-
-  const handleApplyDocumentsFilters = useCallback((filters: DocumentsFilters) => {
-    setAppliedDocumentsFilters(filters)
-  }, [])
-
-  const handleCloseMobileRightPanel = useCallback(() => {
-    if (documentsFilterOpen) {
-      handleCloseDocumentsFilter()
-      return
-    }
-    handleCloseRightPanel()
-  }, [documentsFilterOpen, handleCloseDocumentsFilter, handleCloseRightPanel])
+    syncTabPanels(tab)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, syncTabPanels])
 
   const handleStatusClick = useCallback(() => {
     setCopilotEntryMode('status')
-    setDocumentsFilterOpen(false)
     setAttachMode(null)
-    setActiveRightPanel('copilot')
-  }, [])
+    openTool('copilot')
+  }, [openTool])
 
   const handleTabChange = useCallback(
     (tab: SubmissionDetailTab) => {
       setActiveTab(tab)
       setCopilotDocumentFocus(null)
-      setDocumentsFilterOpen(false)
       setAttachMode(null)
-
-      if (tab === 'overview') {
-        setActiveRightPanel((current) =>
-          resolveOverviewCopilotPanel(isDesktop, current, 'copilot', 'parties'),
-        )
-        return
-      }
-
-      if (tab === 'documents') {
-        setActiveRightPanel(isDesktop ? 'copilot' : null)
-        return
-      }
-
-      setActiveRightPanel((current) => (current === 'copilot' ? null : current))
+      syncTabPanels(tab)
     },
-    [isDesktop],
+    [syncTabPanels],
   )
 
   const handleDocumentOpen = useCallback(
@@ -212,86 +278,17 @@ export function SubmissionDetails() {
     [submissionId],
   )
 
-  const handleAttachTo = useCallback((target: DocumentAttachTarget, documents: PolicyDocument[]) => {
-    setAttachMode({ target, documents })
-    setDocumentsFilterOpen(false)
-    setCopilotDocumentFocus(documents[0] ?? null)
-    setActiveRightPanel('copilot')
-  }, [])
-
-  const handleCloseAttach = useCallback(() => {
-    setAttachMode(null)
-  }, [])
-
-  const handleAttachSave = useCallback(() => {
-    setAttachMode(null)
-  }, [])
-
-  const handleResolveIssue = useCallback(
-    (_submissionId: string, issueId: string, resolvedDetails: string[]) => {
-      setSubmission((current) => {
-        const issues = current.issues.map((issue) => {
-          if (issue.id !== issueId) return issue
-          return {
-            ...issue,
-            resolvedAt: formatResolvedTimestamp(),
-            resolvedDetails,
-            summary: 'Premium can now be estimated',
-          }
-        })
-
-        const remainingBlockers = issues.filter(
-          (issue) => issue.severity === 'blocking' && !issue.resolvedAt,
-        )
-        const remainingIssues = issues.filter((issue) => !issue.resolvedAt)
-        const nextConfidence = Math.min(96, current.confidence + 9)
-
-        if (remainingBlockers.length === 0) {
-          return {
-            ...current,
-            status: 'Ready' as const,
-            confidence: Math.max(nextConfidence, 88),
-            issues: remainingIssues,
-            hasAlert: remainingIssues.some((issue) => issue.severity === 'warning'),
-            premiumEstimates: current.premiumEstimates ?? [
-              {
-                label: 'Balanced' as const,
-                range: '$900K - $1.1M',
-                rationale: 'Best fit after blockers cleared — alternatives not yet differentiated.',
-                recommended: true,
-              },
-            ],
-            readyInsights: current.readyInsights ?? [
-              {
-                id: `${current.id}-depth`,
-                title: 'Limited Loss History Depth',
-                summary: 'Less than 3 years of claims data.',
-                severity: 'warning' as const,
-              },
-            ],
-          }
-        }
-
-        return {
-          ...current,
-          confidence: nextConfidence,
-          issues,
-          hasAlert: true,
-        }
-      })
+  const handleAttachTo = useCallback(
+    (target: DocumentAttachTarget, documents: PolicyDocument[]) => {
+      setAttachMode({ target, documents })
+      setCopilotDocumentFocus(documents[0] ?? null)
+      openTool('copilot')
     },
-    [],
+    [openTool],
   )
 
-  const handleApprovePremiumOption = useCallback(
-    (_submissionId: string, option: PremiumEstimate) => {
-      setSubmission((current) => ({
-        ...current,
-        approvedPremiumLabel: option.label,
-      }))
-    },
-    [],
-  )
+  const activeCopilotDocumentId =
+    activeTool === 'copilot' && copilotDocumentFocus ? copilotDocumentFocus.id : null
 
   return (
     <Box
@@ -321,10 +318,6 @@ export function SubmissionDetails() {
             submission={submission}
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            activeRightPanel={activeRightPanel}
-            onToggleRightPanel={handleToggleRightPanel}
-            documentsFilterOpen={documentsFilterOpen}
-            onToggleDocumentsFilter={handleToggleDocumentsFilter}
             onStatusClick={handleStatusClick}
             starred={starred}
             onToggleStar={() => setStarred((prev) => !prev)}
@@ -351,7 +344,7 @@ export function SubmissionDetails() {
               onDocumentOpen={handleDocumentOpen}
               getDocumentHref={getDocumentHref}
               onAttachTo={handleAttachTo}
-              activeCopilotDocumentId={copilotDocumentFocus?.id ?? null}
+              activeCopilotDocumentId={activeCopilotDocumentId}
             />
           )}
           {activeTab === 'overview' && (
@@ -380,47 +373,6 @@ export function SubmissionDetails() {
           )}
         </Box>
       </Box>
-
-      <ResizableRightPanel open={rightPanelOpen} onClose={handleCloseMobileRightPanel}>
-        {documentsFilterOpen && (
-          <DocumentsFilterPanel
-            appliedFilters={appliedDocumentsFilters}
-            onApply={handleApplyDocumentsFilters}
-            onClose={handleCloseDocumentsFilter}
-          />
-        )}
-        {activeRightPanel === 'parties' && (
-          <PartiesPanel parties={submission.parties} onClose={handleCloseRightPanel} />
-        )}
-        {showDocumentsCopilot && (
-          <CopilotPanel
-            context="submission-detail"
-            activePolicyTab="documents"
-            focusedDocument={copilotDocumentFocus}
-            documentsWorkspaceSummary={submissionDocumentsCopilotSummary}
-            documentsWorkspaceInsights={submissionDocumentsCopilotInsights}
-            attachMode={attachMode}
-            attachContextLabel={submission.submissionNumber}
-            onCloseAttach={handleCloseAttach}
-            onAttachSave={handleAttachSave}
-            onClose={() => {
-              setCopilotDocumentFocus(null)
-              setAttachMode(null)
-              handleCloseRightPanel()
-            }}
-          />
-        )}
-        {showSubmissionCopilot && (
-          <SubmissionsCopilotPanel
-            focusedSubmission={focusedListRecord}
-            entryMode={copilotEntryMode}
-            onEntryModeChange={setCopilotEntryMode}
-            onResolveIssue={handleResolveIssue}
-            onApprovePremiumOption={handleApprovePremiumOption}
-            onClose={handleCloseRightPanel}
-          />
-        )}
-      </ResizableRightPanel>
     </Box>
   )
 }

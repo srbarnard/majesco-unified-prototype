@@ -1,30 +1,30 @@
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
+import { useRightTool } from '@/app/contexts/RightToolContext'
+import {
+  useRegisterRightToolCopilot,
+  useRegisterRightToolFilter,
+  useRegisterRightToolParties,
+  useRegisterRightToolRecordContext,
+} from '@/app/hooks/useRightToolRegistration'
 import { Card } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { type DocumentAttachMode, type DocumentAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
 import { DocumentsFilterPanel } from '@/pages/policies/components/DocumentsFilterPanel'
 import { DocumentsTab } from '@/pages/policies/components/DocumentsTab'
 import { PartiesPanel } from '@/pages/policies/components/PartiesPanel'
-import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
-import {
-  resolveOverviewCopilotPanel,
-  useCloseCopilotWhenMobile,
-  useDesktopCopilotInitialOpen,
-} from '@/pages/policies/hooks/useResponsiveCopilotPanel'
 import {
   quoteDocumentsCopilotInsights,
   quoteDocumentsCopilotSummary,
 } from '@/pages/policies/data/documentsCopilotContent'
 import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
 import { emptyDocumentsFilters, type DocumentsFilters } from '@/pages/policies/filters/documentsFilterTypes'
-import { QuoteHeader, type QuoteRightPanel } from '@/pages/quotes/components/QuoteHeader'
+import { QuoteHeader } from '@/pages/quotes/components/QuoteHeader'
 import { QuoteOverviewTab } from '@/pages/quotes/components/QuoteOverviewTab'
 import type { QuoteTab } from '@/pages/quotes/components/QuoteTabs'
 import { getQuoteDocuments } from '@/pages/quotes/data/mockQuoteDocuments'
@@ -46,22 +46,96 @@ function parseQuoteTab(value: string | null): QuoteTab | null {
   return null
 }
 
+function shouldDefaultOpenCopilot(tab: QuoteTab) {
+  return tab === 'overview' || tab === 'documents'
+}
+
 export function QuoteDetails() {
   const { quoteId } = useParams<{ quoteId: string }>()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const quote = resolveQuoteContext(quoteId)
   const isDesktop = useIsDesktopLayout()
+  const { openTool, closeTool, activeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<QuoteTab>(() => parseQuoteTab(searchParams.get('tab')) ?? 'overview')
   const [starred, setStarred] = useState(false)
-  const [activeRightPanel, setActiveRightPanel] = useState<QuoteRightPanel | null>(null)
-  const [documentsFilterOpen, setDocumentsFilterOpen] = useState(false)
   const [appliedDocumentsFilters, setAppliedDocumentsFilters] = useState<DocumentsFilters>(emptyDocumentsFilters)
   const [copilotDocumentFocus, setCopilotDocumentFocus] = useState<PolicyDocument | null>(null)
   const [attachMode, setAttachMode] = useState<DocumentAttachMode | null>(null)
+  const didInitCopilot = useRef(false)
+  const wasDesktop = useRef(isDesktop)
 
-  useDesktopCopilotInitialOpen(isDesktop, activeTab === 'overview' || activeTab === 'documents', 'copilot', setActiveRightPanel)
-  useCloseCopilotWhenMobile(isDesktop, activeRightPanel, 'copilot', setActiveRightPanel)
+  const isDocumentsTab = activeTab === 'documents'
+
+  useRegisterRightToolRecordContext(
+    { title: quote.insuredName, subtitle: quote.quoteNumber },
+    [quote.insuredName, quote.quoteNumber],
+  )
+
+  useRegisterRightToolCopilot(
+    {
+      context: 'quote-detail',
+      activePolicyTab: isDocumentsTab ? 'documents' : 'overview',
+      focusedQuoteDetail: copilotDocumentFocus ? null : quote,
+      focusedDocument: copilotDocumentFocus,
+      documentsWorkspaceSummary: quoteDocumentsCopilotSummary,
+      documentsWorkspaceInsights: quoteDocumentsCopilotInsights,
+      attachMode,
+      attachContextLabel: quote.quoteNumber,
+      onCloseAttach: () => setAttachMode(null),
+      onAttachSave: () => setAttachMode(null),
+    },
+    [attachMode, copilotDocumentFocus, isDocumentsTab, quote],
+  )
+
+  const handleApplyDocumentsFilters = useCallback((filters: DocumentsFilters) => {
+    setAppliedDocumentsFilters(filters)
+  }, [])
+
+  useRegisterRightToolFilter(
+    activeTab === 'documents' ? (
+      <DocumentsFilterPanel
+        appliedFilters={appliedDocumentsFilters}
+        onApply={handleApplyDocumentsFilters}
+        onClose={closeTool}
+      />
+    ) : null,
+    [activeTab, appliedDocumentsFilters, handleApplyDocumentsFilters, closeTool],
+  )
+
+  useRegisterRightToolParties(
+    <PartiesPanel parties={quote.parties} onClose={closeTool} />,
+    [quote.parties, closeTool],
+  )
+
+  useEffect(() => {
+    if (didInitCopilot.current) return
+    didInitCopilot.current = true
+    if (isDesktop && shouldDefaultOpenCopilot(activeTab)) {
+      openTool('copilot')
+    }
+  }, [activeTab, isDesktop, openTool])
+
+  useEffect(() => {
+    if (wasDesktop.current && !isDesktop && activeTool === 'copilot') {
+      closeTool()
+      setAttachMode(null)
+      setCopilotDocumentFocus(null)
+    }
+    wasDesktop.current = isDesktop
+  }, [activeTool, closeTool, isDesktop])
+
+  const syncTabPanels = useCallback(
+    (tab: QuoteTab) => {
+      if (shouldDefaultOpenCopilot(tab)) {
+        if (activeTool === 'parties' || activeTool === 'filter') return
+        if (isDesktop) openTool('copilot')
+        return
+      }
+      closeTool()
+    },
+    [activeTool, closeTool, isDesktop, openTool],
+  )
 
   useEffect(() => {
     const tab = parseQuoteTab(searchParams.get('tab'))
@@ -69,78 +143,20 @@ export function QuoteDetails() {
 
     setActiveTab(tab)
     setCopilotDocumentFocus(null)
-    setDocumentsFilterOpen(false)
     setAttachMode(null)
+    syncTabPanels(tab)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, syncTabPanels])
 
-    if (tab === 'overview') {
-      setActiveRightPanel((current) => resolveOverviewCopilotPanel(isDesktop, current, 'copilot', 'parties'))
-      return
-    }
-
-    if (tab === 'documents') {
-      setActiveRightPanel(isDesktop ? 'copilot' : null)
-      return
-    }
-
-    setActiveRightPanel((current) => (current === 'copilot' ? null : current))
-  }, [isDesktop, searchParams])
-
-  const handleToggleRightPanel = useCallback((panel: QuoteRightPanel) => {
-    if (panel === 'copilot') {
+  const handleTabChange = useCallback(
+    (tab: QuoteTab) => {
+      setActiveTab(tab)
       setCopilotDocumentFocus(null)
       setAttachMode(null)
-    }
-    setActiveRightPanel((current) => {
-      if (current === panel) {
-        return null
-      }
-      setDocumentsFilterOpen(false)
-      return panel
-    })
-  }, [])
-
-  const handleToggleDocumentsFilter = useCallback(() => {
-    setDocumentsFilterOpen((current) => {
-      if (!current) {
-        setActiveRightPanel(null)
-        setCopilotDocumentFocus(null)
-      }
-      return !current
-    })
-  }, [])
-
-  const handleCloseRightPanel = useCallback(() => {
-    setActiveRightPanel(null)
-    setDocumentsFilterOpen(false)
-    setAttachMode(null)
-  }, [])
-
-  const handleCloseDocumentsFilter = useCallback(() => {
-    setDocumentsFilterOpen(false)
-  }, [])
-
-  const handleApplyDocumentsFilters = useCallback((filters: DocumentsFilters) => {
-    setAppliedDocumentsFilters(filters)
-  }, [])
-
-  const handleTabChange = useCallback((tab: QuoteTab) => {
-    setActiveTab(tab)
-    setCopilotDocumentFocus(null)
-    setDocumentsFilterOpen(false)
-    setAttachMode(null)
-
-    if (tab === 'overview') {
-      setActiveRightPanel((current) => resolveOverviewCopilotPanel(isDesktop, current, 'copilot', 'parties'))
-      return
-    }
-
-    if (tab === 'documents') {
-      setActiveRightPanel(isDesktop ? 'copilot' : null)
-      return
-    }
-
-    setActiveRightPanel((current) => (current === 'copilot' ? null : current))
-  }, [isDesktop])
+      syncTabPanels(tab)
+    },
+    [syncTabPanels],
+  )
 
   const handleDocumentOpen = useCallback(
     (document: PolicyDocument) => {
@@ -154,32 +170,17 @@ export function QuoteDetails() {
     [quoteId],
   )
 
-  const handleAttachTo = useCallback((target: DocumentAttachTarget, documents: PolicyDocument[]) => {
-    setAttachMode({ target, documents })
-    setDocumentsFilterOpen(false)
-    setCopilotDocumentFocus(documents[0] ?? null)
-    setActiveRightPanel('copilot')
-  }, [])
+  const handleAttachTo = useCallback(
+    (target: DocumentAttachTarget, documents: PolicyDocument[]) => {
+      setAttachMode({ target, documents })
+      setCopilotDocumentFocus(documents[0] ?? null)
+      openTool('copilot')
+    },
+    [openTool],
+  )
 
-  const handleCloseAttach = useCallback(() => {
-    setAttachMode(null)
-  }, [])
-
-  const handleAttachSave = useCallback(() => {
-    setAttachMode(null)
-  }, [])
-
-  const showCopilotPanel = activeRightPanel === 'copilot'
-  const isDocumentsTab = activeTab === 'documents'
-  const rightPanelOpen = documentsFilterOpen || activeRightPanel !== null
-
-  const handleCloseMobileRightPanel = useCallback(() => {
-    if (documentsFilterOpen) {
-      handleCloseDocumentsFilter()
-      return
-    }
-    handleCloseRightPanel()
-  }, [documentsFilterOpen, handleCloseDocumentsFilter, handleCloseRightPanel])
+  const activeCopilotDocumentId =
+    activeTool === 'copilot' && copilotDocumentFocus ? copilotDocumentFocus.id : null
 
   return (
     <Box
@@ -209,10 +210,6 @@ export function QuoteDetails() {
             quote={quote}
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            activeRightPanel={activeRightPanel}
-            onToggleRightPanel={handleToggleRightPanel}
-            documentsFilterOpen={documentsFilterOpen}
-            onToggleDocumentsFilter={handleToggleDocumentsFilter}
             starred={starred}
             onToggleStar={() => setStarred((prev) => !prev)}
           />
@@ -238,7 +235,7 @@ export function QuoteDetails() {
               onDocumentOpen={handleDocumentOpen}
               getDocumentHref={getDocumentHref}
               onAttachTo={handleAttachTo}
-              activeCopilotDocumentId={copilotDocumentFocus?.id ?? null}
+              activeCopilotDocumentId={activeCopilotDocumentId}
             />
           )}
           {activeTab === 'overview' && (
@@ -264,38 +261,6 @@ export function QuoteDetails() {
           )}
         </Box>
       </Box>
-
-      <ResizableRightPanel open={rightPanelOpen} onClose={handleCloseMobileRightPanel}>
-        {documentsFilterOpen && (
-          <DocumentsFilterPanel
-            appliedFilters={appliedDocumentsFilters}
-            onApply={handleApplyDocumentsFilters}
-            onClose={handleCloseDocumentsFilter}
-          />
-        )}
-        {activeRightPanel === 'parties' && (
-          <PartiesPanel parties={quote.parties} onClose={handleCloseRightPanel} />
-        )}
-        {showCopilotPanel && (
-          <CopilotPanel
-            context="quote-detail"
-            activePolicyTab={isDocumentsTab ? 'documents' : 'overview'}
-            focusedQuoteDetail={copilotDocumentFocus ? null : quote}
-            focusedDocument={copilotDocumentFocus}
-            documentsWorkspaceSummary={quoteDocumentsCopilotSummary}
-            documentsWorkspaceInsights={quoteDocumentsCopilotInsights}
-            attachMode={attachMode}
-            attachContextLabel={quote.quoteNumber}
-            onCloseAttach={handleCloseAttach}
-            onAttachSave={handleAttachSave}
-            onClose={() => {
-              setCopilotDocumentFocus(null)
-              setAttachMode(null)
-              handleCloseRightPanel()
-            }}
-          />
-        )}
-      </ResizableRightPanel>
     </Box>
   )
 }

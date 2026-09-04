@@ -1,21 +1,17 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router'
+import { useRightTool } from '@/app/contexts/RightToolContext'
+import {
+  useRegisterRightToolCopilot,
+  useRegisterRightToolParties,
+  useRegisterRightToolRecordContext,
+} from '@/app/hooks/useRightToolRegistration'
 import { Card } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
-import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
-import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
-import {
-  resolveOverviewCopilotPanel,
-  useCloseCopilotWhenMobile,
-  useDesktopCopilotInitialOpen,
-} from '@/pages/policies/hooks/useResponsiveCopilotPanel'
-import {
-  InsuredHeader,
-  type InsuredRightPanel,
-} from '@/pages/insureds/components/InsuredHeader'
+import { InsuredHeader } from '@/pages/insureds/components/InsuredHeader'
 import { InsuredContactsPanel } from '@/pages/insureds/components/InsuredContactsPanel'
 import { InsuredOverviewTab } from '@/pages/insureds/components/InsuredOverviewTab'
 import type { InsuredTab } from '@/pages/insureds/components/InsuredTabs'
@@ -29,27 +25,64 @@ export function InsuredDetails() {
   const { insuredId } = useParams<{ insuredId: string }>()
   const insured = resolveInsuredContext(insuredId)
   const isDesktop = useIsDesktopLayout()
+  const { openTool, closeTool, activeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<InsuredTab>('overview')
   const [starred, setStarred] = useState(false)
-  const [activeRightPanel, setActiveRightPanel] = useState<InsuredRightPanel | null>(null)
+  const didInitCopilot = useRef(false)
+  const wasDesktop = useRef(isDesktop)
 
-  useDesktopCopilotInitialOpen(isDesktop, activeTab === 'overview', 'copilot', setActiveRightPanel)
-  useCloseCopilotWhenMobile(isDesktop, activeRightPanel, 'copilot', setActiveRightPanel)
+  useRegisterRightToolRecordContext(
+    { title: insured.name, subtitle: insured.status },
+    [insured.name, insured.status],
+  )
 
-  const handleToggleRightPanel = useCallback((panel: InsuredRightPanel) => {
-    setActiveRightPanel((current) => (current === panel ? null : panel))
-  }, [])
+  useRegisterRightToolCopilot(
+    {
+      context: 'insured',
+      focusedInsured: insured,
+    },
+    [insured],
+  )
 
-  const handleCloseRightPanel = useCallback(() => {
-    setActiveRightPanel(null)
-  }, [])
+  useRegisterRightToolParties(
+    <InsuredContactsPanel contacts={insured.contacts} onClose={closeTool} />,
+    [insured.contacts, closeTool],
+  )
 
-  const handleTabChange = useCallback((tab: InsuredTab) => {
-    setActiveTab(tab)
-    if (tab === 'overview') {
-      setActiveRightPanel((current) => resolveOverviewCopilotPanel(isDesktop, current, 'copilot', 'contacts'))
+  useEffect(() => {
+    if (didInitCopilot.current) return
+    didInitCopilot.current = true
+    if (isDesktop && activeTab === 'overview') {
+      openTool('copilot')
     }
-  }, [isDesktop])
+  }, [activeTab, isDesktop, openTool])
+
+  useEffect(() => {
+    if (wasDesktop.current && !isDesktop && activeTool === 'copilot') {
+      closeTool()
+    }
+    wasDesktop.current = isDesktop
+  }, [activeTool, closeTool, isDesktop])
+
+  const syncTabPanels = useCallback(
+    (tab: InsuredTab) => {
+      if (tab === 'overview') {
+        if (activeTool === 'parties' || activeTool === 'filter') return
+        if (isDesktop) openTool('copilot')
+        return
+      }
+      closeTool()
+    },
+    [activeTool, closeTool, isDesktop, openTool],
+  )
+
+  const handleTabChange = useCallback(
+    (tab: InsuredTab) => {
+      setActiveTab(tab)
+      syncTabPanels(tab)
+    },
+    [syncTabPanels],
+  )
 
   return (
     <Box
@@ -79,8 +112,6 @@ export function InsuredDetails() {
             insured={insured}
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            activeRightPanel={activeRightPanel}
-            onToggleRightPanel={handleToggleRightPanel}
             starred={starred}
             onToggleStar={() => setStarred((prev) => !prev)}
           />
@@ -134,15 +165,6 @@ export function InsuredDetails() {
           )}
         </Box>
       </Box>
-
-      <ResizableRightPanel open={activeRightPanel !== null} onClose={handleCloseRightPanel}>
-        {activeRightPanel === 'contacts' && (
-          <InsuredContactsPanel contacts={insured.contacts} onClose={handleCloseRightPanel} />
-        )}
-        {activeRightPanel === 'copilot' && (
-          <CopilotPanel context="insured" focusedInsured={insured} onClose={handleCloseRightPanel} />
-        )}
-      </ResizableRightPanel>
     </Box>
   )
 }

@@ -1,12 +1,10 @@
 import CheckIcon from '@mui/icons-material/Check'
 import Box from '@mui/material/Box'
-import MuiButton from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { keyframes } from '@mui/material/styles'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { CopilotIcon } from '@/design-system/components'
-import { getPanelToggleButtonStyles, isDarkMode } from '@/design-system/theme/themeSurfaces'
+import { useEffect, useRef, useState } from 'react'
+import { isDarkMode } from '@/design-system/theme/themeSurfaces'
 import { QUOTE_WIZARD_STEPS } from '@/pages/quotes/data/quoteWizardTypes'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -246,52 +244,11 @@ export function QuoteWizardStepper({ activeStep, onStepClick, compact = false }:
 type QuoteWizardPageHeaderProps = {
   activeStep: number
   onStepClick?: (step: number) => void
-  copilotOpen: boolean
-  onToggleCopilot: () => void
-}
-
-function PanelToggleButton({
-  label,
-  icon,
-  active,
-  onClick,
-}: {
-  label: string
-  icon: ReactNode
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <MuiButton
-      size="small"
-      variant="text"
-      disableRipple
-      startIcon={icon}
-      onClick={onClick}
-      sx={(theme) => ({
-        ...getPanelToggleButtonStyles(theme, active),
-        fontFamily: figmaFontFamilyStack.body,
-        flexShrink: 0,
-        '& .MuiButton-startIcon': {
-          marginRight: { xs: 0, sm: 0.75 },
-          overflow: 'visible',
-          color: 'inherit',
-        },
-        '& .panel-toggle-label': {
-          display: { xs: 'none', sm: 'inline' },
-        },
-      })}
-    >
-      <span className="panel-toggle-label">{label}</span>
-    </MuiButton>
-  )
 }
 
 export function QuoteWizardPageHeader({
   activeStep,
   onStepClick,
-  copilotOpen,
-  onToggleCopilot,
 }: QuoteWizardPageHeaderProps) {
   return (
     <Stack
@@ -326,12 +283,6 @@ export function QuoteWizardPageHeader({
       <Box sx={{ flex: 1, minWidth: 0, px: { xs: 1.5, md: 3, lg: 4 }, overflow: 'visible' }}>
         <QuoteWizardStepper activeStep={activeStep} onStepClick={onStepClick} compact />
       </Box>
-      <PanelToggleButton
-        label="Copilot"
-        icon={<CopilotIcon size={18} active={copilotOpen} />}
-        active={copilotOpen}
-        onClick={onToggleCopilot}
-      />
     </Stack>
   )
 }

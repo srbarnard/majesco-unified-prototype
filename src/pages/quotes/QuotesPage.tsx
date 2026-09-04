@@ -2,14 +2,17 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useMemo, useState } from 'react'
+import { useRightTool } from '@/app/contexts/RightToolContext'
+import {
+  useRegisterRightToolCopilot,
+  useRegisterRightToolFilter,
+} from '@/app/hooks/useRightToolRegistration'
 import { ListDataGridToolbar } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { useQuotesLookupFromUrl } from '@/hooks/useLookupFromUrl'
 import { useSearchQueryFromUrl } from '@/hooks/useSearchQueryFromUrl'
-import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
-import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { QuotesAnalyticsTab } from '@/pages/quotes/components/QuotesAnalyticsTab'
 import { QuotesDataGrid } from '@/pages/quotes/components/QuotesDataGrid'
 import { QuotesFilterPanel } from '@/pages/quotes/components/QuotesFilterPanel'
@@ -35,18 +38,18 @@ function matchesSearch(row: Quote, query: string) {
 
 export function QuotesPage() {
   const apiRef = useGridApiRef()
+  const { activeTool, openTool, closeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<QuotesTab>('all')
-  const [copilotOpen, setCopilotOpen] = useState(false)
-  const [filterOpen, setFilterOpen] = useState(false)
   const [copilotQuoteFocus, setCopilotQuoteFocus] = useState<Quote | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<QuotesListFilters>(emptyQuotesListFilters)
 
-  useQuotesLookupFromUrl(setAppliedFilters, useCallback(() => {
-    setFilterOpen(true)
-    setCopilotOpen(false)
+  const handleLookupApplied = useCallback(() => {
+    openTool('filter')
     setCopilotQuoteFocus(null)
-  }, []))
+  }, [openTool])
+
+  useQuotesLookupFromUrl(setAppliedFilters, handleLookupApplied)
 
   useSearchQueryFromUrl(useCallback((query) => {
     setSearchQuery(query)
@@ -59,65 +62,54 @@ export function QuotesPage() {
 
   const filtersActive = hasActiveQuotesFilters(appliedFilters)
 
-  const handleToggleFilter = useCallback(() => {
-    setFilterOpen((current) => {
-      if (!current) {
-        setCopilotOpen(false)
-        setCopilotQuoteFocus(null)
-      }
-      return !current
-    })
-  }, [])
-
-  const handleCloseFilter = useCallback(() => {
-    setFilterOpen(false)
-  }, [])
+  useRegisterRightToolCopilot(
+    {
+      context: 'quotes',
+      focusedQuote: copilotQuoteFocus,
+      onBackToSummary: copilotQuoteFocus ? () => setCopilotQuoteFocus(null) : undefined,
+      summaryBackLabel: 'Quotes workspace',
+    },
+    [copilotQuoteFocus],
+  )
 
   const handleApplyFilters = useCallback((filters: QuotesListFilters) => {
     setAppliedFilters(filters)
   }, [])
 
-  const handleToggleCopilot = useCallback(() => {
-    setCopilotOpen((current) => {
-      if (current) {
+  useRegisterRightToolFilter(
+    activeTab === 'all' ? (
+      <QuotesFilterPanel
+        appliedFilters={appliedFilters}
+        onApply={handleApplyFilters}
+        onClose={closeTool}
+      />
+    ) : null,
+    [activeTab, appliedFilters, handleApplyFilters, closeTool],
+  )
+
+  const handleQuoteCopilot = useCallback(
+    (quote: Quote) => {
+      setCopilotQuoteFocus(quote)
+      openTool('copilot')
+    },
+    [openTool],
+  )
+
+  const handleTabChange = useCallback(
+    (tab: QuotesTab) => {
+      setActiveTab(tab)
+      if (tab === 'analytics') {
+        closeTool()
         setCopilotQuoteFocus(null)
-        return false
       }
-      setFilterOpen(false)
-      return true
-    })
-  }, [])
-
-  const handleCloseCopilot = useCallback(() => {
-    setCopilotOpen(false)
-    setCopilotQuoteFocus(null)
-  }, [])
-
-  const handleQuoteCopilot = useCallback((quote: Quote) => {
-    setCopilotQuoteFocus(quote)
-    setFilterOpen(false)
-    setCopilotOpen(true)
-  }, [])
-
-  const handleTabChange = useCallback((tab: QuotesTab) => {
-    setActiveTab(tab)
-    if (tab === 'analytics') {
-      setCopilotOpen(false)
-      setFilterOpen(false)
-      setCopilotQuoteFocus(null)
-    }
-  }, [])
-
-  const handleCloseMobileRightPanel = useCallback(() => {
-    if (filterOpen) {
-      handleCloseFilter()
-      return
-    }
-    handleCloseCopilot()
-  }, [filterOpen, handleCloseFilter, handleCloseCopilot])
+    },
+    [closeTool],
+  )
 
   const isAllQuotesTab = activeTab === 'all'
   const contentPx = `${layoutTokens.contentPaddingX}px`
+  const activeCopilotQuoteId =
+    activeTool === 'copilot' && copilotQuoteFocus ? copilotQuoteFocus.id : null
 
   return (
     <Box
@@ -143,14 +135,7 @@ export function QuotesPage() {
         }}
       >
         <Box sx={{ flexShrink: 0 }}>
-          <QuotesHeader
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            filterOpen={filterOpen}
-            onToggleFilter={handleToggleFilter}
-            copilotOpen={copilotOpen}
-            onToggleCopilot={handleToggleCopilot}
-          />
+          <QuotesHeader activeTab={activeTab} onTabChange={handleTabChange} />
         </Box>
 
         <Box
@@ -201,7 +186,7 @@ export function QuotesPage() {
                   apiRef={apiRef}
                   rows={filteredRows}
                   onQuoteCopilot={handleQuoteCopilot}
-                  activeCopilotQuoteId={copilotQuoteFocus?.id ?? null}
+                  activeCopilotQuoteId={activeCopilotQuoteId}
                 />
               </Box>
               <Typography
@@ -217,23 +202,6 @@ export function QuotesPage() {
           )}
         </Box>
       </Box>
-
-      <ResizableRightPanel open={filterOpen || copilotOpen} onClose={handleCloseMobileRightPanel}>
-        {filterOpen && (
-          <QuotesFilterPanel
-            appliedFilters={appliedFilters}
-            onApply={handleApplyFilters}
-            onClose={handleCloseFilter}
-          />
-        )}
-        {copilotOpen && (
-          <CopilotPanel
-            context="quotes"
-            focusedQuote={copilotQuoteFocus}
-            onClose={handleCloseCopilot}
-          />
-        )}
-      </ResizableRightPanel>
     </Box>
   )
 }

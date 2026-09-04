@@ -1,91 +1,38 @@
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
-import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined'
-import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined'
 import StarBorderIcon from '@mui/icons-material/StarBorder'
 import StarIcon from '@mui/icons-material/Star'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import type { ReactNode } from 'react'
-import { CopilotIcon, EntityListHomeButton } from '@/design-system/components'
-import { getPanelToggleButtonStyles, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
+import { EntityListHomeButton } from '@/design-system/components'
+import { sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { QuoteStatusChip } from '@/pages/quotes/components/QuoteStatusChip'
 import type { QuoteDetailsRecord } from '@/pages/quotes/data/mockQuoteDetails'
 import { QuoteTabs, type QuoteTab } from '@/pages/quotes/components/QuoteTabs'
 
-export type QuoteRightPanel = 'parties' | 'copilot'
-
 type QuoteHeaderProps = {
   quote: QuoteDetailsRecord
   activeTab: QuoteTab
   onTabChange: (tab: QuoteTab) => void
-  activeRightPanel: QuoteRightPanel | null
-  onToggleRightPanel: (panel: QuoteRightPanel) => void
-  documentsFilterOpen?: boolean
-  onToggleDocumentsFilter?: () => void
   starred?: boolean
   onToggleStar?: () => void
-}
-
-function PanelToggleButton({
-  label,
-  icon,
-  active,
-  onClick,
-  hideLabelOnMobile = false,
-}: {
-  label: string
-  icon: ReactNode
-  active: boolean
-  onClick: () => void
-  hideLabelOnMobile?: boolean
-}) {
-  return (
-    <Button
-      size="small"
-      variant="text"
-      disableRipple
-      startIcon={icon}
-      onClick={onClick}
-      sx={(theme) => ({
-        ...getPanelToggleButtonStyles(theme, active),
-        fontFamily: figmaFontFamilyStack.body,
-        '& .MuiButton-startIcon': {
-          marginRight: { xs: 0, sm: 0.75 },
-          overflow: 'visible',
-          color: 'inherit',
-        },
-        '& .panel-toggle-label': {
-          display: hideLabelOnMobile ? { xs: 'none', sm: 'inline' } : 'inline',
-        },
-      })}
-    >
-      <span className="panel-toggle-label">{label}</span>
-    </Button>
-  )
 }
 
 export function QuoteHeader({
   quote,
   activeTab,
   onTabChange,
-  activeRightPanel,
-  onToggleRightPanel,
-  documentsFilterOpen = false,
-  onToggleDocumentsFilter,
   starred = false,
   onToggleStar,
 }: QuoteHeaderProps) {
   const contentPx = `${layoutTokens.contentPaddingX}px`
-  const isDocumentsTab = activeTab === 'documents'
 
   return (
     <Box sx={{ bgcolor: 'background.paper', width: '100%' }}>
@@ -169,31 +116,6 @@ export function QuoteHeader({
           <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
             <QuoteTabs value={activeTab} onChange={onTabChange} />
           </Box>
-          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexShrink: 0 }}>
-            {isDocumentsTab && (
-              <PanelToggleButton
-                label="Filter"
-                icon={<FilterListOutlinedIcon sx={{ fontSize: 18 }} />}
-                active={documentsFilterOpen}
-                onClick={() => onToggleDocumentsFilter?.()}
-                hideLabelOnMobile
-              />
-            )}
-            <PanelToggleButton
-              label="Parties"
-              icon={<GroupsOutlinedIcon sx={{ fontSize: 18 }} />}
-              active={activeRightPanel === 'parties'}
-              onClick={() => onToggleRightPanel('parties')}
-              hideLabelOnMobile
-            />
-            <PanelToggleButton
-              label="Copilot"
-              icon={<CopilotIcon size={18} active={activeRightPanel === 'copilot'} />}
-              active={activeRightPanel === 'copilot'}
-              onClick={() => onToggleRightPanel('copilot')}
-              hideLabelOnMobile
-            />
-          </Stack>
         </Stack>
       </Box>
     </Box>

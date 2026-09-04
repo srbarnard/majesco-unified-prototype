@@ -2,16 +2,20 @@ import Box from '@mui/material/Box'
 import { useGridApiRef, type GridRowSelectionModel } from '@mui/x-data-grid-premium'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
+import { useRightTool } from '@/app/contexts/RightToolContext'
+import {
+  useRegisterRightToolCopilotCustom,
+  useRegisterRightToolFilter,
+  useRegisterRightToolRecordContext,
+} from '@/app/hooks/useRightToolRegistration'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
-import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
 import { SubmissionsAnalyticsTab } from '@/pages/submissions/components/SubmissionsAnalyticsTab'
 import { SubmissionsCopilotPanel } from '@/pages/submissions/components/SubmissionsCopilotPanel'
 import { SubmissionsDataGrid } from '@/pages/submissions/components/SubmissionsDataGrid'
 import { SubmissionsFilterPanel } from '@/pages/submissions/components/SubmissionsFilterPanel'
 import { SubmissionsHeader } from '@/pages/submissions/components/SubmissionsHeader'
 import { DiscardSubmissionDialog } from '@/pages/submissions/components/DiscardSubmissionDialog'
-import { SubmissionsNotesPanel } from '@/pages/submissions/components/SubmissionsNotesPanel'
 import type { SubmissionsTab } from '@/pages/submissions/components/SubmissionsTabs'
 import { SubmissionsToolbar } from '@/pages/submissions/components/SubmissionsToolbar'
 import {
@@ -56,11 +60,9 @@ export function SubmissionsPage() {
   const navigate = useNavigate()
   const apiRef = useGridApiRef()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { activeTool, openTool, closeTool } = useRightTool()
   const [rows, setRows] = useState<SubmissionListRecord[]>(submissionsMock)
   const [activeTab, setActiveTab] = useState<SubmissionsTab>('all')
-  const [copilotOpen, setCopilotOpen] = useState(false)
-  const [filterOpen, setFilterOpen] = useState(false)
-  const [notesOpen, setNotesOpen] = useState(false)
   const [copilotSubmissionFocus, setCopilotSubmissionFocus] = useState<SubmissionListRecord | null>(null)
   const [notesTarget, setNotesTarget] = useState<SubmissionListRecord | null>(null)
   const [discardTargets, setDiscardTargets] = useState<SubmissionListRecord[] | null>(null)
@@ -85,16 +87,15 @@ export function SubmissionsPage() {
 
     setCopilotSubmissionFocus(match)
     setCopilotEntryMode('insight')
-    setFilterOpen(false)
-    setNotesOpen(false)
-    setCopilotOpen(true)
+    setNotesTarget(null)
+    openTool('copilot')
 
     const next = new URLSearchParams(searchParams)
     next.delete('submission')
     next.delete('askCopilot')
     next.delete('copilot')
     setSearchParams(next, { replace: true })
-  }, [rows, searchParams, setSearchParams])
+  }, [openTool, rows, searchParams, setSearchParams])
 
   const filteredRows = useMemo(() => {
     const withFilters = applySubmissionsListFilters(rows, appliedFilters)
@@ -117,126 +118,72 @@ export function SubmissionsPage() {
   }, [notesTarget, rows])
 
   const closeSidePanels = useCallback(() => {
-    setFilterOpen(false)
-    setNotesOpen(false)
-    setCopilotOpen(false)
+    closeTool()
     setCopilotSubmissionFocus(null)
-  }, [])
+    setNotesTarget(null)
+  }, [closeTool])
 
-  const handleToggleFilter = useCallback(() => {
-    setFilterOpen((current) => {
-      if (!current) {
-        setCopilotOpen(false)
-        setNotesOpen(false)
-        setCopilotSubmissionFocus(null)
-      }
-      return !current
-    })
-  }, [])
-
-  const handleToggleNotes = useCallback(() => {
-    setNotesOpen((current) => {
-      if (!current) {
-        setCopilotOpen(false)
-        setFilterOpen(false)
-        setNotesTarget(null)
-      }
-      return !current
-    })
-  }, [])
-
-  const handleToggleCopilot = useCallback(() => {
-    setCopilotOpen((current) => {
-      if (current) {
-        setCopilotSubmissionFocus(null)
-        return false
-      }
+  const handleAskCopilot = useCallback(
+    (submission: SubmissionListRecord) => {
+      setCopilotSubmissionFocus(submission)
       setCopilotEntryMode('insight')
-      setFilterOpen(false)
-      setNotesOpen(false)
-      return true
-    })
-  }, [])
+      setNotesTarget(null)
+      openTool('copilot')
+    },
+    [openTool],
+  )
 
-  const handleCloseFilter = useCallback(() => setFilterOpen(false), [])
-  const handleCloseNotes = useCallback(() => setNotesOpen(false), [])
-  const handleCloseCopilot = useCallback(() => {
-    setCopilotOpen(false)
-    setCopilotSubmissionFocus(null)
-  }, [])
+  const handleOpenStatusCopilot = useCallback(
+    (submission: SubmissionListRecord) => {
+      setCopilotSubmissionFocus(submission)
+      setCopilotEntryMode('status')
+      setNotesTarget(null)
+      openTool('copilot')
+    },
+    [openTool],
+  )
 
-  const handleAskCopilot = useCallback((submission: SubmissionListRecord) => {
-    setCopilotSubmissionFocus(submission)
-    setCopilotEntryMode('insight')
-    setFilterOpen(false)
-    setNotesOpen(false)
-    setCopilotOpen(true)
-  }, [])
-
-  const handleOpenStatusCopilot = useCallback((submission: SubmissionListRecord) => {
-    setCopilotSubmissionFocus(submission)
-    setCopilotEntryMode('status')
-    setFilterOpen(false)
-    setNotesOpen(false)
-    setCopilotOpen(true)
-  }, [])
-
-  const handleRowSelectionModelChange = useCallback((model: GridRowSelectionModel) => {
-    setRowSelectionModel(model)
-    if (model.length > 1) {
-      setCopilotSubmissionFocus(null)
-      setCopilotEntryMode('insight')
-      setFilterOpen(false)
-      setNotesOpen(false)
-      setCopilotOpen(true)
-      return
-    }
-    if (model.length === 1) {
-      const selected = rows.find((row) => row.id === String(model[0]))
-      if (selected) {
-        setCopilotSubmissionFocus(selected)
+  const handleRowSelectionModelChange = useCallback(
+    (model: GridRowSelectionModel) => {
+      setRowSelectionModel(model)
+      if (model.length > 1) {
+        setCopilotSubmissionFocus(null)
         setCopilotEntryMode('insight')
-        setFilterOpen(false)
-        setNotesOpen(false)
-        setCopilotOpen(true)
+        setNotesTarget(null)
+        openTool('copilot')
+        return
       }
-    }
-  }, [rows])
+      if (model.length === 1) {
+        const selected = rows.find((row) => row.id === String(model[0]))
+        if (selected) {
+          setCopilotSubmissionFocus(selected)
+          setCopilotEntryMode('insight')
+          setNotesTarget(null)
+          openTool('copilot')
+        }
+      }
+    },
+    [openTool, rows],
+  )
 
-  const handleAddNote = useCallback((submission: SubmissionListRecord) => {
-    setNotesTarget(submission)
-    setFilterOpen(false)
-    setCopilotOpen(false)
-    setNotesOpen(true)
-  }, [])
+  const handleAddNote = useCallback(
+    (submission: SubmissionListRecord) => {
+      setNotesTarget(submission)
+      setCopilotSubmissionFocus(null)
+      openTool('notes')
+    },
+    [openTool],
+  )
 
-  const handleSaveNote = useCallback((submissionId: string, note: string) => {
-    const stamped = `${formatResolvedTimestamp()} — ${note}`
-    setRows((current) =>
-      current.map((row) =>
-        row.id === submissionId ? { ...row, notes: [stamped, ...row.notes] } : row,
-      ),
-    )
-  }, [])
-
-  const handleTabChange = useCallback((tab: SubmissionsTab) => {
-    setActiveTab(tab)
-    if (tab === 'analytics') {
-      closeSidePanels()
-    }
-  }, [closeSidePanels])
-
-  const handleCloseMobileRightPanel = useCallback(() => {
-    if (filterOpen) {
-      handleCloseFilter()
-      return
-    }
-    if (notesOpen) {
-      handleCloseNotes()
-      return
-    }
-    handleCloseCopilot()
-  }, [filterOpen, notesOpen, handleCloseFilter, handleCloseNotes, handleCloseCopilot])
+  const handleTabChange = useCallback(
+    (tab: SubmissionsTab) => {
+      setActiveTab(tab)
+      if (tab === 'analytics') {
+        closeSidePanels()
+      }
+    },
+    [closeSidePanels],
+  )
 
   const handleResolveIssue = useCallback(
     (submissionId: string, issueId: string, resolvedDetails: string[]) => {
@@ -341,11 +288,58 @@ export function SubmissionsPage() {
 
   const isAllTab = activeTab === 'all'
   const contentPx = `${layoutTokens.contentPaddingX}px`
-  const rightPanelOpen = filterOpen || notesOpen || copilotOpen
 
-  // When multi-selecting without an explicit Ask Copilot focus, show summarize
   const copilotFocusForPanel =
     selectedSubmissions.length > 1 && !copilotSubmissionFocus ? null : focusedSubmission
+
+  useRegisterRightToolRecordContext(
+    notesSubmission
+      ? { title: notesSubmission.insuredName, subtitle: notesSubmission.submissionNumber }
+      : focusedSubmission
+        ? { title: focusedSubmission.insuredName, subtitle: focusedSubmission.submissionNumber }
+        : null,
+    [focusedSubmission, notesSubmission],
+  )
+
+  const selectedSubmissionKey = selectedSubmissions.map((row) => row.id).join(',')
+
+  useRegisterRightToolCopilotCustom(
+    <SubmissionsCopilotPanel
+      focusedSubmission={copilotFocusForPanel}
+      selectedSubmissions={selectedSubmissions}
+      entryMode={copilotEntryMode}
+      onEntryModeChange={setCopilotEntryMode}
+      onResolveIssue={handleResolveIssue}
+      onApprovePremiumOption={handleApprovePremiumOption}
+      onClearFocus={() => {
+        setCopilotSubmissionFocus(null)
+        setCopilotEntryMode('insight')
+      }}
+      onClose={closeTool}
+    />,
+    [
+      closeTool,
+      copilotEntryMode,
+      copilotFocusForPanel?.id,
+      handleApprovePremiumOption,
+      handleResolveIssue,
+      selectedSubmissionKey,
+    ],
+  )
+
+  useRegisterRightToolFilter(
+    activeTab === 'all' ? (
+      <SubmissionsFilterPanel
+        appliedFilters={appliedFilters}
+        onApply={setAppliedFilters}
+        onClose={closeTool}
+      />
+    ) : null,
+    [activeTab, appliedFilters, closeTool],
+  )
+
+  const activeCopilotSubmissionId =
+    activeTool === 'copilot' && focusedSubmission ? focusedSubmission.id : null
 
   return (
     <Box
@@ -374,12 +368,6 @@ export function SubmissionsPage() {
           <SubmissionsHeader
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            filterOpen={filterOpen}
-            onToggleFilter={handleToggleFilter}
-            notesOpen={notesOpen}
-            onToggleNotes={handleToggleNotes}
-            copilotOpen={copilotOpen}
-            onToggleCopilot={handleToggleCopilot}
             onCreateSubmission={() => navigate('/quotes/new')}
           />
         </Box>
@@ -437,7 +425,7 @@ export function SubmissionsPage() {
                   onAddNote={handleAddNote}
                   onDiscard={handleDiscardOne}
                   onToggleAlert={handleToggleAlert}
-                  activeCopilotSubmissionId={focusedSubmission?.id ?? null}
+                  activeCopilotSubmissionId={activeCopilotSubmissionId}
                 />
               </Box>
             </Box>
@@ -446,35 +434,6 @@ export function SubmissionsPage() {
           )}
         </Box>
       </Box>
-
-      <ResizableRightPanel open={rightPanelOpen} onClose={handleCloseMobileRightPanel}>
-        {filterOpen && (
-          <SubmissionsFilterPanel
-            appliedFilters={appliedFilters}
-            onApply={setAppliedFilters}
-            onClose={handleCloseFilter}
-          />
-        )}
-        {notesOpen && (
-          <SubmissionsNotesPanel
-            focusedSubmission={notesSubmission}
-            submissions={rows}
-            onSaveNote={handleSaveNote}
-            onClose={handleCloseNotes}
-          />
-        )}
-        {copilotOpen && (
-          <SubmissionsCopilotPanel
-            focusedSubmission={copilotFocusForPanel}
-            selectedSubmissions={selectedSubmissions}
-            entryMode={copilotEntryMode}
-            onEntryModeChange={setCopilotEntryMode}
-            onResolveIssue={handleResolveIssue}
-            onApprovePremiumOption={handleApprovePremiumOption}
-            onClose={handleCloseCopilot}
-          />
-        )}
-      </ResizableRightPanel>
 
       <DiscardSubmissionDialog
         open={Boolean(discardTargets?.length)}
