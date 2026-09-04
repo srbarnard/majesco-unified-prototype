@@ -277,7 +277,7 @@ function IssueDetailCard({
     <Stack spacing={0}>
       <Stack direction="row" alignItems="center" spacing={0.25} sx={{ mb: 1.5 }}>
         <IconButton size="small" aria-label="Back to issues" onClick={onBack} sx={{ ml: -0.75 }}>
-          <ArrowBackIcon fontSize="small" sx={{ color: 'secondary.main' }} />
+          <ArrowBackIcon fontSize="small" sx={{ color: 'action.active' }} />
         </IconButton>
         <Typography variant="subtitle2" sx={copilotSubtitleSx}>
           {issue.title}
@@ -349,7 +349,7 @@ function SubmissionInsightView({
 
   return (
     <>
-      <Typography variant="subtitle2" sx={{ ...copilotSubtitleSx, mb: 0.25 }}>
+      <Typography variant="body2" sx={{ ...bodySx, fontWeight: 600, color: 'text.primary', mb: 0.25 }}>
         {briefing.header}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ ...bodySx, mb: 1.5 }}>
@@ -1048,7 +1048,7 @@ export function SubmissionsCopilotPanel({
               aria-label="Back to Submissions workspace"
               sx={{ flexShrink: 0, ml: -0.75 }}
             >
-              <ArrowBackIcon fontSize="small" sx={{ color: 'secondary.main' }} />
+              <ArrowBackIcon fontSize="small" sx={{ color: 'action.active' }} />
             </IconButton>
             <Typography variant="subtitle2" noWrap sx={copilotSubtitleSx}>
               {summaryTitle}

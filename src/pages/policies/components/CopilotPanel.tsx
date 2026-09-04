@@ -783,7 +783,7 @@ export function CopilotPanel({
                   aria-label={`Back to ${summaryBackLabel}`}
                   sx={{ flexShrink: 0, ml: -0.75 }}
                 >
-                  <ArrowBackIcon fontSize="small" sx={{ color: 'secondary.main' }} />
+                  <ArrowBackIcon fontSize="small" sx={{ color: 'action.active' }} />
                 </IconButton>
                 <Typography variant="subtitle2" noWrap sx={copilotSubtitleSx}>
                   {summaryTitle}
@@ -826,7 +826,7 @@ export function CopilotPanel({
             )}
             {focusedListBriefing ? (
               <>
-                <Typography variant="subtitle2" sx={{ ...copilotSubtitleSx, mb: 0.25 }}>
+                <Typography variant="body2" sx={{ ...bodySx, fontWeight: 600, color: 'text.primary', mb: 0.25 }}>
                   {focusedListBriefing.header}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ ...bodySx, mb: 1.5 }}>
