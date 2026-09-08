@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import type { RecentActivityItem } from '@/app/data/homeMock'
 import { recentActivityMock } from '@/app/data/homeMock'
 import { ActivityDetailsPanel } from '@/app/pages/home/ActivityDetailsPanel'
@@ -14,13 +15,37 @@ import { surfaceApp } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { entityDetailCardSx } from '@/pages/shared/components/EntityStatGrid'
 import type { AppTheme } from '@/design-system/theme'
+import { getActivityForAccount } from '@/pages/submissions/data/mockSubmissionActivity'
+
+function matchesAccount(item: RecentActivityItem, account: string) {
+  return item.insuredName.trim().toLowerCase() === account.trim().toLowerCase()
+}
 
 export function ActivityPage() {
   const isDesktop = useIsDesktopLayout()
   const { closeCopilot } = useGlobalSearch()
+  const [searchParams] = useSearchParams()
+  const accountFilter = searchParams.get('account')?.trim() || null
   const contentPx = `${layoutTokens.contentPaddingX}px`
   const [selectedActivity, setSelectedActivity] = useState<RecentActivityItem | null>(null)
   const [activityDetailOpen, setActivityDetailOpen] = useState(false)
+
+  const activityItems = useMemo(() => {
+    if (!accountFilter) return recentActivityMock
+
+    const fromGlobal = recentActivityMock.filter((item) => matchesAccount(item, accountFilter))
+    const fromSubmissions = getActivityForAccount(accountFilter)
+    const seen = new Set<string>()
+    const merged: RecentActivityItem[] = []
+
+    for (const item of [...fromSubmissions, ...fromGlobal]) {
+      if (seen.has(item.id)) continue
+      seen.add(item.id)
+      merged.push(item)
+    }
+
+    return merged
+  }, [accountFilter])
 
   const handleOpenActivity = useCallback(
     (activity: RecentActivityItem) => {
@@ -82,7 +107,9 @@ export function ActivityPage() {
             color="text.secondary"
             sx={{ fontFamily: figmaFontFamilyStack.body, mt: 0.5 }}
           >
-            Policy, submission, and task events across your book
+            {accountFilter
+              ? `Events for ${accountFilter}`
+              : 'Policy, submission, and task events across your book'}
           </Typography>
         </Box>
 
@@ -94,7 +121,7 @@ export function ActivityPage() {
             })}
           >
             <ActivityFeedList
-              items={recentActivityMock}
+              items={activityItems}
               activeActivityId={selectedActivity?.id}
               onActivitySelect={isDesktop ? handleOpenActivity : undefined}
               showFilters

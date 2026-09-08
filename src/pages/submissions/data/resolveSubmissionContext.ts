@@ -1,5 +1,4 @@
 import type { PolicyParty } from '@/pages/policies/data/mockPolicyDetails'
-import type { OverviewStat } from '@/pages/policies/data/mockOverview'
 import {
   submissionsMock,
   type SubmissionIssue,
@@ -43,9 +42,21 @@ function formatSubmittedAt(value: string) {
   })
 }
 
+/** Queues / teams — not individual assignees (avoid person-name styling). */
+export function isSubmissionAssignmentQueue(assignedTo: string) {
+  const normalized = assignedTo.trim().toLowerCase()
+  return (
+    normalized.includes('queue') ||
+    normalized === 'compliance' ||
+    normalized.endsWith(' team') ||
+    normalized.endsWith(' desk')
+  )
+}
+
 function buildFromListRecord(row: SubmissionListRecord): SubmissionDetailsRecord {
   const openIssues = row.issues.filter((issue) => !issue.resolvedAt)
   const blocking = openIssues.filter((issue) => issue.severity === 'blocking').length
+  const assignedIsQueue = isSubmissionAssignmentQueue(row.assignedTo)
 
   return {
     id: row.id,
@@ -64,7 +75,7 @@ function buildFromListRecord(row: SubmissionListRecord): SubmissionDetailsRecord
     notes: row.notes,
     approvedPremiumLabel: row.approvedPremiumLabel,
     producer: 'Liberty Specialty Group',
-    underwriter: row.assignedTo === 'Underwriting Queue' ? 'Unassigned' : row.assignedTo,
+    underwriter: assignedIsQueue ? 'Unassigned' : row.assignedTo,
     effectiveTarget: 'TBD — pending clearance',
     copilotSummary:
       row.status === 'Blocked'
@@ -92,8 +103,8 @@ function buildFromListRecord(row: SubmissionListRecord): SubmissionDetailsRecord
       },
       {
         id: 'underwriter',
-        role: 'Underwriter',
-        name: row.assignedTo === 'Underwriting Queue' ? 'Underwriting Queue' : row.assignedTo,
+        role: assignedIsQueue ? 'Queue' : 'Underwriter',
+        name: row.assignedTo,
       },
     ],
   }
@@ -138,41 +149,4 @@ export function toSubmissionListRecord(details: SubmissionDetailsRecord): Submis
     notes: details.notes,
     approvedPremiumLabel: details.approvedPremiumLabel,
   }
-}
-
-export function getSubmissionOverviewStats(submission: SubmissionDetailsRecord): OverviewStat[] {
-  const openBlocking = submission.issues.filter(
-    (issue) => issue.severity === 'blocking' && !issue.resolvedAt,
-  ).length
-
-  return [
-    {
-      id: 'status',
-      label: 'Status',
-      value: submission.status,
-      helperText: openBlocking > 0 ? `${openBlocking} blocking` : 'Clear to proceed',
-      tone: submission.status === 'Ready' ? 'success' : 'error',
-    },
-    {
-      id: 'confidence',
-      label: 'Confidence',
-      value: `${submission.confidence}%`,
-      helperText: submission.status === 'Ready' ? 'Ready to proceed' : 'Needs attention',
-      tone: submission.confidence >= 85 ? 'success' : submission.confidence >= 45 ? 'warning' : 'error',
-    },
-    {
-      id: 'assigned',
-      label: 'Assigned',
-      value: submission.assignedTo.split(' ')[0] ?? submission.assignedTo,
-      helperText: submission.assignedTo,
-      tone: 'info',
-    },
-    {
-      id: 'submitted',
-      label: 'Submitted',
-      value: submission.submittedAtLabel.replace(/,.*/, ''),
-      helperText: submission.submittedAtLabel,
-      tone: 'info',
-    },
-  ]
 }

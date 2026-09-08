@@ -28,6 +28,33 @@ type SubmissionDetailHeaderProps = {
   onToggleStar?: () => void
 }
 
+function formatMetadataSubmittedAt(value: string) {
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+/** Plain middot metadata under the title row — Home density, not KPI tiles. */
+function buildSubmissionMetadataSegments(submission: SubmissionDetailsRecord): string[] {
+  const segments: string[] = [submission.status]
+
+  if (submission.status === 'Blocked') {
+    const blockers = submission.issues.filter(
+      (issue) => issue.severity === 'blocking' && !issue.resolvedAt,
+    ).length
+    segments.push(`${blockers} blocker${blockers === 1 ? '' : 's'}`)
+  }
+
+  segments.push(`${submission.confidence}% intake complete`)
+  segments.push(submission.assignedTo)
+  segments.push(`Submitted ${formatMetadataSubmittedAt(submission.submittedAt)}`)
+
+  return segments
+}
+
 export function SubmissionDetailHeader({
   submission,
   activeTab,
@@ -37,6 +64,7 @@ export function SubmissionDetailHeader({
   onToggleStar,
 }: SubmissionDetailHeaderProps) {
   const contentPx = `${layoutTokens.contentPaddingX}px`
+  const metadataSegments = buildSubmissionMetadataSegments(submission)
 
   return (
     <Box sx={{ bgcolor: 'background.paper', width: '100%' }}>
@@ -112,6 +140,37 @@ export function SubmissionDetailHeader({
                 status={submission.status}
                 onClick={onStatusClick}
               />
+            </Stack>
+
+            <Stack
+              direction="row"
+              alignItems="center"
+              flexWrap="wrap"
+              useFlexGap
+              spacing={0.75}
+              sx={{ mt: 0.5, rowGap: 0.5 }}
+            >
+              {metadataSegments.map((segment, index) => (
+                <Stack key={`${segment}-${index}`} direction="row" alignItems="center" spacing={0.75}>
+                  {index > 0 ? (
+                    <Typography
+                      component="span"
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontFamily: figmaFontFamilyStack.body, userSelect: 'none' }}
+                    >
+                      ·
+                    </Typography>
+                  ) : null}
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontFamily: figmaFontFamilyStack.body }}
+                  >
+                    {segment}
+                  </Typography>
+                </Stack>
+              ))}
             </Stack>
           </Box>
         </Stack>

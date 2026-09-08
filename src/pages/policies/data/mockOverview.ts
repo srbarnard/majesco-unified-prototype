@@ -6,6 +6,8 @@ export type OverviewStat = {
   value: string | number
   helperText?: string
   tone: OverviewStatTone
+  /** `text` = body-weight value (queues/labels); default `metric` = large hero number/name. */
+  valueStyle?: 'metric' | 'text'
 }
 
 export type OverviewTimeSeriesPoint = {

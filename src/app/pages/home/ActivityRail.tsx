@@ -26,6 +26,9 @@ function isNeedsAction(item: RecentActivityItem): boolean {
 }
 
 function activitySubtitle(item: RecentActivityItem): string {
+  if (item.insuredName && item.submissionNumber) {
+    return `${item.insuredName} · ${item.submissionNumber}`
+  }
   if (item.insuredName && item.policyNumber) {
     return `${item.insuredName} · ${item.policyNumber}`
   }
@@ -44,6 +47,7 @@ type ActivityRailRowProps = {
   isCopilotActive?: boolean
   onSelect?: (activity: RecentActivityItem) => void
   onAskCopilot?: (activity: RecentActivityItem) => void
+  getSubtitle?: (item: RecentActivityItem) => string
 }
 
 function ActivityRailRow({
@@ -52,6 +56,7 @@ function ActivityRailRow({
   isCopilotActive = false,
   onSelect,
   onAskCopilot,
+  getSubtitle = activitySubtitle,
 }: ActivityRailRowProps) {
   const theme = useTheme()
   const needsAction = isNeedsAction(item)
@@ -188,7 +193,7 @@ function ActivityRailRow({
                 opacity: rowSelected ? 0.9 : 1,
               }}
             >
-              {activitySubtitle(item)}
+              {getSubtitle(item)}
             </Typography>
           </Box>
 
@@ -215,6 +220,8 @@ type ActivityRailProps = {
   activeCopilotActivityId?: string | null
   onActivitySelect?: (activity: RecentActivityItem) => void
   onActivityCopilot?: (activity: RecentActivityItem) => void
+  /** Defaults to account · record id. Pass detail for record-scoped rails. */
+  getSubtitle?: (item: RecentActivityItem) => string
 }
 
 export function ActivityRail({
@@ -222,6 +229,7 @@ export function ActivityRail({
   activeCopilotActivityId,
   onActivitySelect,
   onActivityCopilot,
+  getSubtitle,
 }: ActivityRailProps) {
   const groups = DAY_GROUP_ORDER.map((group) => ({
     group,
@@ -264,6 +272,7 @@ export function ActivityRail({
                     isCopilotActive={activeCopilotActivityId === item.id}
                     onSelect={onActivitySelect}
                     onAskCopilot={onActivityCopilot}
+                    getSubtitle={getSubtitle}
                   />
                 )
               })}

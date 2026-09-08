@@ -2,7 +2,7 @@ import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 
-export type SubmissionDetailTab = 'overview' | 'documents' | 'underwriting' | 'activity'
+export type SubmissionDetailTab = 'overview' | 'documents' | 'underwriting'
 
 type SubmissionDetailTabsProps = {
   value: SubmissionDetailTab
@@ -13,7 +13,6 @@ const tabs: { value: SubmissionDetailTab; label: string }[] = [
   { value: 'overview', label: 'Overview' },
   { value: 'documents', label: 'Documents' },
   { value: 'underwriting', label: 'Underwriting' },
-  { value: 'activity', label: 'Activity' },
 ]
 
 export function SubmissionDetailTabs({ value, onChange }: SubmissionDetailTabsProps) {

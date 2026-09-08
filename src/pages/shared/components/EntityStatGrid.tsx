@@ -75,8 +75,18 @@ function StatBox({ stat }: { stat: OverviewStat }) {
         }}
       />
       <Typography
-        variant="h4"
-        sx={{ ...headingSx, fontSize: '1.75rem', lineHeight: 1.2, color: toneStyles.value, mb: 0.75 }}
+        variant={stat.valueStyle === 'text' ? 'body1' : 'h4'}
+        sx={
+          stat.valueStyle === 'text'
+            ? {
+                ...subtitleSx,
+                fontSize: '1rem',
+                lineHeight: 1.35,
+                color: 'text.primary',
+                mb: 0.75,
+              }
+            : { ...headingSx, fontSize: '1.75rem', lineHeight: 1.2, color: toneStyles.value, mb: 0.75 }
+        }
       >
         {stat.value}
       </Typography>

@@ -73,6 +73,8 @@ export type RecentActivityItem = {
   policyNumber?: string
   quoteNumber?: string
   claimNumber?: string
+  /** Submission id shown in ActivityRail subtitle (account · id). */
+  submissionNumber?: string
   summary: string
   fields: RecentActivityField[]
   insights: string[]

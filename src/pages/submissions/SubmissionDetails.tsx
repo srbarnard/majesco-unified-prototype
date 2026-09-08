@@ -1,6 +1,4 @@
 import Box from '@mui/material/Box'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
@@ -11,9 +9,7 @@ import {
   useRegisterRightToolParties,
   useRegisterRightToolRecordContext,
 } from '@/app/hooks/useRightToolRegistration'
-import { Card } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
-import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { type DocumentAttachMode, type DocumentAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
 import { DocumentsFilterPanel } from '@/pages/policies/components/DocumentsFilterPanel'
 import { DocumentsTab } from '@/pages/policies/components/DocumentsTab'
@@ -28,26 +24,23 @@ import { emptyDocumentsFilters, type DocumentsFilters } from '@/pages/policies/f
 import { SubmissionDetailHeader } from '@/pages/submissions/components/SubmissionDetailHeader'
 import type { SubmissionDetailTab } from '@/pages/submissions/components/SubmissionDetailTabs'
 import { SubmissionOverviewTab } from '@/pages/submissions/components/SubmissionOverviewTab'
+import { SubmissionUnderwritingTab } from '@/pages/submissions/components/SubmissionUnderwritingTab'
 import { SubmissionsCopilotPanel } from '@/pages/submissions/components/SubmissionsCopilotPanel'
 import type { SubmissionCopilotEntryMode } from '@/pages/submissions/data/submissionCopilotInsights'
 import { getSubmissionDocuments } from '@/pages/submissions/data/mockSubmissionDocuments'
 import {
-  getSubmissionOverviewStats,
   resolveSubmissionContext,
   toSubmissionListRecord,
   type SubmissionDetailsRecord,
 } from '@/pages/submissions/data/resolveSubmissionContext'
 import type { PremiumEstimate } from '@/pages/submissions/data/mockSubmissions'
 
-const bodySx = {
-  fontFamily: figmaFontFamilyStack.body,
-  fontWeight: 400,
-} as const
-
 function parseSubmissionTab(value: string | null): SubmissionDetailTab | null {
-  if (value === 'overview' || value === 'documents' || value === 'underwriting' || value === 'activity') {
+  if (value === 'overview' || value === 'documents' || value === 'underwriting') {
     return value
   }
+  // Legacy ?tab=activity bookmarks land on Overview (activity rail lives there now).
+  if (value === 'activity') return 'overview'
   return null
 }
 
@@ -94,7 +87,6 @@ export function SubmissionDetails() {
   }, [submissionId])
 
   const focusedListRecord = useMemo(() => toSubmissionListRecord(submission), [submission])
-  const stats = useMemo(() => getSubmissionOverviewStats(submission), [submission])
   const isDocumentsTab = activeTab === 'documents'
 
   useRegisterRightToolRecordContext(
@@ -291,6 +283,31 @@ export function SubmissionDetails() {
     [openTool],
   )
 
+  const handleOverviewQuickAction = useCallback(
+    (actionId: string) => {
+      if (actionId === 'documents') {
+        handleTabChange('documents')
+        return
+      }
+      if (actionId === 'assign') {
+        openTool('parties')
+        return
+      }
+      if (actionId === 'note') {
+        openTool('notes')
+        return
+      }
+      if (actionId === 'email') {
+        openTool('email')
+      }
+    },
+    [handleTabChange, openTool],
+  )
+
+  const handleAssign = useCallback(() => {
+    openTool('parties')
+  }, [openTool])
+
   const activeCopilotDocumentId =
     activeTool === 'copilot' && copilotDocumentFocus ? copilotDocumentFocus.id : null
 
@@ -352,28 +369,13 @@ export function SubmissionDetails() {
             />
           )}
           {activeTab === 'overview' && (
-            <SubmissionOverviewTab submission={submission} stats={stats} />
+            <SubmissionOverviewTab
+              submission={submission}
+              onQuickAction={handleOverviewQuickAction}
+            />
           )}
           {activeTab === 'underwriting' && (
-            <Card title="Underwriting">
-              <Stack spacing={1.5}>
-                {(submission.notes.length > 0
-                  ? submission.notes
-                  : ['Underwriting notes for this submission will appear here.']
-                ).map((note) => (
-                  <Typography key={note} variant="body2" color="text.secondary" sx={bodySx}>
-                    {note}
-                  </Typography>
-                ))}
-              </Stack>
-            </Card>
-          )}
-          {activeTab === 'activity' && (
-            <Card title="Activity">
-              <Typography variant="body2" color="text.secondary" sx={bodySx}>
-                Intake, clearance, and producer activity for this submission will appear here.
-              </Typography>
-            </Card>
+            <SubmissionUnderwritingTab submission={submission} onAssign={handleAssign} />
           )}
         </Box>
       </Box>

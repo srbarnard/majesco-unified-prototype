@@ -1,5 +1,8 @@
 import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import Box from '@mui/material/Box'
+import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
@@ -242,6 +245,15 @@ export function PriorityTasksCarousel({ onTaskOpen }: PriorityTasksCarouselProps
     node.scrollLeft = setWidth
   }, [setWidth])
 
+  const scroll = (direction: 'left' | 'right') => {
+    const node = scrollerRef.current
+    if (!node) return
+    node.scrollBy({
+      left: direction === 'left' ? -cardStep : cardStep,
+      behavior: 'smooth',
+    })
+  }
+
   const handleOpen = useCallback(
     (task: PriorityTaskCard) => {
       onTaskOpen?.(task)
@@ -257,9 +269,17 @@ export function PriorityTasksCarousel({ onTaskOpen }: PriorityTasksCarouselProps
         justifyContent="space-between"
         sx={{ mb: 1.5 }}
       >
-        <Typography variant="subtitle1" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600 }}>
-          Priority tasks
-        </Typography>
+        <Stack direction="row" alignItems="center" spacing={0.5}>
+          <Typography variant="subtitle1" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600 }}>
+            Priority tasks
+          </Typography>
+          <IconButton size="small" aria-label="Previous tasks" onClick={() => scroll('left')}>
+            <ChevronLeftIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" aria-label="Next tasks" onClick={() => scroll('right')}>
+            <ChevronRightIcon fontSize="small" />
+          </IconButton>
+        </Stack>
         <Typography
           component={Link}
           to="/tasks"
