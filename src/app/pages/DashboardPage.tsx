@@ -37,6 +37,8 @@ export function DashboardPage() {
   const [selectedActivity, setSelectedActivity] = useState<RecentActivityItem | null>(null)
   const [activityDetailOpen, setActivityDetailOpen] = useState(false)
   const [focusedActivity, setFocusedActivity] = useState<RecentActivityItem | null>(null)
+  /** Instant-unmount page panel when opening shell Copilot to avoid side-by-side flash. */
+  const [skipDetailExitAnimation, setSkipDetailExitAnimation] = useState(false)
 
   const detailPanelOpen = taskDetailOpen || activityDetailOpen
 
@@ -50,11 +52,13 @@ export function DashboardPage() {
   const wasDesktop = useRef(isDesktop)
 
   const handleCloseTaskDetail = useCallback(() => {
+    setSkipDetailExitAnimation(false)
     setTaskDetailOpen(false)
     setSelectedTask(null)
   }, [])
 
   const handleCloseActivityDetail = useCallback(() => {
+    setSkipDetailExitAnimation(false)
     setActivityDetailOpen(false)
     setSelectedActivity(null)
   }, [])
@@ -66,17 +70,23 @@ export function DashboardPage() {
     setFocusedActivity(null)
   }, [])
 
-  const handleBackToCopilotSummary = useCallback(() => {
+  const dismissDetailForCopilot = useCallback(() => {
+    setSkipDetailExitAnimation(true)
     setTaskDetailOpen(false)
     setSelectedTask(null)
     setActivityDetailOpen(false)
     setSelectedActivity(null)
+  }, [])
+
+  const handleBackToCopilotSummary = useCallback(() => {
+    dismissDetailForCopilot()
     clearCopilotFocus()
     openTool('copilot')
-  }, [clearCopilotFocus, openTool])
+  }, [clearCopilotFocus, dismissDetailForCopilot, openTool])
 
   const handleOpenPriorityTask = useCallback(
     (card: PriorityTaskCard) => {
+      setSkipDetailExitAnimation(false)
       setSelectedTask(resolvePriorityTaskRecord(card))
       clearCopilotFocus()
       closeCopilot()
@@ -93,10 +103,10 @@ export function DashboardPage() {
       setCopilotTaskFocus(selectedTask)
       setCopilotSeedMessage(insight)
       setFocusedActivity(null)
-      setTaskDetailOpen(false)
+      dismissDetailForCopilot()
       openTool('copilot')
     },
-    [openTool, selectedTask],
+    [dismissDetailForCopilot, openTool, selectedTask],
   )
 
   const handleBackToTaskDetails = useCallback(() => {
@@ -246,7 +256,11 @@ export function DashboardPage() {
         </Box>
       </Box>
 
-      <ResizableRightPanel open={detailPanelOpen} onClose={handleCloseRightPanel}>
+      <ResizableRightPanel
+        open={detailPanelOpen}
+        onClose={handleCloseRightPanel}
+        skipExitAnimation={skipDetailExitAnimation}
+      >
         <CopilotContentTransition contentKey={rightPanelContentKey}>
           {taskDetailOpen && selectedTask ? (
             <TaskDetailsPanel

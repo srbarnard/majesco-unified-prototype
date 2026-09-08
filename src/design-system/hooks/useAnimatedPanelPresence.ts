@@ -7,8 +7,15 @@ import { drawerMotion } from '@/design-system/tokens/motion'
  *
  * Enter waits for two animation frames plus a short timeout so WebKit has a
  * committed "hidden" paint before `entered` flips (needed for CSS transitions).
+ *
+ * Pass `skipExitAnimation` when handing off to another drawer (e.g. page Task
+ * panel → shell Copilot) so both panels are never visible side-by-side.
  */
-export function useAnimatedPanelPresence(open: boolean, reducedMotion = false) {
+export function useAnimatedPanelPresence(
+  open: boolean,
+  reducedMotion = false,
+  skipExitAnimation = false,
+) {
   const [mounted, setMounted] = useState(open)
   const [entered, setEntered] = useState(open)
 
@@ -38,9 +45,14 @@ export function useAnimatedPanelPresence(open: boolean, reducedMotion = false) {
     }
 
     setEntered(false)
+    if (skipExitAnimation) {
+      setMounted(false)
+      return
+    }
+
     const timeout = window.setTimeout(() => setMounted(false), drawerMotion.exitMs)
     return () => window.clearTimeout(timeout)
-  }, [open, reducedMotion])
+  }, [open, reducedMotion, skipExitAnimation])
 
   return { mounted, entered }
 }

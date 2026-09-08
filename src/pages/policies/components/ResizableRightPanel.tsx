@@ -20,6 +20,11 @@ type ResizableRightPanelProps = {
   open: boolean
   variant?: RightPanelVariant
   onClose?: () => void
+  /**
+   * Skip the exit slide when handing off to the shell tool drawer (Copilot/Notes/Email).
+   * Avoids a flash of this panel sitting beside the newly opened tool.
+   */
+  skipExitAnimation?: boolean
   children: ReactNode
 }
 
@@ -59,7 +64,13 @@ function BottomSheetDragHandle() {
   )
 }
 
-export function ResizableRightPanel({ open, variant = 'standard', onClose, children }: ResizableRightPanelProps) {
+export function ResizableRightPanel({
+  open,
+  variant = 'standard',
+  onClose,
+  skipExitAnimation = false,
+  children,
+}: ResizableRightPanelProps) {
   const theme = useTheme()
   const isDesktop = useIsDesktopLayout()
   const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)', { noSsr: true })
@@ -74,8 +85,13 @@ export function ResizableRightPanel({ open, variant = 'standard', onClose, child
   const { mounted: sheetMounted, entered: sheetEntered } = useAnimatedPanelPresence(
     mobileOpen,
     prefersReducedMotion,
+    skipExitAnimation,
   )
-  const { mounted, entered } = useAnimatedPanelPresence(desktopOpen, prefersReducedMotion)
+  const { mounted, entered } = useAnimatedPanelPresence(
+    desktopOpen,
+    prefersReducedMotion,
+    skipExitAnimation,
+  )
 
   const { shellSx, innerSx } = dockedPanelMotionSx({
     side: 'right',

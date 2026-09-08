@@ -60,6 +60,7 @@ export function TasksPage() {
   const [copilotSeedMessage, setCopilotSeedMessage] = useState<string | null>(null)
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
   const [taskDetailOpen, setTaskDetailOpen] = useState(false)
+  const [skipTaskExitAnimation, setSkipTaskExitAnimation] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<TasksFilters>(emptyTasksFilters)
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
@@ -133,6 +134,7 @@ export function TasksPage() {
   )
 
   const handleBackToCopilotSummary = useCallback(() => {
+    setSkipTaskExitAnimation(true)
     setTaskDetailOpen(false)
     setSelectedTask(null)
     setCopilotTaskFocus(null)
@@ -144,6 +146,7 @@ export function TasksPage() {
     (task: TaskRecord) => {
       setCopilotTaskFocus(task)
       setCopilotSeedMessage(null)
+      setSkipTaskExitAnimation(true)
       setTaskDetailOpen(false)
       openTool('copilot')
     },
@@ -155,6 +158,7 @@ export function TasksPage() {
       setSelectedTask(task)
       setCopilotTaskFocus(task)
       setCopilotSeedMessage(insight)
+      setSkipTaskExitAnimation(true)
       setTaskDetailOpen(false)
       openTool('copilot')
     },
@@ -163,6 +167,7 @@ export function TasksPage() {
 
   const handleTaskOpen = useCallback(
     (task: TaskRecord) => {
+      setSkipTaskExitAnimation(false)
       setSelectedTask(task)
       closeTool()
       setCopilotTaskFocus(null)
@@ -172,6 +177,7 @@ export function TasksPage() {
   )
 
   const handleCloseTaskDetail = useCallback(() => {
+    setSkipTaskExitAnimation(false)
     setTaskDetailOpen(false)
     setSelectedTask(null)
   }, [])
@@ -298,7 +304,11 @@ export function TasksPage() {
         </Box>
       </Box>
 
-      <ResizableRightPanel open={taskDetailOpen} onClose={handleCloseTaskDetail}>
+      <ResizableRightPanel
+        open={taskDetailOpen}
+        onClose={handleCloseTaskDetail}
+        skipExitAnimation={skipTaskExitAnimation}
+      >
         {taskDetailOpen && selectedTask ? (
           <TaskDetailsPanel
             task={selectedTask}
