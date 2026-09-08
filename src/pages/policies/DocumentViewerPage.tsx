@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { useRightTool } from '@/app/contexts/RightToolContext'
+import { useRightToolDispatch } from '@/app/contexts/RightToolContext'
 import {
   useRegisterRightToolCopilot,
   useRegisterRightToolRecordContext,
@@ -29,7 +29,7 @@ type DocumentViewerPageProps = {
 export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
   const navigate = useNavigate()
   const isDesktop = useIsDesktopLayout()
-  const { openTool, closeTool, activeTool } = useRightTool()
+  const { openTool, closeTool } = useRightToolDispatch()
   const { policyId, quoteId, submissionId, docId = '' } = useParams<{
     policyId?: string
     quoteId?: string
@@ -51,7 +51,10 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
   const didInitCopilot = useRef(false)
   const wasDesktop = useRef(isDesktop)
 
-  const preview = document ? getDocumentPreviewContent(document) : null
+  const preview = useMemo(
+    () => (document ? getDocumentPreviewContent(document) : null),
+    [document],
+  )
   const entityLabel = isQuote
     ? `Quote ${quote?.quoteNumber ?? quoteId}`
     : isSubmission
@@ -74,6 +77,8 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
     [recordTitle, recordSubtitle],
   )
 
+  const documentId = document?.id ?? null
+  const attachTarget = attachMode?.target ?? null
   useRegisterRightToolCopilot(
     document && preview
       ? {
@@ -89,7 +94,10 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
           onAttachSave: () => setAttachMode(null),
         }
       : null,
-    [attachMode, context, document, entityLabel, preview],
+    // Primitives only. Object deps (preview, document, attachMode, callbacks) re-fire
+    // registration → RightTool setState → re-render → Maximum update depth, which
+    // freezes client-side navigation from the document viewer.
+    [attachTarget, context, documentId, entityLabel],
   )
 
   useEffect(() => {
@@ -98,15 +106,17 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
     if (isDesktop) {
       openTool('copilot')
     }
-  }, [isDesktop, openTool])
+    // Intentionally omit openTool — only one-shot open on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDesktop])
 
   useEffect(() => {
-    if (wasDesktop.current && !isDesktop && activeTool === 'copilot') {
+    if (wasDesktop.current && !isDesktop) {
       closeTool()
       setAttachMode(null)
     }
     wasDesktop.current = isDesktop
-  }, [activeTool, closeTool, isDesktop])
+  }, [closeTool, isDesktop])
 
   const handleBackToDocuments = useCallback(() => {
     if (isQuote && quoteId) {

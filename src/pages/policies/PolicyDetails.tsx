@@ -43,7 +43,7 @@ function parsePolicyTab(value: string | null): PolicyTab | null {
 export function PolicyDetails() {
   const { policyId = policyDetailsMock.policyNumber } = useParams<{ policyId: string }>()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const isDesktop = useIsDesktopLayout()
   const { openTool, closeTool, activeTool } = useRightTool()
   const { isFavorite, isHighRisk, toggleFavorite, toggleHighRisk } = useFavorites()
@@ -102,7 +102,9 @@ export function PolicyDetails() {
     if (isDesktop && (activeTab === 'overview' || activeTab === 'documents')) {
       openTool('copilot')
     }
-  }, [activeTab, isDesktop, openTool])
+    // Omit openTool — only one-shot open on mount / first desktop layout.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isDesktop])
 
   useEffect(() => {
     if (wasDesktop.current && !isDesktop && activeTool === 'copilot') {
@@ -125,25 +127,61 @@ export function PolicyDetails() {
     [activeTool, closeTool, isDesktop, openTool],
   )
 
-  useEffect(() => {
-    const tab = parsePolicyTab(searchParams.get('tab'))
-    if (!tab) return
+  const syncTabPanelsRef = useRef(syncTabPanels)
+  syncTabPanelsRef.current = syncTabPanels
 
-    setActiveTab(tab)
+  const tabFromUrl = parsePolicyTab(searchParams.get('tab')) ?? 'overview'
+
+  useEffect(() => {
+    setActiveTab(tabFromUrl)
     setCopilotDocumentFocus(null)
     setAttachMode(null)
-    syncTabPanels(tab)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, syncTabPanels])
+    // Use ref so openTool/activeTool identity changes cannot re-enter this effect
+    // (that loop froze left-nav SPA navigation from Policy Details / Documents).
+    syncTabPanelsRef.current(tabFromUrl)
+  }, [tabFromUrl])
 
   const handleTabChange = useCallback(
     (tab: PolicyTab) => {
       setActiveTab(tab)
       setCopilotDocumentFocus(null)
       setAttachMode(null)
+      setSearchParams(
+        (current) => {
+          const next = new URLSearchParams(current)
+          if (tab === 'overview') {
+            next.delete('tab')
+          } else {
+            next.set('tab', tab)
+          }
+          return next
+        },
+        { replace: true },
+      )
       syncTabPanels(tab)
     },
-    [syncTabPanels],
+    [setSearchParams, syncTabPanels],
+  )
+
+  const handleOverviewQuickAction = useCallback(
+    (actionId: string) => {
+      if (actionId === 'documents') {
+        handleTabChange('documents')
+        return
+      }
+      if (actionId === 'note') {
+        openTool('notes')
+        return
+      }
+      if (actionId === 'email') {
+        openTool('email')
+        return
+      }
+      if (actionId === 'analytics') {
+        handleTabChange('analytics')
+      }
+    },
+    [handleTabChange, openTool],
   )
 
   const handleDocumentOpen = useCallback(
@@ -248,6 +286,7 @@ export function PolicyDetails() {
               transactionsOverTime={overviewTransactionsOverTimeMock}
               transactions={overviewTransactionsMock}
               quickActions={overviewQuickActionsMock}
+              onQuickAction={handleOverviewQuickAction}
             />
           )}
           {activeTab === 'analytics' && <PolicyAnalyticsDashboard policyId={policyId} />}

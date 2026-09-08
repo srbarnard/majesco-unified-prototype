@@ -137,16 +137,20 @@ export function QuoteDetails() {
     [activeTool, closeTool, isDesktop, openTool],
   )
 
-  useEffect(() => {
-    const tab = parseQuoteTab(searchParams.get('tab'))
-    if (!tab) return
+  const syncTabPanelsRef = useRef(syncTabPanels)
+  syncTabPanelsRef.current = syncTabPanels
 
-    setActiveTab(tab)
+  const tabFromUrl = parseQuoteTab(searchParams.get('tab'))
+
+  useEffect(() => {
+    if (!tabFromUrl) return
+
+    setActiveTab(tabFromUrl)
     setCopilotDocumentFocus(null)
     setAttachMode(null)
-    syncTabPanels(tab)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, syncTabPanels])
+    // Ref avoids openTool/activeTool identity changes re-entering this effect.
+    syncTabPanelsRef.current(tabFromUrl)
+  }, [tabFromUrl])
 
   const handleTabChange = useCallback(
     (tab: QuoteTab) => {

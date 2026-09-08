@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import {
-  useRightTool,
+  useRightToolDispatch,
   type RightToolCopilotSession,
   type RightToolRecordContext,
 } from '@/app/contexts/RightToolContext'
@@ -10,14 +10,15 @@ export function useRegisterRightToolCopilot(
   session: RightToolCopilotSession | null,
   deps: ReadonlyArray<unknown>,
 ) {
-  const { setCopilotSession } = useRightTool()
+  const { setCopilotSession } = useRightToolDispatch()
   const sessionRef = useRef(session)
   sessionRef.current = session
 
   useEffect(() => {
     setCopilotSession(sessionRef.current)
     return () => setCopilotSession(null)
-    // Caller supplies the meaningful dependency list for the session snapshot.
+    // Prefer primitives in `deps`. Object deps + useRightTool() on the same page
+    // caused Maximum update depth and froze client navigation from document viewer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
 }
@@ -33,7 +34,7 @@ export function useRegisterRightToolCopilotCustom(
   content: ReactNode | null,
   deps: ReadonlyArray<unknown>,
 ) {
-  const { setCopilotCustomContent } = useRightTool()
+  const { setCopilotCustomContent } = useRightToolDispatch()
   const contentRef = useRef(content)
   contentRef.current = content
 
@@ -49,10 +50,12 @@ export function useRegisterRightToolRecordContext(
   context: RightToolRecordContext,
   deps: ReadonlyArray<unknown>,
 ) {
-  const { setRecordContext } = useRightTool()
+  const { setRecordContext } = useRightToolDispatch()
+  const contextRef = useRef(context)
+  contextRef.current = context
 
   useEffect(() => {
-    setRecordContext(context)
+    setRecordContext(contextRef.current)
     return () => setRecordContext(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
@@ -63,7 +66,7 @@ export function useRegisterRightToolRecordContext(
  * Pass null to hide the Filter rail button (e.g. analytics tab / non-documents tab).
  */
 export function useRegisterRightToolFilter(content: ReactNode | null, deps: ReadonlyArray<unknown>) {
-  const { setFilterContent } = useRightTool()
+  const { setFilterContent } = useRightToolDispatch()
   const contentRef = useRef(content)
   contentRef.current = content
 
@@ -79,7 +82,7 @@ export function useRegisterRightToolFilter(content: ReactNode | null, deps: Read
  * Pass null to hide the Parties rail button.
  */
 export function useRegisterRightToolParties(content: ReactNode | null, deps: ReadonlyArray<unknown>) {
-  const { setPartiesContent } = useRightTool()
+  const { setPartiesContent } = useRightToolDispatch()
   const contentRef = useRef(content)
   contentRef.current = content
 

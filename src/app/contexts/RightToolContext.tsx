@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -19,7 +20,7 @@ export type RightToolRecordContext = {
 
 export type RightToolCopilotSession = Omit<CopilotPanelProps, 'onClose'>
 
-type RightToolContextValue = {
+type RightToolState = {
   activeTool: RightToolId | null
   recordContext: RightToolRecordContext
   copilotSession: RightToolCopilotSession | null
@@ -29,6 +30,9 @@ type RightToolContextValue = {
   filterContent: ReactNode | null
   /** Page-registered Parties/Contacts panel; non-null means Parties is available on the rail. */
   partiesContent: ReactNode | null
+}
+
+type RightToolDispatch = {
   openTool: (tool: RightToolId) => void
   closeTool: () => void
   toggleTool: (tool: RightToolId) => void
@@ -39,7 +43,10 @@ type RightToolContextValue = {
   setPartiesContent: (content: ReactNode | null) => void
 }
 
-const RightToolContext = createContext<RightToolContextValue | null>(null)
+type RightToolContextValue = RightToolState & RightToolDispatch
+
+const RightToolStateContext = createContext<RightToolState | null>(null)
+const RightToolDispatchContext = createContext<RightToolDispatch | null>(null)
 
 export function RightToolProvider({ children }: { children: ReactNode }) {
   const { copilotOpen, openHomeCopilotDefault, closeCopilot } = useGlobalSearch()
@@ -50,6 +57,13 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
   const [filterContent, setFilterContent] = useState<ReactNode | null>(null)
   const [partiesContent, setPartiesContent] = useState<ReactNode | null>(null)
 
+  // Keep latest flags in refs so open/toggle stay referentially stable. Unstable
+  // openTool identities previously re-fired page URL sync effects and froze SPA nav.
+  const copilotOpenRef = useRef(copilotOpen)
+  copilotOpenRef.current = copilotOpen
+  const activeToolRef = useRef(activeTool)
+  activeToolRef.current = activeTool
+
   const closeTool = useCallback(() => {
     setActiveTool(null)
     closeCopilot()
@@ -58,9 +72,9 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
   const openTool = useCallback(
     (tool: RightToolId) => {
       if (tool === 'copilot') {
-        setActiveTool('copilot')
+        setActiveTool((current) => (current === 'copilot' ? current : 'copilot'))
         // Preserve agentic / existing Copilot view when already open.
-        if (!copilotOpen) {
+        if (!copilotOpenRef.current) {
           openHomeCopilotDefault()
         }
         return
@@ -69,25 +83,25 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       closeCopilot()
       setActiveTool(tool)
     },
-    [closeCopilot, copilotOpen, openHomeCopilotDefault],
+    [closeCopilot, openHomeCopilotDefault],
   )
 
   const toggleTool = useCallback(
     (tool: RightToolId) => {
-      if (activeTool === tool) {
+      if (activeToolRef.current === tool) {
         closeTool()
         return
       }
       openTool(tool)
     },
-    [activeTool, closeTool, openTool],
+    [closeTool, openTool],
   )
 
   // Keep rail Copilot in sync with GlobalSearch open flags (agentic search, Home default, etc.).
   // Do not clear Notes/Email/Filter/Parties when Copilot flags turn off.
   useEffect(() => {
     if (copilotOpen) {
-      setActiveTool('copilot')
+      setActiveTool((current) => (current === 'copilot' ? current : 'copilot'))
       return
     }
     setActiveTool((current) => (current === 'copilot' ? null : current))
@@ -106,7 +120,7 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
     }
   }, [activeTool, partiesContent])
 
-  const value = useMemo(
+  const state = useMemo(
     () => ({
       activeTool,
       recordContext,
@@ -114,6 +128,14 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       copilotCustomContent,
       filterContent,
       partiesContent,
+    }),
+    [activeTool, recordContext, copilotSession, copilotCustomContent, filterContent, partiesContent],
+  )
+
+  // Stable dispatch surface so page registration / URL sync hooks don't re-render
+  // or re-fire when session content or activeTool changes.
+  const dispatch = useMemo(
+    () => ({
       openTool,
       closeTool,
       toggleTool,
@@ -123,26 +145,31 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       setFilterContent,
       setPartiesContent,
     }),
-    [
-      activeTool,
-      closeTool,
-      copilotCustomContent,
-      copilotSession,
-      filterContent,
-      openTool,
-      partiesContent,
-      recordContext,
-      toggleTool,
-    ],
+    [openTool, closeTool, toggleTool],
   )
 
-  return <RightToolContext.Provider value={value}>{children}</RightToolContext.Provider>
+  return (
+    <RightToolDispatchContext.Provider value={dispatch}>
+      <RightToolStateContext.Provider value={state}>{children}</RightToolStateContext.Provider>
+    </RightToolDispatchContext.Provider>
+  )
 }
 
-export function useRightTool() {
-  const context = useContext(RightToolContext)
-  if (!context) {
+/** Full tool state + actions (drawer, rail, pages that need session content). */
+export function useRightTool(): RightToolContextValue {
+  const state = useContext(RightToolStateContext)
+  const dispatch = useContext(RightToolDispatchContext)
+  if (!state || !dispatch) {
     throw new Error('useRightTool must be used within RightToolProvider')
   }
-  return context
+  return useMemo(() => ({ ...state, ...dispatch }), [state, dispatch])
+}
+
+/** Actions/setters only — safe for route pages that register Copilot/filter content. */
+export function useRightToolDispatch(): RightToolDispatch {
+  const dispatch = useContext(RightToolDispatchContext)
+  if (!dispatch) {
+    throw new Error('useRightToolDispatch must be used within RightToolProvider')
+  }
+  return dispatch
 }

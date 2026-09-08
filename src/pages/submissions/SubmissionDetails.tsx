@@ -239,16 +239,20 @@ export function SubmissionDetails() {
     [activeTool, closeTool, isDesktop, openTool],
   )
 
-  useEffect(() => {
-    const tab = parseSubmissionTab(searchParams.get('tab'))
-    if (!tab) return
+  const syncTabPanelsRef = useRef(syncTabPanels)
+  syncTabPanelsRef.current = syncTabPanels
 
-    setActiveTab(tab)
+  const tabFromUrl = parseSubmissionTab(searchParams.get('tab'))
+
+  useEffect(() => {
+    if (!tabFromUrl) return
+
+    setActiveTab(tabFromUrl)
     setCopilotDocumentFocus(null)
     setAttachMode(null)
-    syncTabPanels(tab)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, syncTabPanels])
+    // Ref avoids openTool/activeTool identity changes re-entering this effect.
+    syncTabPanelsRef.current(tabFromUrl)
+  }, [tabFromUrl])
 
   const handleStatusClick = useCallback(() => {
     setCopilotEntryMode('status')

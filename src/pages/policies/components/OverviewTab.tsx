@@ -49,6 +49,7 @@ type OverviewTabProps = {
   transactionsOverTime: OverviewTimeSeriesPoint[]
   transactions: OverviewTransaction[]
   quickActions: OverviewQuickAction[]
+  onQuickAction?: (actionId: string) => void
 }
 
 const GUTTER = 3.125 // 25px at 8px spacing unit
@@ -381,7 +382,13 @@ function TransactionsCard({ transactions }: { transactions: OverviewTransaction[
   )
 }
 
-function QuickActionsPanel({ actions }: { actions: OverviewQuickAction[] }) {
+function QuickActionsPanel({
+  actions,
+  onQuickAction,
+}: {
+  actions: OverviewQuickAction[]
+  onQuickAction?: (actionId: string) => void
+}) {
   const actionIcons: Record<string, SvgIconComponent> = {
     endorse: PostAddOutlinedIcon,
     documents: DescriptionOutlinedIcon,
@@ -421,6 +428,7 @@ function QuickActionsPanel({ actions }: { actions: OverviewQuickAction[] }) {
               key={action.id}
               component="button"
               type="button"
+              onClick={() => onQuickAction?.(action.id)}
               sx={(theme) => ({
                 display: 'flex',
                 alignItems: 'center',
@@ -480,6 +488,7 @@ export function OverviewTab({
   transactionsOverTime,
   transactions,
   quickActions,
+  onQuickAction,
 }: OverviewTabProps) {
   return (
     <Box sx={{ width: '100%', minHeight: '100%', bgcolor: 'background.paper', pb: GUTTER }}>
@@ -491,7 +500,7 @@ export function OverviewTab({
             <TransactionsOverTimeChart data={transactionsOverTime} />
           </Grid>
           <Grid size={{ xs: 12, lg: 4 }} sx={{ display: 'flex' }}>
-            <QuickActionsPanel actions={quickActions} />
+            <QuickActionsPanel actions={quickActions} onQuickAction={onQuickAction} />
           </Grid>
           <Grid size={{ xs: 12 }} sx={{ mb: GUTTER }}>
             <TransactionsCard transactions={transactions} />
