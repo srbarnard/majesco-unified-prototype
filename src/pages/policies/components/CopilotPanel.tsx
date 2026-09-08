@@ -446,6 +446,12 @@ export function CopilotPanel({
     const documents = activeAttachMode?.documents ?? (focusedDocument ? [focusedDocument] : [])
 
     if (attachTarget && documents.length > 0) {
+      // Document viewer registers onQuickAction to open Notes / Email rail tools (active icon +
+      // document draft) instead of nesting the composer inside Copilot.
+      if ((attachTarget === 'email' || attachTarget === 'note') && onQuickAction) {
+        onQuickAction(action)
+        return
+      }
       if (attachMode) {
         onQuickAction?.(action)
         return

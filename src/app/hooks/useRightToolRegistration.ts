@@ -2,6 +2,8 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import {
   useRightToolDispatch,
   type RightToolCopilotSession,
+  type RightToolEmailAttachMode,
+  type RightToolNoteAttachMode,
   type RightToolRecordContext,
 } from '@/app/contexts/RightToolContext'
 
@@ -57,6 +59,44 @@ export function useRegisterRightToolRecordContext(
   useEffect(() => {
     setRecordContext(contextRef.current)
     return () => setRecordContext(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps)
+}
+
+/**
+ * Register a document-backed Email draft for the Email tool (document viewer).
+ * When set, rail Email opens the document-specific composer instead of the generic follow-up.
+ */
+export function useRegisterRightToolEmailAttach(
+  mode: RightToolEmailAttachMode,
+  deps: ReadonlyArray<unknown>,
+) {
+  const { setEmailAttachMode } = useRightToolDispatch()
+  const modeRef = useRef(mode)
+  modeRef.current = mode
+
+  useEffect(() => {
+    setEmailAttachMode(modeRef.current)
+    return () => setEmailAttachMode(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps)
+}
+
+/**
+ * Register a document-backed Note draft for the Notes tool (document viewer).
+ * When set, rail Notes opens the document-specific composer instead of a blank note.
+ */
+export function useRegisterRightToolNoteAttach(
+  mode: RightToolNoteAttachMode,
+  deps: ReadonlyArray<unknown>,
+) {
+  const { setNoteAttachMode } = useRightToolDispatch()
+  const modeRef = useRef(mode)
+  modeRef.current = mode
+
+  useEffect(() => {
+    setNoteAttachMode(modeRef.current)
+    return () => setNoteAttachMode(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
 }

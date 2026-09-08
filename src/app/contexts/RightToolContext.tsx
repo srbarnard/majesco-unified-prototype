@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useGlobalSearch } from '@/app/contexts/GlobalSearchContext'
+import type { DocumentAttachMode } from '@/pages/policies/components/DocumentAttachComposer'
 import type { CopilotPanelProps } from '@/pages/policies/components/CopilotPanel'
 
 export type RightToolId = 'copilot' | 'notes' | 'email' | 'filter' | 'parties'
@@ -20,12 +21,19 @@ export type RightToolRecordContext = {
 
 export type RightToolCopilotSession = Omit<CopilotPanelProps, 'onClose'>
 
+export type RightToolEmailAttachMode = DocumentAttachMode | null
+export type RightToolNoteAttachMode = DocumentAttachMode | null
+
 type RightToolState = {
   activeTool: RightToolId | null
   recordContext: RightToolRecordContext
   copilotSession: RightToolCopilotSession | null
   /** Specialty Copilot UIs (submissions, quote wizard) rendered instead of CopilotPanel. */
   copilotCustomContent: ReactNode | null
+  /** Page-registered document email draft (document viewer); drives Email tool content. */
+  emailAttachMode: RightToolEmailAttachMode
+  /** Page-registered document note draft (document viewer); drives Notes tool content. */
+  noteAttachMode: RightToolNoteAttachMode
   /** Page-registered Filter panel; non-null means Filter is available on the rail. */
   filterContent: ReactNode | null
   /** Page-registered Parties/Contacts panel; non-null means Parties is available on the rail. */
@@ -39,6 +47,8 @@ type RightToolDispatch = {
   setRecordContext: (context: RightToolRecordContext) => void
   setCopilotSession: (session: RightToolCopilotSession | null) => void
   setCopilotCustomContent: (content: ReactNode | null) => void
+  setEmailAttachMode: (mode: RightToolEmailAttachMode) => void
+  setNoteAttachMode: (mode: RightToolNoteAttachMode) => void
   setFilterContent: (content: ReactNode | null) => void
   setPartiesContent: (content: ReactNode | null) => void
 }
@@ -54,6 +64,8 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
   const [recordContext, setRecordContext] = useState<RightToolRecordContext>(null)
   const [copilotSession, setCopilotSession] = useState<RightToolCopilotSession | null>(null)
   const [copilotCustomContent, setCopilotCustomContent] = useState<ReactNode | null>(null)
+  const [emailAttachMode, setEmailAttachMode] = useState<RightToolEmailAttachMode>(null)
+  const [noteAttachMode, setNoteAttachMode] = useState<RightToolNoteAttachMode>(null)
   const [filterContent, setFilterContent] = useState<ReactNode | null>(null)
   const [partiesContent, setPartiesContent] = useState<ReactNode | null>(null)
 
@@ -126,10 +138,21 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       recordContext,
       copilotSession,
       copilotCustomContent,
+      emailAttachMode,
+      noteAttachMode,
       filterContent,
       partiesContent,
     }),
-    [activeTool, recordContext, copilotSession, copilotCustomContent, filterContent, partiesContent],
+    [
+      activeTool,
+      recordContext,
+      copilotSession,
+      copilotCustomContent,
+      emailAttachMode,
+      noteAttachMode,
+      filterContent,
+      partiesContent,
+    ],
   )
 
   // Stable dispatch surface so page registration / URL sync hooks don't re-render
@@ -142,6 +165,8 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       setRecordContext,
       setCopilotSession,
       setCopilotCustomContent,
+      setEmailAttachMode,
+      setNoteAttachMode,
       setFilterContent,
       setPartiesContent,
     }),

@@ -4,10 +4,13 @@ import { useNavigate, useParams } from 'react-router'
 import { useRightToolDispatch } from '@/app/contexts/RightToolContext'
 import {
   useRegisterRightToolCopilot,
+  useRegisterRightToolEmailAttach,
+  useRegisterRightToolNoteAttach,
   useRegisterRightToolRecordContext,
 } from '@/app/hooks/useRightToolRegistration'
 import { PlaceholderPage } from '@/app/pages/PlaceholderPage'
 import type { DocumentAttachMode } from '@/pages/policies/components/DocumentAttachComposer'
+import { quickActionToAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
 import { DocumentViewerCanvas } from '@/pages/policies/components/DocumentViewerCanvas'
 import type { DocumentViewerAction } from '@/pages/policies/components/DocumentViewerHoverActions'
 import { DocumentViewerHeader } from '@/pages/policies/components/DocumentViewerHeader'
@@ -77,6 +80,16 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
     [recordTitle, recordSubtitle],
   )
 
+  // Keep Email / Notes tools document-specific on this screen (hover + rail share drafts).
+  useRegisterRightToolEmailAttach(
+    document ? { target: 'email', documents: [document] } : null,
+    [document?.id],
+  )
+  useRegisterRightToolNoteAttach(
+    document ? { target: 'note', documents: [document] } : null,
+    [document?.id],
+  )
+
   const documentId = document?.id ?? null
   const attachTarget = attachMode?.target ?? null
   useRegisterRightToolCopilot(
@@ -92,6 +105,16 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
           attachContextLabel: entityLabel,
           onCloseAttach: () => setAttachMode(null),
           onAttachSave: () => setAttachMode(null),
+          onQuickAction: (action) => {
+            const target = quickActionToAttachTarget(action)
+            if (target === 'email') {
+              openTool('email')
+              return
+            }
+            if (target === 'note') {
+              openTool('notes')
+            }
+          },
         }
       : null,
     // Primitives only. Object deps (preview, document, attachMode, callbacks) re-fire
@@ -135,8 +158,8 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
       if (!document) return
       if (action === 'download') return
       if (action === 'note') {
-        setAttachMode({ target: 'note', documents: [document] })
-        openTool('copilot')
+        // Open the Notes tool (active rail icon) with the registered document draft.
+        openTool('notes')
         return
       }
       if (action === 'task') {
@@ -145,8 +168,9 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
         return
       }
       if (action === 'email') {
-        setAttachMode({ target: 'email', documents: [document] })
-        openTool('copilot')
+        // Open the Email tool (active rail icon) with the registered document draft —
+        // do not route through Copilot attach, which left Email inactive / generic.
+        openTool('email')
       }
     },
     [document, openTool],

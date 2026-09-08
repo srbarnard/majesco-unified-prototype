@@ -9,6 +9,7 @@ import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import {
   DocumentAttachPanelContent,
   documentViewerAttachLabels,
+  getAttachPanelSubtitle,
   targetLabels,
   type DocumentAttachMode,
 } from '@/pages/policies/components/DocumentAttachComposer'
@@ -19,7 +20,7 @@ const bodySx = {
   fontWeight: 400,
 } as const
 
-const emailAttachMode: DocumentAttachMode = { target: 'email', documents: [] }
+const emptyEmailAttachMode: DocumentAttachMode = { target: 'email', documents: [] }
 
 function defaultEmailBody(contextLabel?: string) {
   if (!contextLabel) {
@@ -39,7 +40,9 @@ Best regards`
 
 /** Email tool — same Draft Email composer used on documents. */
 export function EmailToolPanel() {
-  const { recordContext, closeTool } = useRightTool()
+  const { recordContext, emailAttachMode, closeTool } = useRightTool()
+  const attachMode = emailAttachMode?.target === 'email' ? emailAttachMode : emptyEmailAttachMode
+  const hasDocuments = attachMode.documents.length > 0
   const contextLabel = recordContext
     ? recordContext.subtitle
       ? `${recordContext.title} · ${recordContext.subtitle}`
@@ -79,7 +82,9 @@ export function EmailToolPanel() {
             {documentViewerAttachLabels.email ?? targetLabels.email}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={bodySx}>
-            {contextLabel ?? 'No record selected'}
+            {hasDocuments
+              ? getAttachPanelSubtitle(attachMode)
+              : (contextLabel ?? 'No record selected')}
           </Typography>
         </Box>
         <IconButton size="small" onClick={closeTool} aria-label="Close Email" sx={{ mt: -0.25 }}>
@@ -100,10 +105,16 @@ export function EmailToolPanel() {
         }}
       >
         <DocumentAttachPanelContent
-          attachMode={emailAttachMode}
+          attachMode={attachMode}
           contextLabel={contextLabel}
-          initialSubject={contextLabel ? `Re: ${contextLabel}` : ''}
-          initialBody={defaultEmailBody(contextLabel)}
+          // Document-backed drafts use composer defaults (Copilot excerpt). Generic rail
+          // Email keeps the short follow-up template when no documents are registered.
+          {...(hasDocuments
+            ? {}
+            : {
+                initialSubject: contextLabel ? `Re: ${contextLabel}` : '',
+                initialBody: defaultEmailBody(contextLabel),
+              })}
           onCancel={closeTool}
           onSave={() => closeTool()}
         />

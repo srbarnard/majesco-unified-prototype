@@ -9,6 +9,7 @@ import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import {
   DocumentAttachPanelContent,
   documentViewerAttachLabels,
+  getAttachPanelSubtitle,
   type DocumentAttachMode,
 } from '@/pages/policies/components/DocumentAttachComposer'
 import { copilotDrawerHeadingSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
@@ -18,11 +19,13 @@ const bodySx = {
   fontWeight: 400,
 } as const
 
-const noteAttachMode: DocumentAttachMode = { target: 'note', documents: [] }
+const emptyNoteAttachMode: DocumentAttachMode = { target: 'note', documents: [] }
 
 /** Notes tool — same Create Note / Add Note composer used on documents. */
 export function NotesToolPanel() {
-  const { recordContext, closeTool } = useRightTool()
+  const { recordContext, noteAttachMode, closeTool } = useRightTool()
+  const attachMode = noteAttachMode?.target === 'note' ? noteAttachMode : emptyNoteAttachMode
+  const hasDocuments = attachMode.documents.length > 0
   const contextLabel = recordContext
     ? recordContext.subtitle
       ? `${recordContext.title} · ${recordContext.subtitle}`
@@ -62,7 +65,9 @@ export function NotesToolPanel() {
             {documentViewerAttachLabels.note ?? 'Add Note'}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={bodySx}>
-            {contextLabel ?? 'No record selected'}
+            {hasDocuments
+              ? getAttachPanelSubtitle(attachMode)
+              : (contextLabel ?? 'No record selected')}
           </Typography>
         </Box>
         <IconButton size="small" onClick={closeTool} aria-label="Close Notes" sx={{ mt: -0.25 }}>
@@ -83,10 +88,16 @@ export function NotesToolPanel() {
         }}
       >
         <DocumentAttachPanelContent
-          attachMode={noteAttachMode}
+          attachMode={attachMode}
           contextLabel={contextLabel}
-          initialSubject={contextLabel ? `Note on ${contextLabel}` : 'New note'}
-          initialBody=""
+          // Document-backed drafts use composer defaults (summary + excerpt). Generic rail
+          // Notes keeps a blank body when no documents are registered.
+          {...(hasDocuments
+            ? {}
+            : {
+                initialSubject: contextLabel ? `Note on ${contextLabel}` : 'New note',
+                initialBody: '',
+              })}
           onCancel={closeTool}
           onSave={() => closeTool()}
         />
