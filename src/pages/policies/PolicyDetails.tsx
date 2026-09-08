@@ -76,7 +76,7 @@ export function PolicyDetails() {
       onCloseAttach: () => setAttachMode(null),
       onAttachSave: () => setAttachMode(null),
     },
-    [activeTab, attachMode, copilotDocumentFocus],
+    [activeTab, attachMode?.target, copilotDocumentFocus?.id],
   )
 
   const handleApplyDocumentsFilters = useCallback((filters: DocumentsFilters) => {

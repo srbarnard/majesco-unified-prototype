@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import {
@@ -54,7 +54,7 @@ export function QuoteDetails() {
   const { quoteId } = useParams<{ quoteId: string }>()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const quote = resolveQuoteContext(quoteId)
+  const quote = useMemo(() => resolveQuoteContext(quoteId), [quoteId])
   const isDesktop = useIsDesktopLayout()
   const { openTool, closeTool, activeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<QuoteTab>(() => parseQuoteTab(searchParams.get('tab')) ?? 'overview')
@@ -66,6 +66,8 @@ export function QuoteDetails() {
   const wasDesktop = useRef(isDesktop)
 
   const isDocumentsTab = activeTab === 'documents'
+  const attachTarget = attachMode?.target ?? null
+  const copilotDocumentId = copilotDocumentFocus?.id ?? null
 
   useRegisterRightToolRecordContext(
     { title: quote.insuredName, subtitle: quote.quoteNumber },
@@ -85,7 +87,9 @@ export function QuoteDetails() {
       onCloseAttach: () => setAttachMode(null),
       onAttachSave: () => setAttachMode(null),
     },
-    [attachMode, copilotDocumentFocus, isDocumentsTab, quote],
+    // Primitives only — `quote` from resolveQuoteContext() is a new object each call and
+    // would re-fire registration → RightTool setState → freeze SPA navigation.
+    [attachTarget, copilotDocumentId, isDocumentsTab, quote.quoteNumber],
   )
 
   const handleApplyDocumentsFilters = useCallback((filters: DocumentsFilters) => {
@@ -105,7 +109,7 @@ export function QuoteDetails() {
 
   useRegisterRightToolParties(
     <PartiesPanel parties={quote.parties} onClose={closeTool} />,
-    [quote.parties, closeTool],
+    [quote.quoteNumber, closeTool],
   )
 
   useEffect(() => {
@@ -114,7 +118,9 @@ export function QuoteDetails() {
     if (isDesktop && shouldDefaultOpenCopilot(activeTab)) {
       openTool('copilot')
     }
-  }, [activeTab, isDesktop, openTool])
+    // Omit openTool — one-shot open on mount / first desktop layout.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isDesktop])
 
   useEffect(() => {
     if (wasDesktop.current && !isDesktop && activeTool === 'copilot') {

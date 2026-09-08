@@ -117,7 +117,7 @@ export function SubmissionDetails() {
           onAttachSave: () => setAttachMode(null),
         }
       : null,
-    [attachMode, copilotDocumentFocus, isDocumentsTab, submission.submissionNumber],
+    [attachMode?.target, copilotDocumentFocus?.id, isDocumentsTab, submission.submissionNumber],
   )
 
   useRegisterRightToolCopilotCustom(
