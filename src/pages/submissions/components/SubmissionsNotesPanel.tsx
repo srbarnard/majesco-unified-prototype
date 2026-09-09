@@ -1,4 +1,5 @@
 import CloseIcon from '@mui/icons-material/Close'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import Tab from '@mui/material/Tab'
@@ -30,7 +31,11 @@ type NotesTab = 'new' | 'history'
 type SubmissionsNotesPanelProps = {
   focusedSubmission?: SubmissionListRecord | null
   submissions?: SubmissionListRecord[]
+  /** Open History on this thread (e.g. from Recent activity “Note added”). */
+  initialThreadId?: string | null
   onSaveNote?: (submissionId: string, note: string) => void
+  /** Return to previous drawer context without closing the tool. */
+  onBack?: () => void
   onClose?: () => void
 }
 
@@ -41,7 +46,9 @@ function submissionGroupLabel(submission: SubmissionListRecord) {
 export function SubmissionsNotesPanel({
   focusedSubmission,
   submissions = [],
+  initialThreadId = null,
   onSaveNote,
+  onBack,
   onClose,
 }: SubmissionsNotesPanelProps) {
   const workspaceMode = !focusedSubmission
@@ -55,17 +62,25 @@ export function SubmissionsNotesPanel({
   const targetSubmission = focusedSubmission ?? applyToSubmission
 
   useEffect(() => {
-    setNotesTab('new')
-    setActiveThread(null)
+    const nextThreads = focusedSubmission
+      ? buildNoteThreadsForSubmission(focusedSubmission.id, focusedSubmission.notes)
+      : buildAllNoteThreads(submissions)
+
     setComposerMessage('')
     setActiveTemplate(null)
     setApplyToSubmission(null)
-    setThreads(
-      focusedSubmission
-        ? buildNoteThreadsForSubmission(focusedSubmission.id, focusedSubmission.notes)
-        : buildAllNoteThreads(submissions),
-    )
-  }, [focusedSubmission?.id])
+    setThreads(nextThreads)
+
+    if (initialThreadId) {
+      const thread = nextThreads.find((entry) => entry.id === initialThreadId) ?? null
+      setNotesTab('history')
+      setActiveThread(thread)
+      return
+    }
+
+    setNotesTab('new')
+    setActiveThread(null)
+  }, [focusedSubmission?.id, initialThreadId, submissions])
 
   const historyGroups = useMemo<NotesHistoryGroup[]>(() => {
     if (!workspaceMode) return []
@@ -120,6 +135,7 @@ export function SubmissionsNotesPanel({
         ),
       )
       setActiveThread((current) => (current ? { ...current, replies: [...current.replies, reply] } : current))
+      setComposerMessage('')
       onSaveNote?.(activeThread.submissionId, message.trim())
       return
     }
@@ -137,6 +153,7 @@ export function SubmissionsNotesPanel({
     }
     setThreads((current) => [thread, ...current])
     setActiveTemplate(null)
+    setComposerMessage('')
     onSaveNote?.(targetSubmission.id, message.trim())
   }
 
@@ -191,9 +208,16 @@ export function SubmissionsNotesPanel({
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="subtitle1" component="h2" sx={copilotDrawerHeadingSx}>
-            Notes
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
+            {onBack ? (
+              <IconButton size="small" onClick={onBack} aria-label="Back" sx={{ ml: -0.75 }}>
+                <ArrowBackIcon fontSize="small" />
+              </IconButton>
+            ) : null}
+            <Typography variant="subtitle1" component="h2" sx={copilotDrawerHeadingSx}>
+              Notes
+            </Typography>
+          </Box>
           {onClose && (
             <IconButton size="small" onClick={onClose} aria-label="Close Notes">
               <CloseIcon fontSize="small" />

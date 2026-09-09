@@ -2,13 +2,16 @@ import Box from '@mui/material/Box'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
+import type { RecentActivityItem } from '@/app/data/homeMock'
 import {
   useRegisterRightToolCopilot,
   useRegisterRightToolCopilotCustom,
   useRegisterRightToolFilter,
+  useRegisterRightToolNotesCustom,
   useRegisterRightToolParties,
   useRegisterRightToolRecordContext,
 } from '@/app/hooks/useRightToolRegistration'
+import { ActivityDetailsPanel } from '@/app/pages/home/ActivityDetailsPanel'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { type DocumentAttachMode, type DocumentAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
 import { DocumentsFilterPanel } from '@/pages/policies/components/DocumentsFilterPanel'
@@ -26,7 +29,10 @@ import type { SubmissionDetailTab } from '@/pages/submissions/components/Submiss
 import { SubmissionOverviewTab } from '@/pages/submissions/components/SubmissionOverviewTab'
 import { SubmissionUnderwritingTab } from '@/pages/submissions/components/SubmissionUnderwritingTab'
 import { SubmissionsCopilotPanel } from '@/pages/submissions/components/SubmissionsCopilotPanel'
+import { SubmissionsNotesPanel } from '@/pages/submissions/components/SubmissionsNotesPanel'
 import type { SubmissionCopilotEntryMode } from '@/pages/submissions/data/submissionCopilotInsights'
+import { isSubmissionNoteActivity } from '@/pages/submissions/data/mockSubmissionActivity'
+import { findNoteThreadForActivityNote } from '@/pages/submissions/data/mockSubmissionNotes'
 import { getSubmissionDocuments } from '@/pages/submissions/data/mockSubmissionDocuments'
 import {
   resolveSubmissionContext,
@@ -79,22 +85,68 @@ export function SubmissionDetails() {
   const [appliedDocumentsFilters, setAppliedDocumentsFilters] = useState<DocumentsFilters>(emptyDocumentsFilters)
   const [copilotDocumentFocus, setCopilotDocumentFocus] = useState<PolicyDocument | null>(null)
   const [attachMode, setAttachMode] = useState<DocumentAttachMode | null>(null)
+  const [focusedActivity, setFocusedActivity] = useState<RecentActivityItem | null>(null)
+  const [copilotIssueFocusId, setCopilotIssueFocusId] = useState<string | null>(null)
   const didInitCopilot = useRef(false)
   const wasDesktop = useRef(isDesktop)
 
   useEffect(() => {
     setSubmission(resolveSubmissionContext(submissionId))
+    setFocusedActivity(null)
+    setCopilotIssueFocusId(null)
   }, [submissionId])
 
   const focusedListRecord = useMemo(() => toSubmissionListRecord(submission), [submission])
   const isDocumentsTab = activeTab === 'documents'
+
+  const handleClearActivityFocus = useCallback(() => {
+    setFocusedActivity(null)
+    openTool('copilot')
+  }, [openTool])
+
+  const handleActivitySelect = useCallback(
+    (activity: RecentActivityItem) => {
+      if (focusedActivity?.id === activity.id) {
+        setFocusedActivity(null)
+        openTool('copilot')
+        return
+      }
+      setCopilotDocumentFocus(null)
+      setAttachMode(null)
+      setCopilotIssueFocusId(null)
+      setCopilotEntryMode('insight')
+      setFocusedActivity(activity)
+      openTool(isSubmissionNoteActivity(activity) ? 'notes' : 'copilot')
+    },
+    [focusedActivity?.id, openTool],
+  )
+
+  const handleIssueSelect = useCallback(
+    (issueId: string) => {
+      if (copilotIssueFocusId === issueId) {
+        setCopilotIssueFocusId(null)
+        setCopilotEntryMode('insight')
+        setFocusedActivity(null)
+        openTool('copilot')
+        return
+      }
+      setFocusedActivity(null)
+      setCopilotDocumentFocus(null)
+      setAttachMode(null)
+      setCopilotEntryMode('status')
+      setCopilotIssueFocusId(issueId)
+      openTool('copilot')
+    },
+    [copilotIssueFocusId, openTool],
+  )
 
   useRegisterRightToolRecordContext(
     { title: submission.insuredName, subtitle: submission.submissionNumber },
     [submission.insuredName, submission.submissionNumber],
   )
 
-  // Documents tab uses standard CopilotPanel; overview uses SubmissionsCopilotPanel.
+  // Documents tab uses standard CopilotPanel; overview uses SubmissionsCopilotPanel
+  // (or ActivityDetailsPanel when a Recent activity row is selected).
   useRegisterRightToolCopilot(
     isDocumentsTab
       ? {
@@ -112,12 +164,53 @@ export function SubmissionDetails() {
     [attachMode?.target, copilotDocumentFocus?.id, isDocumentsTab, submission.submissionNumber],
   )
 
+  const focusedNoteThreadId = useMemo(() => {
+    if (!focusedActivity || !isSubmissionNoteActivity(focusedActivity)) return null
+    return (
+      findNoteThreadForActivityNote(submission.id, submission.notes, focusedActivity.detail)?.id ?? null
+    )
+  }, [focusedActivity, submission.id, submission.notes])
+
+  useRegisterRightToolNotesCustom(
+    !isDocumentsTab && focusedActivity && focusedNoteThreadId ? (
+      <SubmissionsNotesPanel
+        focusedSubmission={focusedListRecord}
+        initialThreadId={focusedNoteThreadId}
+        onBack={handleClearActivityFocus}
+        onClose={() => {
+          setFocusedActivity(null)
+          closeTool()
+        }}
+        onSaveNote={(_submissionId, note) => {
+          setSubmission((current) => ({
+            ...current,
+            notes: [note, ...current.notes.filter((existing) => existing !== note)],
+          }))
+        }}
+      />
+    ) : null,
+    [closeTool, focusedActivity, focusedListRecord, focusedNoteThreadId, handleClearActivityFocus, isDocumentsTab],
+  )
+
   useRegisterRightToolCopilotCustom(
-    isDocumentsTab ? null : (
+    isDocumentsTab ? null : focusedActivity && !focusedNoteThreadId ? (
+      <ActivityDetailsPanel
+        activity={focusedActivity}
+        onBack={handleClearActivityFocus}
+        onClose={() => {
+          setFocusedActivity(null)
+          closeTool()
+        }}
+      />
+    ) : (
       <SubmissionsCopilotPanel
         focusedSubmission={focusedListRecord}
         entryMode={copilotEntryMode}
-        onEntryModeChange={setCopilotEntryMode}
+        initialIssueId={copilotIssueFocusId}
+        onEntryModeChange={(mode) => {
+          setCopilotEntryMode(mode)
+          if (mode === 'insight') setCopilotIssueFocusId(null)
+        }}
         onResolveIssue={(_id, issueId, resolvedDetails) => {
           setSubmission((current) => {
             const issues = current.issues.map((issue) => {
@@ -135,6 +228,12 @@ export function SubmissionDetails() {
             )
             const remainingIssues = issues.filter((issue) => !issue.resolvedAt)
             const nextConfidence = Math.min(96, current.confidence + 9)
+            const nextIssueId = remainingBlockers.length === 0 ? null : (remainingIssues[0]?.id ?? null)
+
+            queueMicrotask(() => {
+              setCopilotIssueFocusId(nextIssueId)
+              if (!nextIssueId) setCopilotEntryMode('insight')
+            })
 
             if (remainingBlockers.length === 0) {
               return {
@@ -179,7 +278,16 @@ export function SubmissionDetails() {
         onClose={closeTool}
       />
     ),
-    [closeTool, copilotEntryMode, focusedListRecord, isDocumentsTab],
+    [
+      closeTool,
+      copilotEntryMode,
+      copilotIssueFocusId,
+      focusedActivity,
+      focusedListRecord,
+      focusedNoteThreadId,
+      handleClearActivityFocus,
+      isDocumentsTab,
+    ],
   )
 
   const handleApplyDocumentsFilters = useCallback((filters: DocumentsFilters) => {
@@ -215,12 +323,17 @@ export function SubmissionDetails() {
       closeTool()
       setAttachMode(null)
       setCopilotDocumentFocus(null)
+      setFocusedActivity(null)
+      setCopilotIssueFocusId(null)
     }
     wasDesktop.current = isDesktop
   }, [activeTool, closeTool, isDesktop])
 
   const syncTabPanels = useCallback(
     (tab: SubmissionDetailTab) => {
+      setFocusedActivity(null)
+      setCopilotIssueFocusId(null)
+      setCopilotEntryMode('insight')
       if (shouldDefaultOpenCopilot(tab)) {
         if (activeTool === 'parties' || activeTool === 'filter') return
         if (isDesktop) openTool('copilot')
@@ -247,6 +360,8 @@ export function SubmissionDetails() {
   }, [tabFromUrl])
 
   const handleStatusClick = useCallback(() => {
+    setFocusedActivity(null)
+    setCopilotIssueFocusId(null)
     setCopilotEntryMode('status')
     setAttachMode(null)
     openTool('copilot')
@@ -257,6 +372,8 @@ export function SubmissionDetails() {
       setActiveTab(tab)
       setCopilotDocumentFocus(null)
       setAttachMode(null)
+      setFocusedActivity(null)
+      setCopilotIssueFocusId(null)
       syncTabPanels(tab)
     },
     [syncTabPanels],
@@ -289,6 +406,16 @@ export function SubmissionDetails() {
 
   const activeCopilotDocumentId =
     activeTool === 'copilot' && copilotDocumentFocus ? copilotDocumentFocus.id : null
+  const activeActivityId =
+    focusedActivity &&
+    ((activeTool === 'copilot' && !focusedNoteThreadId) ||
+      (activeTool === 'notes' && Boolean(focusedNoteThreadId)))
+      ? focusedActivity.id
+      : null
+  const activeIssueId =
+    activeTool === 'copilot' && !focusedActivity && copilotIssueFocusId
+      ? copilotIssueFocusId
+      : null
 
   return (
     <Box
@@ -348,7 +475,13 @@ export function SubmissionDetails() {
             />
           )}
           {activeTab === 'overview' && (
-            <SubmissionOverviewTab submission={submission} />
+            <SubmissionOverviewTab
+              submission={submission}
+              onActivitySelect={handleActivitySelect}
+              activeActivityId={activeActivityId}
+              onIssueSelect={handleIssueSelect}
+              activeIssueId={activeIssueId}
+            />
           )}
           {activeTab === 'underwriting' && (
             <SubmissionUnderwritingTab submission={submission} onAssign={handleAssign} />

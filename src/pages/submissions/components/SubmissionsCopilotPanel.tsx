@@ -802,18 +802,21 @@ export function SubmissionsCopilotPanel({
     setSeedComposerMessage(null)
     setProducerEmail(null)
     setIssueNote(null)
+    if (!statusMode) {
+      setActiveIssueId(null)
+    }
+  }, [focusKey, entryMode, statusMode])
+
+  // Deep-link / Overview blocker selection — apply when parent targets an issue.
+  useEffect(() => {
     if (
       statusMode &&
       initialIssueId &&
       focusedSubmission?.issues.some((issue) => issue.id === initialIssueId)
     ) {
       setActiveIssueId(initialIssueId)
-      return
     }
-    setActiveIssueId(null)
-    // Apply deep-linked issue when focus/entry mode changes; do not re-pin if the user leaves the issue.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- initialIssueId read intentionally on focus/entry change only
-  }, [focusKey, entryMode, statusMode])
+  }, [focusedSubmission, initialIssueId, statusMode])
 
   const confidence = focusedSubmission?.confidence ?? 0
   const showConfidence = Boolean(focusedSubmission && !multiSelectMode)

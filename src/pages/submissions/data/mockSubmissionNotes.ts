@@ -136,6 +136,28 @@ export function buildNoteThreadsForSubmission(
   return [...extras, ...seeded]
 }
 
+/** Match a Recent activity note event to the Notes drawer thread for reply. */
+export function findNoteThreadForActivityNote(
+  submissionId: string,
+  notes: string[],
+  noteText: string,
+): SubmissionNoteThread | null {
+  const threads = buildNoteThreadsForSubmission(submissionId, notes)
+  if (threads.length === 0) return null
+  const needle = noteText.trim().toLowerCase()
+  if (!needle) return threads[0] ?? null
+  return (
+    threads.find(
+      (thread) =>
+        thread.preview.toLowerCase() === needle ||
+        needle.includes(thread.preview.toLowerCase()) ||
+        thread.preview.toLowerCase().includes(needle),
+    ) ??
+    threads[0] ??
+    null
+  )
+}
+
 export function buildAllNoteThreads(
   submissions: Array<{ id: string; notes: string[] }>,
 ): SubmissionNoteThread[] {

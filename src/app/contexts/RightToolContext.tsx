@@ -30,6 +30,8 @@ type RightToolState = {
   copilotSession: RightToolCopilotSession | null
   /** Specialty Copilot UIs (submissions, quote wizard) rendered instead of CopilotPanel. */
   copilotCustomContent: ReactNode | null
+  /** Specialty Notes UIs (submission note thread) rendered instead of NotesToolPanel. */
+  notesCustomContent: ReactNode | null
   /** Page-registered document email draft (document viewer); drives Email tool content. */
   emailAttachMode: RightToolEmailAttachMode
   /** Page-registered document note draft (document viewer); drives Notes tool content. */
@@ -47,6 +49,7 @@ type RightToolDispatch = {
   setRecordContext: (context: RightToolRecordContext) => void
   setCopilotSession: (session: RightToolCopilotSession | null) => void
   setCopilotCustomContent: (content: ReactNode | null) => void
+  setNotesCustomContent: (content: ReactNode | null) => void
   setEmailAttachMode: (mode: RightToolEmailAttachMode) => void
   setNoteAttachMode: (mode: RightToolNoteAttachMode) => void
   setFilterContent: (content: ReactNode | null) => void
@@ -64,6 +67,7 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
   const [recordContext, setRecordContext] = useState<RightToolRecordContext>(null)
   const [copilotSession, setCopilotSession] = useState<RightToolCopilotSession | null>(null)
   const [copilotCustomContent, setCopilotCustomContent] = useState<ReactNode | null>(null)
+  const [notesCustomContent, setNotesCustomContent] = useState<ReactNode | null>(null)
   const [emailAttachMode, setEmailAttachMode] = useState<RightToolEmailAttachMode>(null)
   const [noteAttachMode, setNoteAttachMode] = useState<RightToolNoteAttachMode>(null)
   const [filterContent, setFilterContent] = useState<ReactNode | null>(null)
@@ -138,6 +142,7 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       recordContext,
       copilotSession,
       copilotCustomContent,
+      notesCustomContent,
       emailAttachMode,
       noteAttachMode,
       filterContent,
@@ -148,6 +153,7 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       recordContext,
       copilotSession,
       copilotCustomContent,
+      notesCustomContent,
       emailAttachMode,
       noteAttachMode,
       filterContent,
@@ -165,6 +171,7 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       setRecordContext,
       setCopilotSession,
       setCopilotCustomContent,
+      setNotesCustomContent,
       setEmailAttachMode,
       setNoteAttachMode,
       setFilterContent,

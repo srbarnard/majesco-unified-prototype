@@ -17,8 +17,15 @@ import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { useRightPanelWidth } from '@/pages/policies/hooks/useCopilotWidth'
 
 function ToolPanelBody() {
-  const { activeTool, closeTool, copilotSession, copilotCustomContent, filterContent, partiesContent } =
-    useRightTool()
+  const {
+    activeTool,
+    closeTool,
+    copilotSession,
+    copilotCustomContent,
+    notesCustomContent,
+    filterContent,
+    partiesContent,
+  } = useRightTool()
   const { copilotView, agenticPrompt } = useGlobalSearch()
 
   return (
@@ -37,7 +44,7 @@ function ToolPanelBody() {
           />
         )
       ) : null}
-      {activeTool === 'notes' ? <NotesToolPanel /> : null}
+      {activeTool === 'notes' ? notesCustomContent ?? <NotesToolPanel /> : null}
       {activeTool === 'email' ? <EmailToolPanel /> : null}
       {activeTool === 'filter' ? filterContent : null}
       {activeTool === 'parties' ? partiesContent : null}

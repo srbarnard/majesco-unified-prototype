@@ -195,6 +195,7 @@ export function ActivityDetailsPanel({
               <TaskDetailAccordion title="Related entities" subtitle={activity.insuredName}>
                 <Stack spacing={0.75}>
                   <TaskEntityRow label="Insured" value={activity.insuredName} />
+                  <TaskEntityRow label="Submission #" value={activity.submissionNumber ?? null} />
                   <TaskEntityRow label="Policy #" value={activity.policyNumber ?? null} />
                   <TaskEntityRow label="Quote #" value={activity.quoteNumber ?? null} />
                   <TaskEntityRow label="Claim #" value={activity.claimNumber ?? null} />

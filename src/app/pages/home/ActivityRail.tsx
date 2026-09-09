@@ -16,15 +16,6 @@ const NODE_SIZE = 8
 const RAIL_THICKNESS = 2
 const DAY_GROUP_ORDER: ActivityDayGroup[] = ['Today', 'Yesterday']
 
-function isNeedsAction(item: RecentActivityItem): boolean {
-  const status = item.status.toLowerCase()
-  return (
-    status.includes('past due') ||
-    status.includes('needs action') ||
-    item.statusVariant === 'error'
-  )
-}
-
 function activitySubtitle(item: RecentActivityItem): string {
   if (item.insuredName && item.submissionNumber) {
     return `${item.insuredName} · ${item.submissionNumber}`
@@ -59,10 +50,9 @@ function ActivityRailRow({
   getSubtitle = activitySubtitle,
 }: ActivityRailRowProps) {
   const theme = useTheme()
-  const needsAction = isNeedsAction(item)
   const isDarkMode = theme.palette.mode === 'dark'
-  // Copilot focus selects the whole row (clearer than icon-only chrome).
-  const rowSelected = isCopilotActive || needsAction
+  // Only explicit Copilot/activity focus selects the row — never auto-select on load.
+  const rowSelected = isCopilotActive
   const railColor = alpha(theme.palette.primary.main, isDarkMode ? 0.55 : 0.35)
 
   return (

@@ -5,6 +5,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import NoteAddOutlinedIcon from '@mui/icons-material/NoteAddOutlined'
+import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import type { SvgIconComponent } from '@mui/icons-material'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
@@ -633,13 +634,15 @@ function RiskSignalsChart({
 
 function RiskSignalsCard({
   submission,
+  onIssueSelect,
+  activeIssueId,
 }: {
   submission: SubmissionDetailsRecord
+  onIssueSelect?: (issueId: string) => void
+  activeIssueId?: string | null
 }) {
   const isReady = submission.status === 'Ready'
-  const openBlockers = submission.issues.filter(
-    (issue) => issue.severity === 'blocking' && !issue.resolvedAt,
-  )
+  const openIssues = submission.issues.filter((issue) => !issue.resolvedAt)
   const [signal, setSignal] = useState<RiskSignalPill>('loss')
   const [range, setRange] = useState<RiskChartRange>('5Y')
   const { palette, paletteId, setPaletteId } = usePulsePreferences()
@@ -783,25 +786,110 @@ function RiskSignalsCard({
             </Box>
           </Box>
         </Box>
-      ) : openBlockers.length > 0 ? (
-        <Stack spacing={1.25}>
-          {openBlockers.map((issue) => (
-            <Stack key={issue.id} direction="row" spacing={1} alignItems="flex-start">
-              <BlockIcon sx={{ fontSize: 18, color: 'error.main', mt: 0.125 }} />
-              <Box sx={{ minWidth: 0 }}>
-                <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.8125rem' }}>
-                  {issue.title}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ ...bodySx, fontSize: '0.75rem' }}
+      ) : openIssues.length > 0 ? (
+        <Stack spacing="3px">
+          {openIssues.map((issue, index) => {
+            const selected = activeIssueId === issue.id
+            const isBlocking = issue.severity === 'blocking'
+            const isFirst = index === 0
+            const isLast = index === openIssues.length - 1
+            const radius = `${layoutTokens.cardRadius}px`
+            return (
+              <Box
+                key={issue.id}
+                component="button"
+                type="button"
+                aria-pressed={selected}
+                onClick={() => onIssueSelect?.(issue.id)}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.25,
+                  width: '100%',
+                  textAlign: 'left',
+                  border: 'none',
+                  cursor: onIssueSelect ? 'pointer' : 'default',
+                  py: 1.5,
+                  px: 2,
+                  borderTopLeftRadius: isFirst ? radius : 0,
+                  borderTopRightRadius: isFirst ? radius : 0,
+                  borderBottomLeftRadius: isLast ? radius : 0,
+                  borderBottomRightRadius: isLast ? radius : 0,
+                  bgcolor: selected ? 'primary.main' : (t) => surfaceMuted(t),
+                  color: selected ? 'primary.contrastText' : 'text.primary',
+                  transition: 'background-color 0.15s ease, color 0.15s ease',
+                  '&:hover': onIssueSelect
+                    ? {
+                        bgcolor: selected ? 'primary.dark' : (t) => surfaceSubtle(t),
+                      }
+                    : {},
+                  '&:focus-visible': {
+                    outline: 2,
+                    outlineColor: selected ? 'primary.contrastText' : 'primary.main',
+                    outlineOffset: 2,
+                  },
+                }}
+              >
+                <Box
+                  sx={(theme) => {
+                    const isLight = theme.palette.mode === 'light'
+                    const tone = isBlocking ? theme.figmaPalette.red : theme.figmaPalette.amber
+                    return {
+                      width: 32,
+                      height: 32,
+                      borderRadius: '10px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      bgcolor: selected
+                        ? 'rgba(255,255,255,0.18)'
+                        : isLight
+                          ? tone[100]
+                          : tone[900],
+                      color: selected
+                        ? 'inherit'
+                        : isLight
+                          ? tone[800]
+                          : tone[200],
+                    }
+                  }}
                 >
-                  {issue.summary}
-                </Typography>
+                  {isBlocking ? (
+                    <BlockIcon sx={{ fontSize: 18 }} />
+                  ) : (
+                    <WarningAmberOutlinedIcon sx={{ fontSize: 18 }} />
+                  )}
+                </Box>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      ...headingSx,
+                      fontSize: '0.875rem',
+                      lineHeight: 1.35,
+                      color: 'inherit',
+                    }}
+                  >
+                    {issue.title}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      ...bodySx,
+                      fontSize: '0.8125rem',
+                      lineHeight: 1.4,
+                      mt: 0.25,
+                      color: selected ? 'inherit' : 'text.secondary',
+                      opacity: selected ? 0.9 : 1,
+                    }}
+                  >
+                    {issue.summary}
+                  </Typography>
+                </Box>
               </Box>
-            </Stack>
-          ))}
+            )
+          })}
         </Stack>
       ) : (
         <Typography variant="body2" color="text.secondary" sx={{ ...bodySx, fontSize: '0.8125rem' }}>
@@ -915,7 +1003,15 @@ export function QuickActionsPanel({
   )
 }
 
-function SubmissionOverviewActivity({ submission }: { submission: SubmissionDetailsRecord }) {
+function SubmissionOverviewActivity({
+  submission,
+  onActivitySelect,
+  activeActivityId,
+}: {
+  submission: SubmissionDetailsRecord
+  onActivitySelect?: (activity: RecentActivityItem) => void
+  activeActivityId?: string | null
+}) {
   const items = getSubmissionActivity(submission)
   const viewAllTo = `/activity?account=${encodeURIComponent(submission.insuredName)}`
 
@@ -954,17 +1050,30 @@ function SubmissionOverviewActivity({ submission }: { submission: SubmissionDeta
           View all
         </Typography>
       </Stack>
-      <ActivityRail items={items} getSubtitle={submissionActivitySubtitle} />
+      <ActivityRail
+        items={items}
+        getSubtitle={submissionActivitySubtitle}
+        onActivityCopilot={onActivitySelect}
+        activeCopilotActivityId={activeActivityId}
+      />
     </Box>
   )
 }
 
 type SubmissionOverviewTabProps = {
   submission: SubmissionDetailsRecord
+  onActivitySelect?: (activity: RecentActivityItem) => void
+  activeActivityId?: string | null
+  onIssueSelect?: (issueId: string) => void
+  activeIssueId?: string | null
 }
 
 export function SubmissionOverviewTab({
   submission,
+  onActivitySelect,
+  activeActivityId,
+  onIssueSelect,
+  activeIssueId,
 }: SubmissionOverviewTabProps) {
   const structureOptions = useMemo(
     () =>
@@ -992,9 +1101,17 @@ export function SubmissionOverviewTab({
           <BlockedStatBoxes submission={submission} />
         )}
 
-        <RiskSignalsCard submission={submission} />
+        <RiskSignalsCard
+          submission={submission}
+          onIssueSelect={onIssueSelect}
+          activeIssueId={activeIssueId}
+        />
 
-        <SubmissionOverviewActivity submission={submission} />
+        <SubmissionOverviewActivity
+          submission={submission}
+          onActivitySelect={onActivitySelect}
+          activeActivityId={activeActivityId}
+        />
       </Stack>
     </Box>
   )

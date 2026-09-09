@@ -47,6 +47,25 @@ export function useRegisterRightToolCopilotCustom(
   }, deps)
 }
 
+/**
+ * Register a specialty Notes UI (e.g. submission note thread with reply)
+ * that replaces NotesToolPanel in the shell drawer while this route is mounted.
+ */
+export function useRegisterRightToolNotesCustom(
+  content: ReactNode | null,
+  deps: ReadonlyArray<unknown>,
+) {
+  const { setNotesCustomContent } = useRightToolDispatch()
+  const contentRef = useRef(content)
+  contentRef.current = content
+
+  useEffect(() => {
+    setNotesCustomContent(contentRef.current)
+    return () => setNotesCustomContent(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps)
+}
+
 /** Register account/policy label shown in Notes / Email drawer headers. */
 export function useRegisterRightToolRecordContext(
   context: RightToolRecordContext,
