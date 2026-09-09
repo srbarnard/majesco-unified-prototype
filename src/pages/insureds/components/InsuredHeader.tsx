@@ -70,15 +70,15 @@ export function InsuredHeader({
               <Stack direction="row" spacing={0.25} alignItems="center" sx={{ flexShrink: 0 }}>
                 <Tooltip title="Copy insured name">
                   <IconButton size="small" aria-label="Copy insured name" sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
-                    <ContentCopyOutlinedIcon sx={{ fontSize: 18 }} />
+                    <ContentCopyOutlinedIcon sx={{ fontSize: 20 }} />
                   </IconButton>
                 </Tooltip>
                 <Tooltip title={starred ? 'Remove from favorites' : 'Add to favorites'}>
                   <IconButton size="small" onClick={onToggleStar} aria-label="Toggle favorite">
                     {starred ? (
-                      <StarIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                      <StarIcon sx={{ fontSize: 20, color: 'warning.main' }} />
                     ) : (
-                      <StarBorderIcon sx={{ fontSize: 18 }} />
+                      <StarBorderIcon sx={{ fontSize: 20 }} />
                     )}
                   </IconButton>
                 </Tooltip>
@@ -95,32 +95,59 @@ export function InsuredHeader({
                 </Tooltip>
                 <Tooltip title="Edit insured">
                   <IconButton size="small" aria-label="Edit insured" sx={{ display: { xs: 'none', md: 'inline-flex' } }}>
-                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                    <EditOutlinedIcon sx={{ fontSize: 20 }} />
                   </IconButton>
                 </Tooltip>
                 <Tooltip title="More actions">
                   <IconButton size="small" aria-label="More actions">
-                    <MoreHorizIcon sx={{ fontSize: 18 }} />
+                    <MoreHorizIcon sx={{ fontSize: 20 }} />
                   </IconButton>
                 </Tooltip>
               </Stack>
             </Stack>
 
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.125, flexWrap: 'wrap', gap: 0.75 }}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              spacing={1}
+              sx={{ mt: 0.125, gap: 1 }}
+            >
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0, flexWrap: 'wrap', gap: 0.75 }}>
+                <Typography
+                  variant="subtitle2"
+                  component="p"
+                  sx={{
+                    fontFamily: figmaFontFamilyStack.heading,
+                    fontWeight: 500,
+                    lineHeight: 1.3,
+                    fontSize: { xs: '0.8125rem', md: '0.875rem' },
+                    color: 'text.secondary',
+                  }}
+                >
+                  Insured · {insured.policyCount} {insured.policyCount === 1 ? 'policy' : 'policies'}
+                </Typography>
+                <StatusChip label={insured.status} status={insuredStatusVariant(insured.status)} />
+              </Stack>
               <Typography
                 variant="subtitle2"
                 component="p"
                 sx={{
-                  fontFamily: figmaFontFamilyStack.heading,
-                  fontWeight: 500,
+                  fontFamily: figmaFontFamilyStack.body,
+                  fontWeight: 400,
                   lineHeight: 1.3,
                   fontSize: { xs: '0.8125rem', md: '0.875rem' },
                   color: 'text.secondary',
+                  flexShrink: 0,
+                  textAlign: 'right',
+                  maxWidth: { xs: '46%', sm: '55%' },
                 }}
               >
-                Insured · {insured.policyCount} {insured.policyCount === 1 ? 'policy' : 'policies'}
+                {insured.naics}
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                  {' · '}Customer since {insured.customerSince}
+                </Box>
               </Typography>
-              <StatusChip label={insured.status} status={insuredStatusVariant(insured.status)} />
             </Stack>
           </Box>
         </Stack>

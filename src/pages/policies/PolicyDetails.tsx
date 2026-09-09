@@ -1,14 +1,17 @@
 import Box from '@mui/material/Box'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
+import type { RecentActivityItem } from '@/app/data/homeMock'
 import { useFavorites } from '@/app/contexts/FavoritesContext'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import {
   useRegisterRightToolCopilot,
+  useRegisterRightToolCopilotCustom,
   useRegisterRightToolFilter,
   useRegisterRightToolParties,
   useRegisterRightToolRecordContext,
 } from '@/app/hooks/useRightToolRegistration'
+import { ActivityDetailsPanel } from '@/app/pages/home/ActivityDetailsPanel'
 import { PolicyAnalyticsDashboard } from '@/pages/policies/components/PolicyAnalyticsDashboard'
 import { type DocumentAttachMode, type DocumentAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
 import { DocumentsFilterPanel } from '@/pages/policies/components/DocumentsFilterPanel'
@@ -24,13 +27,7 @@ import {
   policyDocumentsCopilotSummary,
 } from '@/pages/policies/data/documentsCopilotContent'
 import { policyDocumentsMock, type PolicyDocument } from '@/pages/policies/data/mockDocuments'
-import {
-  overviewQuickActionsMock,
-  overviewStatsMock,
-  overviewTransactionsMock,
-  overviewTransactionsOverTimeMock,
-} from '@/pages/policies/data/mockOverview'
-import { policyDetailsMock } from '@/pages/policies/data/mockPolicyDetails'
+import { getPolicyOverviewProfile } from '@/pages/policies/data/policyOverviewProfiles'
 import { emptyDocumentsFilters, type DocumentsFilters } from '@/pages/policies/filters/documentsFilterTypes'
 
 function parsePolicyTab(value: string | null): PolicyTab | null {
@@ -41,7 +38,7 @@ function parsePolicyTab(value: string | null): PolicyTab | null {
 }
 
 export function PolicyDetails() {
-  const { policyId = policyDetailsMock.policyNumber } = useParams<{ policyId: string }>()
+  const { policyId = '01-CA-000100005-0' } = useParams<{ policyId: string }>()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const isDesktop = useIsDesktopLayout()
@@ -49,20 +46,52 @@ export function PolicyDetails() {
   const { isFavorite, isHighRisk, toggleFavorite, toggleHighRisk } = useFavorites()
   const [activeTab, setActiveTab] = useState<PolicyTab>(() => parsePolicyTab(searchParams.get('tab')) ?? 'overview')
   const resolvedPolicyId = decodeURIComponent(policyId)
+  const overview = useMemo(() => getPolicyOverviewProfile(resolvedPolicyId), [resolvedPolicyId])
   const starred = isFavorite('policy', resolvedPolicyId)
   const emergency = isHighRisk('policy', resolvedPolicyId)
   const [appliedDocumentsFilters, setAppliedDocumentsFilters] = useState<DocumentsFilters>(emptyDocumentsFilters)
   const [copilotDocumentFocus, setCopilotDocumentFocus] = useState<PolicyDocument | null>(null)
   const [attachMode, setAttachMode] = useState<DocumentAttachMode | null>(null)
+  const [focusedActivity, setFocusedActivity] = useState<RecentActivityItem | null>(null)
   const didInitCopilot = useRef(false)
   const wasDesktop = useRef(isDesktop)
 
+  useEffect(() => {
+    setFocusedActivity(null)
+    setCopilotDocumentFocus(null)
+    setAttachMode(null)
+  }, [resolvedPolicyId])
+
+  const isDocumentsTab = activeTab === 'documents'
+  const activeTransactionId =
+    activeTool === 'copilot' && focusedActivity && !isDocumentsTab ? focusedActivity.id : null
+
+  const handleClearActivityFocus = useCallback(() => {
+    setFocusedActivity(null)
+    openTool('copilot')
+  }, [openTool])
+
+  const handleTransactionSelect = useCallback(
+    (activity: RecentActivityItem) => {
+      if (focusedActivity?.id === activity.id) {
+        setFocusedActivity(null)
+        openTool('copilot')
+        return
+      }
+      setCopilotDocumentFocus(null)
+      setAttachMode(null)
+      setFocusedActivity(activity)
+      openTool('copilot')
+    },
+    [focusedActivity?.id, openTool],
+  )
+
   useRegisterRightToolRecordContext(
     {
-      title: policyDetailsMock.companyName,
-      subtitle: policyDetailsMock.policyNumber,
+      title: overview.companyName,
+      subtitle: overview.policyNumber,
     },
-    [],
+    [overview.companyName, overview.policyNumber],
   )
 
   useRegisterRightToolCopilot(
@@ -72,11 +101,25 @@ export function PolicyDetails() {
       documentsWorkspaceSummary: policyDocumentsCopilotSummary,
       documentsWorkspaceInsights: policyDocumentsCopilotInsights,
       attachMode,
-      attachContextLabel: policyDetailsMock.policyNumber,
+      attachContextLabel: overview.policyNumber,
       onCloseAttach: () => setAttachMode(null),
       onAttachSave: () => setAttachMode(null),
     },
-    [activeTab, attachMode?.target, copilotDocumentFocus?.id],
+    [activeTab, attachMode?.target, copilotDocumentFocus?.id, overview.policyNumber],
+  )
+
+  useRegisterRightToolCopilotCustom(
+    !isDocumentsTab && focusedActivity ? (
+      <ActivityDetailsPanel
+        activity={focusedActivity}
+        onBack={handleClearActivityFocus}
+        onClose={() => {
+          setFocusedActivity(null)
+          closeTool()
+        }}
+      />
+    ) : null,
+    [closeTool, focusedActivity, handleClearActivityFocus, isDocumentsTab],
   )
 
   const handleApplyDocumentsFilters = useCallback((filters: DocumentsFilters) => {
@@ -111,6 +154,7 @@ export function PolicyDetails() {
       closeTool()
       setAttachMode(null)
       setCopilotDocumentFocus(null)
+      setFocusedActivity(null)
     }
     wasDesktop.current = isDesktop
   }, [activeTool, closeTool, isDesktop])
@@ -136,6 +180,7 @@ export function PolicyDetails() {
     setActiveTab(tabFromUrl)
     setCopilotDocumentFocus(null)
     setAttachMode(null)
+    setFocusedActivity(null)
     // Use ref so openTool/activeTool identity changes cannot re-enter this effect
     // (that loop froze left-nav SPA navigation from Policy Details / Documents).
     syncTabPanelsRef.current(tabFromUrl)
@@ -146,6 +191,7 @@ export function PolicyDetails() {
       setActiveTab(tab)
       setCopilotDocumentFocus(null)
       setAttachMode(null)
+      setFocusedActivity(null)
       setSearchParams(
         (current) => {
           const next = new URLSearchParams(current)
@@ -161,27 +207,6 @@ export function PolicyDetails() {
       syncTabPanels(tab)
     },
     [setSearchParams, syncTabPanels],
-  )
-
-  const handleOverviewQuickAction = useCallback(
-    (actionId: string) => {
-      if (actionId === 'documents') {
-        handleTabChange('documents')
-        return
-      }
-      if (actionId === 'note') {
-        openTool('notes')
-        return
-      }
-      if (actionId === 'email') {
-        openTool('email')
-        return
-      }
-      if (actionId === 'analytics') {
-        handleTabChange('analytics')
-      }
-    },
-    [handleTabChange, openTool],
   )
 
   const handleDocumentOpen = useCallback(
@@ -200,12 +225,12 @@ export function PolicyDetails() {
     (target: DocumentAttachTarget, documents: PolicyDocument[]) => {
       setAttachMode({ target, documents })
       setCopilotDocumentFocus(documents[0] ?? null)
+      setFocusedActivity(null)
       openTool('copilot')
     },
     [openTool],
   )
 
-  const isDocumentsTab = activeTab === 'documents'
   const activeCopilotDocumentId =
     activeTool === 'copilot' && copilotDocumentFocus ? copilotDocumentFocus.id : null
 
@@ -234,7 +259,7 @@ export function PolicyDetails() {
       >
         <Box sx={{ flexShrink: 0 }}>
           <PolicyHeader
-            companyName={policyDetailsMock.companyName}
+            companyName={overview.companyName}
             policyNumber={resolvedPolicyId}
             activeTab={activeTab}
             onTabChange={handleTabChange}
@@ -282,11 +307,16 @@ export function PolicyDetails() {
           )}
           {activeTab === 'overview' && (
             <OverviewTab
-              stats={overviewStatsMock}
-              transactionsOverTime={overviewTransactionsOverTimeMock}
-              transactions={overviewTransactionsMock}
-              quickActions={overviewQuickActionsMock}
-              onQuickAction={handleOverviewQuickAction}
+              key={overview.policyNumber}
+              companyName={overview.companyName}
+              policyNumber={overview.policyNumber}
+              stats={overview.stats}
+              transactionsOverTime={overview.transactionsOverTime}
+              transactions={overview.transactions}
+              transactionInsights={overview.transactionInsights}
+              exposureByRange={overview.exposureByRange}
+              onTransactionSelect={handleTransactionSelect}
+              activeTransactionId={activeTransactionId}
             />
           )}
           {activeTab === 'analytics' && <PolicyAnalyticsDashboard policyId={policyId} />}

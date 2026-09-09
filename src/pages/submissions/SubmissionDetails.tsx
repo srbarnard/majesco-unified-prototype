@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
+import { useFavorites } from '@/app/contexts/FavoritesContext'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import type { RecentActivityItem } from '@/app/data/homeMock'
 import {
@@ -77,10 +78,12 @@ export function SubmissionDetails() {
   )
   const isDesktop = useIsDesktopLayout()
   const { openTool, closeTool, activeTool } = useRightTool()
+  const { isFavorite, isHighRisk, toggleFavorite, toggleHighRisk } = useFavorites()
   const [activeTab, setActiveTab] = useState<SubmissionDetailTab>(
     () => parseSubmissionTab(searchParams.get('tab')) ?? 'overview',
   )
-  const [starred, setStarred] = useState(false)
+  const starred = isFavorite('submission', submission.id)
+  const emergency = isHighRisk('submission', submission.id)
   const [copilotEntryMode, setCopilotEntryMode] = useState<SubmissionCopilotEntryMode>('insight')
   const [appliedDocumentsFilters, setAppliedDocumentsFilters] = useState<DocumentsFilters>(emptyDocumentsFilters)
   const [copilotDocumentFocus, setCopilotDocumentFocus] = useState<PolicyDocument | null>(null)
@@ -316,7 +319,9 @@ export function SubmissionDetails() {
     if (isDesktop && shouldDefaultOpenCopilot(activeTab)) {
       openTool('copilot')
     }
-  }, [activeTab, isDesktop, openTool])
+    // Omit openTool — only one-shot open on mount / first desktop layout.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isDesktop])
 
   useEffect(() => {
     if (wasDesktop.current && !isDesktop && activeTool === 'copilot') {
@@ -447,7 +452,21 @@ export function SubmissionDetails() {
             onTabChange={handleTabChange}
             onStatusClick={handleStatusClick}
             starred={starred}
-            onToggleStar={() => setStarred((prev) => !prev)}
+            onToggleStar={() =>
+              toggleFavorite({
+                kind: 'submission',
+                id: submission.id,
+                label: submission.submissionNumber,
+              })
+            }
+            emergency={emergency}
+            onToggleEmergency={() =>
+              toggleHighRisk({
+                kind: 'submission',
+                id: submission.id,
+                label: submission.submissionNumber,
+              })
+            }
           />
         </Box>
 

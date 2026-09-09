@@ -1,13 +1,6 @@
 import type { PolicyParty } from '@/pages/policies/data/mockPolicyDetails'
 import type { OverviewStat } from '@/pages/policies/data/mockOverview'
 
-export type InsuredActivityItem = {
-  id: string
-  label: string
-  detail: string
-  timestamp: string
-}
-
 export type InsuredDetailsRecord = {
   id: string
   name: string
@@ -19,6 +12,7 @@ export type InsuredDetailsRecord = {
   naics: string
   riskProfile: string
   primaryState: string
+  customerSince: string
   address: string
   phone: string
   email: string
@@ -40,6 +34,7 @@ export const insuredDetailsMock: InsuredDetailsRecord = {
   naics: '236220 — Commercial Building Construction',
   riskProfile: 'Medium risk · Fleet + GL exposure',
   primaryState: 'California',
+  customerSince: 'Mar 2019',
   address: '1240 Harbor View Blvd, San Diego, CA 92101',
   phone: '(619) 555-0142',
   email: 'ops@atlanticridge.com',
@@ -83,31 +78,4 @@ export const insuredOverviewStatsMock: OverviewStat[] = [
   { id: 'premium', label: 'Total Premium', value: '$2.84M', helperText: 'In-force TWP', tone: 'info' },
   { id: 'claims', label: 'Open Claims', value: 1, helperText: 'Auto liability', tone: 'warning' },
   { id: 'quotes', label: 'Open Quotes', value: 2, helperText: 'Renewal pipeline', tone: 'info' },
-]
-
-export const insuredRecentActivityMock: InsuredActivityItem[] = [
-  {
-    id: 'a1',
-    label: 'Endorsement issued',
-    detail: 'Vehicle added to Commercial Auto policy 01-CA-000100005-0',
-    timestamp: 'Apr 15, 2026',
-  },
-  {
-    id: 'a2',
-    label: 'Claim opened',
-    detail: 'Auto liability — reserve review requested by claims',
-    timestamp: 'Apr 8, 2026',
-  },
-  {
-    id: 'a3',
-    label: 'Renewal quote started',
-    detail: 'Commercial Auto renewal effective Jun 1, 2026',
-    timestamp: 'May 13, 2026',
-  },
-  {
-    id: 'a4',
-    label: 'Document uploaded',
-    detail: 'Updated fleet schedule received from producer',
-    timestamp: 'May 22, 2026',
-  },
 ]

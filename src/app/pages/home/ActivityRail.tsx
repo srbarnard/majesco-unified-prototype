@@ -14,7 +14,7 @@ import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 const RAIL_WIDTH = 24
 const NODE_SIZE = 8
 const RAIL_THICKNESS = 2
-const DAY_GROUP_ORDER: ActivityDayGroup[] = ['Today', 'Yesterday']
+const DAY_GROUP_ORDER: ActivityDayGroup[] = ['Today', 'Yesterday', 'Earlier']
 
 function activitySubtitle(item: RecentActivityItem): string {
   if (item.insuredName && item.submissionNumber) {

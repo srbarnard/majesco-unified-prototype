@@ -54,6 +54,11 @@ const CONTACT_LAST = [
   'Nguyen',
 ]
 
+/**
+ * Curated heroes — amounts and activity vary by insured type and story.
+ * Commercial: higher TWP, more mid-term motion (quotes / renewals / claims).
+ * Non-commercial: smaller books, lighter loss, fewer pipeline items.
+ */
 const SEED_INSUREDS: InsuredSeed[] = [
   {
     name: 'Atlantic Ridge Construction, LLC',
@@ -63,7 +68,7 @@ const SEED_INSUREDS: InsuredSeed[] = [
     addressLine1: '1240 Harbor View Blvd, Ste 400',
     cityStateZip: 'San Diego, CA 92101',
     zip: '92101',
-    premiumInForce: 1_180_450,
+    premiumInForce: 2_840_000,
     totalIncurredLoss: 1_245_320,
     insuredType: 'Commercial',
     upcomingRenewals: 1,
@@ -74,16 +79,31 @@ const SEED_INSUREDS: InsuredSeed[] = [
     name: 'Blue Harbor Logistics Inc.',
     contactName: 'Michael Rodriguez',
     contactEmail: 'michael.rodriguez@blueharbor.com',
-    contactPhone: '(512) 555-0184',
-    addressLine1: '300 Demo Way, Floor 3',
-    cityStateZip: 'Austin, TX 78701',
-    zip: '78701',
-    premiumInForce: 842_300,
-    totalIncurredLoss: 875_640,
+    contactPhone: '(206) 555-0184',
+    addressLine1: '1400 Terminal Way',
+    cityStateZip: 'Seattle, WA 98134',
+    zip: '98134',
+    premiumInForce: 1_124_800,
+    totalIncurredLoss: 186_400,
     insuredType: 'Commercial',
     upcomingRenewals: 2,
     openQuotes: 1,
-    openClaims: 2,
+    openClaims: 0,
+  },
+  {
+    name: 'Midwest Fabrication Inc.',
+    contactName: 'James Anderson',
+    contactEmail: 'james.anderson@midwestfab.com',
+    contactPhone: '(312) 555-0191',
+    addressLine1: '2200 Fabrication Rd',
+    cityStateZip: 'Rockford, IL 61109',
+    zip: '61109',
+    premiumInForce: 875_640,
+    totalIncurredLoss: 412_800,
+    insuredType: 'Commercial',
+    upcomingRenewals: 1,
+    openQuotes: 0,
+    openClaims: 1,
   },
   {
     name: 'Maple Grove Property Management',
@@ -96,8 +116,8 @@ const SEED_INSUREDS: InsuredSeed[] = [
     premiumInForce: 2_310_980,
     totalIncurredLoss: 456_210,
     insuredType: 'Commercial',
-    upcomingRenewals: null,
-    openQuotes: null,
+    upcomingRenewals: 0,
+    openQuotes: 0,
     openClaims: 1,
   },
   {
@@ -109,11 +129,11 @@ const SEED_INSUREDS: InsuredSeed[] = [
     cityStateZip: 'Philadelphia, PA 19103',
     zip: '19103',
     premiumInForce: 1_560_000,
-    totalIncurredLoss: 312_400,
+    totalIncurredLoss: 98_200,
     insuredType: 'Commercial',
     upcomingRenewals: 1,
     openQuotes: 4,
-    openClaims: null,
+    openClaims: 0,
   },
   {
     name: 'Horizon Fleet Services, LLC',
@@ -123,10 +143,10 @@ const SEED_INSUREDS: InsuredSeed[] = [
     addressLine1: '3900 Desert Peak Rd',
     cityStateZip: 'Phoenix, AZ 85034',
     zip: '85034',
-    premiumInForce: 978_600,
-    totalIncurredLoss: 421_900,
+    premiumInForce: 1_980_600,
+    totalIncurredLoss: 742_500,
     insuredType: 'Commercial',
-    upcomingRenewals: null,
+    upcomingRenewals: 0,
     openQuotes: 1,
     openClaims: 1,
   },
@@ -138,12 +158,12 @@ const SEED_INSUREDS: InsuredSeed[] = [
     addressLine1: '4500 Industrial Pkwy',
     cityStateZip: 'Cincinnati, OH 45241',
     zip: '45241',
-    premiumInForce: 1_245_000,
-    totalIncurredLoss: 890_250,
+    premiumInForce: 642_000,
+    totalIncurredLoss: 28_400,
     insuredType: 'Commercial',
     upcomingRenewals: 3,
-    openQuotes: 1,
-    openClaims: null,
+    openQuotes: 0,
+    openClaims: 0,
   },
   {
     name: 'Northshore Medical Group, P.C.',
@@ -153,12 +173,12 @@ const SEED_INSUREDS: InsuredSeed[] = [
     addressLine1: '2100 Medical Center Dr',
     cityStateZip: 'Evanston, IL 60201',
     zip: '60201',
-    premiumInForce: 734_800,
-    totalIncurredLoss: 145_200,
+    premiumInForce: 318_400,
+    totalIncurredLoss: 64_800,
     insuredType: 'Non-commercial',
-    upcomingRenewals: null,
-    openQuotes: null,
-    openClaims: 2,
+    upcomingRenewals: 1,
+    openQuotes: 1,
+    openClaims: 0,
   },
   {
     name: 'Summit Outdoor Equipment, Inc.',
@@ -173,7 +193,7 @@ const SEED_INSUREDS: InsuredSeed[] = [
     insuredType: 'Commercial',
     upcomingRenewals: 1,
     openQuotes: 2,
-    openClaims: null,
+    openClaims: 0,
   },
   {
     name: 'Red Oak Hospitality Group',
@@ -183,12 +203,12 @@ const SEED_INSUREDS: InsuredSeed[] = [
     addressLine1: '500 Red Oak Blvd',
     cityStateZip: 'Nashville, TN 37203',
     zip: '37203',
-    premiumInForce: 890_250,
-    totalIncurredLoss: 276_500,
+    premiumInForce: 1_420_250,
+    totalIncurredLoss: 876_500,
     insuredType: 'Commercial',
     upcomingRenewals: 2,
-    openQuotes: null,
-    openClaims: 1,
+    openQuotes: 0,
+    openClaims: 2,
   },
   {
     name: 'Evergreen Food Distributors',
@@ -201,9 +221,9 @@ const SEED_INSUREDS: InsuredSeed[] = [
     premiumInForce: 421_900,
     totalIncurredLoss: 54_300,
     insuredType: 'Commercial',
-    upcomingRenewals: null,
-    openQuotes: null,
-    openClaims: null,
+    upcomingRenewals: 0,
+    openQuotes: 0,
+    openClaims: 0,
   },
   {
     name: 'Cascade Mechanical Contractors Inc.',
@@ -228,12 +248,12 @@ const SEED_INSUREDS: InsuredSeed[] = [
     addressLine1: '900 Ocean Dr, Ste 12',
     cityStateZip: 'Miami Beach, FL 33139',
     zip: '33139',
-    premiumInForce: 286_500,
+    premiumInForce: 164_800,
     totalIncurredLoss: 12_400,
     insuredType: 'Non-commercial',
-    upcomingRenewals: null,
+    upcomingRenewals: 0,
     openQuotes: 1,
-    openClaims: null,
+    openClaims: 0,
   },
   {
     name: 'Prairie Wind Energy Services',
@@ -248,7 +268,7 @@ const SEED_INSUREDS: InsuredSeed[] = [
     insuredType: 'Commercial',
     upcomingRenewals: 1,
     openQuotes: 2,
-    openClaims: null,
+    openClaims: 0,
   },
   {
     name: 'Lakeside Restaurant Group LLC',
@@ -262,7 +282,7 @@ const SEED_INSUREDS: InsuredSeed[] = [
     totalIncurredLoss: 198_600,
     insuredType: 'Commercial',
     upcomingRenewals: 2,
-    openQuotes: null,
+    openQuotes: 0,
     openClaims: 1,
   },
   {
@@ -280,6 +300,51 @@ const SEED_INSUREDS: InsuredSeed[] = [
     openQuotes: 3,
     openClaims: 2,
   },
+  {
+    name: 'Meadowbrook Family Practice P.C.',
+    contactName: 'Helen Park',
+    contactEmail: 'helen.park@meadowbrookfp.com',
+    contactPhone: '(919) 555-0177',
+    addressLine1: '410 Clinic Way',
+    cityStateZip: 'Durham, NC 27701',
+    zip: '27701',
+    premiumInForce: 142_600,
+    totalIncurredLoss: 8_200,
+    insuredType: 'Non-commercial',
+    upcomingRenewals: 1,
+    openQuotes: 0,
+    openClaims: 0,
+  },
+  {
+    name: 'Harbor Light Nonprofit Alliance',
+    contactName: 'Sam Rivera',
+    contactEmail: 'sam.rivera@harborlight.org',
+    contactPhone: '(617) 555-0155',
+    addressLine1: '88 Pier Ave',
+    cityStateZip: 'Boston, MA 02210',
+    zip: '02210',
+    premiumInForce: 96_400,
+    totalIncurredLoss: 22_100,
+    insuredType: 'Non-commercial',
+    upcomingRenewals: 0,
+    openQuotes: 0,
+    openClaims: 1,
+  },
+  {
+    name: 'Clearwater Mutual Insurance Club',
+    contactName: 'Diane Foster',
+    contactEmail: 'diane.foster@clearwatermutual.org',
+    contactPhone: '(813) 555-0148',
+    addressLine1: '250 Mutual Ln',
+    cityStateZip: 'Tampa, FL 33602',
+    zip: '33602',
+    premiumInForce: 208_900,
+    totalIncurredLoss: 41_600,
+    insuredType: 'Non-commercial',
+    upcomingRenewals: 2,
+    openQuotes: 1,
+    openClaims: 0,
+  },
 ]
 
 const ADDITIONAL_NAMES = [
@@ -287,7 +352,6 @@ const ADDITIONAL_NAMES = [
   'Velocity Courier Services LLC',
   'Tri-State Warehousing Co.',
   'Cornerstone Property Developers',
-  'Midwest Fabrication Inc.',
   'Sunbelt Roofing & Exteriors LLC',
   'Greenfield Organic Markets Inc.',
   'Apex Technology Consulting Group',
@@ -333,12 +397,9 @@ const ADDITIONAL_NAMES = [
   'Urban Canopy Landscaping Co.',
   'Frontier Pipeline Services',
   'Lumen Office Interiors LLC',
-  'Clearwater Mutual Insurance Club',
   'Highland Youth Athletics Assoc.',
   'Sunrise Community Housing Trust',
   'Riverside Parish Properties',
-  'Meadowbrook Family Practice P.C.',
-  'Harbor Light Nonprofit Alliance',
   'West End Cooperative Markets',
   'Prairie School District Trust',
   'Lakeshore Civic Theater Group',
@@ -360,23 +421,69 @@ const LOCATIONS: Array<{ addressLine1: string; cityStateZip: string; zip: string
   { addressLine1: '500 Red Oak Blvd', cityStateZip: 'Nashville, TN 37203', zip: '37203' },
 ]
 
-function optionalCount(index: number, every: number, max: number): number | null {
-  if (index % every !== 0) return null
-  const value = (index % max) + 1
-  return value
+function isNonCommercialName(name: string) {
+  return /clinic|dental|parish|school|nonprofit|volunteer|civic|housing trust|mutual|athletics|medical specialists|senior care|family practice/i.test(
+    name,
+  )
+}
+
+/** Commercial books: larger TWP, more pipeline / claim motion. */
+function commercialAmounts(index: number) {
+  const premiumInForce = 480_000 + ((index * 97_400) % 2_650_000)
+  const lossRatioBand = index % 5
+  const totalIncurredLoss =
+    lossRatioBand === 0
+      ? Math.round(premiumInForce * 0.08)
+      : lossRatioBand === 1
+        ? Math.round(premiumInForce * 0.22)
+        : lossRatioBand === 2
+          ? Math.round(premiumInForce * 0.41)
+          : lossRatioBand === 3
+            ? Math.round(premiumInForce * 0.58)
+            : Math.round(premiumInForce * 0.74)
+
+  return {
+    premiumInForce,
+    totalIncurredLoss,
+    upcomingRenewals: index % 3 === 0 ? (index % 3) + 1 : index % 4 === 0 ? 1 : null,
+    openQuotes: index % 2 === 0 ? (index % 4) + 1 : index % 5 === 0 ? 1 : null,
+    openClaims: index % 3 === 0 ? (index % 3) + 1 : index % 7 === 0 ? 1 : null,
+  }
+}
+
+/** Non-commercial books: smaller TWP, quieter pipeline, lighter loss. */
+function nonCommercialAmounts(index: number) {
+  const premiumInForce = 72_000 + ((index * 18_600) % 280_000)
+  const lossRatioBand = index % 4
+  const totalIncurredLoss =
+    lossRatioBand === 0
+      ? Math.round(premiumInForce * 0.04)
+      : lossRatioBand === 1
+        ? Math.round(premiumInForce * 0.11)
+        : lossRatioBand === 2
+          ? Math.round(premiumInForce * 0.19)
+          : Math.round(premiumInForce * 0.28)
+
+  return {
+    premiumInForce,
+    totalIncurredLoss,
+    upcomingRenewals: index % 4 === 0 ? 1 : index % 6 === 0 ? 2 : null,
+    openQuotes: index % 5 === 0 ? 1 : null,
+    openClaims: index % 6 === 0 ? 1 : null,
+  }
 }
 
 function buildGeneratedInsured(name: string, index: number): InsuredSeed {
   const location = LOCATIONS[index % LOCATIONS.length]
   const first = CONTACT_FIRST[index % CONTACT_FIRST.length]
   const last = CONTACT_LAST[(index * 3) % CONTACT_LAST.length]
-  const domain = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '')
-    .slice(0, 18) || 'insured'
-  const nonCommercial = /clinic|dental|parish|school|nonprofit|volunteer|civic|housing trust|mutual|athletics/i.test(
-    name,
-  )
+  const domain =
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '')
+      .slice(0, 18) || 'insured'
+  const nonCommercial = isNonCommercialName(name)
+  const amounts = nonCommercial ? nonCommercialAmounts(index) : commercialAmounts(index)
 
   return {
     name,
@@ -386,20 +493,32 @@ function buildGeneratedInsured(name: string, index: number): InsuredSeed {
     addressLine1: location.addressLine1,
     cityStateZip: location.cityStateZip,
     zip: location.zip,
-    premiumInForce: 145_200 + ((index * 37_850) % 2_400_000),
-    totalIncurredLoss: (index * 41_250) % 1_500_000,
     insuredType: nonCommercial ? 'Non-commercial' : 'Commercial',
-    upcomingRenewals: optionalCount(index, 3, 3),
-    openQuotes: optionalCount(index, 4, 4),
-    openClaims: optionalCount(index, 5, 3),
+    premiumInForce: amounts.premiumInForce,
+    totalIncurredLoss: amounts.totalIncurredLoss,
+    upcomingRenewals: amounts.upcomingRenewals,
+    openQuotes: amounts.openQuotes,
+    openClaims: amounts.openClaims,
   }
 }
 
+function normalizeCount(value: number | null | undefined): number | null {
+  if (value == null || value <= 0) return null
+  return value
+}
+
 function buildInsureds(): InsuredListRecord[] {
-  const generated = ADDITIONAL_NAMES.map((name, index) => buildGeneratedInsured(name, index + SEED_INSUREDS.length))
+  const seedNames = new Set(SEED_INSUREDS.map((row) => row.name))
+  const generated = ADDITIONAL_NAMES.filter((name) => !seedNames.has(name)).map((name, index) =>
+    buildGeneratedInsured(name, index + SEED_INSUREDS.length),
+  )
+
   return [...SEED_INSUREDS, ...generated].slice(0, 75).map((row, index) => ({
     id: `ins-${String(index + 1).padStart(3, '0')}`,
     ...row,
+    upcomingRenewals: normalizeCount(row.upcomingRenewals),
+    openQuotes: normalizeCount(row.openQuotes),
+    openClaims: normalizeCount(row.openClaims),
   }))
 }
 
@@ -407,19 +526,24 @@ export const insuredsMock: InsuredListRecord[] = buildInsureds()
 
 export const INSUREDS_TOTAL_ROWS = insuredsMock.length
 
-export const insuredsWorkspaceSummary =
-  'You are viewing **75 insured accounts** across commercial and non-commercial books. **18 have upcoming renewals**, **14 have open quotes**, and **11 have open claims**.'
+const commercialCount = insuredsMock.filter((row) => row.insuredType === 'Commercial').length
+const nonCommercialCount = insuredsMock.filter((row) => row.insuredType === 'Non-commercial').length
+const renewalsCount = insuredsMock.filter((row) => (row.upcomingRenewals ?? 0) > 0).length
+const quotesCount = insuredsMock.filter((row) => (row.openQuotes ?? 0) > 0).length
+const claimsCount = insuredsMock.filter((row) => (row.openClaims ?? 0) > 0).length
+
+export const insuredsWorkspaceSummary = `You are viewing **${INSUREDS_TOTAL_ROWS} insured accounts** — **${commercialCount} commercial** and **${nonCommercialCount} non-commercial**. **${renewalsCount} have upcoming renewals**, **${quotesCount} have open quotes**, and **${claimsCount} have open claims**.`
 
 export const insuredsWorkspaceInsights = [
-  'Atlantic Ridge Construction leads incurred loss at $1.25M with a renewal in the next 90 days',
-  '14 insureds have open quotes that still need producer follow-up',
-  'Non-commercial accounts are lighter on premium but carry more open claims per account',
+  'Atlantic Ridge Construction leads commercial TWP at $2.84M with renewal activity in the next 90 days',
+  `Commercial accounts carry most pipeline volume — ${quotesCount} insureds have open quotes needing follow-up`,
+  'Non-commercial books run smaller premium with lighter incurred loss; watch Harbor Light for open claim activity',
 ]
 
 export const insuredsNextSteps = [
   'Review Atlantic Ridge Construction ahead of the upcoming renewal',
-  'Follow up on insureds with open quotes and no assigned producer action',
-  'Check open claims on Northshore Medical Group and Granite State Builders',
+  'Follow up on commercial insureds with open quotes and no recent producer action',
+  'Check open claims on Red Oak Hospitality and Granite State Builders',
 ]
 
 export const insuredsListQuickActions = ['Recent activity', 'Upcoming renewals', 'Insureds with open quotes']

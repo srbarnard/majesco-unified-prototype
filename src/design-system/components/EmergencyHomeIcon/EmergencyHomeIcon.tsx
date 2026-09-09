@@ -18,7 +18,7 @@ export type EmergencyHomeIconProps = SvgIconProps & {
 export function EmergencyHomeIcon({ active = false, sx, ...props }: EmergencyHomeIconProps) {
   if (active) {
     return (
-      <SvgIcon viewBox="0 -960 960 960" sx={[{ color: 'warning.main' }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]} {...props}>
+      <SvgIcon viewBox="0 -960 960 960" sx={[{ color: 'error.main' }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]} {...props}>
         <path d={DIAMOND_FILL_PATH} fill="currentColor" />
         <path d={EXCLAMATION_BAR_PATH} fill="#fff" />
         <path d={EXCLAMATION_DOT_PATH} fill="#fff" />

@@ -8,7 +8,7 @@ import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import { EntityListHomeButton } from '@/design-system/components'
+import { EmergencyHomeIcon, EntityListHomeButton } from '@/design-system/components'
 import { sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -26,6 +26,8 @@ type SubmissionDetailHeaderProps = {
   onStatusClick?: () => void
   starred?: boolean
   onToggleStar?: () => void
+  emergency?: boolean
+  onToggleEmergency?: () => void
 }
 
 function formatSubmittedAt(value: string) {
@@ -44,6 +46,8 @@ export function SubmissionDetailHeader({
   onStatusClick,
   starred = false,
   onToggleStar,
+  emergency = false,
+  onToggleEmergency,
 }: SubmissionDetailHeaderProps) {
   const contentPx = `${layoutTokens.contentPaddingX}px`
 
@@ -83,21 +87,32 @@ export function SubmissionDetailHeader({
                     aria-label="Copy submission number"
                     sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
                   >
-                    <ContentCopyOutlinedIcon sx={{ fontSize: 18 }} />
+                    <ContentCopyOutlinedIcon sx={{ fontSize: 20 }} />
                   </IconButton>
                 </Tooltip>
                 <Tooltip title={starred ? 'Remove from favorites' : 'Add to favorites'}>
                   <IconButton size="small" onClick={onToggleStar} aria-label="Toggle favorite">
                     {starred ? (
-                      <StarIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                      <StarIcon sx={{ fontSize: 20, color: 'warning.main' }} />
                     ) : (
-                      <StarBorderIcon sx={{ fontSize: 18 }} />
+                      <StarBorderIcon sx={{ fontSize: 20 }} />
                     )}
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={emergency ? 'Remove high risk flag' : 'Mark as high risk'}>
+                  <IconButton
+                    size="small"
+                    onClick={onToggleEmergency}
+                    aria-label="Toggle high risk"
+                    aria-pressed={emergency}
+                    sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+                  >
+                    <EmergencyHomeIcon active={emergency} sx={{ fontSize: 20 }} />
                   </IconButton>
                 </Tooltip>
                 <Tooltip title="More actions">
                   <IconButton size="small" aria-label="More actions">
-                    <MoreHorizIcon sx={{ fontSize: 18 }} />
+                    <MoreHorizIcon sx={{ fontSize: 20 }} />
                   </IconButton>
                 </Tooltip>
               </Stack>

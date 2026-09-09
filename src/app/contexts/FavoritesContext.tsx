@@ -8,7 +8,7 @@ import {
 } from 'react'
 import { insuredIdFromName } from '@/pages/shared/insuredId'
 
-export type FavoriteEntityKind = 'policy' | 'insured'
+export type FavoriteEntityKind = 'policy' | 'insured' | 'submission'
 
 export type FavoriteEntity = {
   kind: FavoriteEntityKind
@@ -28,6 +28,10 @@ function policyPath(policyNumber: string) {
 
 function insuredPath(insuredName: string) {
   return `/insureds/${encodeURIComponent(insuredIdFromName(insuredName))}`
+}
+
+function submissionPath(submissionId: string) {
+  return `/submissions/${encodeURIComponent(submissionId)}`
 }
 
 /** Seed lists — Favorites panel + details headers stay in sync from this. */
@@ -137,7 +141,9 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const hrefFor = useCallback((entity: FavoriteEntity) => {
-    return entity.kind === 'policy' ? policyPath(entity.id) : `/insureds/${encodeURIComponent(entity.id)}`
+    if (entity.kind === 'policy') return policyPath(entity.id)
+    if (entity.kind === 'submission') return submissionPath(entity.id)
+    return `/insureds/${encodeURIComponent(entity.id)}`
   }, [])
 
   const watchlist = useMemo(

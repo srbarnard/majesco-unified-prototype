@@ -73,7 +73,8 @@ export function InsuredsPage() {
         : undefined,
       summaryBackLabel: 'Insureds workspace',
     },
-    [focusedInsuredDetails],
+    // Primitives only — object identity would re-fire registration and freeze SPA nav.
+    [focusedInsuredDetails?.id],
   )
 
   const handleApplyFilters = useCallback((filters: InsuredsListFilters) => {

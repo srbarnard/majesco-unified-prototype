@@ -1,22 +1,12 @@
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
-import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
-import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
-import GavelOutlinedIcon from '@mui/icons-material/GavelOutlined'
-import NoteAddOutlinedIcon from '@mui/icons-material/NoteAddOutlined'
-import PostAddOutlinedIcon from '@mui/icons-material/PostAddOutlined'
-import type { SvgIconComponent } from '@mui/icons-material'
 import Box from '@mui/material/Box'
-import Divider from '@mui/material/Divider'
+import Chip from '@mui/material/Chip'
+import Fade from '@mui/material/Fade'
 import Grid from '@mui/material/Grid2'
-import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { useTheme } from '@mui/material/styles'
-import type { ReactNode } from 'react'
-import { useMemo } from 'react'
-import type { SxProps, Theme } from '@mui/material/styles'
+import { keyframes, useTheme } from '@mui/material/styles'
+import { useEffect, useMemo, useState } from 'react'
+import { Link as RouterLink } from 'react-router'
 import {
   Area,
   AreaChart,
@@ -26,33 +16,76 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import type { RecentActivityItem } from '@/app/data/homeMock'
+import type { PulseRange } from '@/app/data/pulseMock'
+import { ActivityRail } from '@/app/pages/home/ActivityRail'
+import { PulseChartControls } from '@/app/pages/home/PulseToolbar'
 import {
+  getPulsePaletteColors,
+  usePulsePreferences,
+} from '@/app/pages/home/pulseChartPalettes'
+import {
+  analyticsBodySx,
   getAnalyticsChartAxisStyle,
   getAnalyticsChartGridStroke,
 } from '@/design-system/components/analytics/analyticsStyles'
+import {
+  InsightCallout,
+  insightStatusToVariant,
+} from '@/design-system/components/InsightCallout'
 import type { AppTheme } from '@/design-system/theme'
-import { accentSubtle, accentSubtleHover, isDarkMode, surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
+import { isDarkMode, surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
-import { listDataGridMaxHeight, listDataGridMinHeight } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { ExposureMap } from '@/pages/policies/components/ExposureMap'
 import type {
-  OverviewQuickAction,
   OverviewStat,
   OverviewStatTone,
   OverviewTimeSeriesPoint,
   OverviewTransaction,
 } from '@/pages/policies/data/mockOverview'
-import { RecentTransactionsDataGrid } from '@/pages/policies/components/RecentTransactionsDataGrid'
+import {
+  getPolicyTransactionActivity,
+  policyTransactionSubtitle,
+} from '@/pages/policies/data/mockPolicyActivity'
+import type {
+  ExposureRangeSnapshot,
+  PolicySignalInsight,
+} from '@/pages/policies/data/policyOverviewProfiles'
 
 type OverviewTabProps = {
+  companyName: string
+  policyNumber: string
   stats: OverviewStat[]
   transactionsOverTime: OverviewTimeSeriesPoint[]
   transactions: OverviewTransaction[]
-  quickActions: OverviewQuickAction[]
-  onQuickAction?: (actionId: string) => void
+  transactionInsights: Record<PulseRange, PolicySignalInsight>
+  exposureByRange: Record<PulseRange, ExposureRangeSnapshot>
+  onTransactionSelect?: (activity: RecentActivityItem) => void
+  activeTransactionId?: string | null
 }
 
+type PolicySignalPill = 'transactions' | 'exposure'
+
 const GUTTER = 3.125 // 25px at 8px spacing unit
+const CHART_HEIGHT = 240
+
+const POLICY_SIGNAL_PILLS: Array<{ id: PolicySignalPill; label: string }> = [
+  { id: 'transactions', label: 'Transactions' },
+  { id: 'exposure', label: 'Exposure map' },
+]
+
+/** Point counts for overview monthly series — mirrors Pulse lookback density. */
+const RANGE_POINT_COUNTS: Record<PulseRange, number> = {
+  '30D': 4,
+  '90D': 10,
+  '6M': 19,
+}
+
+const insightEnter = keyframes`
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+`
 
 const headingSx = {
   fontFamily: figmaFontFamilyStack.heading,
@@ -69,78 +102,85 @@ const bodySx = {
   fontWeight: 400,
 } as const
 
-function whiteCardSurfaceSx(theme: Theme) {
-  return {
-    borderRadius: `${layoutTokens.cardRadius}px`,
-    bgcolor: 'background.paper',
-    border: `1px solid ${theme.palette.divider}`,
-    boxShadow: isDarkMode(theme) ? 'none' : layoutTokens.cardShadow,
-  }
-}
-
-function greySurfaceSx(theme: Theme) {
+function greySurfaceSx(theme: Parameters<typeof surfaceMuted>[0]) {
   return {
     borderRadius: `${layoutTokens.cardRadius}px`,
     bgcolor: surfaceMuted(theme),
   }
 }
 
-function DashboardCard({
-  title,
-  icon,
-  action,
-  children,
-  noPadding,
-  hideHeaderDivider = false,
-  headerSx,
-  contentSx,
-}: {
-  title: string
-  icon?: ReactNode
-  action?: ReactNode
-  children: ReactNode
-  noPadding?: boolean
-  hideHeaderDivider?: boolean
-  headerSx?: SxProps<Theme>
-  contentSx?: SxProps<Theme>
-}) {
+function sliceTransactionsByRange(
+  data: OverviewTimeSeriesPoint[],
+  range: PulseRange,
+): OverviewTimeSeriesPoint[] {
+  const count = Math.min(RANGE_POINT_COUNTS[range], data.length)
+  return data.slice(-count)
+}
+
+function ChartLegend({ items }: { items: Array<{ label: string; color: string }> }) {
   return (
-    <Box
-      sx={(theme) => ({
-        ...whiteCardSurfaceSx(theme),
-        overflow: 'hidden',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-      })}
-    >
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{
-          px: 2,
-          py: 1.5,
-          bgcolor: 'background.paper',
-          ...(hideHeaderDivider
-            ? {}
-            : {
-                borderBottom: 1,
-                borderColor: 'divider',
-              }),
-          minHeight: 52,
-          ...headerSx,
-        }}
-      >
-        <Stack direction="row" spacing={1} alignItems="center">
-          {icon}
-          <Typography variant="subtitle1" sx={{ ...headingSx, fontSize: '0.9375rem' }}>
-            {title}
+    <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ mb: 0.75 }}>
+      {items.map(({ label, color }) => (
+        <Stack key={label} direction="row" spacing={0.75} alignItems="center">
+          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: color, flexShrink: 0 }} />
+          <Typography
+            variant="caption"
+            sx={{ ...analyticsBodySx, fontSize: '0.6875rem', color: 'text.secondary' }}
+          >
+            {label}
           </Typography>
         </Stack>
-        {action}
-      </Stack>
-      <Box sx={{ flex: 1, ...(noPadding ? {} : { p: 2 }), ...contentSx }}>{children}</Box>
+      ))}
+    </Stack>
+  )
+}
+
+function PolicySignalInsightCallout({
+  signal,
+  range,
+  transactionInsights,
+  exposureByRange,
+}: {
+  signal: PolicySignalPill
+  range: PulseRange
+  transactionInsights: Record<PulseRange, PolicySignalInsight>
+  exposureByRange: Record<PulseRange, ExposureRangeSnapshot>
+}) {
+  const [visible, setVisible] = useState(true)
+  const [displayed, setDisplayed] = useState({ signal, range })
+  const insight =
+    displayed.signal === 'exposure'
+      ? exposureByRange[displayed.range].insight
+      : transactionInsights[displayed.range]
+  const variant = insightStatusToVariant(insight.status)
+  const insightKey = `${displayed.signal}-${displayed.range}-${insight.title}`
+
+  useEffect(() => {
+    if (signal === displayed.signal && range === displayed.range) return
+
+    setVisible(false)
+    const timeoutId = window.setTimeout(() => {
+      setDisplayed({ signal, range })
+      setVisible(true)
+    }, 140)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [signal, range, displayed.signal, displayed.range])
+
+  return (
+    <Box sx={{ mt: 1.5, minHeight: 72 }}>
+      <Fade in={visible} timeout={{ enter: 220, exit: 140 }}>
+        <Box
+          key={insightKey}
+          sx={{
+            animation: visible ? `${insightEnter} 280ms ease-out` : 'none',
+          }}
+        >
+          <InsightCallout variant={variant} title={insight.title}>
+            {insight.body}
+          </InsightCallout>
+        </Box>
+      </Fade>
     </Box>
   )
 }
@@ -225,51 +265,37 @@ function StatBoxesSection({ stats }: { stats: OverviewStat[] }) {
   )
 }
 
-function TransactionsOverTimeChart({ data }: { data: OverviewTimeSeriesPoint[] }) {
+function TransactionsAreaChart({
+  data,
+  range,
+  lineColor,
+}: {
+  data: OverviewTimeSeriesPoint[]
+  range: PulseRange
+  lineColor: string
+}) {
   const theme = useTheme()
   const axisStyle = getAnalyticsChartAxisStyle(theme)
   const gridStroke = getAnalyticsChartGridStroke(theme)
-  const dark = theme.palette.mode === 'dark'
-  const lineColor = dark ? theme.figmaPalette.teal[400] : theme.figmaPalette.teal[500]
-  const fillColor = dark ? theme.figmaPalette.teal[900] : theme.figmaPalette.teal[100]
+  const dark = isDarkMode(theme)
   const dotStroke = theme.palette.background.paper
-  const total = useMemo(() => data.reduce((sum, point) => sum + point.value, 0), [data])
+  const chartKey = `policy-tx-${range}-${lineColor}-${theme.palette.mode}`
+  const chartData = useMemo(() => sliceTransactionsByRange(data, range), [data, range])
 
   return (
-    <Box
-      sx={(t) => ({
-        ...whiteCardSurfaceSx(t),
-        overflow: 'hidden',
-        height: '100%',
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-      })}
-    >
-      <Box sx={{ px: 2.5, pt: 2.5, pb: 1, flexShrink: 0 }}>
-        <Typography variant="subtitle1" sx={{ ...headingSx, fontSize: '1rem' }}>
-          Transactions Over Time
-        </Typography>
-        <Stack direction="row" spacing={1} alignItems="baseline" sx={{ mt: 0.75 }}>
-          <Typography variant="h4" sx={{ ...headingSx, fontSize: '1.75rem', color: 'success.main', lineHeight: 1 }}>
-            {total.toLocaleString()}
-          </Typography>
-          <Stack direction="row" spacing={0.25} alignItems="center" sx={{ color: 'success.main' }}>
-            <ArrowUpwardIcon sx={{ fontSize: 16 }} />
-            <Typography variant="body2" sx={{ ...subtitleSx, fontSize: '0.8125rem' }}>
-              18% vs prior term
-            </Typography>
-          </Stack>
-        </Stack>
-      </Box>
-
-      <Box sx={{ flex: 1, minHeight: 180, px: 1, pb: 1.5, pt: 0.5 }}>
+    <Box sx={{ width: '100%', fontFamily: figmaFontFamilyStack.body }}>
+      <ChartLegend items={[{ label: 'Transactions', color: lineColor }]} />
+      <Box sx={{ width: '100%', height: CHART_HEIGHT, minHeight: CHART_HEIGHT }}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 12, right: 16, left: 4, bottom: 4 }}>
+          <AreaChart
+            key={chartKey}
+            data={chartData}
+            margin={{ top: 12, right: 8, left: 0, bottom: 4 }}
+          >
             <defs>
-              <linearGradient id="transactions-area-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={fillColor} stopOpacity={0.85} />
-                <stop offset="100%" stopColor={fillColor} stopOpacity={0.05} />
+              <linearGradient id={`transactions-area-fill-${chartKey}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={lineColor} stopOpacity={dark ? 0.42 : 0.35} />
+                <stop offset="100%" stopColor={lineColor} stopOpacity={dark ? 0.08 : 0.04} />
               </linearGradient>
             </defs>
             <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
@@ -285,17 +311,11 @@ function TransactionsOverTimeChart({ data }: { data: OverviewTimeSeriesPoint[] }
               tick={axisStyle}
               tickLine={false}
               axisLine={false}
-              width={40}
+              width={36}
               allowDecimals={false}
-              label={{
-                value: 'Transactions',
-                angle: -90,
-                position: 'insideLeft',
-                style: { ...axisStyle, textAnchor: 'middle' },
-              }}
             />
             <Tooltip
-              cursor={{ stroke: theme.figmaPalette.grey[400], strokeWidth: 1 }}
+              cursor={{ stroke: lineColor, strokeWidth: 1, strokeOpacity: dark ? 0.5 : 0.35 }}
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null
                 const point = payload[0]?.payload as OverviewTimeSeriesPoint | undefined
@@ -307,20 +327,26 @@ function TransactionsOverTimeChart({ data }: { data: OverviewTimeSeriesPoint[] }
                       borderRadius: 1,
                       bgcolor: 'background.paper',
                       border: `1px solid ${t.palette.divider}`,
-                      boxShadow:
-                        t.palette.mode === 'dark'
-                          ? '0 4px 16px rgba(0,0,0,0.45)'
-                          : '0 4px 12px rgba(0,0,0,0.08)',
+                      boxShadow: isDarkMode(t)
+                        ? '0 4px 16px rgba(0,0,0,0.45)'
+                        : '0 4px 12px rgba(0,0,0,0.08)',
                       minWidth: 140,
                     })}
                   >
-                    <Typography variant="caption" color="text.secondary" sx={{ ...bodySx, display: 'block' }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ ...analyticsBodySx, display: 'block' }}
+                    >
                       {point?.date ?? String(label ?? '')}
                     </Typography>
                     <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.25 }}>
                       <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: lineColor }} />
-                      <Typography variant="body2" sx={{ ...bodySx, fontSize: '0.75rem', fontWeight: 600 }}>
-                        Transactions {payload[0]?.value ?? 0}
+                      <Typography
+                        variant="body2"
+                        sx={{ ...analyticsBodySx, fontSize: '0.75rem', fontWeight: 600 }}
+                      >
+                        Transactions: {payload[0]?.value ?? 0}
                       </Typography>
                     </Stack>
                   </Box>
@@ -333,7 +359,7 @@ function TransactionsOverTimeChart({ data }: { data: OverviewTimeSeriesPoint[] }
               name="Transactions"
               stroke={lineColor}
               strokeWidth={2.5}
-              fill="url(#transactions-area-fill)"
+              fill={`url(#transactions-area-fill-${chartKey})`}
               dot={{ r: 3.5, fill: lineColor, stroke: dotStroke, strokeWidth: 1.5 }}
               activeDot={{ r: 5, stroke: dotStroke }}
             />
@@ -344,168 +370,200 @@ function TransactionsOverTimeChart({ data }: { data: OverviewTimeSeriesPoint[] }
   )
 }
 
-const transactionsGridHeightOptions = { headerFilters: false } as const
+function PolicySignalsSection({
+  data,
+  transactionInsights,
+  exposureByRange,
+}: {
+  data: OverviewTimeSeriesPoint[]
+  transactionInsights: Record<PulseRange, PolicySignalInsight>
+  exposureByRange: Record<PulseRange, ExposureRangeSnapshot>
+}) {
+  const theme = useTheme()
+  const [signal, setSignal] = useState<PolicySignalPill>('transactions')
+  const { palette, paletteId, setPaletteId, range, setRange } = usePulsePreferences()
+  const colors = getPulsePaletteColors(palette, theme.palette.mode)
+  const lineColor = colors[0]
+  const exposureSnapshot = exposureByRange[range]
 
-function TransactionsCard({ transactions }: { transactions: OverviewTransaction[] }) {
   return (
-    <Box
-      sx={{
-        minHeight: listDataGridMinHeight(transactionsGridHeightOptions),
-        maxHeight: listDataGridMaxHeight(transactionsGridHeightOptions),
-        display: 'flex',
-        flexDirection: 'column',
-        width: '100%',
-      }}
-    >
-      <DashboardCard
-        title="Recent transactions"
-        action={
-          <Link component="button" variant="body2" underline="hover" sx={{ ...subtitleSx, fontSize: '0.8125rem' }}>
-            View all
-          </Link>
-        }
-        noPadding
-        hideHeaderDivider
-        headerSx={{ py: 1.75, minHeight: 56, flexShrink: 0 }}
-        contentSx={{
-          flex: 1,
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          p: 0,
+    <Box sx={{ width: '100%', minWidth: 0 }}>
+      <Typography variant="subtitle1" sx={{ ...headingSx, fontSize: '1rem', mb: 2 }}>
+        Policy signals
+      </Typography>
+
+      <Box
+        sx={{
+          display: 'grid',
+          columnGap: 1.5,
+          rowGap: 2,
+          gridTemplateColumns: { xs: '1fr', md: '1fr auto' },
+          gridTemplateAreas: {
+            xs: `
+              "filters"
+              "chart"
+              "controls"
+            `,
+            md: `
+              "filters controls"
+              "chart chart"
+            `,
+          },
+          alignItems: 'center',
         }}
       >
-        <RecentTransactionsDataGrid rows={transactions} />
-      </DashboardCard>
+        <Stack
+          direction="row"
+          spacing={1}
+          flexWrap="wrap"
+          useFlexGap
+          sx={{ gridArea: 'filters', minWidth: 0 }}
+        >
+          {POLICY_SIGNAL_PILLS.map(({ id, label }) => {
+            const selected = signal === id
+            return (
+              <Chip
+                key={id}
+                label={label}
+                onClick={() => setSignal(id)}
+                sx={{
+                  fontFamily: figmaFontFamilyStack.body,
+                  fontWeight: selected ? 600 : 500,
+                  fontSize: '0.8125rem',
+                  bgcolor: selected ? 'primary.main' : (t) => surfaceMuted(t),
+                  color: selected ? 'primary.contrastText' : 'text.secondary',
+                  border: '1px solid',
+                  borderColor: selected ? 'primary.main' : (t) => surfaceMuted(t),
+                  '&:hover': {
+                    bgcolor: selected ? 'primary.dark' : (t) => surfaceSubtle(t),
+                    borderColor: selected ? 'primary.dark' : (t) => surfaceSubtle(t),
+                  },
+                }}
+              />
+            )
+          })}
+        </Stack>
+
+        <Box sx={{ gridArea: 'controls', minWidth: 0 }}>
+          <PulseChartControls
+            range={range}
+            onRangeChange={setRange}
+            paletteId={paletteId}
+            onPaletteChange={setPaletteId}
+          />
+        </Box>
+
+        <Box sx={{ gridArea: 'chart', minWidth: 0 }}>
+          {signal === 'transactions' ? (
+            <TransactionsAreaChart data={data} range={range} lineColor={lineColor} />
+          ) : (
+            <ExposureMap
+              height={260}
+              exposureByFips={exposureSnapshot.fips}
+              paletteColors={colors}
+              ariaLabel="Scheduled units by state"
+            />
+          )}
+          <PolicySignalInsightCallout
+            signal={signal}
+            range={range}
+            transactionInsights={transactionInsights}
+            exposureByRange={exposureByRange}
+          />
+        </Box>
+      </Box>
     </Box>
   )
 }
 
-function QuickActionsPanel({
-  actions,
-  onQuickAction,
+function RecentTransactionsSection({
+  transactions,
+  companyName,
+  policyNumber,
+  onTransactionSelect,
+  activeTransactionId,
 }: {
-  actions: OverviewQuickAction[]
-  onQuickAction?: (actionId: string) => void
+  transactions: OverviewTransaction[]
+  companyName: string
+  policyNumber: string
+  onTransactionSelect?: (activity: RecentActivityItem) => void
+  activeTransactionId?: string | null
 }) {
-  const actionIcons: Record<string, SvgIconComponent> = {
-    endorse: PostAddOutlinedIcon,
-    documents: DescriptionOutlinedIcon,
-    renewal: AutorenewOutlinedIcon,
-    note: NoteAddOutlinedIcon,
-    email: EmailOutlinedIcon,
-    underwriting: GavelOutlinedIcon,
-  }
+  const items = useMemo(
+    () =>
+      getPolicyTransactionActivity(transactions, {
+        policyNumber,
+        insuredName: companyName,
+      }),
+    [companyName, policyNumber, transactions],
+  )
+  const viewAllTo = `/activity?account=${encodeURIComponent(companyName)}`
 
   return (
-    <Box
-      sx={(theme) => ({
-        ...whiteCardSurfaceSx(theme),
-        height: '100%',
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      })}
-    >
-      <Box sx={{ px: 1.75, pt: 1.5, pb: 0.5, flexShrink: 0 }}>
-        <Typography variant="subtitle1" sx={{ ...headingSx, fontSize: '0.875rem' }}>
-          Quick actions
+    <Box sx={{ width: '100%', minWidth: 0 }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        spacing={2}
+        sx={{ mb: 1.5 }}
+      >
+        <Typography component="h3" variant="subtitle1" sx={{ ...headingSx }}>
+          Recent transactions
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ ...bodySx, display: 'block', mt: 0.125, fontSize: '0.6875rem' }}>
-          Common policy tasks
+        <Typography
+          component={RouterLink}
+          to={viewAllTo}
+          variant="body2"
+          color="primary"
+          sx={{
+            fontFamily: figmaFontFamilyStack.body,
+            textDecoration: 'none',
+            fontSize: '0.8125rem',
+            flexShrink: 0,
+            '&:hover': { textDecoration: 'underline' },
+          }}
+        >
+          View all
         </Typography>
-      </Box>
-
-      <Stack divider={<Divider />} sx={{ flex: 1, px: 0.75, pb: 0.5, minHeight: 0 }}>
-        {actions.map((action) => {
-          const Icon = actionIcons[action.id] ?? PostAddOutlinedIcon
-          const isPrimary = action.variant === 'contained'
-
-          return (
-            <Box
-              key={action.id}
-              component="button"
-              type="button"
-              onClick={() => onQuickAction?.(action.id)}
-              sx={(theme) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                width: '100%',
-                border: 0,
-                bgcolor: 'transparent',
-                cursor: 'pointer',
-                px: 0.75,
-                py: 0.75,
-                borderRadius: `${layoutTokens.cardRadius}px`,
-                textAlign: 'left',
-                transition: 'background-color 0.15s ease',
-                '&:hover': {
-                  bgcolor: accentSubtleHover(theme),
-                },
-              })}
-            >
-              <Box
-                sx={(theme) => ({
-                  width: 28,
-                  height: 28,
-                  borderRadius: 1.25,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  bgcolor: isPrimary ? accentSubtle(theme) : surfaceSubtle(theme),
-                  color: isPrimary ? 'primary.main' : 'text.secondary',
-                })}
-              >
-                <Icon sx={{ fontSize: 16 }} />
-              </Box>
-              <Typography
-                variant="body2"
-                sx={{
-                  ...subtitleSx,
-                  flex: 1,
-                  fontSize: '0.75rem',
-                  lineHeight: 1.3,
-                  color: isPrimary ? 'primary.main' : 'text.primary',
-                }}
-              >
-                {action.label}
-              </Typography>
-              <ChevronRightIcon sx={{ fontSize: 14, color: 'text.disabled', flexShrink: 0 }} />
-            </Box>
-          )
-        })}
       </Stack>
+      <ActivityRail
+        items={items}
+        getSubtitle={policyTransactionSubtitle}
+        onActivityCopilot={onTransactionSelect}
+        activeCopilotActivityId={activeTransactionId}
+      />
     </Box>
   )
 }
 
 export function OverviewTab({
+  companyName,
+  policyNumber,
   stats,
   transactionsOverTime,
   transactions,
-  quickActions,
-  onQuickAction,
+  transactionInsights,
+  exposureByRange,
+  onTransactionSelect,
+  activeTransactionId,
 }: OverviewTabProps) {
   return (
     <Box sx={{ width: '100%', minHeight: '100%', bgcolor: 'background.paper', pb: GUTTER }}>
       <Stack spacing={GUTTER}>
         <StatBoxesSection stats={stats} />
-
-        <Grid container spacing={GUTTER} alignItems="stretch">
-          <Grid size={{ xs: 12, lg: 8 }} sx={{ display: 'flex' }}>
-            <TransactionsOverTimeChart data={transactionsOverTime} />
-          </Grid>
-          <Grid size={{ xs: 12, lg: 4 }} sx={{ display: 'flex' }}>
-            <QuickActionsPanel actions={quickActions} onQuickAction={onQuickAction} />
-          </Grid>
-          <Grid size={{ xs: 12 }} sx={{ mb: GUTTER }}>
-            <TransactionsCard transactions={transactions} />
-          </Grid>
-        </Grid>
+        <PolicySignalsSection
+          data={transactionsOverTime}
+          transactionInsights={transactionInsights}
+          exposureByRange={exposureByRange}
+        />
+        <RecentTransactionsSection
+          transactions={transactions}
+          companyName={companyName}
+          policyNumber={policyNumber}
+          onTransactionSelect={onTransactionSelect}
+          activeTransactionId={activeTransactionId}
+        />
       </Stack>
     </Box>
   )

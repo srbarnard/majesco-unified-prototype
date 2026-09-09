@@ -41,15 +41,15 @@ function PolicyHeaderActions({
     <Stack direction="row" spacing={0.25} alignItems="center" sx={{ flexShrink: 0 }}>
       <Tooltip title="Copy policy number">
         <IconButton size="small" aria-label="Copy policy number" sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
-          <ContentCopyOutlinedIcon sx={{ fontSize: 18 }} />
+          <ContentCopyOutlinedIcon sx={{ fontSize: 20 }} />
         </IconButton>
       </Tooltip>
       <Tooltip title={starred ? 'Remove from favorites' : 'Add to favorites'}>
         <IconButton size="small" onClick={onToggleStar} aria-label="Toggle favorite">
           {starred ? (
-            <StarIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+            <StarIcon sx={{ fontSize: 20, color: 'warning.main' }} />
           ) : (
-            <StarBorderIcon sx={{ fontSize: 18 }} />
+            <StarBorderIcon sx={{ fontSize: 20 }} />
           )}
         </IconButton>
       </Tooltip>
@@ -66,12 +66,12 @@ function PolicyHeaderActions({
       </Tooltip>
       <Tooltip title="Edit policy">
         <IconButton size="small" aria-label="Edit policy" sx={{ display: { xs: 'none', md: 'inline-flex' } }}>
-          <EditOutlinedIcon sx={{ fontSize: 18 }} />
+          <EditOutlinedIcon sx={{ fontSize: 20 }} />
         </IconButton>
       </Tooltip>
       <Tooltip title="More actions">
         <IconButton size="small" aria-label="More actions">
-          <MoreHorizIcon sx={{ fontSize: 18 }} />
+          <MoreHorizIcon sx={{ fontSize: 20 }} />
         </IconButton>
       </Tooltip>
     </Stack>

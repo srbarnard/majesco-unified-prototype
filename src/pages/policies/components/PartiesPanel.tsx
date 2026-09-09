@@ -11,9 +11,11 @@ import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { Link as RouterLink } from 'react-router'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { copilotDrawerHeadingSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import { policyPartiesMock, type PolicyParty } from '@/pages/policies/data/mockPolicyDetails'
+import { insuredIdFromName } from '@/pages/shared/insuredId'
 
 type PartiesPanelProps = {
   onClose?: () => void
@@ -22,14 +24,18 @@ type PartiesPanelProps = {
 }
 
 function PartyDetails({
+  name,
   address,
   email,
   phone,
 }: {
+  name: string
   address?: string
   email?: string
   phone?: string
 }) {
+  const profileTo = `/insureds/${encodeURIComponent(insuredIdFromName(name))}`
+
   return (
     <Stack spacing={1.25} sx={{ pt: 0.5 }}>
       {address && (
@@ -56,7 +62,13 @@ function PartyDetails({
           </Typography>
         </Stack>
       )}
-      <Link component="button" variant="body2" underline="hover" sx={{ textAlign: 'left', mt: 0.5 }}>
+      <Link
+        component={RouterLink}
+        to={profileTo}
+        variant="body2"
+        underline="hover"
+        sx={{ textAlign: 'left', mt: 0.5 }}
+      >
         View profile
       </Link>
     </Stack>
@@ -110,7 +122,12 @@ export function PartiesPanel({ onClose, title = 'Parties', parties = policyParti
               </Box>
             </AccordionSummary>
             <AccordionDetails sx={{ px: 2, pb: 2, pt: 0 }}>
-              <PartyDetails address={party.address} email={party.email} phone={party.phone} />
+              <PartyDetails
+                name={party.name}
+                address={party.address}
+                email={party.email}
+                phone={party.phone}
+              />
             </AccordionDetails>
           </Accordion>
         ))}
