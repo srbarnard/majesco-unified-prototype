@@ -17,6 +17,18 @@ import {
   getInsuredPolicies,
 } from '@/pages/insureds/data/mockInsuredOverview'
 
+const STATE_NAMES: Record<string, string> = {
+  CA: 'California',
+  TX: 'Texas',
+  FL: 'Florida',
+  NY: 'New York',
+  WA: 'Washington',
+  AZ: 'Arizona',
+  NV: 'Nevada',
+  IL: 'Illinois',
+  PA: 'Pennsylvania',
+}
+
 export type InsuredAnalyticsData = {
   filters: AnalyticsFilterBarConfig
   insights: AnalyticsInsight[]
@@ -218,12 +230,12 @@ export function buildInsuredAnalyticsData(insured: InsuredDetailsRecord): Insure
       { label: 'Jun', value: totalPremium },
     ],
     claimsVelocity: [
-      { label: 'Jan', bar: openClaims > 0 ? 1 : 0, line: 38 },
-      { label: 'Feb', bar: 0, line: 40 },
-      { label: 'Mar', bar: openClaims > 1 ? 1 : 0, line: 44 },
-      { label: 'Apr', bar: openClaims > 0 ? 1 : 0, line: 52 },
-      { label: 'May', bar: 0, line: openClaims > 0 ? 61 : 48 },
-      { label: 'Jun', bar: openClaims > 0 ? 1 : 0, line: openClaims > 0 ? 68 : 42 },
+      { label: 'Jan', created: openClaims > 0 ? 1 : 0, completionRate: 38 },
+      { label: 'Feb', created: 0, completionRate: 40 },
+      { label: 'Mar', created: openClaims > 1 ? 1 : 0, completionRate: 44 },
+      { label: 'Apr', created: openClaims > 0 ? 1 : 0, completionRate: 52 },
+      { label: 'May', created: 0, completionRate: openClaims > 0 ? 61 : 48 },
+      { label: 'Jun', created: openClaims > 0 ? 1 : 0, completionRate: openClaims > 0 ? 68 : 42 },
     ],
     lossRatioTrend: [
       { label: 'Jan', value: 41 },
@@ -243,15 +255,19 @@ export function buildInsuredAnalyticsData(insured: InsuredDetailsRecord): Insure
         : [{ name: 'Premium', value: 1, color: figmaPalette.teal[500] }],
     claimsByType,
     exposureByState: [
-      { id: stateAbbr, label: stateAbbr, value: Math.max(8, policies.length * 4) },
+      {
+        code: stateAbbr,
+        name: STATE_NAMES[stateAbbr] ?? stateAbbr,
+        value: Math.max(8, policies.length * 4),
+      },
       ...(stateAbbr === 'CA'
         ? [
-            { id: 'AZ', label: 'AZ', value: 2 },
-            { id: 'NV', label: 'NV', value: 1 },
+            { code: 'AZ', name: 'Arizona', value: 2 },
+            { code: 'NV', name: 'Nevada', value: 1 },
           ]
         : [
-            { id: 'CA', label: 'CA', value: 1 },
-            { id: 'TX', label: 'TX', value: 1 },
+            { code: 'CA', name: 'California', value: 1 },
+            { code: 'TX', name: 'Texas', value: 1 },
           ]),
     ],
     premiumByPolicy: {

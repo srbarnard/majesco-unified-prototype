@@ -1,4 +1,5 @@
 import { policiesListMock } from '@/pages/policies/data/mockPoliciesList'
+import type { OverviewStat, OverviewStatTone } from '@/pages/policies/data/mockOverview'
 import { insuredIdFromName } from '@/pages/shared/insuredId'
 import {
   insuredDetailsMock,
@@ -155,7 +156,7 @@ export function resolveInsuredContext(insuredId: string | undefined): InsuredDet
   }
 }
 
-export function getInsuredOverviewStats(insured: InsuredDetailsRecord) {
+export function getInsuredOverviewStats(insured: InsuredDetailsRecord): OverviewStat[] {
   const listRow = findListRow(insured.id) ?? findListRow(insured.name)
 
   if (insured.id === insuredDetailsMock.id) {
@@ -165,34 +166,37 @@ export function getInsuredOverviewStats(insured: InsuredDetailsRecord) {
   const openQuotes = listRow?.openQuotes ?? 0
   const isCommercial = listRow?.insuredType !== 'Non-commercial'
 
+  const claimsTone: OverviewStatTone = insured.openClaims > 0 ? 'warning' : 'success'
+  const quotesTone: OverviewStatTone = openQuotes > 0 ? 'info' : 'success'
+
   return [
     {
       id: 'policies',
       label: 'Active Policies',
       value: insured.policyCount,
       helperText: isCommercial ? 'Commercial lines' : 'Specialty book',
-      tone: 'success' as const,
+      tone: 'success',
     },
     {
       id: 'premium',
       label: 'Total Premium',
       value: insured.totalPremium,
       helperText: 'In-force TWP',
-      tone: 'info' as const,
+      tone: 'info',
     },
     {
       id: 'claims',
       label: insured.openClaims === 1 ? 'Open Claim' : 'Open Claims',
       value: insured.openClaims,
       helperText: insured.openClaims > 0 ? 'Needs review' : 'None open',
-      tone: (insured.openClaims > 0 ? 'warning' : 'success') as const,
+      tone: claimsTone,
     },
     {
       id: 'quotes',
       label: openQuotes === 1 ? 'Open Quote' : 'Open Quotes',
       value: openQuotes,
       helperText: openQuotes > 0 ? 'Pipeline' : 'Clear',
-      tone: (openQuotes > 0 ? 'info' : 'success') as const,
+      tone: quotesTone,
     },
   ]
 }

@@ -98,7 +98,7 @@ export function InsuredAnalyticsDashboard({ insured }: InsuredAnalyticsDashboard
                         id: 'loss-ratio',
                         title: 'Loss ratio trend',
                         value: data.kpis.find((k) => k.id === 'loss-ratio')?.value ?? '—',
-                        trend: { direction: 'flat', label: 'Trailing 12M' },
+                        trend: { direction: 'neutral', label: 'Trailing 12M' },
                         tone: 'neutral',
                       }}
                       compact

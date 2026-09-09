@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { useTheme } from '@mui/material/styles'
+import { useTheme, type Theme } from '@mui/material/styles'
 import { useEffect, useState } from 'react'
 import {
   Annotation,
@@ -70,7 +70,7 @@ function mixHex(color: string, toward: string, amount: number): string {
  * Idle = softened; hover + legend = pure palette colors.
  */
 function getExposureFills(
-  theme: ReturnType<typeof useTheme>,
+  theme: Theme,
   paletteColors: readonly string[],
 ): {
   idle: Record<ExposureLevel, string>
