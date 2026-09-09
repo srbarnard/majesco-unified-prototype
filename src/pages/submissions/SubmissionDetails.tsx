@@ -283,27 +283,6 @@ export function SubmissionDetails() {
     [openTool],
   )
 
-  const handleOverviewQuickAction = useCallback(
-    (actionId: string) => {
-      if (actionId === 'documents') {
-        handleTabChange('documents')
-        return
-      }
-      if (actionId === 'assign') {
-        openTool('parties')
-        return
-      }
-      if (actionId === 'note') {
-        openTool('notes')
-        return
-      }
-      if (actionId === 'email') {
-        openTool('email')
-      }
-    },
-    [handleTabChange, openTool],
-  )
-
   const handleAssign = useCallback(() => {
     openTool('parties')
   }, [openTool])
@@ -369,10 +348,7 @@ export function SubmissionDetails() {
             />
           )}
           {activeTab === 'overview' && (
-            <SubmissionOverviewTab
-              submission={submission}
-              onQuickAction={handleOverviewQuickAction}
-            />
+            <SubmissionOverviewTab submission={submission} />
           )}
           {activeTab === 'underwriting' && (
             <SubmissionUnderwritingTab submission={submission} onAssign={handleAssign} />

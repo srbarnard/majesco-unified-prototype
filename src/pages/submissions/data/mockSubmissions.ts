@@ -128,7 +128,7 @@ const curatedSubmissions: SubmissionListRecord[] = [
       {
         label: 'Optimized',
         range: '$1.1M - $1.3M',
-        rationale: 'Broader limits and schedule credits for the multi-line package.',
+        rationale: 'Leaner rate, tighter terms for the multi-line package.',
       },
       {
         label: 'Balanced',
@@ -139,7 +139,7 @@ const curatedSubmissions: SubmissionListRecord[] = [
       {
         label: 'Conservative',
         range: '$1.3M - $1.6M',
-        rationale: 'Higher attachment and catastrophe load given construction class.',
+        rationale: 'More limit / load given construction class.',
       },
     ],
     readyInsights: [

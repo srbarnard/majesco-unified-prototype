@@ -1,1 +1,1 @@
-export { CopilotInsightBox, InsightCallout, type InsightCalloutVariant } from './InsightCallout'
+export { CopilotInsightBox, InsightCallout, insightStatusToVariant, type InsightCalloutVariant, type InsightStatus } from './InsightCallout'

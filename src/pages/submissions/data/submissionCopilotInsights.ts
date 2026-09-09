@@ -84,13 +84,22 @@ export function buildSubmissionInsightBriefing(
     confidence: submission.confidence,
   })
   const recommended = options.find((option) => option.recommended) ?? options[0]
+  const structureSummary =
+    options.length > 0
+      ? options
+          .map(
+            (option) =>
+              `${option.label} ${option.range}${option.recommended ? ' (recommended)' : ''}`,
+          )
+          .join(' · ')
+      : null
   const readyWarning = submission.readyInsights?.find((insight) => insight.severity === 'warning')
   const statusQuickActionLabel =
     options.length > 0 ? 'View status & structure options' : 'View status details'
   const lines = [
     `Intake complete across **${lobLabel}** at **${submission.confidence}%** confidence.`,
-    recommended
-      ? `Structure signal · ${recommended.label} at ${recommended.range}${recommended.recommended ? ' (recommended)' : ''}`
+    structureSummary
+      ? `Structure options · ${structureSummary}`
       : 'Structure options are available in status review.',
     readyWarning
       ? `Watch-out · ${readyWarning.title} — ${readyWarning.summary}`
@@ -104,13 +113,15 @@ export function buildSubmissionInsightBriefing(
     header,
     subhead: submission.approvedPremiumLabel
       ? `Ready · Approved ${submission.approvedPremiumLabel}`
-      : 'Ready · Awaiting structure approval',
+      : options.length > 0
+        ? `Ready · ${options.length} structure option${options.length === 1 ? '' : 's'}${recommended ? ` · recommending ${recommended.label}` : ''}`
+        : 'Ready · Awaiting structure approval',
     lines,
     quickActions: [statusQuickActionLabel, 'Summarize for underwriter', 'Ask about exposure'],
     statusQuickActionLabel,
     summary: `**${submission.insuredName}** (${submission.submissionNumber}) is intake-complete. Status is **Ready** at **${submission.confidence}%** confidence across **${lobLabel}**.`,
     insights: [
-      `Status · Ready${submission.approvedPremiumLabel ? ` · Approved ${submission.approvedPremiumLabel}` : ' · Awaiting structure approval'}`,
+      `Status · Ready${submission.approvedPremiumLabel ? ` · Approved ${submission.approvedPremiumLabel}` : options.length > 0 ? ` · ${options.length} structure options` : ' · Awaiting structure approval'}`,
       ...lines.slice(1),
       warnings.length
         ? `${warnings.length} warning${warnings.length === 1 ? '' : 's'} still open`

@@ -28,31 +28,13 @@ type SubmissionDetailHeaderProps = {
   onToggleStar?: () => void
 }
 
-function formatMetadataSubmittedAt(value: string) {
+function formatSubmittedAt(value: string) {
   return new Date(value).toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
   })
-}
-
-/** Plain middot metadata under the title row — Home density, not KPI tiles. */
-function buildSubmissionMetadataSegments(submission: SubmissionDetailsRecord): string[] {
-  const segments: string[] = [submission.status]
-
-  if (submission.status === 'Blocked') {
-    const blockers = submission.issues.filter(
-      (issue) => issue.severity === 'blocking' && !issue.resolvedAt,
-    ).length
-    segments.push(`${blockers} blocker${blockers === 1 ? '' : 's'}`)
-  }
-
-  segments.push(`${submission.confidence}% intake complete`)
-  segments.push(submission.assignedTo)
-  segments.push(`Submitted ${formatMetadataSubmittedAt(submission.submittedAt)}`)
-
-  return segments
 }
 
 export function SubmissionDetailHeader({
@@ -64,7 +46,6 @@ export function SubmissionDetailHeader({
   onToggleStar,
 }: SubmissionDetailHeaderProps) {
   const contentPx = `${layoutTokens.contentPaddingX}px`
-  const metadataSegments = buildSubmissionMetadataSegments(submission)
 
   return (
     <Box sx={{ bgcolor: 'background.paper', width: '100%' }}>
@@ -122,55 +103,47 @@ export function SubmissionDetailHeader({
               </Stack>
             </Stack>
 
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.125, flexWrap: 'wrap', gap: 0.75 }}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              spacing={1}
+              sx={{ mt: 0.125, gap: 1 }}
+            >
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0, flexWrap: 'wrap', gap: 0.75 }}>
+                <Typography
+                  variant="subtitle2"
+                  component="p"
+                  sx={{
+                    fontFamily: figmaFontFamilyStack.heading,
+                    fontWeight: 500,
+                    lineHeight: 1.3,
+                    fontSize: { xs: '0.8125rem', md: '0.875rem' },
+                    color: 'text.secondary',
+                  }}
+                >
+                  Submission #{submission.submissionNumber}
+                </Typography>
+                <SubmissionStatusChip
+                  status={submission.status}
+                  onClick={onStatusClick}
+                />
+              </Stack>
               <Typography
                 variant="subtitle2"
                 component="p"
                 sx={{
-                  fontFamily: figmaFontFamilyStack.heading,
-                  fontWeight: 500,
+                  fontFamily: figmaFontFamilyStack.body,
+                  fontWeight: 400,
                   lineHeight: 1.3,
                   fontSize: { xs: '0.8125rem', md: '0.875rem' },
                   color: 'text.secondary',
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
                 }}
               >
-                Submission #{submission.submissionNumber}
+                Submitted {formatSubmittedAt(submission.submittedAt)}
               </Typography>
-              <SubmissionStatusChip
-                status={submission.status}
-                onClick={onStatusClick}
-              />
-            </Stack>
-
-            <Stack
-              direction="row"
-              alignItems="center"
-              flexWrap="wrap"
-              useFlexGap
-              spacing={0.75}
-              sx={{ mt: 0.5, rowGap: 0.5 }}
-            >
-              {metadataSegments.map((segment, index) => (
-                <Stack key={`${segment}-${index}`} direction="row" alignItems="center" spacing={0.75}>
-                  {index > 0 ? (
-                    <Typography
-                      component="span"
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ fontFamily: figmaFontFamilyStack.body, userSelect: 'none' }}
-                    >
-                      ·
-                    </Typography>
-                  ) : null}
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ fontFamily: figmaFontFamilyStack.body }}
-                  >
-                    {segment}
-                  </Typography>
-                </Stack>
-              ))}
             </Stack>
           </Box>
         </Stack>

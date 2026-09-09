@@ -1,5 +1,6 @@
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
@@ -11,7 +12,16 @@ import { accentSubtle, accentSurfaceCardSx } from '@/design-system/theme/themeSu
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 
-export type InsightCalloutVariant = 'copilot' | 'success' | 'warning' | 'error'
+export type InsightCalloutVariant = 'copilot' | 'info' | 'success' | 'warning' | 'error'
+
+/** Semantic insight polarity — maps onto design-system callout statuses. */
+export type InsightStatus = 'positive' | 'neutral' | 'negative'
+
+export function insightStatusToVariant(status: InsightStatus): Exclude<InsightCalloutVariant, 'copilot'> {
+  if (status === 'positive') return 'success'
+  if (status === 'negative') return 'warning'
+  return 'info'
+}
 
 type InsightCalloutProps = {
   variant?: InsightCalloutVariant
@@ -40,6 +50,14 @@ function getVariantStyles(theme: Theme, variant: InsightCalloutVariant) {
     return {
       bgcolor: accentSubtle(theme),
       titleColor: 'text.primary' as const,
+      bodyColor: 'text.primary' as const,
+    }
+  }
+
+  if (variant === 'info') {
+    return {
+      bgcolor: isLight ? theme.figmaPalette.lightBlue[100] : theme.figmaPalette.lightBlue[900],
+      titleColor: isLight ? theme.figmaPalette.lightBlue[900] : theme.figmaPalette.lightBlue[200],
       bodyColor: 'text.primary' as const,
     }
   }
@@ -73,6 +91,9 @@ function VariantIcon({ variant }: { variant: InsightCalloutVariant }) {
   if (variant === 'copilot') {
     return <CopilotIcon size={18} />
   }
+  if (variant === 'info') {
+    return <InfoOutlinedIcon sx={iconSx} />
+  }
   if (variant === 'success') {
     return <CheckCircleOutlineIcon sx={iconSx} />
   }
@@ -82,7 +103,7 @@ function VariantIcon({ variant }: { variant: InsightCalloutVariant }) {
   return <ErrorOutlineIcon sx={iconSx} />
 }
 
-/** Quote-flow insight / callout box — Copilot (light blue), success, warning, or error. */
+/** Quote-flow insight / callout box — Copilot (light blue), info, success, warning, or error. */
 export function InsightCallout({ variant = 'copilot', title, children }: InsightCalloutProps) {
   return (
     <Box
