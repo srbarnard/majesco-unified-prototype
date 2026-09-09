@@ -67,85 +67,32 @@ type PulseChartControlsProps = {
   onPaletteChange: (id: PulseChartPaletteId) => void
 }
 
-export function PulseChartControls({
-  range,
-  onRangeChange,
-  paletteId,
-  onPaletteChange,
-}: PulseChartControlsProps) {
+type PulsePaletteSwitcherProps = {
+  paletteId: PulseChartPaletteId
+  onPaletteChange: (id: PulseChartPaletteId) => void
+}
+
+/** Shared chart palette menu used by Home Pulse and Submission Risk signals. */
+export function PulsePaletteSwitcher({ paletteId, onPaletteChange }: PulsePaletteSwitcherProps) {
   const theme = useTheme()
   const [paletteAnchor, setPaletteAnchor] = useState<null | HTMLElement>(null)
   const paletteOpen = Boolean(paletteAnchor)
 
   return (
     <>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent={{ xs: 'center', md: 'flex-end' }}
-        spacing={0.25}
-        sx={{ width: '100%', flexShrink: 0 }}
+      <IconButton
+        size="small"
+        aria-label={`Chart palette: ${PULSE_CHART_PALETTES[paletteId].label}`}
+        aria-haspopup="listbox"
+        aria-expanded={paletteOpen}
+        onClick={(event) => setPaletteAnchor(event.currentTarget)}
+        sx={{
+          color: 'text.secondary',
+          '&:hover': { color: 'text.primary', bgcolor: (t) => surfaceSubtle(t) },
+        }}
       >
-        <Stack direction="row" alignItems="center" spacing={1} role="tablist" aria-label="Date range">
-          {PULSE_RANGES.map(({ id, label }) => {
-            const selected = range === id
-            return (
-              <Box
-                key={id}
-                component="button"
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                onClick={() => onRangeChange(id)}
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxSizing: 'border-box',
-                  height: 32,
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontFamily: figmaFontFamilyStack.body,
-                  fontSize: '0.8125rem',
-                  fontWeight: selected ? 600 : 500,
-                  lineHeight: 1,
-                  px: 1.25,
-                  py: 0,
-                  borderRadius: 1,
-                  color: selected ? 'primary.contrastText' : 'text.secondary',
-                  bgcolor: selected ? 'primary.main' : (theme) => surfaceMuted(theme),
-                  transition: 'background-color 0.15s ease, color 0.15s ease',
-                  whiteSpace: 'nowrap',
-                  '&:hover': {
-                    bgcolor: selected ? 'primary.dark' : (theme) => surfaceSubtle(theme),
-                  },
-                  '&:focus-visible': {
-                    outline: 2,
-                    outlineColor: 'primary.main',
-                    outlineOffset: 2,
-                  },
-                }}
-              >
-                {label}
-              </Box>
-            )
-          })}
-        </Stack>
-
-        <IconButton
-          size="small"
-          aria-label={`Chart palette: ${PULSE_CHART_PALETTES[paletteId].label}`}
-          aria-haspopup="listbox"
-          aria-expanded={paletteOpen}
-          onClick={(event) => setPaletteAnchor(event.currentTarget)}
-          sx={{
-            color: 'text.secondary',
-            '&:hover': { color: 'text.primary', bgcolor: (theme) => surfaceSubtle(theme) },
-          }}
-        >
-          <PaletteOutlinedIcon sx={{ fontSize: 20 }} />
-        </IconButton>
-      </Stack>
+        <PaletteOutlinedIcon sx={{ fontSize: 20 }} />
+      </IconButton>
 
       <Menu
         anchorEl={paletteAnchor}
@@ -202,5 +149,70 @@ export function PulseChartControls({
         })}
       </Menu>
     </>
+  )
+}
+
+export function PulseChartControls({
+  range,
+  onRangeChange,
+  paletteId,
+  onPaletteChange,
+}: PulseChartControlsProps) {
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent={{ xs: 'center', md: 'flex-end' }}
+      spacing={0.25}
+      sx={{ width: '100%', flexShrink: 0 }}
+    >
+      <Stack direction="row" alignItems="center" spacing={1} role="tablist" aria-label="Date range">
+        {PULSE_RANGES.map(({ id, label }) => {
+          const selected = range === id
+          return (
+            <Box
+              key={id}
+              component="button"
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => onRangeChange(id)}
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxSizing: 'border-box',
+                height: 32,
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: figmaFontFamilyStack.body,
+                fontSize: '0.8125rem',
+                fontWeight: selected ? 600 : 500,
+                lineHeight: 1,
+                px: 1.25,
+                py: 0,
+                borderRadius: 1,
+                color: selected ? 'primary.contrastText' : 'text.secondary',
+                bgcolor: selected ? 'primary.main' : (theme) => surfaceMuted(theme),
+                transition: 'background-color 0.15s ease, color 0.15s ease',
+                whiteSpace: 'nowrap',
+                '&:hover': {
+                  bgcolor: selected ? 'primary.dark' : (theme) => surfaceSubtle(theme),
+                },
+                '&:focus-visible': {
+                  outline: 2,
+                  outlineColor: 'primary.main',
+                  outlineOffset: 2,
+                },
+              }}
+            >
+              {label}
+            </Box>
+          )
+        })}
+      </Stack>
+
+      <PulsePaletteSwitcher paletteId={paletteId} onPaletteChange={onPaletteChange} />
+    </Stack>
   )
 }

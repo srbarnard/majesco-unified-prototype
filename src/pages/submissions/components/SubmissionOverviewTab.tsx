@@ -28,9 +28,11 @@ import {
 import { Link as RouterLink } from 'react-router'
 import type { RecentActivityItem } from '@/app/data/homeMock'
 import { ActivityRail } from '@/app/pages/home/ActivityRail'
+import { PulsePaletteSwitcher } from '@/app/pages/home/PulseToolbar'
 import {
   getPulsePaletteColors,
   usePulsePreferences,
+  type PulseChartPalette,
 } from '@/app/pages/home/pulseChartPalettes'
 import {
   analyticsBodySx,
@@ -428,13 +430,14 @@ function RiskSignalsChart({
   signal,
   range,
   submissionNumber,
+  palette,
 }: {
   signal: RiskSignalPill
   range: RiskChartRange
   submissionNumber: string
+  palette: PulseChartPalette
 }) {
   const theme = useTheme()
-  const { palette } = usePulsePreferences()
   const colors = getPulsePaletteColors(palette, theme.palette.mode)
   const primaryColor = colors[0]
   const secondaryColor = colors[1]
@@ -639,6 +642,7 @@ function RiskSignalsCard({
   )
   const [signal, setSignal] = useState<RiskSignalPill>('loss')
   const [range, setRange] = useState<RiskChartRange>('5Y')
+  const { palette, paletteId, setPaletteId } = usePulsePreferences()
 
   return (
     <Box sx={{ width: '100%', minWidth: 0 }}>
@@ -703,58 +707,65 @@ function RiskSignalsCard({
             <Stack
               direction="row"
               alignItems="center"
-              spacing={1}
-              role="tablist"
-              aria-label="Risk chart range"
+              spacing={0.25}
               sx={{
                 gridArea: 'controls',
                 justifyContent: { xs: 'flex-start', md: 'flex-end' },
                 minWidth: 0,
               }}
             >
-              {RISK_RANGES.map(({ id, label }) => {
-                const selected = range === id
-                return (
-                  <Box
-                    key={id}
-                    component="button"
-                    type="button"
-                    role="tab"
-                    aria-selected={selected}
-                    onClick={() => setRange(id)}
-                    sx={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxSizing: 'border-box',
-                      height: 32,
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontFamily: figmaFontFamilyStack.body,
-                      fontSize: '0.8125rem',
-                      fontWeight: selected ? 600 : 500,
-                      lineHeight: 1,
-                      px: 1.25,
-                      py: 0,
-                      borderRadius: 1,
-                      color: selected ? 'primary.contrastText' : 'text.secondary',
-                      bgcolor: selected ? 'primary.main' : (t) => surfaceMuted(t),
-                      transition: 'background-color 0.15s ease, color 0.15s ease',
-                      whiteSpace: 'nowrap',
-                      '&:hover': {
-                        bgcolor: selected ? 'primary.dark' : (t) => surfaceSubtle(t),
-                      },
-                      '&:focus-visible': {
-                        outline: 2,
-                        outlineColor: 'primary.main',
-                        outlineOffset: 2,
-                      },
-                    }}
-                  >
-                    {label}
-                  </Box>
-                )
-              })}
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1}
+                role="tablist"
+                aria-label="Risk chart range"
+              >
+                {RISK_RANGES.map(({ id, label }) => {
+                  const selected = range === id
+                  return (
+                    <Box
+                      key={id}
+                      component="button"
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      onClick={() => setRange(id)}
+                      sx={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxSizing: 'border-box',
+                        height: 32,
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontFamily: figmaFontFamilyStack.body,
+                        fontSize: '0.8125rem',
+                        fontWeight: selected ? 600 : 500,
+                        lineHeight: 1,
+                        px: 1.25,
+                        py: 0,
+                        borderRadius: 1,
+                        color: selected ? 'primary.contrastText' : 'text.secondary',
+                        bgcolor: selected ? 'primary.main' : (t) => surfaceMuted(t),
+                        transition: 'background-color 0.15s ease, color 0.15s ease',
+                        whiteSpace: 'nowrap',
+                        '&:hover': {
+                          bgcolor: selected ? 'primary.dark' : (t) => surfaceSubtle(t),
+                        },
+                        '&:focus-visible': {
+                          outline: 2,
+                          outlineColor: 'primary.main',
+                          outlineOffset: 2,
+                        },
+                      }}
+                    >
+                      {label}
+                    </Box>
+                  )
+                })}
+              </Stack>
+              <PulsePaletteSwitcher paletteId={paletteId} onPaletteChange={setPaletteId} />
             </Stack>
 
             <Box sx={{ gridArea: 'chart', minWidth: 0 }}>
@@ -762,6 +773,7 @@ function RiskSignalsCard({
                 signal={signal}
                 range={range}
                 submissionNumber={submission.submissionNumber}
+                palette={palette}
               />
               <RiskSignalInsight
                 key={submission.submissionNumber}
