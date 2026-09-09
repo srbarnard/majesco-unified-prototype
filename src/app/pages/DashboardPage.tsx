@@ -244,9 +244,9 @@ export function DashboardPage() {
             bgcolor: 'background.paper',
           }}
         >
-          <Stack spacing={0} sx={{ width: '100%' }}>
+          <Stack spacing={0} sx={{ width: '100%', minWidth: 0, maxWidth: '100%' }}>
             <PriorityTasksCarousel onTaskOpen={handleOpenPriorityTask} />
-            <Box sx={{ mt: 4 }}>
+            <Box sx={{ mt: 4, minWidth: 0 }}>
               <PulseModule
                 onActivityCopilot={handleActivityCopilot}
                 activeCopilotActivityId={focusedActivity?.id ?? null}

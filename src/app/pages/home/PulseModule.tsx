@@ -26,7 +26,7 @@ export function PulseModule({
   const activities = useMemo(() => getPulseRailActivities(filter, 6), [filter])
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%', minWidth: 0, maxWidth: '100%' }}>
       <Box
         sx={{
           display: 'grid',
@@ -65,7 +65,7 @@ export function PulseModule({
         </Box>
       </Box>
 
-      <Box sx={{ mt: 5 }}>
+      <Box sx={{ mt: 5, width: '100%', minWidth: 0 }}>
         <Typography
           component="h3"
           variant="subtitle1"

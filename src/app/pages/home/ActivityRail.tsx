@@ -69,9 +69,12 @@ function ActivityRailRow({
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: `${RAIL_WIDTH}px 1fr`,
+        gridTemplateColumns: `${RAIL_WIDTH}px minmax(0, 1fr)`,
         columnGap: 1.5,
         alignItems: 'stretch',
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
       }}
     >
       <Box
@@ -145,6 +148,10 @@ function ActivityRailRow({
         sx={{
           display: 'block',
           width: '100%',
+          maxWidth: '100%',
+          minWidth: 0,
+          boxSizing: 'border-box',
+          overflow: 'hidden',
           textAlign: 'left',
           border: 'none',
           cursor: onAskCopilot || onSelect ? 'pointer' : 'default',
@@ -168,10 +175,17 @@ function ActivityRailRow({
           },
         }}
       >
-        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          spacing={1}
+          sx={{ minWidth: 0, width: '100%' }}
+        >
+          <Box sx={{ minWidth: 0, flex: '1 1 0%', overflow: 'hidden' }}>
             <Typography
               variant="body2"
+              noWrap
               sx={{
                 fontFamily: figmaFontFamilyStack.heading,
                 fontWeight: 600,
@@ -191,6 +205,7 @@ function ActivityRailRow({
                 mt: 0.25,
                 color: rowSelected ? 'inherit' : 'text.secondary',
                 opacity: rowSelected ? 0.9 : 1,
+                minWidth: 0,
               }}
             >
               {getSubtitle(item)}
@@ -199,6 +214,7 @@ function ActivityRailRow({
 
           <Typography
             variant="caption"
+            noWrap
             sx={{
               fontFamily: figmaFontFamilyStack.body,
               fontSize: '0.6875rem',
@@ -245,10 +261,10 @@ export function ActivityRail({
   }
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={2} sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
       {groups.map(({ group, items: groupItems }) => {
         return (
-          <Box key={group}>
+          <Box key={group} sx={{ width: '100%', minWidth: 0 }}>
             <Typography
               variant="subtitle2"
               sx={{
@@ -261,7 +277,7 @@ export function ActivityRail({
             >
               {group}
             </Typography>
-            <Box>
+            <Box sx={{ width: '100%', minWidth: 0 }}>
               {groupItems.map((item, index) => {
                 const isLastRow = index === groupItems.length - 1
                 return (
