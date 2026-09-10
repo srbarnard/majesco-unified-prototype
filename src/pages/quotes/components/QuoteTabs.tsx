@@ -2,7 +2,7 @@ import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 
-export type QuoteTab = 'overview' | 'documents' | 'underwriting' | 'activity'
+export type QuoteTab = 'overview' | 'documents' | 'underwriting'
 
 type QuoteTabsProps = {
   value: QuoteTab
@@ -13,7 +13,6 @@ const tabs: { value: QuoteTab; label: string }[] = [
   { value: 'overview', label: 'Overview' },
   { value: 'documents', label: 'Documents' },
   { value: 'underwriting', label: 'Underwriting' },
-  { value: 'activity', label: 'Activity' },
 ]
 
 export function QuoteTabs({ value, onChange }: QuoteTabsProps) {

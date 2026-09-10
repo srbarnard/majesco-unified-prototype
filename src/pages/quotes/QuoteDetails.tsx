@@ -3,13 +3,16 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
+import type { RecentActivityItem } from '@/app/data/homeMock'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import {
   useRegisterRightToolCopilot,
+  useRegisterRightToolCopilotCustom,
   useRegisterRightToolFilter,
   useRegisterRightToolParties,
   useRegisterRightToolRecordContext,
 } from '@/app/hooks/useRightToolRegistration'
+import { ActivityDetailsPanel } from '@/app/pages/home/ActivityDetailsPanel'
 import { Card } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -27,6 +30,7 @@ import { emptyDocumentsFilters, type DocumentsFilters } from '@/pages/policies/f
 import { QuoteHeader } from '@/pages/quotes/components/QuoteHeader'
 import { QuoteOverviewTab } from '@/pages/quotes/components/QuoteOverviewTab'
 import type { QuoteTab } from '@/pages/quotes/components/QuoteTabs'
+import { getQuoteActivity } from '@/pages/quotes/data/mockQuoteActivity'
 import { getQuoteDocuments } from '@/pages/quotes/data/mockQuoteDocuments'
 import {
   getQuoteOverviewStats,
@@ -40,9 +44,11 @@ const bodySx = {
 } as const
 
 function parseQuoteTab(value: string | null): QuoteTab | null {
-  if (value === 'overview' || value === 'documents' || value === 'underwriting' || value === 'activity') {
+  if (value === 'overview' || value === 'documents' || value === 'underwriting') {
     return value
   }
+  // Legacy ?tab=activity bookmarks land on Overview (activity rail lives there now).
+  if (value === 'activity') return 'overview'
   return null
 }
 
@@ -62,12 +68,38 @@ export function QuoteDetails() {
   const [appliedDocumentsFilters, setAppliedDocumentsFilters] = useState<DocumentsFilters>(emptyDocumentsFilters)
   const [copilotDocumentFocus, setCopilotDocumentFocus] = useState<PolicyDocument | null>(null)
   const [attachMode, setAttachMode] = useState<DocumentAttachMode | null>(null)
+  const [focusedActivity, setFocusedActivity] = useState<RecentActivityItem | null>(null)
   const didInitCopilot = useRef(false)
   const wasDesktop = useRef(isDesktop)
+
+  const recentActivity = useMemo(() => getQuoteActivity(quote), [quote])
+  const overviewStats = useMemo(() => getQuoteOverviewStats(quote), [quote])
 
   const isDocumentsTab = activeTab === 'documents'
   const attachTarget = attachMode?.target ?? null
   const copilotDocumentId = copilotDocumentFocus?.id ?? null
+  const activeActivityId =
+    activeTool === 'copilot' && focusedActivity && !isDocumentsTab ? focusedActivity.id : null
+
+  const handleClearActivityFocus = useCallback(() => {
+    setFocusedActivity(null)
+    openTool('copilot')
+  }, [openTool])
+
+  const handleActivitySelect = useCallback(
+    (activity: RecentActivityItem) => {
+      if (focusedActivity?.id === activity.id) {
+        setFocusedActivity(null)
+        openTool('copilot')
+        return
+      }
+      setCopilotDocumentFocus(null)
+      setAttachMode(null)
+      setFocusedActivity(activity)
+      openTool('copilot')
+    },
+    [focusedActivity?.id, openTool],
+  )
 
   useRegisterRightToolRecordContext(
     { title: quote.insuredName, subtitle: quote.quoteNumber },
@@ -90,6 +122,20 @@ export function QuoteDetails() {
     // Primitives only — `quote` from resolveQuoteContext() is a new object each call and
     // would re-fire registration → RightTool setState → freeze SPA navigation.
     [attachTarget, copilotDocumentId, isDocumentsTab, quote.quoteNumber],
+  )
+
+  useRegisterRightToolCopilotCustom(
+    !isDocumentsTab && focusedActivity ? (
+      <ActivityDetailsPanel
+        activity={focusedActivity}
+        onBack={handleClearActivityFocus}
+        onClose={() => {
+          setFocusedActivity(null)
+          closeTool()
+        }}
+      />
+    ) : null,
+    [closeTool, focusedActivity?.id, handleClearActivityFocus, isDocumentsTab],
   )
 
   const handleApplyDocumentsFilters = useCallback((filters: DocumentsFilters) => {
@@ -127,6 +173,7 @@ export function QuoteDetails() {
       closeTool()
       setAttachMode(null)
       setCopilotDocumentFocus(null)
+      setFocusedActivity(null)
     }
     wasDesktop.current = isDesktop
   }, [activeTool, closeTool, isDesktop])
@@ -154,6 +201,7 @@ export function QuoteDetails() {
     setActiveTab(tabFromUrl)
     setCopilotDocumentFocus(null)
     setAttachMode(null)
+    setFocusedActivity(null)
     // Ref avoids openTool/activeTool identity changes re-entering this effect.
     syncTabPanelsRef.current(tabFromUrl)
   }, [tabFromUrl])
@@ -163,6 +211,7 @@ export function QuoteDetails() {
       setActiveTab(tab)
       setCopilotDocumentFocus(null)
       setAttachMode(null)
+      setFocusedActivity(null)
       syncTabPanels(tab)
     },
     [syncTabPanels],
@@ -249,7 +298,13 @@ export function QuoteDetails() {
             />
           )}
           {activeTab === 'overview' && (
-            <QuoteOverviewTab quote={quote} stats={getQuoteOverviewStats(quote)} />
+            <QuoteOverviewTab
+              quote={quote}
+              stats={overviewStats}
+              recentActivity={recentActivity}
+              onActivitySelect={handleActivitySelect}
+              activeActivityId={activeActivityId}
+            />
           )}
           {activeTab === 'underwriting' && (
             <Card title="Underwriting">
@@ -260,13 +315,6 @@ export function QuoteDetails() {
                   </Typography>
                 ))}
               </Stack>
-            </Card>
-          )}
-          {activeTab === 'activity' && (
-            <Card title="Activity">
-              <Typography variant="body2" color="text.secondary" sx={bodySx}>
-                Rating, referral, and producer activity for this quote will appear here.
-              </Typography>
             </Card>
           )}
         </Box>
