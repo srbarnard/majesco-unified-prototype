@@ -11,6 +11,8 @@ import { Link as RouterLink } from 'react-router'
 import {
   Area,
   AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
@@ -373,7 +375,7 @@ function RiskScoreAreaChart({
   )
 }
 
-function PremiumMixRibbonChart({
+function PremiumMixStackedBarChart({
   data,
   range,
   colors,
@@ -384,11 +386,12 @@ function PremiumMixRibbonChart({
 }) {
   const theme = useTheme()
   const axisStyle = getAnalyticsChartAxisStyle(theme)
+  const gridStroke = getAnalyticsChartGridStroke(theme)
   const dark = isDarkMode(theme)
   const autoColor = colors[0] ?? '#0DA3A6'
   const liabilityColor = colors[1] ?? '#5229BC'
   const wcColor = colors[2] ?? '#137835'
-  const chartKey = `insured-ribbon-${range}-${autoColor}-${theme.palette.mode}`
+  const chartKey = `insured-mix-bar-${range}-${autoColor}-${theme.palette.mode}`
   const chartData = useMemo(() => sliceInsuredSeriesByRange(data, range), [data, range])
 
   const series = [
@@ -402,24 +405,8 @@ function PremiumMixRibbonChart({
       <ChartLegend items={series.map(({ label, color }) => ({ label, color }))} />
       <Box sx={{ width: '100%', height: CHART_HEIGHT, minHeight: CHART_HEIGHT }}>
         <ResponsiveContainer width="100%" height="100%">
-          {/*
-            Ribbon / stream effect: stacked AreaChart with silhouette offset + monotone curves.
-            Recharts has no native RibbonChart — this is the supported workaround.
-          */}
-          <AreaChart
-            key={chartKey}
-            data={chartData}
-            stackOffset="silhouette"
-            margin={{ top: 16, right: 8, left: 0, bottom: 4 }}
-          >
-            <defs>
-              {series.map(({ key, color }) => (
-                <linearGradient key={key} id={`insured-ribbon-${key}-${chartKey}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={dark ? 0.92 : 0.88} />
-                  <stop offset="100%" stopColor={color} stopOpacity={dark ? 0.55 : 0.62} />
-                </linearGradient>
-              ))}
-            </defs>
+          <BarChart key={chartKey} data={chartData} margin={{ top: 12, right: 8, left: 0, bottom: 4 }}>
+            <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="label"
               tick={axisStyle}
@@ -428,10 +415,15 @@ function PremiumMixRibbonChart({
               interval="preserveStartEnd"
               minTickGap={28}
             />
-            {/* Absolute scale is less meaningful with silhouette centering — hide Y for ribbon focus. */}
-            <YAxis hide />
+            <YAxis
+              tick={axisStyle}
+              tickLine={false}
+              axisLine={false}
+              width={44}
+              tickFormatter={(value: number) => `$${value}K`}
+            />
             <Tooltip
-              cursor={{ stroke: autoColor, strokeWidth: 1, strokeOpacity: dark ? 0.45 : 0.3 }}
+              cursor={{ fill: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null
                 const point = payload[0]?.payload as InsuredPremiumMixPoint | undefined
@@ -471,26 +463,21 @@ function PremiumMixRibbonChart({
                 )
               }}
             />
-            {series.map(({ key, label, color }) => (
-              <Area
+            {series.map(({ key, label, color }, index) => (
+              <Bar
                 key={key}
-                type="monotone"
                 dataKey={key}
                 name={label}
-                stroke={color}
-                strokeWidth={1.5}
-                fill={`url(#insured-ribbon-${key}-${chartKey})`}
-                fillOpacity={1}
-                stackId="ribbon"
-                dot={false}
-                activeDot={{ r: 4, strokeWidth: 1.5 }}
+                stackId="mix"
+                fill={color}
+                radius={index === series.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
                 isAnimationActive
                 animationBegin={0}
-                animationDuration={900}
+                animationDuration={700}
                 animationEasing="ease-out"
               />
             ))}
-          </AreaChart>
+          </BarChart>
         </ResponsiveContainer>
       </Box>
     </Box>
@@ -617,7 +604,7 @@ function RiskProfileSection() {
           {signal === 'risk' ? (
             <RiskScoreAreaChart data={insuredRiskScoreSeries} range={range} lineColor={colors[0]} />
           ) : (
-            <PremiumMixRibbonChart data={insuredPremiumMixSeries} range={range} colors={colors} />
+            <PremiumMixStackedBarChart data={insuredPremiumMixSeries} range={range} colors={colors} />
           )}
           <InsuredRiskInsightCallout signal={signal} range={range} />
         </Box>

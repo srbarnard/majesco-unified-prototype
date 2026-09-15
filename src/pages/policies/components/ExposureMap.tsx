@@ -13,7 +13,7 @@ import { feature } from 'topojson-client'
 import type { FeatureCollection, Geometry } from 'geojson'
 import type { GeometryCollection, Topology } from 'topojson-specification'
 import { analyticsBodySx } from '@/design-system/components/analytics/analyticsStyles'
-import { isDarkMode } from '@/design-system/theme/themeSurfaces'
+import { isDarkMode, surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 
 const STATES_TOPOLOGY_URL = '/geo/states-10m.json'
@@ -23,8 +23,33 @@ const MAP_HEIGHT = 260
 /** Alaska + Hawaii — omitted so CONUS fills the viewport. */
 const HIDDEN_FIPS = new Set(['02', '15'])
 
-/** California label anchor (lon/lat). */
-const CA_LABEL_COORDS: [number, number] = [-119.5, 37.2]
+/**
+ * Label anchors (lon/lat) for states that appear in exposure demos.
+ * Only exposure states are labeled — not every CONUS outline.
+ */
+const STATE_LABEL_COORDS: Record<string, [number, number]> = {
+  '04': [-111.7, 34.2], // AZ
+  '06': [-119.5, 37.2], // CA
+  '08': [-105.5, 39.0], // CO
+  '09': [-72.7, 41.6], // CT
+  '12': [-81.7, 27.8], // FL
+  '13': [-83.4, 32.7], // GA
+  '17': [-89.2, 40.0], // IL
+  '18': [-86.3, 39.9], // IN
+  '22': [-91.8, 31.0], // LA
+  '27': [-94.3, 46.0], // MN
+  '32': [-116.6, 39.3], // NV
+  '34': [-74.6, 40.2], // NJ
+  '35': [-106.0, 34.4], // NM
+  '36': [-75.5, 43.0], // NY
+  '39': [-82.8, 40.3], // OH
+  '40': [-97.5, 35.5], // OK
+  '41': [-120.5, 44.0], // OR
+  '42': [-77.6, 40.9], // PA
+  '48': [-99.3, 31.4], // TX
+  '53': [-120.5, 47.4], // WA
+  '55': [-89.8, 44.5], // WI
+}
 
 /** Light-mode zero-exposure fill — near card / paper surface. */
 const NONE_FILL_LIGHT = '#F4F2EE'
@@ -78,7 +103,9 @@ function getExposureFills(
 } {
   const dark = isDarkMode(theme)
   const paper = theme.palette.background.paper
-  const none = dark ? paper : NONE_FILL_LIGHT
+  // Zero-exposure must stay distinct from the map canvas — paper-on-paper vanishes in dark.
+  const noneIdle = dark ? surfaceMuted(theme) : NONE_FILL_LIGHT
+  const noneHover = dark ? surfaceSubtle(theme) : NONE_FILL_LIGHT
 
   const high = paletteColors[0] ?? '#0DA3A6'
   const medium = paletteColors[1] ?? '#00294D'
@@ -89,13 +116,13 @@ function getExposureFills(
 
   return {
     idle: {
-      none,
+      none: noneIdle,
       low: soften(low),
       medium: soften(medium),
       high: soften(high),
     },
     hover: {
-      none,
+      none: noneHover,
       low,
       medium,
       high,
@@ -165,7 +192,8 @@ export function ExposureMap({
 }: ExposureMapProps) {
   const theme = useTheme()
   const fills = getExposureFills(theme, paletteColors)
-  const stroke = isDarkMode(theme) ? theme.palette.background.paper : '#FFFFFF'
+  // Dark: divider stroke keeps zero-exposure borders visible against paper canvas.
+  const stroke = isDarkMode(theme) ? theme.palette.divider : '#FFFFFF'
   const [statesGeo, setStatesGeo] = useState<FeatureCollection<Geometry> | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [hovered, setHovered] = useState<HoveredState | null>(null)
@@ -303,26 +331,33 @@ export function ExposureMap({
               }
             </Geographies>
 
-            <Annotation
-              subject={CA_LABEL_COORDS}
-              dx={0}
-              dy={0}
-              connectorProps={{ stroke: 'none', strokeWidth: 0 }}
-            >
-              <text
-                textAnchor="middle"
-                alignmentBaseline="middle"
-                style={{
-                  fontFamily: figmaFontFamilyStack.body,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  fill: '#FFFFFF',
-                  pointerEvents: 'none',
-                }}
-              >
-                CA
-              </text>
-            </Annotation>
+            {Object.entries(exposureByFips).map(([fips, row]) => {
+              const coords = STATE_LABEL_COORDS[fips]
+              if (!coords || row.units <= 0) return null
+              return (
+                <Annotation
+                  key={`label-${fips}`}
+                  subject={coords}
+                  dx={0}
+                  dy={0}
+                  connectorProps={{ stroke: 'none', strokeWidth: 0 }}
+                >
+                  <text
+                    textAnchor="middle"
+                    alignmentBaseline="middle"
+                    style={{
+                      fontFamily: figmaFontFamilyStack.body,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      fill: '#FFFFFF',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    {row.state}
+                  </text>
+                </Annotation>
+              )
+            })}
           </ComposableMap>
         )}
 

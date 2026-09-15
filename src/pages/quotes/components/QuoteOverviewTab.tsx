@@ -7,8 +7,9 @@ import { keyframes, useTheme } from '@mui/material/styles'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link as RouterLink } from 'react-router'
 import {
-  Area,
-  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -25,6 +26,7 @@ import {
 import {
   analyticsBodySx,
   getAnalyticsChartAxisStyle,
+  getAnalyticsChartGridStroke,
 } from '@/design-system/components/analytics/analyticsStyles'
 import { InsightCallout, insightStatusToVariant } from '@/design-system/components/InsightCallout'
 import { isDarkMode, surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
@@ -152,7 +154,7 @@ function CoverageInsightCallout({
   )
 }
 
-function PremiumMixRibbonChart({
+function PremiumMixStackedBarChart({
   data,
   range,
   colors,
@@ -163,8 +165,9 @@ function PremiumMixRibbonChart({
 }) {
   const theme = useTheme()
   const axisStyle = getAnalyticsChartAxisStyle(theme)
+  const gridStroke = getAnalyticsChartGridStroke(theme)
   const dark = isDarkMode(theme)
-  const chartKey = `quote-mix-${range}-${colors[0]}-${theme.palette.mode}`
+  const chartKey = `quote-mix-bar-${range}-${colors[0]}-${theme.palette.mode}`
   const chartData = useMemo(() => sliceQuoteSeriesByRange(data, range), [data, range])
 
   const series = COVERAGE_SERIES.map((entry, index) => ({
@@ -177,20 +180,8 @@ function PremiumMixRibbonChart({
       <ChartLegend items={series.map(({ label, color }) => ({ label, color }))} />
       <Box sx={{ width: '100%', height: CHART_HEIGHT, minHeight: CHART_HEIGHT }}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
-            key={chartKey}
-            data={chartData}
-            stackOffset="silhouette"
-            margin={{ top: 16, right: 8, left: 0, bottom: 4 }}
-          >
-            <defs>
-              {series.map(({ key, color }) => (
-                <linearGradient key={key} id={`quote-mix-${key}-${chartKey}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={dark ? 0.92 : 0.88} />
-                  <stop offset="100%" stopColor={color} stopOpacity={dark ? 0.55 : 0.62} />
-                </linearGradient>
-              ))}
-            </defs>
+          <BarChart key={chartKey} data={chartData} margin={{ top: 12, right: 8, left: 0, bottom: 4 }}>
+            <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="label"
               tick={axisStyle}
@@ -199,9 +190,15 @@ function PremiumMixRibbonChart({
               interval="preserveStartEnd"
               minTickGap={28}
             />
-            <YAxis hide />
+            <YAxis
+              tick={axisStyle}
+              tickLine={false}
+              axisLine={false}
+              width={44}
+              tickFormatter={(value: number) => `$${value}K`}
+            />
             <Tooltip
-              cursor={{ stroke: series[0]?.color, strokeWidth: 1, strokeOpacity: dark ? 0.45 : 0.3 }}
+              cursor={{ fill: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null
                 const point = payload[0]?.payload as QuoteCoverageMixPoint | undefined
@@ -241,33 +238,28 @@ function PremiumMixRibbonChart({
                 )
               }}
             />
-            {series.map(({ key, label, color }) => (
-              <Area
+            {series.map(({ key, label, color }, index) => (
+              <Bar
                 key={key}
-                type="monotone"
                 dataKey={key}
                 name={label}
-                stroke={color}
-                strokeWidth={1.5}
-                fill={`url(#quote-mix-${key}-${chartKey})`}
-                fillOpacity={1}
-                stackId="ribbon"
-                dot={false}
-                activeDot={{ r: 4, strokeWidth: 1.5 }}
+                stackId="mix"
+                fill={color}
+                radius={index === series.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
                 isAnimationActive
                 animationBegin={0}
-                animationDuration={900}
+                animationDuration={700}
                 animationEasing="ease-out"
               />
             ))}
-          </AreaChart>
+          </BarChart>
         </ResponsiveContainer>
       </Box>
     </Box>
   )
 }
 
-function LineShareStackedChart({
+function LineShareGroupedBarChart({
   data,
   range,
   colors,
@@ -278,9 +270,14 @@ function LineShareStackedChart({
 }) {
   const theme = useTheme()
   const axisStyle = getAnalyticsChartAxisStyle(theme)
+  const gridStroke = getAnalyticsChartGridStroke(theme)
   const dark = isDarkMode(theme)
-  const chartKey = `quote-share-${range}-${colors[0]}-${theme.palette.mode}`
-  const chartData = useMemo(() => sliceQuoteSeriesByRange(data, range), [data, range])
+  const chartKey = `quote-share-grouped-${range}-${colors[0]}-${theme.palette.mode}`
+  const chartData = useMemo(() => {
+    const sliced = sliceQuoteSeriesByRange(data, range)
+    const labeled = sliced.filter((point) => point.label.trim().length > 0)
+    return labeled.length > 0 ? labeled : sliced
+  }, [data, range])
 
   const series = COVERAGE_SERIES.map((entry, index) => ({
     ...entry,
@@ -292,20 +289,8 @@ function LineShareStackedChart({
       <ChartLegend items={series.map(({ label, color }) => ({ label, color }))} />
       <Box sx={{ width: '100%', height: CHART_HEIGHT, minHeight: CHART_HEIGHT }}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
-            key={chartKey}
-            data={chartData}
-            stackOffset="expand"
-            margin={{ top: 12, right: 8, left: 0, bottom: 4 }}
-          >
-            <defs>
-              {series.map(({ key, color }) => (
-                <linearGradient key={key} id={`quote-share-${key}-${chartKey}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={dark ? 0.85 : 0.8} />
-                  <stop offset="100%" stopColor={color} stopOpacity={dark ? 0.45 : 0.55} />
-                </linearGradient>
-              ))}
-            </defs>
+          <BarChart key={chartKey} data={chartData} margin={{ top: 12, right: 8, left: 0, bottom: 4 }}>
+            <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="label"
               tick={axisStyle}
@@ -319,10 +304,11 @@ function LineShareStackedChart({
               tickLine={false}
               axisLine={false}
               width={36}
-              tickFormatter={(value: number) => `${Math.round(value * 100)}%`}
+              domain={[0, 100]}
+              tickFormatter={(value: number) => `${value}%`}
             />
             <Tooltip
-              cursor={{ stroke: series[0]?.color, strokeWidth: 1, strokeOpacity: dark ? 0.45 : 0.3 }}
+              cursor={{ fill: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null
                 const point = payload[0]?.payload as QuoteCoverageSharePoint | undefined
@@ -363,25 +349,19 @@ function LineShareStackedChart({
               }}
             />
             {series.map(({ key, label, color }) => (
-              <Area
+              <Bar
                 key={key}
-                type="monotone"
                 dataKey={key}
                 name={label}
-                stroke={color}
-                strokeWidth={1.25}
-                fill={`url(#quote-share-${key}-${chartKey})`}
-                fillOpacity={1}
-                stackId="share"
-                dot={false}
-                activeDot={{ r: 4, strokeWidth: 1.5 }}
+                fill={color}
+                radius={[3, 3, 0, 0]}
                 isAnimationActive
                 animationBegin={0}
-                animationDuration={900}
+                animationDuration={700}
                 animationEasing="ease-out"
               />
             ))}
-          </AreaChart>
+          </BarChart>
         </ResponsiveContainer>
       </Box>
     </Box>
@@ -463,9 +443,9 @@ function CoverageBreakdownSection() {
 
         <Box sx={{ gridArea: 'chart', minWidth: 0 }}>
           {signal === 'mix' ? (
-            <PremiumMixRibbonChart data={quoteCoverageMixSeries} range={range} colors={colors} />
+            <PremiumMixStackedBarChart data={quoteCoverageMixSeries} range={range} colors={colors} />
           ) : (
-            <LineShareStackedChart data={quoteCoverageShareSeries} range={range} colors={colors} />
+            <LineShareGroupedBarChart data={quoteCoverageShareSeries} range={range} colors={colors} />
           )}
           <CoverageInsightCallout signal={signal} range={range} />
         </Box>
