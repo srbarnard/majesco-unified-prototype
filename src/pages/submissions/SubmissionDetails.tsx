@@ -48,7 +48,6 @@ import {
   buildQuotePackageSent,
   submissionsMock,
   syncSubmissionListRecord,
-  type PremiumEstimate,
   type SubmissionStatus,
 } from '@/pages/submissions/data/mockSubmissions'
 
