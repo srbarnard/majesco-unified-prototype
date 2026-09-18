@@ -384,6 +384,15 @@ export function SubmissionDetails() {
             } satisfies SubmissionDetailLocationState,
           })
         }}
+        onOpenNextBlockedSubmission={(next) => {
+          setCopilotSendConfirmation(null)
+          navigate(`/submissions/${encodeURIComponent(next.submissionNumber)}`, {
+            state: {
+              openCopilot: true,
+              entryMode: 'status',
+            } satisfies SubmissionDetailLocationState,
+          })
+        }}
         onClose={closeTool}
       />
     ),
