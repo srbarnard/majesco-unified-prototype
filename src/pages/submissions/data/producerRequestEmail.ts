@@ -365,6 +365,16 @@ export function findNextReadySubmission(
   return ready.find((row) => row.assignedTo === currentUser) ?? ready[0] ?? null
 }
 
+export function findNextBlockedSubmission(
+  rows: SubmissionListRecord[],
+  excludeId: string,
+  currentUser = SUBMISSIONS_CURRENT_USER,
+): SubmissionListRecord | null {
+  const blocked = rows.filter((row) => row.status === 'Blocked' && row.id !== excludeId)
+  if (blocked.length === 0) return null
+  return blocked.find((row) => row.assignedTo === currentUser) ?? blocked[0] ?? null
+}
+
 export function buildQuoteSentNextUpLine(
   next: SubmissionListRecord | null,
   currentUser = SUBMISSIONS_CURRENT_USER,
@@ -373,6 +383,24 @@ export function buildQuoteSentNextUpLine(
   const assignee =
     next.assignedTo === currentUser ? 'assigned to you' : `assigned to ${next.assignedTo}`
   return `Next up in this queue: ${next.submissionNumber} ${next.insuredName} · Ready · ${assignee}.`
+}
+
+export function buildRequestInfoNextUpLine(
+  remainingIssueCount: number,
+  nextBlocked: SubmissionListRecord | null,
+  currentUser = SUBMISSIONS_CURRENT_USER,
+) {
+  if (remainingIssueCount > 0) {
+    return remainingIssueCount === 1
+      ? '1 blocking issue still open on this submission.'
+      : `${remainingIssueCount} blocking issues still open on this submission.`
+  }
+  if (!nextBlocked) return 'No other Blocked submissions in this queue.'
+  const assignee =
+    nextBlocked.assignedTo === currentUser
+      ? 'assigned to you'
+      : `assigned to ${nextBlocked.assignedTo}`
+  return `Next up in this queue: ${nextBlocked.submissionNumber} ${nextBlocked.insuredName} · Blocked · ${assignee}.`
 }
 
 /** Confirmation copy after sending a blocked-submission request-info email. */

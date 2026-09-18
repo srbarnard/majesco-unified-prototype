@@ -396,6 +396,26 @@ export function SubmissionsPage() {
     }))
   }, [])
 
+  const handleOpenNextBlockedSubmission = useCallback(
+    (submission: SubmissionListRecord) => {
+      setCopilotSendConfirmation(null)
+      setCopilotSubmissionFocus(submission)
+      setRowSelectionModel([submission.id])
+      setCopilotEntryMode('status')
+      setCopilotIssueFocusId(null)
+      setNotesTarget(null)
+      openTool('copilot')
+    },
+    [openTool],
+  )
+
+  const handleShowBlockedOnly = useCallback(() => {
+    setAppliedFilters((current) => ({
+      ...current,
+      statuses: ['Blocked'],
+    }))
+  }, [])
+
   const handleDiscardSelected = useCallback(() => {
     if (selectedSubmissions.length === 0) return
     setDiscardTargets(selectedSubmissions)
@@ -471,6 +491,8 @@ export function SubmissionsPage() {
       onSendConfirmation={setCopilotSendConfirmation}
       onOpenNextReadySubmission={handleOpenNextReadySubmission}
       onShowReadyOnly={handleShowReadyOnly}
+      onOpenNextBlockedSubmission={handleOpenNextBlockedSubmission}
+      onShowBlockedOnly={handleShowBlockedOnly}
       onClearFocus={() => {
         setCopilotSubmissionFocus(null)
         setCopilotEntryMode('insight')
@@ -498,6 +520,8 @@ export function SubmissionsPage() {
       handleOpenNextReadySubmission,
       handleResolveIssue,
       handleShowReadyOnly,
+      handleOpenNextBlockedSubmission,
+      handleShowBlockedOnly,
       filteredRows,
       selectedSubmissionKey,
     ],
