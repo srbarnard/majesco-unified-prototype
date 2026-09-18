@@ -22,6 +22,7 @@ function ToolPanelBody() {
     closeTool,
     copilotSession,
     copilotCustomContent,
+    copilotCustomRevision,
     notesCustomContent,
     filterContent,
     partiesContent,
@@ -32,7 +33,12 @@ function ToolPanelBody() {
     <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {activeTool === 'copilot' ? (
         copilotCustomContent ? (
-          copilotCustomContent
+          <Box
+            key={copilotCustomRevision}
+            sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          >
+            {copilotCustomContent}
+          </Box>
         ) : copilotSession ? (
           <CopilotPanel {...copilotSession} onClose={closeTool} />
         ) : (

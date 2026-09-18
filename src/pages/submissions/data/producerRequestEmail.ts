@@ -258,18 +258,97 @@ export function buildQuotePackageSendConfirmation(
   recipient = SUBMISSION_PRODUCER_EMAIL,
 ) {
   const alternatives = included.filter((option) => option.label !== recommended.label)
-  const recommendedLine =
-    alternatives.length === 0
-      ? `Recommended: ${recommended.label}.`
-      : alternatives.length === 1
-        ? `Recommended: ${recommended.label}. ${alternatives[0].label} included.`
-        : `Recommended: ${recommended.label}. ${alternatives.map((option) => option.label).join(', ')} included.`
-
-  return [
+  const lines = [
     `Quote options sent to ${recipient} for ${submission.submissionNumber}.`,
     'Attached: quote letter, option comparison.',
-    recommendedLine,
-    `${submission.submissionNumber} is now Quoted.`,
+    `Recommended: ${recommended.label} ${formatPremiumRange(recommended.range)}.`,
+  ]
+  for (const option of alternatives) {
+    lines.push(`Also sent: ${option.label} ${formatPremiumRange(option.range)}.`)
+  }
+  lines.push(`${submission.submissionNumber} is now Quoted.`)
+  return lines.join('\n')
+}
+
+/** Rebuild Quote sent body from a stored package when reopening a Quoted submission. */
+export function buildQuoteSentMessageFromPackage(
+  submission: SubmissionListRecord,
+  recipient = SUBMISSION_PRODUCER_EMAIL,
+) {
+  const packageSent = submission.quotePackageSent
+  if (!packageSent) {
+    return [
+      `Quote options sent to ${recipient} for ${submission.submissionNumber}.`,
+      'Attached: quote letter, option comparison.',
+      submission.approvedPremiumLabel
+        ? `Recommended: ${submission.approvedPremiumLabel}.`
+        : null,
+      `${submission.submissionNumber} is now Quoted.`,
+    ]
+      .filter(Boolean)
+      .join('\n')
+  }
+
+  const recommended =
+    packageSent.included.find((option) => option.label === packageSent.recommendedLabel) ??
+    packageSent.included[0]
+  const alternatives = packageSent.included.filter(
+    (option) => option.label !== packageSent.recommendedLabel,
+  )
+  const lines = [
+    `Quote options sent to ${packageSent.recipient} for ${submission.submissionNumber}.`,
+    `Attached: ${packageSent.attachments.join(', ')}.`,
+  ]
+  if (recommended) {
+    lines.push(
+      `Recommended: ${recommended.label} ${formatPremiumRange(recommended.range)}.`,
+    )
+  }
+  for (const option of alternatives) {
+    lines.push(`Also sent: ${option.label} ${formatPremiumRange(option.range)}.`)
+  }
+  lines.push(`${submission.submissionNumber} is now Quoted.`)
+  return lines.join('\n')
+}
+
+/** Decline-to-quote email — cover note only, no quote attachments. */
+export function buildDeclineToQuoteEmail(
+  submission: SubmissionListRecord,
+): ProducerRequestEmailDraft {
+  const watchOut = submission.readyInsights?.find((insight) => insight.severity === 'warning')
+  const reasonLine = watchOut
+    ? `${watchOut.title} — ${watchOut.summary}`
+    : 'Current submission details do not meet our appetite for this class.'
+
+  const subject = `Unable to quote — ${insuredShortName(submission.insuredName)} (${submission.submissionNumber})`
+  const body = `Hi,
+
+We are declining to quote ${submission.insuredName} (${submission.submissionNumber}) at this time.
+
+${reasonLine}
+
+Please let us know if the account changes and you would like us to reconsider.
+
+Thank you,
+Underwriting`
+
+  return {
+    issue: null,
+    action: 'Decline to quote',
+    to: SUBMISSION_PRODUCER_EMAIL,
+    subject,
+    body,
+  }
+}
+
+/** Confirmation copy after sending a decline-to-quote email. */
+export function buildDeclineToQuoteSendConfirmation(
+  submission: SubmissionListRecord,
+  recipient = SUBMISSION_PRODUCER_EMAIL,
+) {
+  return [
+    `Decline to quote sent to ${recipient} for ${submission.submissionNumber}.`,
+    `${submission.submissionNumber} is now Declined.`,
   ].join('\n')
 }
 

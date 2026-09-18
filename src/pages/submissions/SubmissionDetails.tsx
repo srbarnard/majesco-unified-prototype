@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useFavorites } from '@/app/contexts/FavoritesContext'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import type { RecentActivityItem } from '@/app/data/homeMock'
@@ -32,7 +32,10 @@ import { SubmissionUnderwritingTab } from '@/pages/submissions/components/Submis
 import { SubmissionsCopilotPanel } from '@/pages/submissions/components/SubmissionsCopilotPanel'
 import type { SubmissionsCopilotSendConfirmation } from '@/pages/submissions/components/SubmissionsCopilotPanel'
 import { SubmissionsNotesPanel } from '@/pages/submissions/components/SubmissionsNotesPanel'
-import type { SubmissionCopilotEntryMode } from '@/pages/submissions/data/submissionCopilotInsights'
+import type {
+  SubmissionCopilotEntryMode,
+  SubmissionDetailLocationState,
+} from '@/pages/submissions/data/submissionCopilotInsights'
 import { isSubmissionNoteActivity } from '@/pages/submissions/data/mockSubmissionActivity'
 import { findNoteThreadForActivityNote } from '@/pages/submissions/data/mockSubmissionNotes'
 import { getSubmissionDocuments } from '@/pages/submissions/data/mockSubmissionDocuments'
@@ -41,7 +44,13 @@ import {
   toSubmissionListRecord,
   type SubmissionDetailsRecord,
 } from '@/pages/submissions/data/resolveSubmissionContext'
-import type { PremiumEstimate } from '@/pages/submissions/data/mockSubmissions'
+import {
+  buildQuotePackageSent,
+  submissionsMock,
+  syncSubmissionListRecord,
+  type PremiumEstimate,
+  type SubmissionStatus,
+} from '@/pages/submissions/data/mockSubmissions'
 
 function parseSubmissionTab(value: string | null): SubmissionDetailTab | null {
   if (value === 'overview' || value === 'documents' || value === 'underwriting') {
@@ -70,10 +79,17 @@ function shouldDefaultOpenCopilot(tab: SubmissionDetailTab) {
   return tab === 'overview' || tab === 'documents'
 }
 
+function defaultCopilotEntryMode(status: SubmissionStatus): SubmissionCopilotEntryMode {
+  // Blocked → Submission briefing; Ready → Structure review; Quoted/Declined → confirmation
+  return status === 'Blocked' ? 'insight' : 'status'
+}
+
 export function SubmissionDetails() {
   const { submissionId } = useParams<{ submissionId: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
+  const locationState = (location.state as SubmissionDetailLocationState | null) ?? null
   const [submission, setSubmission] = useState<SubmissionDetailsRecord>(() =>
     resolveSubmissionContext(submissionId),
   )
@@ -85,23 +101,57 @@ export function SubmissionDetails() {
   )
   const starred = isFavorite('submission', submission.id)
   const emergency = isHighRisk('submission', submission.id)
-  const [copilotEntryMode, setCopilotEntryMode] = useState<SubmissionCopilotEntryMode>('insight')
+  const [copilotEntryMode, setCopilotEntryMode] = useState<SubmissionCopilotEntryMode>(() =>
+    locationState?.entryMode ?? defaultCopilotEntryMode(resolveSubmissionContext(submissionId).status),
+  )
   const [appliedDocumentsFilters, setAppliedDocumentsFilters] = useState<DocumentsFilters>(emptyDocumentsFilters)
   const [copilotDocumentFocus, setCopilotDocumentFocus] = useState<PolicyDocument | null>(null)
   const [attachMode, setAttachMode] = useState<DocumentAttachMode | null>(null)
   const [focusedActivity, setFocusedActivity] = useState<RecentActivityItem | null>(null)
   const [copilotIssueFocusId, setCopilotIssueFocusId] = useState<string | null>(null)
   const [copilotSendConfirmation, setCopilotSendConfirmation] =
-    useState<SubmissionsCopilotSendConfirmation | null>(null)
+    useState<SubmissionsCopilotSendConfirmation | null>(
+      () =>
+        (locationState?.sendConfirmation as SubmissionsCopilotSendConfirmation | null | undefined) ??
+        null,
+    )
   const didInitCopilot = useRef(false)
   const wasDesktop = useRef(isDesktop)
+  const clearedLocationState = useRef(false)
 
   useEffect(() => {
-    setSubmission(resolveSubmissionContext(submissionId))
+    const next = resolveSubmissionContext(submissionId)
+    setSubmission(next)
     setFocusedActivity(null)
     setCopilotIssueFocusId(null)
-    setCopilotSendConfirmation(null)
+    const state = (window.history.state as SubmissionDetailLocationState | null) ?? null
+    setCopilotEntryMode(state?.entryMode ?? defaultCopilotEntryMode(next.status))
+    setCopilotSendConfirmation(
+      (state?.sendConfirmation as SubmissionsCopilotSendConfirmation | null | undefined) ?? null,
+    )
   }, [submissionId])
+
+  useEffect(() => {
+    // Keep detail Copilot in structure / confirmation mode for Ready, Quoted, Declined.
+    if (
+      submission.status === 'Ready' ||
+      submission.status === 'Quoted' ||
+      submission.status === 'Declined'
+    ) {
+      setCopilotEntryMode('status')
+    }
+  }, [submission.status])
+
+  useEffect(() => {
+    if (clearedLocationState.current) return
+    if (!locationState) return
+    clearedLocationState.current = true
+    if (locationState.openCopilot !== false && isDesktop) {
+      openTool('copilot')
+    }
+    navigate(location.pathname + location.search, { replace: true, state: null })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const focusedListRecord = useMemo(() => toSubmissionListRecord(submission), [submission])
   const isDocumentsTab = activeTab === 'documents'
@@ -121,7 +171,7 @@ export function SubmissionDetails() {
       setCopilotDocumentFocus(null)
       setAttachMode(null)
       setCopilotIssueFocusId(null)
-      setCopilotEntryMode('insight')
+      setCopilotEntryMode(defaultCopilotEntryMode(submission.status))
       setFocusedActivity(activity)
       openTool(isSubmissionNoteActivity(activity) ? 'notes' : 'copilot')
     },
@@ -211,8 +261,16 @@ export function SubmissionDetails() {
       />
     ) : (
       <SubmissionsCopilotPanel
+        key={`detail-copilot-${focusedListRecord.id}-${focusedListRecord.status}`}
         focusedSubmission={focusedListRecord}
-        entryMode={copilotEntryMode}
+        queueSubmissions={submissionsMock}
+        entryMode={
+          focusedListRecord.status === 'Ready' ||
+          focusedListRecord.status === 'Quoted' ||
+          focusedListRecord.status === 'Declined'
+            ? 'status'
+            : copilotEntryMode
+        }
         initialIssueId={copilotIssueFocusId}
         onEntryModeChange={(mode) => {
           setCopilotEntryMode(mode)
@@ -237,13 +295,8 @@ export function SubmissionDetails() {
             const nextConfidence = Math.min(96, current.confidence + 9)
             const nextIssueId = remainingBlockers.length === 0 ? null : (remainingIssues[0]?.id ?? null)
 
-            queueMicrotask(() => {
-              setCopilotIssueFocusId(nextIssueId)
-              if (!nextIssueId) setCopilotEntryMode('insight')
-            })
-
             if (remainingBlockers.length === 0) {
-              return {
+              const next = {
                 ...current,
                 status: 'Ready' as const,
                 confidence: Math.max(nextConfidence, 88),
@@ -266,7 +319,18 @@ export function SubmissionDetails() {
                   },
                 ],
               }
+              syncSubmissionListRecord(toSubmissionListRecord(next))
+              queueMicrotask(() => {
+                setCopilotIssueFocusId(null)
+                setCopilotEntryMode('status')
+                setCopilotSendConfirmation(null)
+              })
+              return next
             }
+
+            queueMicrotask(() => {
+              setCopilotIssueFocusId(nextIssueId)
+            })
 
             return {
               ...current,
@@ -276,12 +340,34 @@ export function SubmissionDetails() {
             }
           })
         }}
-        onApprovePremiumOption={(_id, option: PremiumEstimate) => {
-          setSubmission((current) => ({
-            ...current,
-            approvedPremiumLabel: option.label,
-            status: 'Quoted' as const,
-          }))
+        onApprovePremiumOption={(_id, recommended, included, recipient) => {
+          const quotePackageSent = buildQuotePackageSent(recommended, included, recipient)
+          setSubmission((current) => {
+            const next = {
+              ...current,
+              approvedPremiumLabel: recommended.label,
+              status: 'Quoted' as const,
+              quotePackageSent,
+            }
+            syncSubmissionListRecord(toSubmissionListRecord(next))
+            return next
+          })
+          setCopilotEntryMode('status')
+          setActiveTab('overview')
+        }}
+        onDeclineSubmission={(_id, _recipient) => {
+          setSubmission((current) => {
+            const next = {
+              ...current,
+              status: 'Declined' as const,
+              quotePackageSent: undefined,
+              approvedPremiumLabel: undefined,
+            }
+            syncSubmissionListRecord(toSubmissionListRecord(next))
+            return next
+          })
+          setCopilotEntryMode('status')
+          setActiveTab('overview')
         }}
         sendConfirmation={
           copilotSendConfirmation &&
@@ -290,6 +376,15 @@ export function SubmissionDetails() {
             : null
         }
         onSendConfirmation={setCopilotSendConfirmation}
+        onOpenNextReadySubmission={(next) => {
+          setCopilotSendConfirmation(null)
+          navigate(`/submissions/${encodeURIComponent(next.submissionNumber)}`, {
+            state: {
+              openCopilot: true,
+              entryMode: 'status',
+            } satisfies SubmissionDetailLocationState,
+          })
+        }}
         onClose={closeTool}
       />
     ),
@@ -300,9 +395,11 @@ export function SubmissionDetails() {
       copilotSendConfirmation,
       focusedActivity,
       focusedListRecord,
+      focusedListRecord.status,
       focusedNoteThreadId,
       handleClearActivityFocus,
       isDocumentsTab,
+      navigate,
     ],
   )
 
@@ -351,7 +448,7 @@ export function SubmissionDetails() {
     (tab: SubmissionDetailTab) => {
       setFocusedActivity(null)
       setCopilotIssueFocusId(null)
-      setCopilotEntryMode('insight')
+      setCopilotEntryMode(defaultCopilotEntryMode(submission.status))
       if (shouldDefaultOpenCopilot(tab)) {
         if (activeTool === 'parties' || activeTool === 'filter') return
         if (isDesktop) openTool('copilot')
@@ -359,7 +456,7 @@ export function SubmissionDetails() {
       }
       closeTool()
     },
-    [activeTool, closeTool, isDesktop, openTool],
+    [activeTool, closeTool, isDesktop, openTool, submission.status],
   )
 
   const syncTabPanelsRef = useRef(syncTabPanels)

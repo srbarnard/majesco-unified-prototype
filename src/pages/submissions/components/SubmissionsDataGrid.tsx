@@ -35,8 +35,16 @@ import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { dataGridShellSx } from '@/design-system/theme/themeSurfaces'
 import { SubmissionStatusChip } from '@/pages/submissions/components/SubmissionStatusChip'
 import type { SubmissionListRecord } from '@/pages/submissions/data/mockSubmissions'
+import type { SubmissionDetailLocationState } from '@/pages/submissions/data/submissionCopilotInsights'
 
 const CHECKBOX_COLUMN_WIDTH = 50
+
+function detailNavState(row: SubmissionListRecord): SubmissionDetailLocationState {
+  return {
+    openCopilot: true,
+    entryMode: row.status === 'Blocked' ? 'insight' : 'status',
+  }
+}
 
 const tableMenuItemSx = {
   fontFamily: figmaFontFamilyStack.body,
@@ -263,7 +271,9 @@ export function SubmissionsDataGrid({
   const navigate = useNavigate()
 
   const handleViewDetails = (row: SubmissionListRecord) => {
-    navigate(`/submissions/${encodeURIComponent(row.submissionNumber)}`)
+    navigate(`/submissions/${encodeURIComponent(row.submissionNumber)}`, {
+      state: detailNavState(row),
+    })
   }
 
   const columns = useMemo<GridColDef<SubmissionListRecord>[]>(
@@ -275,7 +285,10 @@ export function SubmissionsDataGrid({
         minWidth: 120,
         sortable: true,
         renderCell: ({ row }) => (
-          <ListDataGridLink to={`/submissions/${encodeURIComponent(row.submissionNumber)}`}>
+          <ListDataGridLink
+            to={`/submissions/${encodeURIComponent(row.submissionNumber)}`}
+            state={detailNavState(row)}
+          >
             {row.submissionNumber}
           </ListDataGridLink>
         ),

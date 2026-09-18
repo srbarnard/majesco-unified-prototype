@@ -18,7 +18,7 @@ const bodySx = {
 
 function SuggestedActions({
   actions,
-  label = 'Quick actions',
+  label = 'Suggested actions',
   onAction,
 }: {
   actions: string[]

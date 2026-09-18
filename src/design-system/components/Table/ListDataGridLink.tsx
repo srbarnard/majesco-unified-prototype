@@ -11,6 +11,7 @@ type ListDataGridLinkProps = {
   sx?: SxProps<Theme>
   variant?: 'body2' | 'caption'
   fontWeight?: number
+  state?: unknown
 }
 
 function stopGridNavigation(event: MouseEvent) {
@@ -23,11 +24,13 @@ export function ListDataGridLink({
   sx,
   variant = 'body2',
   fontWeight = 400,
+  state,
 }: ListDataGridLinkProps) {
   return (
     <Link
       component={RouterLink}
       to={to}
+      state={state}
       variant={variant}
       underline="hover"
       onClick={stopGridNavigation}

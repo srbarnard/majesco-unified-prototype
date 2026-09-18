@@ -30,6 +30,8 @@ type RightToolState = {
   copilotSession: RightToolCopilotSession | null
   /** Specialty Copilot UIs (submissions, quote wizard) rendered instead of CopilotPanel. */
   copilotCustomContent: ReactNode | null
+  /** Bumps when specialty Copilot content is re-registered so the drawer re-reads it. */
+  copilotCustomRevision: number
   /** Specialty Notes UIs (submission note thread) rendered instead of NotesToolPanel. */
   notesCustomContent: ReactNode | null
   /** Page-registered document email draft (document viewer); drives Email tool content. */
@@ -66,12 +68,18 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
   const [activeTool, setActiveTool] = useState<RightToolId | null>(null)
   const [recordContext, setRecordContext] = useState<RightToolRecordContext>(null)
   const [copilotSession, setCopilotSession] = useState<RightToolCopilotSession | null>(null)
-  const [copilotCustomContent, setCopilotCustomContent] = useState<ReactNode | null>(null)
+  const [copilotCustomContent, setCopilotCustomContentState] = useState<ReactNode | null>(null)
+  const [copilotCustomRevision, setCopilotCustomRevision] = useState(0)
   const [notesCustomContent, setNotesCustomContent] = useState<ReactNode | null>(null)
   const [emailAttachMode, setEmailAttachMode] = useState<RightToolEmailAttachMode>(null)
   const [noteAttachMode, setNoteAttachMode] = useState<RightToolNoteAttachMode>(null)
   const [filterContent, setFilterContent] = useState<ReactNode | null>(null)
   const [partiesContent, setPartiesContent] = useState<ReactNode | null>(null)
+
+  const setCopilotCustomContent = useCallback((content: ReactNode | null) => {
+    setCopilotCustomContentState(content)
+    setCopilotCustomRevision((current) => current + 1)
+  }, [])
 
   // Keep latest flags in refs so open/toggle stay referentially stable. Unstable
   // openTool identities previously re-fired page URL sync effects and froze SPA nav.
@@ -142,6 +150,7 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       recordContext,
       copilotSession,
       copilotCustomContent,
+      copilotCustomRevision,
       notesCustomContent,
       emailAttachMode,
       noteAttachMode,
@@ -153,6 +162,7 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       recordContext,
       copilotSession,
       copilotCustomContent,
+      copilotCustomRevision,
       notesCustomContent,
       emailAttachMode,
       noteAttachMode,
@@ -177,7 +187,7 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       setFilterContent,
       setPartiesContent,
     }),
-    [openTool, closeTool, toggleTool],
+    [openTool, closeTool, toggleTool, setCopilotCustomContent],
   )
 
   return (

@@ -1,9 +1,10 @@
 import BlockIcon from '@mui/icons-material/Block'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import FormatQuoteOutlinedIcon from '@mui/icons-material/FormatQuoteOutlined'
+import FormatQuoteIcon from '@mui/icons-material/FormatQuote'
 import { keyframes } from '@mui/material/styles'
 import type { MouseEvent } from 'react'
 import { StatusChip } from '@/design-system/components'
+import { FormatQuoteOffIcon } from '@/design-system/icons/FormatQuoteOff'
 import type { SubmissionStatus } from '@/pages/submissions/data/mockSubmissions'
 
 /** Soft elastic hover — lighter than Copilot confidence ring. */
@@ -82,7 +83,18 @@ export function SubmissionStatusChip({ status, onClick, selected = false }: Subm
       <StatusChip
         status="info"
         label="Quoted"
-        icon={<FormatQuoteOutlinedIcon sx={{ fontSize: '16px !important' }} />}
+        icon={<FormatQuoteIcon sx={{ fontSize: '16px !important' }} />}
+        {...commonProps}
+      />
+    )
+  }
+
+  if (status === 'Declined') {
+    return (
+      <StatusChip
+        status="warning"
+        label="Declined"
+        icon={<FormatQuoteOffIcon sx={{ fontSize: '16px !important' }} />}
         {...commonProps}
       />
     )

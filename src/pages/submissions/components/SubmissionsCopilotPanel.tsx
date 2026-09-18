@@ -1,7 +1,6 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import BlockIcon from '@mui/icons-material/Block'
 import CloseIcon from '@mui/icons-material/Close'
-import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -37,18 +36,14 @@ import { useAnimatedConfidence } from '@/pages/policies/components/copilot/useAn
 import type { CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
 import { kindLabel } from '@/pages/quotes/utils/quoteWizardDocuments'
 import {
-  resolvePremiumStructureOptions,
-  submissionsMock,
-  type PremiumEstimate,
-  type SubmissionIssue,
-  type SubmissionListRecord,
-} from '@/pages/submissions/data/mockSubmissions'
-import {
   buildIssueNoteDraft,
+  buildDeclineToQuoteEmail,
+  buildDeclineToQuoteSendConfirmation,
   buildProducerRequestEmail,
   buildQuotePackageAttachments,
   buildQuotePackageEmail,
   buildQuotePackageSendConfirmation,
+  buildQuoteSentMessageFromPackage,
   buildQuoteSentNextUpLine,
   buildRequestInfoSendConfirmation,
   findNextReadySubmission,
@@ -58,6 +53,13 @@ import {
   SUBMISSION_PRODUCER_EMAIL,
   type IssueNoteDraft,
 } from '@/pages/submissions/data/producerRequestEmail'
+import {
+  resolvePremiumStructureOptions,
+  submissionsMock,
+  type PremiumEstimate,
+  type SubmissionIssue,
+  type SubmissionListRecord,
+} from '@/pages/submissions/data/mockSubmissions'
 import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
 import {
   buildSubmissionInsightBriefing,
@@ -90,7 +92,23 @@ type SubmissionsCopilotPanelProps = {
   initialIssueId?: string | null
   onEntryModeChange?: (mode: SubmissionCopilotEntryMode) => void
   onResolveIssue?: (submissionId: string, issueId: string, resolvedDetails: string[]) => void
-  onApprovePremiumOption?: (submissionId: string, option: PremiumEstimate) => void
+  onApprovePremiumOption?: (
+    submissionId: string,
+    recommended: PremiumEstimate,
+    included: PremiumEstimate[],
+    recipient: string,
+  ) => void
+  onDeclineSubmission?: (submissionId: string, recipient: string) => void
+  /** After quote send — e.g. navigate list → Quoted detail. */
+  onAfterQuotePackageSent?: (
+    submission: SubmissionListRecord,
+    confirmation: SubmissionsCopilotSendConfirmation,
+  ) => void
+  /** After decline send — e.g. navigate list → Declined detail. */
+  onAfterDeclineSent?: (
+    submission: SubmissionListRecord,
+    confirmation: SubmissionsCopilotSendConfirmation,
+  ) => void
   /** Survives Email-tool unmount — set from the parent page. */
   sendConfirmation?: SubmissionsCopilotSendConfirmation | null
   onSendConfirmation?: (confirmation: SubmissionsCopilotSendConfirmation | null) => void
@@ -461,10 +479,12 @@ function SubmissionInsightView({
 function ReadyStructureOptionsView({
   submission,
   onEmailQuoteOptions,
+  onDeclineToQuote,
   onSeedComposer,
 }: {
   submission: SubmissionListRecord
   onEmailQuoteOptions?: (recommended: PremiumEstimate, included: PremiumEstimate[]) => void
+  onDeclineToQuote?: () => void
   onSeedComposer?: (message: string) => void
 }) {
   const options = useMemo(
@@ -489,18 +509,16 @@ function ReadyStructureOptionsView({
     defaultRecommended ? [defaultRecommended] : [],
   )
   const [uncheckHint, setUncheckHint] = useState(false)
-  const approvedLabel = submission.approvedPremiumLabel
 
   useEffect(() => {
     const nextRecommended =
       options.find((option) => option.recommended)?.label ??
-      submission.approvedPremiumLabel ??
       options[0]?.label ??
       null
     setRecommendedLabel(nextRecommended)
     setIncludedLabels(nextRecommended ? [nextRecommended] : [])
     setUncheckHint(false)
-  }, [options, submission.approvedPremiumLabel, submission.id])
+  }, [options, submission.id])
 
   const recommended = options.find((option) => option.label === recommendedLabel) ?? options[0]
   const included = options.filter((option) => includedLabels.includes(option.label))
@@ -515,28 +533,23 @@ function ReadyStructureOptionsView({
   }
 
   const optionWord = options.length === 1 ? 'option' : 'options'
-  const summaryText = approvedLabel
-    ? `**${submission.insuredName}** is **Ready**. You approved **${approvedLabel}** (${options.find((o) => o.label === approvedLabel)?.range ?? 'selected structure'}). Ask for adjustments anytime.`
-    : options.length === 1
+  const summaryText =
+    options.length === 1
       ? `**${submission.insuredName}** — Submission **${submission.submissionNumber}** is **Ready** with **${submission.confidence}%** confidence. Copilot is presenting **1** structure option — alternatives were not meaningfully different.`
       : `**${submission.insuredName}** — Submission **${submission.submissionNumber}** is **Ready** with **${submission.confidence}%** confidence. Copilot is presenting **${options.length}** distinct structure ${optionWord}${recommended ? ` · recommending **${recommended.label}**` : ''}.`
 
   const packageCountLabel = `${includedCount} option${includedCount === 1 ? '' : 's'} in package`
   const helperText = recommended
-    ? includedCount > 1
-      ? `Reviewing **${recommended.label}** (recommended) at **${recommended.range}**. ${packageCountLabel}. **${recommended.label}** will be sent as the recommendation.`
-      : `Reviewing **${recommended.label}** (recommended) at **${recommended.range}**. ${packageCountLabel}.`
+    ? `Reviewing **${recommended.label}** (recommended) at **${recommended.range}**. ${packageCountLabel}.`
     : null
 
   const EMAIL_QUOTE_ACTION = 'Email quote options to producer'
-  const quickActions = approvedLabel
-    ? ['Ask for adjustments', 'Summarize approved structure']
-    : [
-        EMAIL_QUOTE_ACTION,
-        ...(options.length > 1 ? ['Compare options'] : []),
-        'Ask for adjustments',
-        recommended ? `More detail on ${recommended.label}` : 'Ask for more detail',
-      ]
+  const DECLINE_ACTION = 'Decline to quote'
+  const quickActions = [
+    EMAIL_QUOTE_ACTION,
+    ...(options.length > 1 ? ['Compare options'] : []),
+    DECLINE_ACTION,
+  ]
 
   const toggleIncluded = (label: PremiumEstimate['label']) => {
     if (label === recommendedLabel) {
@@ -595,7 +608,6 @@ function ReadyStructureOptionsView({
         {options.map((option, index) => {
           const isIncluded = includedLabels.includes(option.label)
           const isRecommended = recommendedLabel === option.label
-          const isApproved = approvedLabel === option.label
           const isLast = index === options.length - 1
           return (
             <Box
@@ -621,7 +633,6 @@ function ReadyStructureOptionsView({
                 <Checkbox
                   size="small"
                   checked={isIncluded}
-                  disabled={Boolean(approvedLabel)}
                   onChange={() => toggleIncluded(option.label)}
                   inputProps={{ 'aria-label': `Include ${option.label} in quote package` }}
                   sx={{ p: 0.25, mt: 0.125, flexShrink: 0 }}
@@ -655,25 +666,8 @@ function ReadyStructureOptionsView({
                           Recommended
                         </Typography>
                       ) : null}
-                      {isApproved ? (
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            ...bodySx,
-                            px: 0.75,
-                            py: 0.125,
-                            borderRadius: '30px',
-                            bgcolor: 'primary.main',
-                            color: 'primary.contrastText',
-                            fontSize: '0.6875rem',
-                            fontWeight: 600,
-                          }}
-                        >
-                          Approved
-                        </Typography>
-                      ) : null}
                     </Stack>
-                    {!isRecommended && !approvedLabel ? (
+                    {!isRecommended ? (
                       <Button
                         size="small"
                         variant="text"
@@ -727,7 +721,7 @@ function ReadyStructureOptionsView({
       ) : null}
 
       <CopilotContentTransition
-        contentKey={`${submission.id}:${recommendedLabel ?? 'none'}:${includedLabels.join('|')}:${approvedLabel ?? 'open'}`}
+        contentKey={`${submission.id}:${recommendedLabel ?? 'none'}:${includedLabels.join('|')}`}
       >
         <>
           {helperText ? (
@@ -739,12 +733,11 @@ function ReadyStructureOptionsView({
           <Divider sx={{ my: 2 }} />
           <CopilotQuickActions
             actions={quickActions}
-            firstActionIcon={
-              !approvedLabel ? (
-                <SendOutlinedIcon sx={{ fontSize: '18px !important' }} />
-              ) : undefined
-            }
             onAction={(action) => {
+              if (action === DECLINE_ACTION) {
+                onDeclineToQuote?.()
+                return
+              }
               if (!recommended) return
               if (action === EMAIL_QUOTE_ACTION) {
                 if (includedCount === 0) return
@@ -760,24 +753,6 @@ function ReadyStructureOptionsView({
                   .join('\n')
                 onSeedComposer?.(
                   `Compare the ${options.length} structure options for ${submission.submissionNumber}:\n${comparison}\n\nWhich should I prefer and why?`,
-                )
-                return
-              }
-              if (action === 'Ask for adjustments') {
-                onSeedComposer?.(
-                  `Adjust the ${recommended.label} structure (${recommended.range}) for ${submission.submissionNumber}. I'd like to change…`,
-                )
-                return
-              }
-              if (action.startsWith('More detail') || action === 'Ask for more detail') {
-                onSeedComposer?.(
-                  `Explain the ${recommended.label} option (${recommended.range}) for ${submission.submissionNumber} in more detail — coverage terms, deductibles, and key drivers.`,
-                )
-                return
-              }
-              if (action === 'Summarize approved structure') {
-                onSeedComposer?.(
-                  `Summarize the approved ${approvedLabel} structure for ${submission.submissionNumber}.`,
                 )
               }
             }}
@@ -937,6 +912,9 @@ export function SubmissionsCopilotPanel({
   onEntryModeChange,
   onResolveIssue,
   onApprovePremiumOption,
+  onDeclineSubmission,
+  onAfterQuotePackageSent,
+  onAfterDeclineSent,
   sendConfirmation = null,
   onSendConfirmation,
   onOpenNextReadySubmission,
@@ -976,12 +954,20 @@ export function SubmissionsCopilotPanel({
     }
   }, [focusKey, entryMode, statusMode])
 
+  // Blocked → Ready: drop issue focus so Structure review can mount.
+  useEffect(() => {
+    if (focusedSubmission?.status === 'Ready' || focusedSubmission?.status === 'Quoted' || focusedSubmission?.status === 'Declined') {
+      setActiveIssueId(null)
+    }
+  }, [focusedSubmission?.id, focusedSubmission?.status])
+
   // Deep-link / Overview blocker selection — apply when parent targets an issue.
   useEffect(() => {
     if (
+      focusedSubmission?.status === 'Blocked' &&
       statusMode &&
       initialIssueId &&
-      focusedSubmission?.issues.some((issue) => issue.id === initialIssueId)
+      focusedSubmission.issues.some((issue) => issue.id === initialIssueId)
     ) {
       setActiveIssueId(initialIssueId)
     }
@@ -1011,6 +997,11 @@ export function SubmissionsCopilotPanel({
         openTool('copilot')
       },
       onSave: () => {
+        const isLastBlocker =
+          Boolean(issue) &&
+          !issue!.resolvedAt &&
+          issue!.severity === 'blocking' &&
+          openBlockingIssues(submission).every((open) => open.id === issue!.id)
         flushSync(() => {
           if (issue && !issue.resolvedAt && issue.severity === 'blocking') {
             onResolveIssue?.(
@@ -1019,15 +1010,20 @@ export function SubmissionsCopilotPanel({
               producerRequestResolvedDetails(issue, draft.action),
             )
           }
-          onSendConfirmation?.({
-            submissionId: submission.id,
-            message: buildRequestInfoSendConfirmation(
-              submission,
-              issue,
-              draft.to || SUBMISSION_PRODUCER_EMAIL,
-            ),
-            followUpActions: [],
-          })
+          // Last blocker → Ready Structure review; skip request-sent confirmation.
+          if (!isLastBlocker) {
+            onSendConfirmation?.({
+              submissionId: submission.id,
+              message: buildRequestInfoSendConfirmation(
+                submission,
+                issue,
+                draft.to || SUBMISSION_PRODUCER_EMAIL,
+              ),
+              followUpActions: [],
+            })
+          } else {
+            onSendConfirmation?.(null)
+          }
         })
         openTool('copilot')
       },
@@ -1058,32 +1054,84 @@ export function SubmissionsCopilotPanel({
       },
       onSave: () => {
         const nextReady = findNextReadySubmission(queueSubmissions, submission.id)
+        const confirmation: SubmissionsCopilotSendConfirmation = {
+          submissionId: submission.id,
+          message: buildQuotePackageSendConfirmation(
+            submission,
+            recommended,
+            included,
+            recipient,
+          ),
+          nextUpLine: buildQuoteSentNextUpLine(nextReady),
+          followUpActions: [
+            nextReady ? 'Open next Ready submission' : 'Show Ready only',
+            'Schedule producer follow-up',
+            'View sent email',
+          ],
+          sentEmail: {
+            to: recipient,
+            subject: draft.subject,
+            body: draft.body,
+            subtitle: packageSubtitle,
+            documents: attachments,
+          },
+        }
         flushSync(() => {
-          onApprovePremiumOption?.(submission.id, recommended)
-          onSendConfirmation?.({
-            submissionId: submission.id,
-            message: buildQuotePackageSendConfirmation(
-              submission,
-              recommended,
-              included,
-              recipient,
-            ),
-            nextUpLine: buildQuoteSentNextUpLine(nextReady),
-            followUpActions: [
-              nextReady ? 'Open next Ready submission' : 'Show Ready only',
-              'Schedule producer follow-up',
-              'View sent email',
-            ],
-            sentEmail: {
-              to: recipient,
-              subject: draft.subject,
-              body: draft.body,
-              subtitle: packageSubtitle,
-              documents: attachments,
-            },
-          })
+          onApprovePremiumOption?.(submission.id, recommended, included, recipient)
+          onSendConfirmation?.(confirmation)
         })
         openTool('copilot')
+        onAfterQuotePackageSent?.(submission, confirmation)
+      },
+    })
+    openTool('email')
+  }
+
+  const openDeclineToQuoteEmail = () => {
+    if (!focusedSubmission) return
+    setIssueNote(null)
+    const draft = buildDeclineToQuoteEmail(focusedSubmission)
+    const submission = focusedSubmission
+    const recipient = draft.to || SUBMISSION_PRODUCER_EMAIL
+    const declineSubtitle = `Decline to quote · ${submission.submissionNumber}`
+    setEmailAttachMode({
+      target: 'email',
+      documents: [],
+      draft: {
+        to: draft.to,
+        subject: draft.subject,
+        body: draft.body,
+        saveLabel: 'Send',
+        subtitle: declineSubtitle,
+      },
+      onCancel: () => {
+        openTool('copilot')
+      },
+      onSave: () => {
+        const nextReady = findNextReadySubmission(queueSubmissions, submission.id)
+        const confirmation: SubmissionsCopilotSendConfirmation = {
+          submissionId: submission.id,
+          message: buildDeclineToQuoteSendConfirmation(submission, recipient),
+          nextUpLine: buildQuoteSentNextUpLine(nextReady),
+          followUpActions: [
+            nextReady ? 'Open next Ready submission' : 'Show Ready only',
+            'Schedule producer follow-up',
+            'View sent email',
+          ],
+          sentEmail: {
+            to: recipient,
+            subject: draft.subject,
+            body: draft.body,
+            subtitle: declineSubtitle,
+            documents: [],
+          },
+        }
+        flushSync(() => {
+          onDeclineSubmission?.(submission.id, recipient)
+          onSendConfirmation?.(confirmation)
+        })
+        openTool('copilot')
+        onAfterDeclineSent?.(submission, confirmation)
       },
     })
     openTool('email')
@@ -1119,8 +1167,46 @@ export function SubmissionsCopilotPanel({
       onShowReadyOnly?.()
       return
     }
-    if (action === 'View sent email' && activeConfirmation?.sentEmail) {
-      openSentQuoteEmail(activeConfirmation.sentEmail)
+    if (action === 'View sent email') {
+      if (activeConfirmation?.sentEmail) {
+        openSentQuoteEmail(activeConfirmation.sentEmail)
+        return
+      }
+      if (!focusedSubmission?.quotePackageSent) return
+      const sent = focusedSubmission.quotePackageSent
+      const recommended =
+        focusedSubmission.premiumEstimates?.find(
+          (option) => option.label === sent.recommendedLabel,
+        ) ??
+        ({
+          label: sent.recommendedLabel,
+          range: sent.recommendedRange,
+          rationale: '',
+          recommended: true,
+        } satisfies PremiumEstimate)
+      const included = sent.included.map((option) => {
+        const fromEstimates = focusedSubmission.premiumEstimates?.find(
+          (estimate) => estimate.label === option.label,
+        )
+        return (
+          fromEstimates ??
+          ({
+            label: option.label,
+            range: option.range,
+            rationale: '',
+            recommended: option.label === sent.recommendedLabel,
+          } satisfies PremiumEstimate)
+        )
+      })
+      const draft = buildQuotePackageEmail(focusedSubmission, recommended, included)
+      const attachments = buildQuotePackageAttachments(focusedSubmission)
+      openSentQuoteEmail({
+        to: sent.recipient,
+        subject: draft.subject,
+        body: draft.body,
+        subtitle: `Quote package · ${focusedSubmission.submissionNumber} · ${attachments.length} attachments`,
+        documents: attachments,
+      })
     }
   }
 
@@ -1145,7 +1231,9 @@ export function SubmissionsCopilotPanel({
     if (!details) return
 
     onResolveIssue?.(focusedSubmission.id, targetIssue.id, details)
-    setActiveIssueId(targetIssue.id)
+    const remainingAfter =
+      openBlockingIssues(focusedSubmission).filter((issue) => issue.id !== targetIssue.id).length
+    setActiveIssueId(remainingAfter === 0 ? null : targetIssue.id)
   }
 
   const handleGuidedResolve = (issue: SubmissionIssue, action: string) => {
@@ -1167,7 +1255,9 @@ export function SubmissionsCopilotPanel({
         ? issue.missingDetails.map((item) => `${item}: captured via “${action}”`)
         : [`Resolved via “${action}”`]
     onResolveIssue?.(focusedSubmission.id, issue.id, details)
-    setActiveIssueId(issue.id)
+    const remainingAfter =
+      openBlockingIssues(focusedSubmission).filter((open) => open.id !== issue.id).length
+    setActiveIssueId(remainingAfter === 0 ? null : issue.id)
   }
 
   const handleSaveIssueNote = () => {
@@ -1178,58 +1268,65 @@ export function SubmissionsCopilotPanel({
   }
 
   const composerPlaceholder =
-    focusedSubmission && !statusMode && !activeIssue
+    focusedSubmission?.status === 'Ready'
       ? 'Ask about this submission...'
-      : activeIssue
-        ? activeIssue.resolvedAt
-          ? 'Add more details or continue...'
-          : activeIssue.resolutionMode === 'guided'
-            ? 'Drop supporting docs here, or paste details if you already have them...'
-            : activeIssue.composerPlaceholder.includes('...')
-              ? activeIssue.composerPlaceholder.replace(
-                  /\.\.\.$/,
-                  ' — or drop supporting documents here...',
-                )
-              : `${activeIssue.composerPlaceholder} — or drop supporting documents here`
-        : focusedSubmission?.status === 'Blocked'
-          ? 'Add details or drop documents to resolve...'
-          : multiSelectMode
-            ? 'Ask more...'
-            : 'Ask about submissions...'
+      : focusedSubmission?.status === 'Quoted'
+        ? 'Ask about this submission...'
+        : focusedSubmission && !statusMode && !activeIssue
+          ? 'Ask about this submission...'
+          : activeIssue
+            ? activeIssue.resolvedAt
+              ? 'Add more details or continue...'
+              : activeIssue.resolutionMode === 'guided'
+                ? 'Drop supporting docs here, or paste details if you already have them...'
+                : activeIssue.composerPlaceholder.includes('...')
+                  ? activeIssue.composerPlaceholder.replace(
+                      /\.\.\.$/,
+                      ' — or drop supporting documents here...',
+                    )
+                  : `${activeIssue.composerPlaceholder} — or drop supporting documents here`
+            : focusedSubmission?.status === 'Blocked'
+              ? 'Add details or drop documents to resolve...'
+              : multiSelectMode
+                ? 'Ask more...'
+                : 'Ask about submissions...'
 
-  const summaryTitle = activeConfirmation
-    ? focusedSubmission?.status === 'Quoted'
+  const summaryTitle =
+    focusedSubmission?.status === 'Quoted'
       ? 'Quote sent'
-      : 'Request sent'
-    : activeIssue
-      ? 'Issue details'
-      : multiSelectMode
-        ? 'Selection summary'
-        : focusedSubmission && !statusMode
-          ? 'Submission briefing'
-          : focusedSubmission?.status === 'Ready'
-            ? 'Structure review'
-            : focusedSubmission?.status === 'Quoted'
-              ? 'Quote sent'
-              : focusedSubmission
-                ? 'Submission issues'
-                : 'Intake summary'
+      : focusedSubmission?.status === 'Declined'
+        ? 'Decline sent'
+        : focusedSubmission?.status === 'Ready'
+          ? 'Structure review'
+          : activeConfirmation
+            ? 'Request sent'
+            : activeIssue
+              ? 'Issue details'
+              : multiSelectMode
+                ? 'Selection summary'
+                : focusedSubmission && !statusMode
+                  ? 'Submission briefing'
+                  : focusedSubmission
+                    ? 'Submission issues'
+                    : 'Intake summary'
 
   const panelContentKey = multiSelectMode
     ? `multi:${selectedSubmissions.map((row) => row.id).join('|')}`
     : !focusedSubmission
       ? 'workspace'
-      : activeConfirmation
-        ? `confirm:${focusedSubmission.id}:${activeConfirmation.message.slice(0, 40)}`
-        : !statusMode
-          ? `insight:${focusedSubmission.id}`
-          : activeIssue
-            ? `issue:${focusedSubmission.id}:${activeIssue.id}:${activeIssue.resolvedAt ?? 'open'}`
-            : focusedSubmission.status === 'Ready'
-              ? `ready:${focusedSubmission.id}:${focusedSubmission.approvedPremiumLabel ?? 'review'}`
-              : focusedSubmission.status === 'Quoted'
-                ? `quoted:${focusedSubmission.id}`
-                : `blocked:${focusedSubmission.id}:list`
+      : focusedSubmission.status === 'Quoted'
+        ? `quoted:${focusedSubmission.id}:${activeConfirmation ? 'sent' : 'package'}`
+        : focusedSubmission.status === 'Declined'
+          ? `declined:${focusedSubmission.id}:${activeConfirmation ? 'sent' : 'package'}`
+          : focusedSubmission.status === 'Ready'
+            ? `ready:${focusedSubmission.id}:structure`
+            : activeConfirmation
+              ? `confirm:${focusedSubmission.id}:${activeConfirmation.message.slice(0, 40)}`
+              : activeIssue
+                ? `issue:${focusedSubmission.id}:${activeIssue.id}:${activeIssue.resolvedAt ?? 'open'}`
+                : !statusMode
+                  ? `insight:${focusedSubmission.id}`
+                  : `blocked:${focusedSubmission.id}:list`
 
   const seedComposer = (message: string) => {
     setSeedComposerMessage(null)
@@ -1353,25 +1450,68 @@ export function SubmissionsCopilotPanel({
           <SummarizeView submissions={selectedSubmissions} />
         ) : !focusedSubmission ? (
           <WorkspaceView />
+        ) : focusedSubmission.status === 'Quoted' ? (
+          <SendConfirmationView
+            submissionNumber={focusedSubmission.submissionNumber}
+            message={
+              activeConfirmation?.message ??
+              buildQuoteSentMessageFromPackage(focusedSubmission)
+            }
+            nextUpLine={
+              activeConfirmation?.nextUpLine ??
+              buildQuoteSentNextUpLine(confirmationNextReady)
+            }
+            followUpActions={
+              activeConfirmation?.followUpActions?.length
+                ? activeConfirmation.followUpActions
+                : [
+                    confirmationNextReady ? 'Open next Ready submission' : 'Show Ready only',
+                    'Schedule producer follow-up',
+                    ...(activeConfirmation?.sentEmail || focusedSubmission.quotePackageSent
+                      ? ['View sent email']
+                      : []),
+                  ]
+            }
+            onAction={handleQuoteConfirmationAction}
+            onSeedComposer={seedComposer}
+          />
+        ) : focusedSubmission.status === 'Declined' ? (
+          <SendConfirmationView
+            submissionNumber={focusedSubmission.submissionNumber}
+            message={
+              activeConfirmation?.message ??
+              buildDeclineToQuoteSendConfirmation(focusedSubmission)
+            }
+            nextUpLine={
+              activeConfirmation?.nextUpLine ??
+              buildQuoteSentNextUpLine(confirmationNextReady)
+            }
+            followUpActions={
+              activeConfirmation?.followUpActions?.length
+                ? activeConfirmation.followUpActions
+                : [
+                    confirmationNextReady ? 'Open next Ready submission' : 'Show Ready only',
+                    'Schedule producer follow-up',
+                    ...(activeConfirmation?.sentEmail ? ['View sent email'] : []),
+                  ]
+            }
+            onAction={handleQuoteConfirmationAction}
+            onSeedComposer={seedComposer}
+          />
+        ) : focusedSubmission.status === 'Ready' ? (
+          <ReadyStructureOptionsView
+            submission={focusedSubmission}
+            onEmailQuoteOptions={openQuotePackageEmail}
+            onDeclineToQuote={openDeclineToQuoteEmail}
+            onSeedComposer={seedComposer}
+          />
         ) : activeConfirmation ? (
           <SendConfirmationView
             submissionNumber={focusedSubmission.submissionNumber}
             message={activeConfirmation.message}
-            nextUpLine={buildQuoteSentNextUpLine(confirmationNextReady)}
-            followUpActions={[
-              confirmationNextReady ? 'Open next Ready submission' : 'Show Ready only',
-              'Schedule producer follow-up',
-              ...(activeConfirmation.sentEmail ? ['View sent email'] : []),
-            ]}
+            followUpActions={activeConfirmation.followUpActions}
             onAction={handleQuoteConfirmationAction}
             onSeedComposer={seedComposer}
-          />
-        ) : !statusMode ? (
-          <SubmissionInsightView
-            submission={focusedSubmission}
-            onViewStatus={() => onEntryModeChange?.('status')}
-            onSeedComposer={seedComposer}
-            onDraftProducerEmail={() => openProducerEmail('Draft producer follow-up', null)}
           />
         ) : activeIssue ? (
           <IssueDetailCard
@@ -1381,35 +1521,12 @@ export function SubmissionsCopilotPanel({
             onGuidedResolve={handleGuidedResolve}
             onRequestAttach={() => setAttachRequestKey((key) => (key ?? 0) + 1)}
           />
-        ) : focusedSubmission.status === 'Ready' ? (
-          <ReadyStructureOptionsView
+        ) : !statusMode ? (
+          <SubmissionInsightView
             submission={focusedSubmission}
-            onEmailQuoteOptions={openQuotePackageEmail}
+            onViewStatus={() => onEntryModeChange?.('status')}
             onSeedComposer={seedComposer}
-          />
-        ) : focusedSubmission.status === 'Quoted' ? (
-          <SendConfirmationView
-            submissionNumber={focusedSubmission.submissionNumber}
-            message={
-              activeConfirmation?.message ??
-              [
-                `Quote options were sent for ${focusedSubmission.submissionNumber}.`,
-                focusedSubmission.approvedPremiumLabel
-                  ? `Recommended: ${focusedSubmission.approvedPremiumLabel}.`
-                  : null,
-                `${focusedSubmission.submissionNumber} is now Quoted.`,
-              ]
-                .filter(Boolean)
-                .join('\n')
-            }
-            nextUpLine={buildQuoteSentNextUpLine(confirmationNextReady)}
-            followUpActions={[
-              confirmationNextReady ? 'Open next Ready submission' : 'Show Ready only',
-              'Schedule producer follow-up',
-              ...(activeConfirmation?.sentEmail ? ['View sent email'] : []),
-            ]}
-            onAction={handleQuoteConfirmationAction}
-            onSeedComposer={seedComposer}
+            onDraftProducerEmail={() => openProducerEmail('Draft producer follow-up', null)}
           />
         ) : (
           <>

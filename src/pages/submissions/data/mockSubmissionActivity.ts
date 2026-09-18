@@ -19,6 +19,8 @@ type SubmissionActivitySource = Pick<
   | 'issues'
   | 'notes'
   | 'confidence'
+  | 'quotePackageSent'
+  | 'approvedPremiumLabel'
 >
 
 function submissionHref(submissionNumber: string) {
@@ -45,7 +47,83 @@ export function getSubmissionActivity(submission: SubmissionActivitySource): Rec
   const note = submission.notes[0]
   const underwriter = assignedIsQueue ? 'Intake · System' : `${submission.assignedTo} · Underwriting`
 
-  const items: RecentActivityItem[] = [
+  const items: RecentActivityItem[] = []
+
+  if (submission.status === 'Quoted' && submission.quotePackageSent) {
+    const sent = submission.quotePackageSent
+    const alsoSent = sent.included.filter((option) => option.label !== sent.recommendedLabel)
+    const packageDetail =
+      alsoSent.length > 0
+        ? `${sent.recommendedLabel} recommended, ${alsoSent.map((option) => option.label).join(', ')} included · sent to ${sent.recipient}`
+        : `${sent.recommendedLabel} recommended · sent to ${sent.recipient}`
+    const timePart = sent.sentAtLabel.includes(',')
+      ? sent.sentAtLabel.split(',').slice(-1)[0]?.trim()
+      : sent.sentAtLabel.replace(/^[A-Za-z]+\s+\d+\s+/, '')
+    items.push({
+      id: `${submission.id}-act-quote-sent`,
+      kind: 'quote',
+      label: 'Quote options sent',
+      detail: packageDetail,
+      timestamp: `Today · ${timePart || sent.sentAtLabel}`,
+      referenceId: `QTE-${submission.submissionNumber.replace('SUB-', '')}`,
+      status: 'Quoted',
+      statusVariant: getActivityTypeChipStatus('quote'),
+      performedBy: underwriter,
+      insuredName: submission.insuredName,
+      submissionNumber: submission.submissionNumber,
+      quoteNumber: `QTE-${submission.submissionNumber.replace('SUB-', '')}`,
+      summary: `Quote options for ${submission.submissionNumber} were sent to ${sent.recipient}. Recommended ${sent.recommendedLabel}.`,
+      fields: [
+        { label: 'Milestone', value: 'Quote options sent' },
+        { label: 'Sent to', value: sent.recipient },
+        {
+          label: 'Recommended',
+          value: `${sent.recommendedLabel} · ${sent.recommendedRange.replace(/\s*-\s*/g, '–')}`,
+        },
+        {
+          label: 'Attachments',
+          value: sent.attachments.join(', '),
+        },
+      ],
+      insights: [
+        'Overview shows the sent package summary — structures are no longer choosable.',
+        'Producer follow-up can be scheduled from Copilot Quote sent.',
+      ],
+      primaryLink: { label: 'View submission', to: href },
+      secondaryLink: { label: 'View documents', to: docsHref },
+    })
+  }
+
+  if (submission.status === 'Declined') {
+    items.push({
+      id: `${submission.id}-act-declined`,
+      kind: 'task',
+      label: 'Decline to quote sent',
+      detail: 'Decline note sent to commercial@libertygroup.com',
+      timestamp: 'Today · Just now',
+      referenceId: `DCL-${submission.submissionNumber.replace('SUB-', '')}`,
+      status: 'Declined',
+      statusVariant: 'warning',
+      performedBy: underwriter,
+      insuredName: submission.insuredName,
+      submissionNumber: submission.submissionNumber,
+      summary: `A decline to quote was sent for ${submission.submissionNumber}. No structure package was issued.`,
+      fields: [
+        { label: 'Milestone', value: 'Decline to quote' },
+        { label: 'Sent to', value: 'commercial@libertygroup.com' },
+        { label: 'Outcome', value: 'Declined' },
+        { label: 'Quote package', value: 'Not issued' },
+      ],
+      insights: [
+        'Overview no longer shows structure options for this file.',
+        'Producer was notified that the submission will not be quoted.',
+      ],
+      primaryLink: { label: 'View submission', to: href },
+      secondaryLink: { label: 'View documents', to: docsHref },
+    })
+  }
+
+  items.push(
     {
       id: `${submission.id}-act-note`,
       kind: 'task',
@@ -102,7 +180,7 @@ export function getSubmissionActivity(submission: SubmissionActivitySource): Rec
       primaryLink: { label: 'View submission', to: href },
       secondaryLink: { label: 'Open underwriting', to: `${href}?tab=underwriting` },
     },
-  ]
+  )
 
   if (topBlocker) {
     items.push({
@@ -134,7 +212,7 @@ export function getSubmissionActivity(submission: SubmissionActivitySource): Rec
       primaryLink: { label: 'View submission', to: href },
       secondaryLink: { label: 'View documents', to: docsHref },
     })
-  } else if (submission.status === 'Ready') {
+  } else if (submission.status === 'Ready' || submission.status === 'Quoted') {
     items.push({
       id: `${submission.id}-act-ready`,
       kind: 'quote',

@@ -6,6 +6,7 @@ import {
   type SubmissionStatus,
   type PremiumEstimate,
   type SubmissionReadyInsight,
+  type QuotePackageSent,
 } from '@/pages/submissions/data/mockSubmissions'
 
 export type SubmissionDetailsRecord = {
@@ -24,6 +25,7 @@ export type SubmissionDetailsRecord = {
   readyInsights?: SubmissionReadyInsight[]
   notes: string[]
   approvedPremiumLabel?: PremiumEstimate['label']
+  quotePackageSent?: QuotePackageSent
   producer: string
   underwriter: string
   effectiveTarget: string
@@ -74,13 +76,18 @@ function buildFromListRecord(row: SubmissionListRecord): SubmissionDetailsRecord
     readyInsights: row.readyInsights,
     notes: row.notes,
     approvedPremiumLabel: row.approvedPremiumLabel,
+    quotePackageSent: row.quotePackageSent,
     producer: 'Liberty Specialty Group',
     underwriter: assignedIsQueue ? 'Unassigned' : row.assignedTo,
     effectiveTarget: 'TBD — pending clearance',
     copilotSummary:
       row.status === 'Blocked'
         ? `Submission **${row.submissionNumber}** for **${row.insuredName}** is **Blocked** with **${blocking}** blocking issue${blocking === 1 ? '' : 's'}. Resolve gaps in Copilot without leaving the intake flow.`
-        : `Submission **${row.submissionNumber}** for **${row.insuredName}** is **Ready** for underwriting review with **${row.confidence}%** confidence.`,
+        : row.status === 'Quoted'
+          ? `Submission **${row.submissionNumber}** for **${row.insuredName}** is **Quoted** — package sent to the producer.`
+          : row.status === 'Declined'
+            ? `Submission **${row.submissionNumber}** for **${row.insuredName}** is **Declined** — decline note sent to the producer.`
+            : `Submission **${row.submissionNumber}** for **${row.insuredName}** is **Ready** for underwriting review with **${row.confidence}%** confidence.`,
     copilotInsights: [
       `${row.status} · ${row.linesOfBusiness.join(', ')}`,
       `Assigned to ${row.assignedTo}`,
@@ -148,5 +155,6 @@ export function toSubmissionListRecord(details: SubmissionDetailsRecord): Submis
     readyInsights: details.readyInsights,
     notes: details.notes,
     approvedPremiumLabel: details.approvedPremiumLabel,
+    quotePackageSent: details.quotePackageSent,
   }
 }

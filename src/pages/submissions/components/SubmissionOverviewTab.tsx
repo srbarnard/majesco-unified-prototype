@@ -141,9 +141,11 @@ const riskInsightEnter = keyframes`
 function RiskSignalInsight({
   signal,
   submissionNumber,
+  status,
 }: {
   signal: RiskSignalPill
   submissionNumber: string
+  status: SubmissionDetailsRecord['status']
 }) {
   const [visible, setVisible] = useState(true)
   const [displayedSignal, setDisplayedSignal] = useState(signal)
@@ -151,8 +153,22 @@ function RiskSignalInsight({
     () => getSubmissionRiskSignals(submissionNumber),
     [submissionNumber],
   )
-  const insight =
+  const baseInsight =
     displayedSignal === 'loss' ? riskSignals.lossInsight : riskSignals.revenueInsight
+  const insight =
+    status === 'Quoted' && displayedSignal === 'loss'
+      ? {
+          title: 'On file with producer · limited loss history disclosed in the quote package.',
+          body: 'Disclosed with the producer — not blocking further work on this file.',
+          status: 'neutral' as const,
+        }
+      : status === 'Declined' && displayedSignal === 'loss'
+        ? {
+            title: 'Decline sent to producer',
+            body: 'No quote package was issued for this submission.',
+            status: 'neutral' as const,
+          }
+        : baseInsight
   const variant = insightStatusToVariant(insight.status)
 
   useEffect(() => {
@@ -171,7 +187,7 @@ function RiskSignalInsight({
     <Box sx={{ mt: 1.5, minHeight: 72 }}>
       <Fade in={visible} timeout={{ enter: 220, exit: 140 }}>
         <Box
-          key={`${submissionNumber}-${displayedSignal}`}
+          key={`${submissionNumber}-${displayedSignal}-${status}`}
           sx={{
             animation: visible ? `${riskInsightEnter} 280ms ease-out` : 'none',
           }}
@@ -427,6 +443,267 @@ function BlockedStatBoxes({ submission }: { submission: SubmissionDetailsRecord 
   )
 }
 
+function DeclinedStatBoxes() {
+  const theme = useTheme() as AppTheme
+  const boxes: Array<{ label: string; value: string; helper: string; tone: OverviewStatTone }> = [
+    {
+      label: 'Status',
+      value: 'Declined',
+      helper: 'Not proceeding to quote',
+      tone: 'warning',
+    },
+    {
+      label: 'Outcome',
+      value: 'Not quoted',
+      helper: 'Structure options were not issued',
+      tone: 'warning',
+    },
+    {
+      label: 'Producer',
+      value: 'Notified',
+      helper: 'Decline note sent',
+      tone: 'info',
+    },
+  ]
+
+  return (
+    <Grid container spacing={GUTTER}>
+      {boxes.map((box) => {
+        const toneStyles = getStatToneStyles(box.tone, theme)
+        return (
+          <Grid key={box.label} size={{ xs: 12, sm: 4 }}>
+            <Box
+              sx={(t) => ({
+                ...greySurfaceSx(t as AppTheme),
+                position: 'relative',
+                overflow: 'hidden',
+                px: 2.5,
+                py: 2,
+                height: '100%',
+                width: '100%',
+                boxSizing: 'border-box',
+                pointerEvents: 'none',
+                userSelect: 'none',
+              })}
+            >
+              <Box
+                sx={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 4,
+                  bgcolor: toneStyles.accent,
+                  borderRadius: '2px 0 0 2px',
+                }}
+              />
+              <Typography
+                variant="h4"
+                sx={{
+                  ...headingSx,
+                  fontSize: '1.75rem',
+                  lineHeight: 1.2,
+                  color: toneStyles.value,
+                  mb: 0.75,
+                }}
+              >
+                {box.value}
+              </Typography>
+              <Typography variant="body2" sx={{ ...subtitleSx, fontSize: '0.875rem', color: 'text.primary' }}>
+                {box.label}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ ...bodySx, display: 'block', mt: 0.5 }}
+              >
+                {box.helper}
+              </Typography>
+            </Box>
+          </Grid>
+        )
+      })}
+    </Grid>
+  )
+}
+
+function formatQuoteSentTime(sentAt?: string, sentAtLabel?: string) {
+  if (sentAt) {
+    return new Date(sentAt).toLocaleString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  }
+  const match = sentAtLabel?.match(/(\d{1,2}:\d{2}\s*[AP]M)/i)
+  return match?.[1]?.replace(/\s+/g, ' ') ?? '—'
+}
+
+function QuotedPackageSummary({ submission }: { submission: SubmissionDetailsRecord }) {
+  const theme = useTheme() as AppTheme
+  const sent = submission.quotePackageSent
+  const estimates = submission.premiumEstimates ?? []
+
+  const recommendedLabel = sent?.recommendedLabel ?? submission.approvedPremiumLabel ?? 'Balanced'
+  const recommendedRange = formatStructureRange(
+    sent?.recommendedRange ??
+      estimates.find((option) => option.label === recommendedLabel)?.range ??
+      '$900K - $1.1M',
+  )
+  const alsoSent = (sent?.included ?? []).filter((option) => option.label !== recommendedLabel)
+  const optimizedIncluded = alsoSent.some((option) => option.label === 'Optimized')
+  const optimizedRange = formatStructureRange(
+    alsoSent.find((option) => option.label === 'Optimized')?.range ??
+      estimates.find((option) => option.label === 'Optimized')?.range ??
+      '$1.1M - $1.3M',
+  )
+
+  const recipient = sent?.recipient ?? 'commercial@libertygroup.com'
+  const sentTime = formatQuoteSentTime(sent?.sentAt, sent?.sentAtLabel)
+  const attachmentLabels = (sent?.attachments ?? ['quote letter', 'option comparison']).map((label) =>
+    label.replace(/^option\s+/i, ''),
+  )
+
+  const recommendedSupport =
+    recommendedLabel === 'Optimized'
+      ? 'Leaner rate, tighter terms'
+      : recommendedLabel === 'Conservative'
+        ? 'More limit / load'
+        : 'Standard deductibles'
+
+  type QuotedCard = {
+    key: string
+    hero: string
+    line2: string
+    support: string
+    tone: OverviewStatTone | 'muted'
+    attachmentChips?: string[]
+  }
+
+  const cards: QuotedCard[] = [
+    {
+      key: 'recommended',
+      hero: recommendedRange,
+      line2: `${recommendedLabel} · Recommended`,
+      support: recommendedSupport,
+      tone: 'success',
+    },
+    optimizedIncluded
+      ? {
+          key: 'also-sent',
+          hero: optimizedRange,
+          line2: 'Optimized · Also sent',
+          support: 'Leaner rate, tighter terms',
+          tone: 'info',
+        }
+      : {
+          key: 'single-option',
+          hero: '1 option sent',
+          line2: 'No alternatives',
+          support: 'Conservative held back',
+          tone: 'muted',
+        },
+    {
+      key: 'sent',
+      hero: sentTime,
+      line2: 'Sent to producer',
+      support: recipient,
+      tone: 'info',
+      attachmentChips: attachmentLabels,
+    },
+  ]
+
+  return (
+    <Grid container spacing={GUTTER}>
+      {cards.map((card) => {
+        const toneStyles =
+          card.tone === 'muted'
+            ? {
+                accent: theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[300],
+                value: 'text.secondary' as const,
+              }
+            : getStatToneStyles(card.tone, theme)
+
+        return (
+          <Grid key={card.key} size={{ xs: 12, sm: 4 }}>
+            <Box
+              sx={(t) => ({
+                ...greySurfaceSx(t as AppTheme),
+                position: 'relative',
+                overflow: 'hidden',
+                px: 2.5,
+                py: 2,
+                height: '100%',
+                width: '100%',
+                boxSizing: 'border-box',
+                pointerEvents: 'none',
+                userSelect: 'none',
+              })}
+            >
+              <Box
+                sx={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 4,
+                  bgcolor: toneStyles.accent,
+                  borderRadius: '2px 0 0 2px',
+                }}
+              />
+              <Typography
+                variant="h4"
+                sx={{
+                  ...headingSx,
+                  fontSize: '1.75rem',
+                  lineHeight: 1.2,
+                  color: toneStyles.value,
+                  mb: 0.75,
+                }}
+              >
+                {card.hero}
+              </Typography>
+              <Typography variant="body2" sx={{ ...subtitleSx, fontSize: '0.875rem', color: 'text.primary' }}>
+                {card.line2}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ ...bodySx, display: 'block', mt: 0.5 }}
+              >
+                {card.support}
+              </Typography>
+              {card.attachmentChips?.length ? (
+                <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+                  {card.attachmentChips.map((label) => (
+                    <Box
+                      key={label}
+                      component="span"
+                      sx={(t) => ({
+                        ...bodySx,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        px: 0.75,
+                        py: 0.25,
+                        borderRadius: 1,
+                        fontSize: '0.6875rem',
+                        fontWeight: 500,
+                        color: 'text.secondary',
+                        bgcolor: surfaceSubtle(t),
+                      })}
+                    >
+                      {label}
+                    </Box>
+                  ))}
+                </Stack>
+              ) : null}
+            </Box>
+          </Grid>
+        )
+      })}
+    </Grid>
+  )
+}
+
 function RiskSignalsChart({
   signal,
   range,
@@ -641,7 +918,10 @@ function RiskSignalsCard({
   onIssueSelect?: (issueId: string) => void
   activeIssueId?: string | null
 }) {
-  const isReady = submission.status === 'Ready'
+  const showRiskCharts =
+    submission.status === 'Ready' ||
+    submission.status === 'Quoted' ||
+    submission.status === 'Declined'
   const openIssues = submission.issues.filter((issue) => !issue.resolvedAt)
   const [signal, setSignal] = useState<RiskSignalPill>('loss')
   const [range, setRange] = useState<RiskChartRange>('5Y')
@@ -653,7 +933,7 @@ function RiskSignalsCard({
         Risk signals
       </Typography>
 
-      {isReady ? (
+      {showRiskCharts ? (
         <Box sx={{ width: '100%', minWidth: 0 }}>
           <Box
             sx={{
@@ -782,6 +1062,7 @@ function RiskSignalsCard({
                 key={submission.submissionNumber}
                 signal={signal}
                 submissionNumber={submission.submissionNumber}
+                status={submission.status}
               />
             </Box>
           </Box>
@@ -928,7 +1209,7 @@ export function QuickActionsPanel({
     >
       <Box sx={{ px: 1.75, pt: 1.5, pb: 0.5, flexShrink: 0 }}>
         <Typography variant="subtitle1" sx={{ ...headingSx, fontSize: '0.875rem' }}>
-          Quick actions
+          Suggested actions
         </Typography>
         <Typography
           variant="caption"
@@ -1084,12 +1365,16 @@ export function SubmissionOverviewTab({
     [submission.confidence, submission.linesOfBusiness, submission.premiumEstimates],
   )
 
-  const showStructureBoxes = structureOptions.length > 0
+  const showStructureBoxes = submission.status === 'Ready' && structureOptions.length > 0
+  const showQuotedPackage = submission.status === 'Quoted'
+  const showDeclinedSummary = submission.status === 'Declined'
 
   return (
     <Box sx={{ width: '100%', minHeight: '100%', bgcolor: 'background.paper', pb: GUTTER }}>
       <Stack spacing={GUTTER}>
-        {showStructureBoxes ? (
+        {showQuotedPackage ? (
+          <QuotedPackageSummary submission={submission} />
+        ) : showStructureBoxes ? (
           <Grid container spacing={GUTTER}>
             {structureOptions.map((option) => (
               <Grid key={option.label} size={{ xs: 12, sm: 4 }}>
@@ -1097,6 +1382,8 @@ export function SubmissionOverviewTab({
               </Grid>
             ))}
           </Grid>
+        ) : showDeclinedSummary ? (
+          <DeclinedStatBoxes />
         ) : (
           <BlockedStatBoxes submission={submission} />
         )}

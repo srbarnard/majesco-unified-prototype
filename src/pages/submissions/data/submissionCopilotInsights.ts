@@ -5,6 +5,26 @@ import {
 
 export type SubmissionCopilotEntryMode = 'insight' | 'status'
 
+/** Router location.state when opening a submission Overview from the grid / after quote send. */
+export type SubmissionDetailLocationState = {
+  openCopilot?: boolean
+  entryMode?: SubmissionCopilotEntryMode
+  /** Opaque Copilot confirmation payload — typed at the page boundary. */
+  sendConfirmation?: {
+    submissionId: string
+    message: string
+    nextUpLine?: string
+    followUpActions: string[]
+    sentEmail?: {
+      to: string
+      subject: string
+      body: string
+      subtitle: string
+      documents: unknown[]
+    }
+  } | null
+}
+
 export type SubmissionInsightBriefing = {
   header: string
   subhead: string

@@ -21,10 +21,13 @@ import { DiscardSubmissionDialog } from '@/pages/submissions/components/DiscardS
 import type { SubmissionsTab } from '@/pages/submissions/components/SubmissionsTabs'
 import { SubmissionsToolbar } from '@/pages/submissions/components/SubmissionsToolbar'
 import {
+  buildQuotePackageSent,
   submissionsMock,
+  syncSubmissionListRecord,
   type PremiumEstimate,
   type SubmissionListRecord,
 } from '@/pages/submissions/data/mockSubmissions'
+import type { SubmissionDetailLocationState } from '@/pages/submissions/data/submissionCopilotInsights'
 import { applySubmissionsListFilters } from '@/pages/submissions/filters/applySubmissionsListFilters'
 import {
   emptySubmissionsListFilters,
@@ -236,6 +239,7 @@ export function SubmissionsPage() {
 
   const handleResolveIssue = useCallback(
     (submissionId: string, issueId: string, resolvedDetails: string[]) => {
+      let becameReady = false
       setRows((current) =>
         current.map((row) => {
           if (row.id !== submissionId) return row
@@ -257,7 +261,8 @@ export function SubmissionsPage() {
           const nextConfidence = Math.min(96, row.confidence + 9)
 
           if (remainingBlockers.length === 0) {
-            return {
+            becameReady = true
+            const next: SubmissionListRecord = {
               ...row,
               status: 'Ready' as const,
               confidence: Math.max(nextConfidence, 88),
@@ -280,6 +285,8 @@ export function SubmissionsPage() {
                 },
               ],
             }
+            syncSubmissionListRecord(next)
+            return next
           }
 
           return {
@@ -290,22 +297,84 @@ export function SubmissionsPage() {
           }
         }),
       )
+      if (becameReady) {
+        setCopilotEntryMode('status')
+        setCopilotIssueFocusId(null)
+        setCopilotSendConfirmation(null)
+      }
     },
     [],
   )
 
-  const handleApprovePremiumOption = useCallback((submissionId: string, option: PremiumEstimate) => {
+  const handleApprovePremiumOption = useCallback(
+    (
+      submissionId: string,
+      recommended: PremiumEstimate,
+      included: PremiumEstimate[],
+      recipient: string,
+    ) => {
+      const quotePackageSent = buildQuotePackageSent(recommended, included, recipient)
+      setRows((current) =>
+        current.map((row) => {
+          if (row.id !== submissionId) return row
+          const next: SubmissionListRecord = {
+            ...row,
+            approvedPremiumLabel: recommended.label,
+            status: 'Quoted',
+            quotePackageSent,
+          }
+          syncSubmissionListRecord(next)
+          return next
+        }),
+      )
+    },
+    [],
+  )
+
+  const handleDeclineSubmission = useCallback((submissionId: string, _recipient: string) => {
     setRows((current) =>
-      current.map((row) =>
-        row.id === submissionId
-          ? { ...row, approvedPremiumLabel: option.label, status: 'Quoted' as const }
-          : row,
-      ),
+      current.map((row) => {
+        if (row.id !== submissionId) return row
+        const next: SubmissionListRecord = {
+          ...row,
+          status: 'Declined',
+          quotePackageSent: undefined,
+          approvedPremiumLabel: undefined,
+        }
+        syncSubmissionListRecord(next)
+        return next
+      }),
     )
   }, [])
 
   const [copilotSendConfirmation, setCopilotSendConfirmation] =
     useState<SubmissionsCopilotSendConfirmation | null>(null)
+
+  const handleAfterQuotePackageSent = useCallback(
+    (submission: SubmissionListRecord, confirmation: SubmissionsCopilotSendConfirmation) => {
+      navigate(`/submissions/${encodeURIComponent(submission.submissionNumber)}`, {
+        state: {
+          openCopilot: true,
+          entryMode: 'status',
+          sendConfirmation: confirmation,
+        } satisfies SubmissionDetailLocationState,
+      })
+    },
+    [navigate],
+  )
+
+  const handleAfterDeclineSent = useCallback(
+    (submission: SubmissionListRecord, confirmation: SubmissionsCopilotSendConfirmation) => {
+      navigate(`/submissions/${encodeURIComponent(submission.submissionNumber)}`, {
+        state: {
+          openCopilot: true,
+          entryMode: 'status',
+          sendConfirmation: confirmation,
+        } satisfies SubmissionDetailLocationState,
+      })
+    },
+    [navigate],
+  )
 
   const handleOpenNextReadySubmission = useCallback(
     (submission: SubmissionListRecord) => {
@@ -389,6 +458,9 @@ export function SubmissionsPage() {
       onEntryModeChange={setCopilotEntryMode}
       onResolveIssue={handleResolveIssue}
       onApprovePremiumOption={handleApprovePremiumOption}
+      onDeclineSubmission={handleDeclineSubmission}
+      onAfterQuotePackageSent={handleAfterQuotePackageSent}
+      onAfterDeclineSent={handleAfterDeclineSent}
       sendConfirmation={
         copilotSendConfirmation &&
         copilotFocusForPanel &&
@@ -414,9 +486,15 @@ export function SubmissionsPage() {
       copilotFocusForPanel?.id,
       copilotFocusForPanel?.status,
       copilotFocusForPanel?.approvedPremiumLabel,
+      copilotFocusForPanel?.confidence,
+      copilotFocusForPanel?.issues,
+      copilotFocusForPanel?.premiumEstimates,
       copilotIssueFocusId,
       copilotSendConfirmation,
       handleApprovePremiumOption,
+      handleDeclineSubmission,
+      handleAfterQuotePackageSent,
+      handleAfterDeclineSent,
       handleOpenNextReadySubmission,
       handleResolveIssue,
       handleShowReadyOnly,

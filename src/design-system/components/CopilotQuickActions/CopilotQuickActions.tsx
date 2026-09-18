@@ -22,7 +22,7 @@ export type CopilotQuickActionsProps = {
 export function CopilotQuickActions({
   actions,
   onAction,
-  label = 'Quick actions',
+  label = 'Suggested actions',
   firstActionIcon,
 }: CopilotQuickActionsProps) {
   if (actions.length === 0) return null

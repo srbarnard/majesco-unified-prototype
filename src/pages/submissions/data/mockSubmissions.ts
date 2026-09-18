@@ -1,4 +1,4 @@
-export type SubmissionStatus = 'Ready' | 'Blocked' | 'Quoted'
+export type SubmissionStatus = 'Ready' | 'Blocked' | 'Quoted' | 'Declined'
 
 export type SubmissionIssueSeverity = 'blocking' | 'warning'
 
@@ -36,6 +36,18 @@ export type SubmissionReadyInsight = {
   severity: 'success' | 'warning'
 }
 
+/** Record of the quote package emailed to the producer (Quoted status only). */
+export type QuotePackageSent = {
+  recipient: string
+  recommendedLabel: PremiumEstimate['label']
+  recommendedRange: string
+  /** Structures included in the email — recommended first; Conservative only if sent. */
+  included: Array<{ label: PremiumEstimate['label']; range: string }>
+  attachments: string[]
+  sentAt: string
+  sentAtLabel: string
+}
+
 export type SubmissionListRecord = {
   id: string
   submissionNumber: string
@@ -56,6 +68,8 @@ export type SubmissionListRecord = {
   notes: string[]
   /** Copilot-approved structure label, when the UW confirms an option. */
   approvedPremiumLabel?: PremiumEstimate['label']
+  /** Populated when status is Quoted — what was emailed. */
+  quotePackageSent?: QuotePackageSent
 }
 
 /**
@@ -109,6 +123,37 @@ export function resolvePremiumStructureOptions(
           : Math.min(uniqueByRange.length, confidence >= 93 ? 1 : 2)
 
   return ensureRecommended(uniqueByRange.slice(0, Math.min(maxOptions, 3)))
+}
+
+function formatQuoteSentAtLabel(date = new Date()) {
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+/** Build a Quoted package record from the structures included in the email. */
+export function buildQuotePackageSent(
+  recommended: PremiumEstimate,
+  included: PremiumEstimate[],
+  recipient: string,
+  sentAt = new Date(),
+): QuotePackageSent {
+  const ordered = [
+    recommended,
+    ...included.filter((option) => option.label !== recommended.label),
+  ]
+  return {
+    recipient,
+    recommendedLabel: recommended.label,
+    recommendedRange: recommended.range,
+    included: ordered.map((option) => ({ label: option.label, range: option.range })),
+    attachments: ['quote letter', 'option comparison'],
+    sentAt: sentAt.toISOString(),
+    sentAtLabel: formatQuoteSentAtLabel(sentAt),
+  }
 }
 
 /** Hand-crafted demo rows (rich Copilot issue detail). Extra volume is generated below. */
@@ -1040,3 +1085,10 @@ export const submissionsMock: SubmissionListRecord[] = [
   ...curatedSubmissions,
   ...generatedSubmissions,
 ]
+
+/** Keep list + detail in sync after quote send / issue resolve in the prototype. */
+export function syncSubmissionListRecord(next: SubmissionListRecord) {
+  const index = submissionsMock.findIndex((row) => row.id === next.id)
+  if (index < 0) return
+  submissionsMock[index] = { ...submissionsMock[index], ...next }
+}
