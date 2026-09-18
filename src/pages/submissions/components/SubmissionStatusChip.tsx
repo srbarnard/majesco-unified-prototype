@@ -1,5 +1,6 @@
 import BlockIcon from '@mui/icons-material/Block'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import FormatQuoteOutlinedIcon from '@mui/icons-material/FormatQuoteOutlined'
 import { keyframes } from '@mui/material/styles'
 import type { MouseEvent } from 'react'
 import { StatusChip } from '@/design-system/components'
@@ -71,6 +72,17 @@ export function SubmissionStatusChip({ status, onClick, selected = false }: Subm
         status="success"
         label="Ready"
         icon={<CheckCircleIcon sx={{ fontSize: '16px !important' }} />}
+        {...commonProps}
+      />
+    )
+  }
+
+  if (status === 'Quoted') {
+    return (
+      <StatusChip
+        status="info"
+        label="Quoted"
+        icon={<FormatQuoteOutlinedIcon sx={{ fontSize: '16px !important' }} />}
         {...commonProps}
       />
     )

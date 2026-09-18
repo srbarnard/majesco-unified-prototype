@@ -1,4 +1,4 @@
-export type SubmissionStatus = 'Ready' | 'Blocked'
+export type SubmissionStatus = 'Ready' | 'Blocked' | 'Quoted'
 
 export type SubmissionIssueSeverity = 'blocking' | 'warning'
 

@@ -30,6 +30,7 @@ import type { SubmissionDetailTab } from '@/pages/submissions/components/Submiss
 import { SubmissionOverviewTab } from '@/pages/submissions/components/SubmissionOverviewTab'
 import { SubmissionUnderwritingTab } from '@/pages/submissions/components/SubmissionUnderwritingTab'
 import { SubmissionsCopilotPanel } from '@/pages/submissions/components/SubmissionsCopilotPanel'
+import type { SubmissionsCopilotSendConfirmation } from '@/pages/submissions/components/SubmissionsCopilotPanel'
 import { SubmissionsNotesPanel } from '@/pages/submissions/components/SubmissionsNotesPanel'
 import type { SubmissionCopilotEntryMode } from '@/pages/submissions/data/submissionCopilotInsights'
 import { isSubmissionNoteActivity } from '@/pages/submissions/data/mockSubmissionActivity'
@@ -90,6 +91,8 @@ export function SubmissionDetails() {
   const [attachMode, setAttachMode] = useState<DocumentAttachMode | null>(null)
   const [focusedActivity, setFocusedActivity] = useState<RecentActivityItem | null>(null)
   const [copilotIssueFocusId, setCopilotIssueFocusId] = useState<string | null>(null)
+  const [copilotSendConfirmation, setCopilotSendConfirmation] =
+    useState<SubmissionsCopilotSendConfirmation | null>(null)
   const didInitCopilot = useRef(false)
   const wasDesktop = useRef(isDesktop)
 
@@ -97,6 +100,7 @@ export function SubmissionDetails() {
     setSubmission(resolveSubmissionContext(submissionId))
     setFocusedActivity(null)
     setCopilotIssueFocusId(null)
+    setCopilotSendConfirmation(null)
   }, [submissionId])
 
   const focusedListRecord = useMemo(() => toSubmissionListRecord(submission), [submission])
@@ -276,8 +280,16 @@ export function SubmissionDetails() {
           setSubmission((current) => ({
             ...current,
             approvedPremiumLabel: option.label,
+            status: 'Quoted' as const,
           }))
         }}
+        sendConfirmation={
+          copilotSendConfirmation &&
+          copilotSendConfirmation.submissionId === focusedListRecord.id
+            ? copilotSendConfirmation
+            : null
+        }
+        onSendConfirmation={setCopilotSendConfirmation}
         onClose={closeTool}
       />
     ),
@@ -285,6 +297,7 @@ export function SubmissionDetails() {
       closeTool,
       copilotEntryMode,
       copilotIssueFocusId,
+      copilotSendConfirmation,
       focusedActivity,
       focusedListRecord,
       focusedNoteThreadId,

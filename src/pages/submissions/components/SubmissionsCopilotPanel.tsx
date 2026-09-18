@@ -1,13 +1,18 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import BlockIcon from '@mui/icons-material/Block'
 import CloseIcon from '@mui/icons-material/Close'
+import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import Checkbox from '@mui/material/Checkbox'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { flushSync } from 'react-dom'
+import { useRightTool } from '@/app/contexts/RightToolContext'
 import { CopilotQuickActions } from '@/design-system/components'
 import { accentSubtle, accentSubtleHover } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -41,26 +46,56 @@ import {
 import {
   buildIssueNoteDraft,
   buildProducerRequestEmail,
+  buildQuotePackageAttachments,
+  buildQuotePackageEmail,
+  buildQuotePackageSendConfirmation,
+  buildQuoteSentNextUpLine,
+  buildRequestInfoSendConfirmation,
+  findNextReadySubmission,
   isAddNoteAction,
   isProducerRequestAction,
   producerRequestResolvedDetails,
+  SUBMISSION_PRODUCER_EMAIL,
   type IssueNoteDraft,
-  type ProducerRequestEmailDraft,
 } from '@/pages/submissions/data/producerRequestEmail'
+import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
 import {
   buildSubmissionInsightBriefing,
   type SubmissionCopilotEntryMode,
 } from '@/pages/submissions/data/submissionCopilotInsights'
 
+export type SubmissionsCopilotSentEmail = {
+  to: string
+  subject: string
+  body: string
+  subtitle: string
+  documents: PolicyDocument[]
+}
+
+export type SubmissionsCopilotSendConfirmation = {
+  submissionId: string
+  message: string
+  nextUpLine?: string
+  followUpActions: string[]
+  sentEmail?: SubmissionsCopilotSentEmail
+}
+
 type SubmissionsCopilotPanelProps = {
   focusedSubmission?: SubmissionListRecord | null
   selectedSubmissions?: SubmissionListRecord[]
+  /** Full queue used to resolve “next Ready” follow-ups after quote send. */
+  queueSubmissions?: SubmissionListRecord[]
   entryMode?: SubmissionCopilotEntryMode
   /** Opens directly into this issue (status mode) when set. */
   initialIssueId?: string | null
   onEntryModeChange?: (mode: SubmissionCopilotEntryMode) => void
   onResolveIssue?: (submissionId: string, issueId: string, resolvedDetails: string[]) => void
   onApprovePremiumOption?: (submissionId: string, option: PremiumEstimate) => void
+  /** Survives Email-tool unmount — set from the parent page. */
+  sendConfirmation?: SubmissionsCopilotSendConfirmation | null
+  onSendConfirmation?: (confirmation: SubmissionsCopilotSendConfirmation | null) => void
+  onOpenNextReadySubmission?: (submission: SubmissionListRecord) => void
+  onShowReadyOnly?: () => void
   onClearFocus?: () => void
   onClose?: () => void
 }
@@ -425,11 +460,11 @@ function SubmissionInsightView({
 
 function ReadyStructureOptionsView({
   submission,
-  onApprove,
+  onEmailQuoteOptions,
   onSeedComposer,
 }: {
   submission: SubmissionListRecord
-  onApprove?: (option: PremiumEstimate) => void
+  onEmailQuoteOptions?: (recommended: PremiumEstimate, included: PremiumEstimate[]) => void
   onSeedComposer?: (message: string) => void
 }) {
   const options = useMemo(
@@ -441,16 +476,35 @@ function ReadyStructureOptionsView({
     [submission.confidence, submission.linesOfBusiness, submission.premiumEstimates],
   )
 
-  const recommended = options.find((option) => option.recommended) ?? options[0]
-  const [selectedLabel, setSelectedLabel] = useState<PremiumEstimate['label'] | null>(
-    submission.approvedPremiumLabel ?? recommended?.label ?? null,
+  const defaultRecommended =
+    options.find((option) => option.recommended)?.label ??
+    submission.approvedPremiumLabel ??
+    options[0]?.label ??
+    null
+
+  const [recommendedLabel, setRecommendedLabel] = useState<PremiumEstimate['label'] | null>(
+    defaultRecommended,
   )
+  const [includedLabels, setIncludedLabels] = useState<PremiumEstimate['label'][]>(() =>
+    defaultRecommended ? [defaultRecommended] : [],
+  )
+  const [uncheckHint, setUncheckHint] = useState(false)
   const approvedLabel = submission.approvedPremiumLabel
-  const selected = options.find((option) => option.label === selectedLabel) ?? recommended
 
   useEffect(() => {
-    setSelectedLabel(submission.approvedPremiumLabel ?? recommended?.label ?? null)
-  }, [recommended?.label, submission.approvedPremiumLabel, submission.id])
+    const nextRecommended =
+      options.find((option) => option.recommended)?.label ??
+      submission.approvedPremiumLabel ??
+      options[0]?.label ??
+      null
+    setRecommendedLabel(nextRecommended)
+    setIncludedLabels(nextRecommended ? [nextRecommended] : [])
+    setUncheckHint(false)
+  }, [options, submission.approvedPremiumLabel, submission.id])
+
+  const recommended = options.find((option) => option.label === recommendedLabel) ?? options[0]
+  const included = options.filter((option) => includedLabels.includes(option.label))
+  const includedCount = included.length
 
   if (options.length === 0) {
     return (
@@ -467,22 +521,42 @@ function ReadyStructureOptionsView({
       ? `**${submission.insuredName}** — Submission **${submission.submissionNumber}** is **Ready** with **${submission.confidence}%** confidence. Copilot is presenting **1** structure option — alternatives were not meaningfully different.`
       : `**${submission.insuredName}** — Submission **${submission.submissionNumber}** is **Ready** with **${submission.confidence}%** confidence. Copilot is presenting **${options.length}** distinct structure ${optionWord}${recommended ? ` · recommending **${recommended.label}**` : ''}.`
 
-  const selectionDetail = selected
-    ? approvedLabel === selected.label
-      ? `**${selected.label}** is approved at **${selected.range}**. ${selected.rationale}`
-      : selected.recommended
-        ? `Reviewing **${selected.label}** (**recommended**) at **${selected.range}**. ${selected.rationale}`
-        : `Reviewing **${selected.label}** at **${selected.range}**. ${selected.rationale}`
+  const packageCountLabel = `${includedCount} option${includedCount === 1 ? '' : 's'} in package`
+  const helperText = recommended
+    ? includedCount > 1
+      ? `Reviewing **${recommended.label}** (recommended) at **${recommended.range}**. ${packageCountLabel}. **${recommended.label}** will be sent as the recommendation.`
+      : `Reviewing **${recommended.label}** (recommended) at **${recommended.range}**. ${packageCountLabel}.`
     : null
 
+  const EMAIL_QUOTE_ACTION = 'Email quote options to producer'
   const quickActions = approvedLabel
     ? ['Ask for adjustments', 'Summarize approved structure']
     : [
-        selected ? `Approve ${selected.label}` : 'Approve selected',
+        EMAIL_QUOTE_ACTION,
         ...(options.length > 1 ? ['Compare options'] : []),
         'Ask for adjustments',
-        selected ? `More detail on ${selected.label}` : 'Ask for more detail',
+        recommended ? `More detail on ${recommended.label}` : 'Ask for more detail',
       ]
+
+  const toggleIncluded = (label: PremiumEstimate['label']) => {
+    if (label === recommendedLabel) {
+      setUncheckHint(true)
+      return
+    }
+    setUncheckHint(false)
+    setIncludedLabels((current) => {
+      if (current.includes(label)) {
+        return current.filter((item) => item !== label)
+      }
+      return [...current, label]
+    })
+  }
+
+  const setAsRecommended = (label: PremiumEstimate['label']) => {
+    setUncheckHint(false)
+    setRecommendedLabel(label)
+    setIncludedLabels((current) => (current.includes(label) ? current : [...current, label]))
+  }
 
   return (
     <>
@@ -519,72 +593,107 @@ function ReadyStructureOptionsView({
       </Typography>
       <Stack spacing={0} sx={{ mb: 0 }}>
         {options.map((option, index) => {
-          const isSelected = selected?.label === option.label
+          const isIncluded = includedLabels.includes(option.label)
+          const isRecommended = recommendedLabel === option.label
           const isApproved = approvedLabel === option.label
           const isLast = index === options.length - 1
           return (
             <Box
               key={option.label}
-              component="button"
-              type="button"
-              onClick={() => setSelectedLabel(option.label)}
               sx={(theme) => ({
                 width: '100%',
                 textAlign: 'left',
-                cursor: 'pointer',
                 border: 'none',
                 borderRadius: 0,
                 borderBottom: isLast ? 'none' : '1px solid',
                 borderColor: 'divider',
-                bgcolor: isSelected ? accentSubtle(theme) : 'transparent',
+                bgcolor: isIncluded ? accentSubtle(theme) : 'transparent',
                 px: 1.5,
                 py: 1.25,
                 transition: 'background-color 0.15s ease',
                 boxShadow: 'none',
                 '&:hover': {
-                  bgcolor: isSelected ? accentSubtle(theme) : accentSubtleHover(theme),
+                  bgcolor: isIncluded ? accentSubtle(theme) : accentSubtleHover(theme),
                 },
               })}
             >
-              <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
+              <Stack direction="row" alignItems="flex-start" spacing={1}>
+                <Checkbox
+                  size="small"
+                  checked={isIncluded}
+                  disabled={Boolean(approvedLabel)}
+                  onChange={() => toggleIncluded(option.label)}
+                  inputProps={{ 'aria-label': `Include ${option.label} in quote package` }}
+                  sx={{ p: 0.25, mt: 0.125, flexShrink: 0 }}
+                />
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Stack direction="row" alignItems="center" spacing={0.75} flexWrap="wrap" useFlexGap>
-                    <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.875rem' }}>
-                      {option.label}
-                    </Typography>
-                    {option.recommended ? (
-                      <Typography
-                        variant="caption"
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    spacing={1}
+                    sx={{ minWidth: 0 }}
+                  >
+                    <Stack direction="row" alignItems="center" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ minWidth: 0 }}>
+                      <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.875rem' }}>
+                        {option.label}
+                      </Typography>
+                      {isRecommended ? (
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            ...bodySx,
+                            px: 0.75,
+                            py: 0.125,
+                            borderRadius: '30px',
+                            bgcolor: 'success.main',
+                            color: 'success.contrastText',
+                            fontSize: '0.6875rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          Recommended
+                        </Typography>
+                      ) : null}
+                      {isApproved ? (
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            ...bodySx,
+                            px: 0.75,
+                            py: 0.125,
+                            borderRadius: '30px',
+                            bgcolor: 'primary.main',
+                            color: 'primary.contrastText',
+                            fontSize: '0.6875rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          Approved
+                        </Typography>
+                      ) : null}
+                    </Stack>
+                    {!isRecommended && !approvedLabel ? (
+                      <Button
+                        size="small"
+                        variant="text"
+                        color="primary"
+                        onClick={() => setAsRecommended(option.label)}
                         sx={{
                           ...bodySx,
-                          px: 0.75,
-                          py: 0.125,
-                          borderRadius: '30px',
-                          bgcolor: 'success.main',
-                          color: 'success.contrastText',
-                          fontSize: '0.6875rem',
-                          fontWeight: 600,
+                          flexShrink: 0,
+                          minWidth: 0,
+                          px: 0.5,
+                          py: 0,
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          textTransform: 'none',
+                          color: 'text.secondary',
+                          '&:hover': { bgcolor: 'transparent', color: 'primary.main' },
                         }}
                       >
-                        Recommended
-                      </Typography>
-                    ) : null}
-                    {isApproved ? (
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          ...bodySx,
-                          px: 0.75,
-                          py: 0.125,
-                          borderRadius: '30px',
-                          bgcolor: 'primary.main',
-                          color: 'primary.contrastText',
-                          fontSize: '0.6875rem',
-                          fontWeight: 600,
-                        }}
-                      >
-                        Approved
-                      </Typography>
+                        Set as recommended
+                      </Button>
                     ) : null}
                   </Stack>
                   <Typography
@@ -601,54 +710,52 @@ function ReadyStructureOptionsView({
                     {option.rationale}
                   </Typography>
                 </Box>
-                <Box
-                  sx={(theme) => ({
-                    width: 18,
-                    height: 18,
-                    borderRadius: '50%',
-                    border: '2px solid',
-                    borderColor: isSelected ? 'primary.main' : theme.palette.divider,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    mt: 0.25,
-                    bgcolor: isSelected ? 'primary.main' : 'transparent',
-                  })}
-                >
-                  {isSelected ? (
-                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'common.white' }} />
-                  ) : null}
-                </Box>
               </Stack>
             </Box>
           )
         })}
       </Stack>
+
+      {uncheckHint ? (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ ...bodySx, display: 'block', mt: 1, fontSize: '0.75rem' }}
+        >
+          Set another option as recommended first.
+        </Typography>
+      ) : null}
+
       <CopilotContentTransition
-        contentKey={`${submission.id}:${selected?.label ?? 'none'}:${approvedLabel ?? 'open'}`}
+        contentKey={`${submission.id}:${recommendedLabel ?? 'none'}:${includedLabels.join('|')}:${approvedLabel ?? 'open'}`}
       >
         <>
-          {selectionDetail ? (
+          {helperText ? (
             <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.55, mt: 1.5, mb: 0 }}>
-              {renderSummaryText(selectionDetail)}
+              {renderSummaryText(helperText)}
             </Typography>
           ) : null}
 
           <Divider sx={{ my: 2 }} />
           <CopilotQuickActions
             actions={quickActions}
+            firstActionIcon={
+              !approvedLabel ? (
+                <SendOutlinedIcon sx={{ fontSize: '18px !important' }} />
+              ) : undefined
+            }
             onAction={(action) => {
-              if (!selected) return
-              if (action.startsWith('Approve')) {
-                onApprove?.(selected)
+              if (!recommended) return
+              if (action === EMAIL_QUOTE_ACTION) {
+                if (includedCount === 0) return
+                onEmailQuoteOptions?.(recommended, included)
                 return
               }
               if (action === 'Compare options') {
                 const comparison = options
                   .map(
                     (option) =>
-                      `${option.label}${option.recommended ? ' (recommended)' : ''}: ${option.range} — ${option.rationale}`,
+                      `${option.label}${option.label === recommendedLabel ? ' (recommended)' : ''}${includedLabels.includes(option.label) ? ' · in package' : ''}: ${option.range} — ${option.rationale}`,
                   )
                   .join('\n')
                 onSeedComposer?.(
@@ -658,13 +765,13 @@ function ReadyStructureOptionsView({
               }
               if (action === 'Ask for adjustments') {
                 onSeedComposer?.(
-                  `Adjust the ${selected.label} structure (${selected.range}) for ${submission.submissionNumber}. I'd like to change…`,
+                  `Adjust the ${recommended.label} structure (${recommended.range}) for ${submission.submissionNumber}. I'd like to change…`,
                 )
                 return
               }
               if (action.startsWith('More detail') || action === 'Ask for more detail') {
                 onSeedComposer?.(
-                  `Explain the ${selected.label} option (${selected.range}) for ${submission.submissionNumber} in more detail — coverage terms, deductibles, and key drivers.`,
+                  `Explain the ${recommended.label} option (${recommended.range}) for ${submission.submissionNumber} in more detail — coverage terms, deductibles, and key drivers.`,
                 )
                 return
               }
@@ -677,6 +784,55 @@ function ReadyStructureOptionsView({
           />
         </>
       </CopilotContentTransition>
+    </>
+  )
+}
+
+function SendConfirmationView({
+  submissionNumber,
+  message,
+  nextUpLine,
+  followUpActions,
+  onAction,
+  onSeedComposer,
+}: {
+  submissionNumber: string
+  message: string
+  nextUpLine?: string
+  followUpActions: string[]
+  onAction?: (action: string) => void
+  onSeedComposer?: (message: string) => void
+}) {
+  return (
+    <>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
+        {submissionNumber}
+      </Typography>
+      <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: nextUpLine ? 1.5 : followUpActions.length > 0 ? 2 : 0, whiteSpace: 'pre-line' }}>
+        {renderSummaryText(message)}
+      </Typography>
+      {nextUpLine ? (
+        <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.55, mb: followUpActions.length > 0 ? 2 : 0 }}>
+          {renderSummaryText(nextUpLine)}
+        </Typography>
+      ) : null}
+      {followUpActions.length > 0 ? (
+        <>
+          <Divider sx={{ my: 2 }} />
+          <CopilotQuickActions
+            actions={followUpActions}
+            onAction={(action) => {
+              if (action === 'Schedule producer follow-up') {
+                onSeedComposer?.(
+                  `Schedule a producer follow-up for ${submissionNumber} to review the quote options.`,
+                )
+                return
+              }
+              onAction?.(action)
+            }}
+          />
+        </>
+      ) : null}
     </>
   )
 }
@@ -775,18 +931,23 @@ function WorkspaceView() {
 export function SubmissionsCopilotPanel({
   focusedSubmission = null,
   selectedSubmissions = [],
+  queueSubmissions = [],
   entryMode = 'insight',
   initialIssueId = null,
   onEntryModeChange,
   onResolveIssue,
   onApprovePremiumOption,
+  sendConfirmation = null,
+  onSendConfirmation,
+  onOpenNextReadySubmission,
+  onShowReadyOnly,
   onClearFocus,
   onClose,
 }: SubmissionsCopilotPanelProps) {
+  const { openTool, setEmailAttachMode } = useRightTool()
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null)
   const [attachRequestKey, setAttachRequestKey] = useState<number | null>(null)
   const [seedComposerMessage, setSeedComposerMessage] = useState<string | null>(null)
-  const [producerEmail, setProducerEmail] = useState<ProducerRequestEmailDraft | null>(null)
   const [issueNote, setIssueNote] = useState<IssueNoteDraft | null>(null)
   const multiSelectMode = selectedSubmissions.length > 1 && !focusedSubmission
 
@@ -797,10 +958,18 @@ export function SubmissionsCopilotPanel({
 
   const focusKey = focusedSubmission?.id ?? (multiSelectMode ? 'multi' : 'workspace')
   const statusMode = entryMode === 'status'
+  const activeConfirmation =
+    sendConfirmation && focusedSubmission && sendConfirmation.submissionId === focusedSubmission.id
+      ? sendConfirmation
+      : null
+
+  const confirmationNextReady = useMemo(() => {
+    if (!focusedSubmission) return null
+    return findNextReadySubmission(queueSubmissions, focusedSubmission.id)
+  }, [focusedSubmission, queueSubmissions])
 
   useEffect(() => {
     setSeedComposerMessage(null)
-    setProducerEmail(null)
     setIssueNote(null)
     if (!statusMode) {
       setActiveIssueId(null)
@@ -827,12 +996,136 @@ export function SubmissionsCopilotPanel({
   const openProducerEmail = (action: string, issue: SubmissionIssue | null) => {
     if (!focusedSubmission) return
     setIssueNote(null)
-    setProducerEmail(buildProducerRequestEmail(focusedSubmission, action, issue))
+    const draft = buildProducerRequestEmail(focusedSubmission, action, issue)
+    const submission = focusedSubmission
+    setEmailAttachMode({
+      target: 'email',
+      documents: [],
+      draft: {
+        to: draft.to,
+        subject: draft.subject,
+        body: draft.body,
+        subtitle: `Producer follow-up · ${submission.submissionNumber}`,
+      },
+      onCancel: () => {
+        openTool('copilot')
+      },
+      onSave: () => {
+        flushSync(() => {
+          if (issue && !issue.resolvedAt && issue.severity === 'blocking') {
+            onResolveIssue?.(
+              submission.id,
+              issue.id,
+              producerRequestResolvedDetails(issue, draft.action),
+            )
+          }
+          onSendConfirmation?.({
+            submissionId: submission.id,
+            message: buildRequestInfoSendConfirmation(
+              submission,
+              issue,
+              draft.to || SUBMISSION_PRODUCER_EMAIL,
+            ),
+            followUpActions: [],
+          })
+        })
+        openTool('copilot')
+      },
+    })
+    openTool('email')
+  }
+
+  const openQuotePackageEmail = (recommended: PremiumEstimate, included: PremiumEstimate[]) => {
+    if (!focusedSubmission) return
+    setIssueNote(null)
+    const draft = buildQuotePackageEmail(focusedSubmission, recommended, included)
+    const attachments = buildQuotePackageAttachments(focusedSubmission)
+    const submission = focusedSubmission
+    const recipient = draft.to || SUBMISSION_PRODUCER_EMAIL
+    const packageSubtitle = `Quote package · ${submission.submissionNumber} · ${attachments.length} attachments`
+    setEmailAttachMode({
+      target: 'email',
+      documents: attachments,
+      draft: {
+        to: draft.to,
+        subject: draft.subject,
+        body: draft.body,
+        saveLabel: 'Send quote',
+        subtitle: packageSubtitle,
+      },
+      onCancel: () => {
+        openTool('copilot')
+      },
+      onSave: () => {
+        const nextReady = findNextReadySubmission(queueSubmissions, submission.id)
+        flushSync(() => {
+          onApprovePremiumOption?.(submission.id, recommended)
+          onSendConfirmation?.({
+            submissionId: submission.id,
+            message: buildQuotePackageSendConfirmation(
+              submission,
+              recommended,
+              included,
+              recipient,
+            ),
+            nextUpLine: buildQuoteSentNextUpLine(nextReady),
+            followUpActions: [
+              nextReady ? 'Open next Ready submission' : 'Show Ready only',
+              'Schedule producer follow-up',
+              'View sent email',
+            ],
+            sentEmail: {
+              to: recipient,
+              subject: draft.subject,
+              body: draft.body,
+              subtitle: packageSubtitle,
+              documents: attachments,
+            },
+          })
+        })
+        openTool('copilot')
+      },
+    })
+    openTool('email')
+  }
+
+  const openSentQuoteEmail = (sent: SubmissionsCopilotSentEmail) => {
+    setEmailAttachMode({
+      target: 'email',
+      documents: sent.documents,
+      readOnly: true,
+      draft: {
+        to: sent.to,
+        subject: sent.subject,
+        body: sent.body,
+        subtitle: `Sent · ${sent.subtitle}`,
+      },
+      onCancel: () => {
+        openTool('copilot')
+      },
+    })
+    openTool('email')
+  }
+
+  const handleQuoteConfirmationAction = (action: string) => {
+    if (action === 'Open next Ready submission') {
+      const next =
+        confirmationNextReady ??
+        (focusedSubmission ? findNextReadySubmission(queueSubmissions, focusedSubmission.id) : null)
+      if (next) onOpenNextReadySubmission?.(next)
+      return
+    }
+    if (action === 'Show Ready only') {
+      onShowReadyOnly?.()
+      return
+    }
+    if (action === 'View sent email' && activeConfirmation?.sentEmail) {
+      openSentQuoteEmail(activeConfirmation.sentEmail)
+    }
   }
 
   const openIssueNote = (issue: SubmissionIssue, action = 'Add a note') => {
     if (!focusedSubmission) return
-    setProducerEmail(null)
     setIssueNote(buildIssueNoteDraft(focusedSubmission, issue, action))
   }
 
@@ -877,20 +1170,6 @@ export function SubmissionsCopilotPanel({
     setActiveIssueId(issue.id)
   }
 
-  const handleSendProducerEmail = () => {
-    if (!focusedSubmission || !producerEmail) return
-    const issue = producerEmail.issue
-    if (issue && !issue.resolvedAt && issue.severity === 'blocking') {
-      onResolveIssue?.(
-        focusedSubmission.id,
-        issue.id,
-        producerRequestResolvedDetails(issue, producerEmail.action),
-      )
-      setActiveIssueId(issue.id)
-    }
-    setProducerEmail(null)
-  }
-
   const handleSaveIssueNote = () => {
     if (!issueNote) return
     // Note is captured in the compose flow; keep the issue open for follow-up resolution.
@@ -918,39 +1197,48 @@ export function SubmissionsCopilotPanel({
             ? 'Ask more...'
             : 'Ask about submissions...'
 
-  const summaryTitle = activeIssue
-    ? 'Issue details'
-    : multiSelectMode
-      ? 'Selection summary'
-      : focusedSubmission && !statusMode
-        ? 'Submission briefing'
-        : focusedSubmission?.status === 'Ready'
-          ? 'Structure review'
-          : focusedSubmission
-            ? 'Submission issues'
-            : 'Intake summary'
+  const summaryTitle = activeConfirmation
+    ? focusedSubmission?.status === 'Quoted'
+      ? 'Quote sent'
+      : 'Request sent'
+    : activeIssue
+      ? 'Issue details'
+      : multiSelectMode
+        ? 'Selection summary'
+        : focusedSubmission && !statusMode
+          ? 'Submission briefing'
+          : focusedSubmission?.status === 'Ready'
+            ? 'Structure review'
+            : focusedSubmission?.status === 'Quoted'
+              ? 'Quote sent'
+              : focusedSubmission
+                ? 'Submission issues'
+                : 'Intake summary'
 
   const panelContentKey = multiSelectMode
     ? `multi:${selectedSubmissions.map((row) => row.id).join('|')}`
     : !focusedSubmission
       ? 'workspace'
-      : !statusMode
-        ? `insight:${focusedSubmission.id}`
-        : activeIssue
-          ? `issue:${focusedSubmission.id}:${activeIssue.id}:${activeIssue.resolvedAt ?? 'open'}`
-          : focusedSubmission.status === 'Ready'
-            ? `ready:${focusedSubmission.id}:${focusedSubmission.approvedPremiumLabel ?? 'review'}`
-            : `blocked:${focusedSubmission.id}:list`
+      : activeConfirmation
+        ? `confirm:${focusedSubmission.id}:${activeConfirmation.message.slice(0, 40)}`
+        : !statusMode
+          ? `insight:${focusedSubmission.id}`
+          : activeIssue
+            ? `issue:${focusedSubmission.id}:${activeIssue.id}:${activeIssue.resolvedAt ?? 'open'}`
+            : focusedSubmission.status === 'Ready'
+              ? `ready:${focusedSubmission.id}:${focusedSubmission.approvedPremiumLabel ?? 'review'}`
+              : focusedSubmission.status === 'Quoted'
+                ? `quoted:${focusedSubmission.id}`
+                : `blocked:${focusedSubmission.id}:list`
 
   const seedComposer = (message: string) => {
     setSeedComposerMessage(null)
     requestAnimationFrame(() => setSeedComposerMessage(message))
   }
 
-  if (producerEmail || issueNote) {
-    const isNote = Boolean(issueNote)
+  if (issueNote) {
     const attachMode = {
-      target: (isNote ? 'note' : 'email') as 'note' | 'email',
+      target: 'note' as const,
       documents: [],
     }
     return (
@@ -979,10 +1267,10 @@ export function SubmissionsCopilotPanel({
         >
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Typography variant="subtitle1" component="h2" sx={{ ...copilotDrawerHeadingSx, lineHeight: 1.35, mb: 0.5 }}>
-              {targetLabels[attachMode.target]}
+              {targetLabels.note}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={bodySx}>
-              {isNote ? 'Submission note' : 'Producer follow-up'} · {focusedSubmission?.submissionNumber}
+              Submission note · {focusedSubmission?.submissionNumber}
             </Typography>
           </Box>
           {onClose ? (
@@ -1007,14 +1295,10 @@ export function SubmissionsCopilotPanel({
           <DocumentAttachPanelContent
             attachMode={attachMode}
             contextLabel={focusedSubmission?.submissionNumber}
-            initialSubject={isNote ? issueNote!.subject : producerEmail!.subject}
-            initialBody={isNote ? issueNote!.body : producerEmail!.body}
-            initialTo={isNote ? undefined : producerEmail!.to}
-            onCancel={() => {
-              setProducerEmail(null)
-              setIssueNote(null)
-            }}
-            onSave={isNote ? handleSaveIssueNote : handleSendProducerEmail}
+            initialSubject={issueNote.subject}
+            initialBody={issueNote.body}
+            onCancel={() => setIssueNote(null)}
+            onSave={handleSaveIssueNote}
           />
         </Box>
       </Box>
@@ -1026,7 +1310,7 @@ export function SubmissionsCopilotPanel({
       onClose={onClose}
       composerPlaceholder={composerPlaceholder}
       seedComposerMessage={seedComposerMessage}
-      chatFocusKey={`${focusKey}:${entryMode}:${activeIssueId ?? 'list'}`}
+      chatFocusKey={`${focusKey}:${entryMode}:${activeIssueId ?? 'list'}:${activeConfirmation ? 'sent' : 'open'}`}
       contentKey={panelContentKey}
       attachRequestKey={attachRequestKey}
       onComposerSubmit={handleSubmit}
@@ -1043,7 +1327,7 @@ export function SubmissionsCopilotPanel({
         ) : undefined
       }
       toolbarLeading={
-        activeIssue ? undefined : focusedSubmission && onClearFocus ? (
+        activeIssue && !activeConfirmation ? undefined : focusedSubmission && onClearFocus ? (
           <Stack direction="row" alignItems="center" spacing={0.25} sx={{ minWidth: 0 }}>
             <IconButton
               size="small"
@@ -1063,12 +1347,25 @@ export function SubmissionsCopilotPanel({
           </Typography>
         )
       }
-      showToolbar={!activeIssue}
+      showToolbar={!activeIssue || Boolean(activeConfirmation)}
     >
       {multiSelectMode ? (
           <SummarizeView submissions={selectedSubmissions} />
         ) : !focusedSubmission ? (
           <WorkspaceView />
+        ) : activeConfirmation ? (
+          <SendConfirmationView
+            submissionNumber={focusedSubmission.submissionNumber}
+            message={activeConfirmation.message}
+            nextUpLine={buildQuoteSentNextUpLine(confirmationNextReady)}
+            followUpActions={[
+              confirmationNextReady ? 'Open next Ready submission' : 'Show Ready only',
+              'Schedule producer follow-up',
+              ...(activeConfirmation.sentEmail ? ['View sent email'] : []),
+            ]}
+            onAction={handleQuoteConfirmationAction}
+            onSeedComposer={seedComposer}
+          />
         ) : !statusMode ? (
           <SubmissionInsightView
             submission={focusedSubmission}
@@ -1087,7 +1384,31 @@ export function SubmissionsCopilotPanel({
         ) : focusedSubmission.status === 'Ready' ? (
           <ReadyStructureOptionsView
             submission={focusedSubmission}
-            onApprove={(option) => onApprovePremiumOption?.(focusedSubmission.id, option)}
+            onEmailQuoteOptions={openQuotePackageEmail}
+            onSeedComposer={seedComposer}
+          />
+        ) : focusedSubmission.status === 'Quoted' ? (
+          <SendConfirmationView
+            submissionNumber={focusedSubmission.submissionNumber}
+            message={
+              activeConfirmation?.message ??
+              [
+                `Quote options were sent for ${focusedSubmission.submissionNumber}.`,
+                focusedSubmission.approvedPremiumLabel
+                  ? `Recommended: ${focusedSubmission.approvedPremiumLabel}.`
+                  : null,
+                `${focusedSubmission.submissionNumber} is now Quoted.`,
+              ]
+                .filter(Boolean)
+                .join('\n')
+            }
+            nextUpLine={buildQuoteSentNextUpLine(confirmationNextReady)}
+            followUpActions={[
+              confirmationNextReady ? 'Open next Ready submission' : 'Show Ready only',
+              'Schedule producer follow-up',
+              ...(activeConfirmation?.sentEmail ? ['View sent email'] : []),
+            ]}
+            onAction={handleQuoteConfirmationAction}
             onSeedComposer={seedComposer}
           />
         ) : (

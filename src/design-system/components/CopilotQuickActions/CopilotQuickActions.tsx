@@ -11,6 +11,8 @@ export type CopilotQuickActionsProps = {
   onAction?: (action: string) => void
   /** Section label above the list. Pass `null` to hide. */
   label?: ReactNode | null
+  /** Optional start icon for the first action only (e.g. send). */
+  firstActionIcon?: ReactNode
 }
 
 /**
@@ -21,6 +23,7 @@ export function CopilotQuickActions({
   actions,
   onAction,
   label = 'Quick actions',
+  firstActionIcon,
 }: CopilotQuickActionsProps) {
   if (actions.length === 0) return null
 
@@ -41,14 +44,20 @@ export function CopilotQuickActions({
         </Typography>
       )}
       <Stack spacing={0.125} alignItems="stretch" sx={{ width: '100%' }}>
-        {actions.map((action) => (
+        {actions.map((action, index) => (
           <Button
             key={action}
             fullWidth
             size="small"
             variant="text"
             disableRipple
-            startIcon={<SubdirectoryArrowRightIcon sx={{ fontSize: '18px !important' }} />}
+            startIcon={
+              index === 0 && firstActionIcon ? (
+                firstActionIcon
+              ) : (
+                <SubdirectoryArrowRightIcon sx={{ fontSize: '18px !important' }} />
+              )
+            }
             onClick={() => onAction?.(action)}
             sx={(theme) => ({
               justifyContent: 'flex-start',

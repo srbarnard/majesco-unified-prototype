@@ -1,4 +1,9 @@
-import type { SubmissionIssue, SubmissionListRecord } from '@/pages/submissions/data/mockSubmissions'
+import type { PolicyDocument } from '@/pages/policies/data/mockDocuments'
+import type {
+  PremiumEstimate,
+  SubmissionIssue,
+  SubmissionListRecord,
+} from '@/pages/submissions/data/mockSubmissions'
 
 /** Default producer contact used across submission Copilot follow-ups. */
 export const SUBMISSION_PRODUCER_EMAIL = 'commercial@libertygroup.com'
@@ -19,6 +24,14 @@ export type ProducerRequestEmailDraft = {
 
 function bulletList(items: string[]) {
   return items.map((item) => `• ${item}`).join('\n')
+}
+
+function formatPremiumRange(range: string) {
+  return range.replace(/\s*-\s*/g, '–')
+}
+
+function insuredShortName(insuredName: string) {
+  return insuredName.replace(/,\s*LLC$/i, '')
 }
 
 function requestFocusLine(action: string, issue: SubmissionIssue | null) {
@@ -88,6 +101,215 @@ Underwriting`
     subject,
     body,
   }
+}
+
+/** Visual-only PDF chips for the quote package email (no real files generated). */
+export function buildQuotePackageAttachments(submission: SubmissionListRecord): PolicyDocument[] {
+  const sub = submission.submissionNumber
+  return [
+    {
+      id: `${submission.id}-quote-letter`,
+      fileName: `${sub}_Quote-letter.pdf`,
+      name: 'Quote letter',
+      kind: 'Document',
+      description: 'Producer-facing quote letter for the package.',
+      aiSummary: 'Cover letter summarizing the recommended structure.',
+      tags: ['Quote package'],
+      author: 'Underwriting',
+      authorDetail: 'Generated package',
+      date: '2026-04-15',
+      relativeTime: 'Just now',
+      activityLabel: 'Submission',
+      activityCount: 0,
+      fileSizeBytes: 248_000,
+    },
+    {
+      id: `${submission.id}-option-comparison`,
+      fileName: `${sub}_Option-comparison.pdf`,
+      name: 'Option comparison',
+      kind: 'Document',
+      description: 'Side-by-side comparison of included quote options.',
+      aiSummary: 'Comparison of recommended and alternative structures.',
+      tags: ['Quote package'],
+      author: 'Underwriting',
+      authorDetail: 'Generated package',
+      date: '2026-04-15',
+      relativeTime: 'Just now',
+      activityLabel: 'Submission',
+      activityCount: 0,
+      fileSizeBytes: 384_000,
+    },
+  ]
+}
+
+function whyTheyDifferLines(
+  submission: SubmissionListRecord,
+  recommended: PremiumEstimate,
+  included: PremiumEstimate[],
+) {
+  const allOptions = submission.premiumEstimates ?? []
+  const includedIds = new Set(included.map((option) => option.label))
+  const excluded = allOptions.filter((option) => !includedIds.has(option.label))
+  const alternatives = included.filter((option) => option.label !== recommended.label)
+
+  const lines: string[] = [
+    `- ${recommended.label} keeps standard deductibles and current limit structure.`,
+  ]
+
+  for (const option of alternatives) {
+    if (option.label === 'Optimized') {
+      lines.push('- Optimized trades some limit and terms for a lower premium.')
+    } else {
+      lines.push(`- ${option.label}: ${option.rationale}`)
+    }
+  }
+
+  for (const option of excluded) {
+    if (option.label === 'Conservative') {
+      lines.push(
+        '- Conservative was not included. More limit than this file supports given construction class and short loss history.',
+      )
+    } else {
+      lines.push(`- ${option.label} was not included. ${option.rationale}`)
+    }
+  }
+
+  return lines.join('\n')
+}
+
+function subjectivityLines(submission: SubmissionListRecord) {
+  const fromInsights = (submission.readyInsights ?? []).slice(0, 2).map((insight) => {
+    if (/loss/i.test(insight.title)) return 'Updated loss runs if the account binds'
+    if (/revenue|exposure|growth/i.test(insight.title) || /exposure|revenue/i.test(insight.summary)) {
+      return 'Confirm revenue used for exposure'
+    }
+    return insight.summary.replace(/\.$/, '')
+  })
+
+  if (fromInsights.length >= 2) return fromInsights
+  return ['Updated loss runs if the account binds', 'Confirm revenue used for exposure']
+}
+
+function emailOptionRationale(option: PremiumEstimate) {
+  if (option.label === 'Balanced') {
+    return 'Standard deductibles. Best fit for current exposures.'
+  }
+  if (option.label === 'Optimized') {
+    return 'Leaner rate and tighter terms on the multi-line package.'
+  }
+  return option.rationale
+}
+
+/** Quote package email after Structure review — cover note + attachment chips (renewal pattern). */
+export function buildQuotePackageEmail(
+  submission: SubmissionListRecord,
+  recommended: PremiumEstimate,
+  included: PremiumEstimate[],
+): ProducerRequestEmailDraft {
+  const alternatives = included.filter((option) => option.label !== recommended.label)
+
+  const recommendedBlock = `Recommended: ${recommended.label}, ${formatPremiumRange(recommended.range)}
+${emailOptionRationale(recommended)}`
+
+  const alsoIncludedBlock =
+    alternatives.length > 0
+      ? `\n\n${alternatives
+          .map(
+            (option) =>
+              `Also included: ${option.label}, ${formatPremiumRange(option.range)}\n${emailOptionRationale(option)}`,
+          )
+          .join('\n\n')}`
+      : ''
+
+  const subject = `Quote available — ${insuredShortName(submission.insuredName)} (${submission.submissionNumber})`
+  const body = `Hi,
+
+A quote package is ready for ${submission.insuredName} (${submission.submissionNumber}).
+
+${recommendedBlock}${alsoIncludedBlock}
+
+Why they differ
+${whyTheyDifferLines(submission, recommended, included)}
+
+Subjectivities
+${subjectivityLines(submission)
+  .map((line) => `- ${line}`)
+  .join('\n')}
+
+Please review the attached comparison and tell us how you want to present this.
+
+Thank you,
+Underwriting`
+
+  return {
+    issue: null,
+    action: 'Email quote options to producer',
+    to: SUBMISSION_PRODUCER_EMAIL,
+    subject,
+    body,
+  }
+}
+
+/** Confirmation copy after sending quote options from Structure review. */
+export function buildQuotePackageSendConfirmation(
+  submission: SubmissionListRecord,
+  recommended: PremiumEstimate,
+  included: PremiumEstimate[],
+  recipient = SUBMISSION_PRODUCER_EMAIL,
+) {
+  const alternatives = included.filter((option) => option.label !== recommended.label)
+  const recommendedLine =
+    alternatives.length === 0
+      ? `Recommended: ${recommended.label}.`
+      : alternatives.length === 1
+        ? `Recommended: ${recommended.label}. ${alternatives[0].label} included.`
+        : `Recommended: ${recommended.label}. ${alternatives.map((option) => option.label).join(', ')} included.`
+
+  return [
+    `Quote options sent to ${recipient} for ${submission.submissionNumber}.`,
+    'Attached: quote letter, option comparison.',
+    recommendedLine,
+    `${submission.submissionNumber} is now Quoted.`,
+  ].join('\n')
+}
+
+/** Demo underwriter — used to prefer “assigned to you” Ready follow-ups. */
+export const SUBMISSIONS_CURRENT_USER = 'Sarah Thompson'
+
+export function findNextReadySubmission(
+  rows: SubmissionListRecord[],
+  excludeId: string,
+  currentUser = SUBMISSIONS_CURRENT_USER,
+): SubmissionListRecord | null {
+  const ready = rows.filter((row) => row.status === 'Ready' && row.id !== excludeId)
+  if (ready.length === 0) return null
+  return ready.find((row) => row.assignedTo === currentUser) ?? ready[0] ?? null
+}
+
+export function buildQuoteSentNextUpLine(
+  next: SubmissionListRecord | null,
+  currentUser = SUBMISSIONS_CURRENT_USER,
+) {
+  if (!next) return 'No other Ready submissions in this queue.'
+  const assignee =
+    next.assignedTo === currentUser ? 'assigned to you' : `assigned to ${next.assignedTo}`
+  return `Next up in this queue: ${next.submissionNumber} ${next.insuredName} · Ready · ${assignee}.`
+}
+
+/** Confirmation copy after sending a blocked-submission request-info email. */
+export function buildRequestInfoSendConfirmation(
+  submission: SubmissionListRecord,
+  issue: SubmissionIssue | null,
+  recipient = SUBMISSION_PRODUCER_EMAIL,
+) {
+  const missing =
+    issue && issue.missingDetails.length > 0
+      ? issue.missingDetails
+      : openBlockingMissingDetails(submission)
+  const waitingOn =
+    missing.length > 0 ? missing.join(', ') : issue?.title ?? 'requested information'
+
+  return `Request sent to **${recipient}** for **${submission.submissionNumber}**. Waiting on **${waitingOn}**.`
 }
 
 function openBlockingMissingDetails(submission: SubmissionListRecord) {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
 import {
   useRightToolDispatch,
   type RightToolCopilotSession,
@@ -40,7 +40,9 @@ export function useRegisterRightToolCopilotCustom(
   const contentRef = useRef(content)
   contentRef.current = content
 
-  useEffect(() => {
+  // Layout effect so flushSync'd confirmation state is registered before switching
+  // from Email back to Copilot (avoids a one-frame Structure review flash).
+  useLayoutEffect(() => {
     setCopilotCustomContent(contentRef.current)
     return () => setCopilotCustomContent(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps

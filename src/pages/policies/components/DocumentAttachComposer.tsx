@@ -27,6 +27,18 @@ export type DocumentAttachTarget = 'note' | 'email' | 'task' | 'submission'
 export type DocumentAttachMode = {
   target: DocumentAttachTarget
   documents: PolicyDocument[]
+  /** Optional draft fields when opening Email/Notes from a page (producer follow-up, quote package). */
+  draft?: {
+    to?: string
+    subject?: string
+    body?: string
+    saveLabel?: string
+    subtitle?: string
+  }
+  /** When true, fields are locked and footer shows Close only (sent email review). */
+  readOnly?: boolean
+  onSave?: () => void
+  onCancel?: () => void
 }
 
 export const targetLabels: Record<DocumentAttachTarget, string> = {
@@ -187,6 +199,9 @@ type DocumentAttachPanelContentProps = {
   initialTo?: string
   initialSubject?: string
   initialBody?: string
+  /** Override primary footer label (default: Send / Save Note / Create Task). */
+  saveLabel?: string
+  readOnly?: boolean
   onCancel?: () => void
   onSave?: (attachMode: DocumentAttachMode) => void
 }
@@ -197,6 +212,8 @@ export function DocumentAttachPanelContent({
   initialTo,
   initialSubject,
   initialBody,
+  saveLabel: saveLabelProp,
+  readOnly = false,
   onCancel,
   onSave,
 }: DocumentAttachPanelContentProps) {
@@ -211,12 +228,15 @@ export function DocumentAttachPanelContent({
     setBody(initialBody ?? defaultAttachBody(target, documents))
   }, [target, documents, contextLabel, initialTo, initialSubject, initialBody])
 
-  const saveLabel = target === 'email' ? 'Send' : target === 'task' ? 'Create Task' : 'Save Note'
+  const saveLabel =
+    saveLabelProp ??
+    (target === 'email' ? 'Send' : target === 'task' ? 'Create Task' : 'Save Note')
   const bodySectionTitle =
     target === 'email' ? 'Email message' : target === 'task' ? 'Description' : target === 'note' ? 'Note' : 'Notes'
   const subjectSectionTitle = target === 'task' ? 'Task name' : 'Subject'
   const bodyFieldLabel =
     target === 'email' ? 'Message' : target === 'task' ? 'Description' : target === 'note' ? 'Note' : 'Notes'
+  const locked = readOnly || Boolean(attachMode.readOnly)
 
   return (
     <>
@@ -231,8 +251,9 @@ export function DocumentAttachPanelContent({
               value={to}
               onChange={setTo}
               placeholder="Enter recipient email"
-              helperText="Who should receive this email?"
+              helperText={locked ? undefined : 'Who should receive this email?'}
               fullWidth
+              disabled={locked}
             />
             <QuoteWizardFormField
               label="Subject"
@@ -240,6 +261,7 @@ export function DocumentAttachPanelContent({
               onChange={setSubject}
               fullWidth
               aiFilled
+              disabled={locked}
             />
             <Box>
               <QuoteWizardFormField
@@ -250,6 +272,7 @@ export function DocumentAttachPanelContent({
                 minRows={8}
                 fullWidth
                 aiFilled
+                disabled={locked}
               />
               <AttachedDocumentChips documents={documents} placement="below" />
             </Box>
@@ -262,6 +285,7 @@ export function DocumentAttachPanelContent({
               onChange={setSubject}
               fullWidth
               aiFilled
+              disabled={locked}
             />
             <Box>
               <QuoteWizardFormField
@@ -272,6 +296,7 @@ export function DocumentAttachPanelContent({
                 minRows={8}
                 fullWidth
                 aiFilled
+                disabled={locked}
               />
               <AttachedDocumentChips documents={documents} placement="below" />
             </Box>
@@ -286,6 +311,7 @@ export function DocumentAttachPanelContent({
                   onChange={setSubject}
                   fullWidth
                   aiFilled
+                  disabled={locked}
                 />
               </TaskDetailAccordion>
             )}
@@ -300,6 +326,7 @@ export function DocumentAttachPanelContent({
                 minRows={target === 'submission' ? 4 : 8}
                 fullWidth
                 aiFilled
+                disabled={locked}
               />
             </TaskDetailAccordion>
 
@@ -334,20 +361,26 @@ export function DocumentAttachPanelContent({
           mt: 'auto',
         }}
       >
-        <Stack direction="row" spacing={1}>
-          <Button variant="outlined" color="primary" fullWidth onClick={onCancel} sx={filterFooterButtonSx}>
-            Cancel
+        {locked ? (
+          <Button variant="contained" color="primary" fullWidth onClick={onCancel} sx={{ ...filterFooterButtonSx, fontWeight: 600 }}>
+            Close
           </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            fullWidth
-            onClick={() => onSave?.(attachMode)}
-            sx={{ ...filterFooterButtonSx, fontWeight: 600 }}
-          >
-            {saveLabel}
-          </Button>
-        </Stack>
+        ) : (
+          <Stack direction="row" spacing={1}>
+            <Button variant="outlined" color="primary" fullWidth onClick={onCancel} sx={filterFooterButtonSx}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              onClick={() => onSave?.(attachMode)}
+              sx={{ ...filterFooterButtonSx, fontWeight: 600 }}
+            >
+              {saveLabel}
+            </Button>
+          </Stack>
+        )}
       </Stack>
     </>
   )

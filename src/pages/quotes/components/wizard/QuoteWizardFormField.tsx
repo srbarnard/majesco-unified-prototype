@@ -27,6 +27,7 @@ type QuoteWizardFormFieldProps = {
   type?: string
   endAdornment?: ReactNode
   autoFocus?: boolean
+  disabled?: boolean
 }
 
 export function QuoteWizardFormField({
@@ -43,6 +44,7 @@ export function QuoteWizardFormField({
   type = 'text',
   endAdornment,
   autoFocus = false,
+  disabled = false,
 }: QuoteWizardFormFieldProps) {
   return (
     <Box sx={{ gridColumn: fullWidth ? '1 / -1' : undefined }}>
@@ -58,6 +60,7 @@ export function QuoteWizardFormField({
         fullWidth
         size="small"
         value={value}
+        disabled={disabled}
         type={type}
         multiline={multiline}
         minRows={multiline ? minRows : undefined}
@@ -67,6 +70,7 @@ export function QuoteWizardFormField({
         onChange={(event) => onChange(event.target.value)}
         slotProps={{
           input: {
+            readOnly: disabled,
             endAdornment,
             sx: {
               ...bodySx,

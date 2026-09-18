@@ -40,14 +40,31 @@ Best regards`
 
 /** Email tool — same Draft Email composer used on documents. */
 export function EmailToolPanel() {
-  const { recordContext, emailAttachMode, closeTool } = useRightTool()
+  const { recordContext, emailAttachMode, closeTool, setEmailAttachMode } = useRightTool()
   const attachMode = emailAttachMode?.target === 'email' ? emailAttachMode : emptyEmailAttachMode
   const hasDocuments = attachMode.documents.length > 0
+  const draft = attachMode.draft
   const contextLabel = recordContext
     ? recordContext.subtitle
       ? `${recordContext.title} · ${recordContext.subtitle}`
       : recordContext.title
     : undefined
+
+  const clearDraftAndClose = () => {
+    const onCancel = attachMode.onCancel
+    setEmailAttachMode(null)
+    if (onCancel) {
+      onCancel()
+    } else {
+      closeTool()
+    }
+  }
+
+  const handleSave = () => {
+    const onSave = attachMode.onSave
+    setEmailAttachMode(null)
+    onSave?.()
+  }
 
   return (
     <Box
@@ -82,12 +99,14 @@ export function EmailToolPanel() {
             {documentViewerAttachLabels.email ?? targetLabels.email}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={bodySx}>
-            {hasDocuments
-              ? getAttachPanelSubtitle(attachMode)
-              : (contextLabel ?? 'No record selected')}
+            {draft?.subtitle
+              ? draft.subtitle
+              : hasDocuments
+                ? getAttachPanelSubtitle(attachMode)
+                : (contextLabel ?? 'No record selected')}
           </Typography>
         </Box>
-        <IconButton size="small" onClick={closeTool} aria-label="Close Email" sx={{ mt: -0.25 }}>
+        <IconButton size="small" onClick={clearDraftAndClose} aria-label="Close Email" sx={{ mt: -0.25 }}>
           <CloseIcon fontSize="small" />
         </IconButton>
       </Stack>
@@ -107,16 +126,22 @@ export function EmailToolPanel() {
         <DocumentAttachPanelContent
           attachMode={attachMode}
           contextLabel={contextLabel}
-          // Document-backed drafts use composer defaults (Copilot excerpt). Generic rail
-          // Email keeps the short follow-up template when no documents are registered.
-          {...(hasDocuments
-            ? {}
-            : {
-                initialSubject: contextLabel ? `Re: ${contextLabel}` : '',
-                initialBody: defaultEmailBody(contextLabel),
-              })}
-          onCancel={closeTool}
-          onSave={() => closeTool()}
+          saveLabel={draft?.saveLabel}
+          readOnly={Boolean(attachMode.readOnly)}
+          {...(draft
+            ? {
+                initialTo: draft.to,
+                initialSubject: draft.subject,
+                initialBody: draft.body,
+              }
+            : hasDocuments
+              ? {}
+              : {
+                  initialSubject: contextLabel ? `Re: ${contextLabel}` : '',
+                  initialBody: defaultEmailBody(contextLabel),
+                })}
+          onCancel={clearDraftAndClose}
+          onSave={handleSave}
         />
       </Box>
     </Box>

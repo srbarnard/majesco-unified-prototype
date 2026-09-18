@@ -13,6 +13,7 @@ import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { SubmissionsAnalyticsTab } from '@/pages/submissions/components/SubmissionsAnalyticsTab'
 import { SubmissionsCopilotPanel } from '@/pages/submissions/components/SubmissionsCopilotPanel'
+import type { SubmissionsCopilotSendConfirmation } from '@/pages/submissions/components/SubmissionsCopilotPanel'
 import { SubmissionsDataGrid } from '@/pages/submissions/components/SubmissionsDataGrid'
 import { SubmissionsFilterPanel } from '@/pages/submissions/components/SubmissionsFilterPanel'
 import { SubmissionsHeader } from '@/pages/submissions/components/SubmissionsHeader'
@@ -296,9 +297,34 @@ export function SubmissionsPage() {
   const handleApprovePremiumOption = useCallback((submissionId: string, option: PremiumEstimate) => {
     setRows((current) =>
       current.map((row) =>
-        row.id === submissionId ? { ...row, approvedPremiumLabel: option.label } : row,
+        row.id === submissionId
+          ? { ...row, approvedPremiumLabel: option.label, status: 'Quoted' as const }
+          : row,
       ),
     )
+  }, [])
+
+  const [copilotSendConfirmation, setCopilotSendConfirmation] =
+    useState<SubmissionsCopilotSendConfirmation | null>(null)
+
+  const handleOpenNextReadySubmission = useCallback(
+    (submission: SubmissionListRecord) => {
+      setCopilotSendConfirmation(null)
+      setCopilotSubmissionFocus(submission)
+      setRowSelectionModel([submission.id])
+      setCopilotEntryMode('status')
+      setCopilotIssueFocusId(null)
+      setNotesTarget(null)
+      openTool('copilot')
+    },
+    [openTool],
+  )
+
+  const handleShowReadyOnly = useCallback(() => {
+    setAppliedFilters((current) => ({
+      ...current,
+      statuses: ['Ready'],
+    }))
   }, [])
 
   const handleDiscardSelected = useCallback(() => {
@@ -357,16 +383,28 @@ export function SubmissionsPage() {
     <SubmissionsCopilotPanel
       focusedSubmission={copilotFocusForPanel}
       selectedSubmissions={selectedSubmissions}
+      queueSubmissions={filteredRows}
       entryMode={copilotEntryMode}
       initialIssueId={copilotIssueFocusId}
       onEntryModeChange={setCopilotEntryMode}
       onResolveIssue={handleResolveIssue}
       onApprovePremiumOption={handleApprovePremiumOption}
+      sendConfirmation={
+        copilotSendConfirmation &&
+        copilotFocusForPanel &&
+        copilotSendConfirmation.submissionId === copilotFocusForPanel.id
+          ? copilotSendConfirmation
+          : null
+      }
+      onSendConfirmation={setCopilotSendConfirmation}
+      onOpenNextReadySubmission={handleOpenNextReadySubmission}
+      onShowReadyOnly={handleShowReadyOnly}
       onClearFocus={() => {
         setCopilotSubmissionFocus(null)
         setCopilotEntryMode('insight')
         setCopilotIssueFocusId(null)
         setRowSelectionModel([])
+        setCopilotSendConfirmation(null)
       }}
       onClose={closeTool}
     />,
@@ -374,9 +412,15 @@ export function SubmissionsPage() {
       closeTool,
       copilotEntryMode,
       copilotFocusForPanel?.id,
+      copilotFocusForPanel?.status,
+      copilotFocusForPanel?.approvedPremiumLabel,
       copilotIssueFocusId,
+      copilotSendConfirmation,
       handleApprovePremiumOption,
+      handleOpenNextReadySubmission,
       handleResolveIssue,
+      handleShowReadyOnly,
+      filteredRows,
       selectedSubmissionKey,
     ],
   )
