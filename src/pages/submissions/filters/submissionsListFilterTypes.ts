@@ -19,6 +19,7 @@ export const SUBMISSION_PRODUCT_OPTIONS = [
 
 export const SUBMISSION_ASSIGNEE_OPTIONS = [
   'Underwriting Queue',
+  'Compliance',
   'Sarah Thompson',
   'Dana Patel',
   'Marcus Lee',

@@ -66,7 +66,13 @@ export function ListFilterPanel({
         label="Status"
         options={statusOptions}
         value={draft.statuses}
-        onChange={(statuses) => setDraft((current) => ({ ...current, statuses }))}
+        onChange={(statuses) => {
+          setDraft((current) => {
+            const next = { ...current, statuses }
+            onApply(next)
+            return next
+          })
+        }}
       />
       <FilterPresetField
         label="Effective date"

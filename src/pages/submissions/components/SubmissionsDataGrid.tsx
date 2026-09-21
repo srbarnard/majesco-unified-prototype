@@ -22,7 +22,6 @@ import { useResponsivePinnedColumns } from '@/design-system/hooks/useResponsiveP
 import { insuredIdFromName } from '@/pages/shared/insuredId'
 import {
   CopilotIcon,
-  copilotActiveIconSx,
   dataGridInteractionSx,
   getListDataGridSlotProps,
   ListDataGridLink,
@@ -187,9 +186,9 @@ function RowActionsMenu({
               onAskCopilot?.(row)
             }}
             onMouseDown={(event) => event.stopPropagation()}
-            sx={copilotActiveIconSx(isCopilotActive)}
+            sx={tableActionIconButtonSx}
           >
-            <CopilotIcon size={18} active={isCopilotActive} />
+            <CopilotIcon size={18} />
           </IconButton>
         </Tooltip>
         <Tooltip title="More actions">

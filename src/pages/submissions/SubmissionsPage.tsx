@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box'
+import Snackbar from '@mui/material/Snackbar'
 import { useGridApiRef, type GridRowSelectionModel } from '@mui/x-data-grid-premium'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
@@ -10,10 +11,18 @@ import {
 } from '@/app/hooks/useRightToolRegistration'
 import { useSearchQueryFromUrl } from '@/hooks/useSearchQueryFromUrl'
 import { layoutTokens } from '@/design-system/tokens/layout'
+import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
+import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
 import { SubmissionsAnalyticsTab } from '@/pages/submissions/components/SubmissionsAnalyticsTab'
 import { SubmissionsCopilotPanel } from '@/pages/submissions/components/SubmissionsCopilotPanel'
 import type { SubmissionsCopilotSendConfirmation } from '@/pages/submissions/components/SubmissionsCopilotPanel'
+import {
+  buildAssignReceiptText,
+  type AssignBlockedPromptSession,
+  type AssignComposeSession,
+  type AssignThreadTurn,
+} from '@/pages/submissions/components/AssignBlockedComposeCard'
 import { SubmissionsDataGrid } from '@/pages/submissions/components/SubmissionsDataGrid'
 import { SubmissionsFilterPanel } from '@/pages/submissions/components/SubmissionsFilterPanel'
 import { SubmissionsHeader } from '@/pages/submissions/components/SubmissionsHeader'
@@ -27,7 +36,6 @@ import {
   type PremiumEstimate,
   type SubmissionListRecord,
 } from '@/pages/submissions/data/mockSubmissions'
-import type { SubmissionDetailLocationState } from '@/pages/submissions/data/submissionCopilotInsights'
 import { applySubmissionsListFilters } from '@/pages/submissions/filters/applySubmissionsListFilters'
 import {
   emptySubmissionsListFilters,
@@ -65,6 +73,7 @@ export function SubmissionsPage() {
   const navigate = useNavigate()
   const apiRef = useGridApiRef()
   const [searchParams, setSearchParams] = useSearchParams()
+  const isDesktop = useIsDesktopLayout()
   const { activeTool, openTool, closeTool } = useRightTool()
   const [rows, setRows] = useState<SubmissionListRecord[]>(submissionsMock)
   const [activeTab, setActiveTab] = useState<SubmissionsTab>('all')
@@ -76,10 +85,27 @@ export function SubmissionsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<SubmissionsListFilters>(emptySubmissionsListFilters)
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
+  const didInitCopilot = useRef(false)
+  const wasDesktop = useRef(isDesktop)
 
   useSearchQueryFromUrl(useCallback((query) => {
     setSearchQuery(query)
   }, []))
+
+  useEffect(() => {
+    // Wait until desktop layout is known, then open once with Submissions summary.
+    if (!isDesktop || activeTab !== 'all') return
+    if (didInitCopilot.current) return
+    didInitCopilot.current = true
+    openTool('copilot')
+  }, [activeTab, isDesktop, openTool])
+
+  useEffect(() => {
+    if (wasDesktop.current && !isDesktop && activeTool === 'copilot') {
+      closeTool()
+    }
+    wasDesktop.current = isDesktop
+  }, [activeTool, closeTool, isDesktop])
 
   useEffect(() => {
     const focusParam =
@@ -232,9 +258,11 @@ export function SubmissionsPage() {
       setActiveTab(tab)
       if (tab === 'analytics') {
         closeSidePanels()
+      } else if (isDesktop) {
+        openTool('copilot')
       }
     },
-    [closeSidePanels],
+    [closeSidePanels, isDesktop, openTool],
   )
 
   const handleResolveIssue = useCallback(
@@ -351,29 +379,21 @@ export function SubmissionsPage() {
     useState<SubmissionsCopilotSendConfirmation | null>(null)
 
   const handleAfterQuotePackageSent = useCallback(
-    (submission: SubmissionListRecord, confirmation: SubmissionsCopilotSendConfirmation) => {
-      navigate(`/submissions/${encodeURIComponent(submission.submissionNumber)}`, {
-        state: {
-          openCopilot: true,
-          entryMode: 'status',
-          sendConfirmation: confirmation,
-        } satisfies SubmissionDetailLocationState,
-      })
+    (_submission: SubmissionListRecord, _confirmation: SubmissionsCopilotSendConfirmation) => {
+      // Stay on the list — Quoted chip + Quote sent Copilot confirmation update in place.
+      setCopilotEntryMode('status')
+      setCopilotIssueFocusId(null)
     },
-    [navigate],
+    [],
   )
 
   const handleAfterDeclineSent = useCallback(
-    (submission: SubmissionListRecord, confirmation: SubmissionsCopilotSendConfirmation) => {
-      navigate(`/submissions/${encodeURIComponent(submission.submissionNumber)}`, {
-        state: {
-          openCopilot: true,
-          entryMode: 'status',
-          sendConfirmation: confirmation,
-        } satisfies SubmissionDetailLocationState,
-      })
+    (_submission: SubmissionListRecord, _confirmation: SubmissionsCopilotSendConfirmation) => {
+      // Stay on the list — Declined chip + Decline sent Copilot confirmation update in place.
+      setCopilotEntryMode('status')
+      setCopilotIssueFocusId(null)
     },
-    [navigate],
+    [],
   )
 
   const handleOpenNextReadySubmission = useCallback(
@@ -395,6 +415,62 @@ export function SubmissionsPage() {
       statuses: ['Ready'],
     }))
   }, [])
+
+  const handleShowBlockedOnly = useCallback(() => {
+    const at = Date.now()
+    const nextFilters: SubmissionsListFilters = {
+      ...appliedFilters,
+      statuses: ['Blocked'],
+    }
+    const blockedCount = applySubmissionsListFilters(rows, nextFilters).length
+    setAssignThreadTurns((current) => [
+      ...current,
+      {
+        id: `filter-user-${at}`,
+        role: 'user',
+        text: 'Show blocked only',
+        at,
+      },
+      {
+        id: `filter-receipt-${at}`,
+        role: 'copilot',
+        text: `Filtered to ${blockedCount} blocked submissions.`,
+        at,
+      },
+    ])
+    setAssignSummaryUpdatedAt(at)
+    setAppliedFilters(nextFilters)
+    openTool('filter')
+  }, [appliedFilters, openTool, rows])
+
+  const [assignToast, setAssignToast] = useState<string | null>(null)
+  const [assignThreadTurns, setAssignThreadTurns] = useState<AssignThreadTurn[]>([])
+  const [assignCompose, setAssignCompose] = useState<AssignComposeSession | null>(null)
+  const [assignBlockedPrompt, setAssignBlockedPrompt] = useState<AssignBlockedPromptSession | null>(
+    null,
+  )
+  const [assignSummaryUpdatedAt, setAssignSummaryUpdatedAt] = useState<number | null>(null)
+
+  const handleAssignBlocked = useCallback(
+    (submissionIds: string[], assignee: string, note: string) => {
+      const idSet = new Set(submissionIds)
+      const matched = rows.filter((row) => idSet.has(row.id))
+      if (matched.length === 0) return
+      setAssignToast(buildAssignReceiptText(matched, assignee, note).replace(/\.$/, ''))
+      setAssignSummaryUpdatedAt(Date.now())
+      setAssignCompose(null)
+      setAssignBlockedPrompt(null)
+      setRows((current) =>
+        current.map((row) => {
+          if (!idSet.has(row.id)) return row
+          const next: SubmissionListRecord = { ...row, assignedTo: assignee }
+          syncSubmissionListRecord(next)
+          return next
+        }),
+      )
+    },
+    [rows],
+  )
 
   const handleDiscardSelected = useCallback(() => {
     if (selectedSubmissions.length === 0) return
@@ -471,6 +547,17 @@ export function SubmissionsPage() {
       onSendConfirmation={setCopilotSendConfirmation}
       onOpenNextReadySubmission={handleOpenNextReadySubmission}
       onShowReadyOnly={handleShowReadyOnly}
+      onShowBlockedOnly={handleShowBlockedOnly}
+      onAssignBlocked={handleAssignBlocked}
+      assignThreadTurns={assignThreadTurns}
+      onAssignThreadTurnsChange={setAssignThreadTurns}
+      assignCompose={assignCompose}
+      onAssignComposeChange={setAssignCompose}
+      assignBlockedPrompt={assignBlockedPrompt}
+      onAssignBlockedPromptChange={setAssignBlockedPrompt}
+      assignSummaryUpdatedAt={assignSummaryUpdatedAt}
+      onFocusSubmission={handleAskCopilot}
+      assignPoolSubmissions={filteredRows}
       onClearFocus={() => {
         setCopilotSubmissionFocus(null)
         setCopilotEntryMode('insight')
@@ -495,10 +582,17 @@ export function SubmissionsPage() {
       handleDeclineSubmission,
       handleAfterQuotePackageSent,
       handleAfterDeclineSent,
+      handleAskCopilot,
+      handleAssignBlocked,
       handleOpenNextReadySubmission,
       handleResolveIssue,
+      handleShowBlockedOnly,
       handleShowReadyOnly,
       filteredRows,
+      assignThreadTurns,
+      assignCompose,
+      assignBlockedPrompt,
+      assignSummaryUpdatedAt,
       selectedSubmissionKey,
     ],
   )
@@ -616,6 +710,21 @@ export function SubmissionsPage() {
         submissions={discardTargets ?? []}
         onClose={() => setDiscardTargets(null)}
         onConfirm={handleConfirmDiscard}
+      />
+
+      <Snackbar
+        open={Boolean(assignToast)}
+        autoHideDuration={4000}
+        onClose={() => setAssignToast(null)}
+        message={assignToast}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        ContentProps={{
+          sx: (theme) => ({
+            bgcolor: getFigmaColors(theme.palette.mode).components.snackbarFill,
+            color: 'common.white',
+            fontFamily: 'inherit',
+          }),
+        }}
       />
     </Box>
   )

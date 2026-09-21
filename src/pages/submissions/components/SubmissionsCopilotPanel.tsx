@@ -65,6 +65,19 @@ import {
   buildSubmissionInsightBriefing,
   type SubmissionCopilotEntryMode,
 } from '@/pages/submissions/data/submissionCopilotInsights'
+import {
+  AssignBlockedComposeCard,
+  buildAssignReceiptText,
+  formatAssignTurnTime,
+  sortBlockedForAssign,
+  type AssignComposeSession,
+  type AssignBlockedPromptSession,
+  type AssignThreadTurn,
+} from '@/pages/submissions/components/AssignBlockedComposeCard'
+import {
+  StudioAssistantMessage,
+  StudioUserMessage,
+} from '@/pages/copilot-studio/components/StudioChatMessages'
 
 export type SubmissionsCopilotSentEmail = {
   to: string
@@ -99,12 +112,12 @@ type SubmissionsCopilotPanelProps = {
     recipient: string,
   ) => void
   onDeclineSubmission?: (submissionId: string, recipient: string) => void
-  /** After quote send — e.g. navigate list → Quoted detail. */
+  /** After quote send — list stays put; status chip updates in place. */
   onAfterQuotePackageSent?: (
     submission: SubmissionListRecord,
     confirmation: SubmissionsCopilotSendConfirmation,
   ) => void
-  /** After decline send — e.g. navigate list → Declined detail. */
+  /** After decline send — list stays put; status chip updates in place. */
   onAfterDeclineSent?: (
     submission: SubmissionListRecord,
     confirmation: SubmissionsCopilotSendConfirmation,
@@ -114,6 +127,24 @@ type SubmissionsCopilotPanelProps = {
   onSendConfirmation?: (confirmation: SubmissionsCopilotSendConfirmation | null) => void
   onOpenNextReadySubmission?: (submission: SubmissionListRecord) => void
   onShowReadyOnly?: () => void
+  onShowBlockedOnly?: () => void
+  /** Assign blocked submissions in the list mock (ids → assignee). */
+  onAssignBlocked?: (submissionIds: string[], assignee: string, note: string) => void
+  /** Thread turns for Assign blocked — owned by the page so remounts keep them. */
+  assignThreadTurns?: AssignThreadTurn[]
+  onAssignThreadTurnsChange?: (turns: AssignThreadTurn[]) => void
+  /** Open compose session — owned by the page so remounts keep the form. */
+  assignCompose?: AssignComposeSession | null
+  onAssignComposeChange?: (compose: AssignComposeSession | null) => void
+  /** Mixed Ready+Blocked selection prompt — owned by the page. */
+  assignBlockedPrompt?: AssignBlockedPromptSession | null
+  onAssignBlockedPromptChange?: (prompt: AssignBlockedPromptSession | null) => void
+  /** Optional “Updated {time}” on the pinned summary. */
+  assignSummaryUpdatedAt?: number | null
+  /** Focus a submission in Copilot (e.g. Open first blocked). */
+  onFocusSubmission?: (submission: SubmissionListRecord) => void
+  /** Grid / list rows for Assign blocked dropdown and workspace summary. */
+  assignPoolSubmissions?: SubmissionListRecord[]
   onClearFocus?: () => void
   onClose?: () => void
 }
@@ -392,13 +423,76 @@ function SubmissionInsightView({
   onViewStatus,
   onSeedComposer,
   onDraftProducerEmail,
+  onAssignBlocked,
+  threadTurns = [],
+  assignSlot = null,
+  assignSessionOpen = false,
 }: {
   submission: SubmissionListRecord
   onViewStatus: () => void
   onSeedComposer?: (message: string) => void
   onDraftProducerEmail?: () => void
+  onAssignBlocked?: () => void
+  threadTurns?: AssignThreadTurn[]
+  assignSlot?: ReactNode
+  assignSessionOpen?: boolean
 }) {
   const briefing = useMemo(() => buildSubmissionInsightBriefing(submission), [submission])
+
+  const handleAction = (action: string) => {
+    if (action === 'Assign blocked submission') {
+      onAssignBlocked?.()
+      return
+    }
+    if (action === briefing.statusQuickActionLabel || action === 'View status & resolve issues') {
+      onViewStatus()
+      return
+    }
+    if (
+      action === 'Draft producer follow-up' ||
+      action === 'Draft a note to the producer' ||
+      action === 'Draft a note to compliance'
+    ) {
+      onDraftProducerEmail?.()
+      onSeedComposer?.(
+        action === 'Draft a note to compliance'
+          ? `Draft a note to compliance about the OFAC hold on ${submission.submissionNumber} (${submission.insuredName}).`
+          : `Draft a producer follow-up for ${submission.submissionNumber} (${submission.insuredName}) about the open blocker.`,
+      )
+      return
+    }
+    if (action === 'Explain the OFAC hold') {
+      onSeedComposer?.(
+        `Explain the OFAC hold on ${submission.submissionNumber} — why it triggered, what Compliance needs, and how clearance works.`,
+      )
+      return
+    }
+    if (action === 'Explain the SOV gap') {
+      onSeedComposer?.(
+        `Explain the Statement of Values gap on ${submission.submissionNumber} and what the producer must provide to unblock property rating.`,
+      )
+      return
+    }
+    if (action === 'What can proceed vs what is frozen') {
+      onSeedComposer?.(
+        `For ${submission.submissionNumber}, what work can proceed while this blocker remains, and what is frozen until it clears?`,
+      )
+      return
+    }
+    if (action === 'Summarize for underwriter') {
+      onSeedComposer?.(
+        `Summarize ${submission.submissionNumber} for underwriting handoff — account fit, confidence, and recommended next step.`,
+      )
+      return
+    }
+    if (action === 'Ask about exposure') {
+      onSeedComposer?.(
+        `What exposure and appetite considerations should I watch on ${submission.submissionNumber} (${submission.linesOfBusiness.join(', ')})?`,
+      )
+    }
+  }
+
+  const actions = <CopilotQuickActions actions={briefing.quickActions} onAction={handleAction} />
 
   return (
     <>
@@ -421,56 +515,12 @@ function SubmissionInsightView({
         ))}
       </Box>
       <Divider sx={{ mb: 2 }} />
-      <CopilotQuickActions
-        actions={briefing.quickActions}
-        onAction={(action) => {
-          if (action === briefing.statusQuickActionLabel || action === 'View status & resolve issues') {
-            onViewStatus()
-            return
-          }
-          if (
-            action === 'Draft producer follow-up' ||
-            action === 'Draft a note to the producer' ||
-            action === 'Draft a note to compliance'
-          ) {
-            onDraftProducerEmail?.()
-            onSeedComposer?.(
-              action === 'Draft a note to compliance'
-                ? `Draft a note to compliance about the OFAC hold on ${submission.submissionNumber} (${submission.insuredName}).`
-                : `Draft a producer follow-up for ${submission.submissionNumber} (${submission.insuredName}) about the open blocker.`,
-            )
-            return
-          }
-          if (action === 'Explain the OFAC hold') {
-            onSeedComposer?.(
-              `Explain the OFAC hold on ${submission.submissionNumber} — why it triggered, what Compliance needs, and how clearance works.`,
-            )
-            return
-          }
-          if (action === 'Explain the SOV gap') {
-            onSeedComposer?.(
-              `Explain the Statement of Values gap on ${submission.submissionNumber} and what the producer must provide to unblock property rating.`,
-            )
-            return
-          }
-          if (action === 'What can proceed vs what is frozen') {
-            onSeedComposer?.(
-              `For ${submission.submissionNumber}, what work can proceed while this blocker remains, and what is frozen until it clears?`,
-            )
-            return
-          }
-          if (action === 'Summarize for underwriter') {
-            onSeedComposer?.(
-              `Summarize ${submission.submissionNumber} for underwriting handoff — account fit, confidence, and recommended next step.`,
-            )
-            return
-          }
-          if (action === 'Ask about exposure') {
-            onSeedComposer?.(
-              `What exposure and appetite considerations should I watch on ${submission.submissionNumber} (${submission.linesOfBusiness.join(', ')})?`,
-            )
-          }
-        }}
+      <ThreadTurns
+        turns={threadTurns}
+        assignSlot={assignSlot}
+        showEmptyActions={!assignSessionOpen}
+        emptyActions={actions}
+        suggestedActions={assignSessionOpen ? null : actions}
       />
     </>
   )
@@ -812,7 +862,57 @@ function SendConfirmationView({
   )
 }
 
-function SummarizeView({ submissions }: { submissions: SubmissionListRecord[] }) {
+function ThreadTurns({
+  turns,
+  assignSlot = null,
+  suggestedActions = null,
+  showEmptyActions = false,
+  emptyActions = null,
+}: {
+  turns: AssignThreadTurn[]
+  assignSlot?: ReactNode
+  /** Suggested actions after the latest Copilot turn / above composer (not under summary). */
+  suggestedActions?: ReactNode
+  showEmptyActions?: boolean
+  emptyActions?: ReactNode
+}) {
+  const hasThread = turns.length > 0 || Boolean(assignSlot)
+
+  return (
+    <>
+      {showEmptyActions && !hasThread ? emptyActions : null}
+      {turns.map((turn) =>
+        turn.role === 'user' ? (
+          <StudioUserMessage key={turn.id} timeLabel={formatAssignTurnTime(turn.at)}>
+            {turn.text}
+          </StudioUserMessage>
+        ) : (
+          <StudioAssistantMessage key={turn.id} timeLabel={formatAssignTurnTime(turn.at)}>
+            {turn.text}
+          </StudioAssistantMessage>
+        ),
+      )}
+      {assignSlot}
+      {hasThread && !assignSlot ? suggestedActions : null}
+    </>
+  )
+}
+
+function SummarizeView({
+  submissions,
+  threadTurns = [],
+  assignSlot = null,
+  assignSessionOpen = false,
+  summaryUpdatedAt = null,
+  onAction,
+}: {
+  submissions: SubmissionListRecord[]
+  threadTurns?: AssignThreadTurn[]
+  assignSlot?: ReactNode
+  assignSessionOpen?: boolean
+  summaryUpdatedAt?: number | null
+  onAction?: (action: string) => void
+}) {
   const blocked = submissions.filter((row) => row.status === 'Blocked')
   const ready = submissions.filter((row) => row.status === 'Ready')
   const queueBlocked = blocked.filter((row) => row.assignedTo === 'Underwriting Queue')
@@ -828,11 +928,25 @@ function SummarizeView({ submissions }: { submissions: SubmissionListRecord[] })
     'Resolve blockers in Copilot without leaving the list — payroll, loss history, and exposure gaps are the top causes',
   ]
 
+  const actions = (
+    <CopilotQuickActions
+      actions={['Assign blocked submission', 'Summarize blockers', 'Open first blocked']}
+      onAction={onAction}
+    />
+  )
+
   return (
     <>
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
-        {submissions.length} selected
-      </Typography>
+      <Stack direction="row" alignItems="baseline" justifyContent="space-between" spacing={1} sx={{ mb: 0.75 }}>
+        <Typography variant="caption" color="text.secondary" sx={bodySx}>
+          {submissions.length} selected
+        </Typography>
+        {summaryUpdatedAt != null ? (
+          <Typography variant="caption" color="text.secondary" sx={bodySx}>
+            Updated {formatAssignTurnTime(summaryUpdatedAt)}
+          </Typography>
+        ) : null}
+      </Stack>
       <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2 }}>
         {renderSummaryText(summaryText)}
       </Typography>
@@ -853,19 +967,39 @@ function SummarizeView({ submissions }: { submissions: SubmissionListRecord[] })
         ))}
       </Box>
       <Divider sx={{ mb: 2 }} />
-      <CopilotQuickActions actions={['Assign blocked submission', 'Summarize blockers', 'Open first blocked']} />
+      <ThreadTurns
+        turns={threadTurns}
+        assignSlot={assignSlot}
+        showEmptyActions={!assignSessionOpen}
+        emptyActions={actions}
+        suggestedActions={assignSessionOpen ? null : actions}
+      />
     </>
   )
 }
 
-function WorkspaceView() {
-  const blocked = submissionsMock.filter((row) => row.status === 'Blocked').length
-  const ready = submissionsMock.filter((row) => row.status === 'Ready').length
-  const queueBlocked = submissionsMock.filter(
+function WorkspaceView({
+  poolSubmissions,
+  threadTurns = [],
+  assignSlot = null,
+  assignSessionOpen = false,
+  summaryUpdatedAt = null,
+  onAction,
+}: {
+  poolSubmissions: SubmissionListRecord[]
+  threadTurns?: AssignThreadTurn[]
+  assignSlot?: ReactNode
+  assignSessionOpen?: boolean
+  summaryUpdatedAt?: number | null
+  onAction?: (action: string) => void
+}) {
+  const blocked = poolSubmissions.filter((row) => row.status === 'Blocked').length
+  const ready = poolSubmissions.filter((row) => row.status === 'Ready').length
+  const queueBlocked = poolSubmissions.filter(
     (row) => row.status === 'Blocked' && row.assignedTo === 'Underwriting Queue',
   ).length
 
-  const summaryText = `Copilot is monitoring **${submissionsMock.length}** incoming submissions to identify items that require attention. Select a blocked submission — or multi-select rows — to resolve issues in place.`
+  const summaryText = `Copilot is monitoring **${poolSubmissions.length}** incoming submissions to identify items that require attention. Select a blocked submission — or multi-select rows — to resolve issues in place.`
 
   const insights = [
     `${blocked} submissions are blocked and require action`,
@@ -876,10 +1010,27 @@ function WorkspaceView() {
       : 'Blocked submissions are assigned across underwriters',
   ]
 
+  const actions = (
+    <CopilotQuickActions
+      actions={['Assign blocked submission', 'Show blocked only']}
+      onAction={onAction}
+    />
+  )
+
   return (
     <>
+      {summaryUpdatedAt != null ? (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          display="block"
+          sx={{ ...bodySx, mb: 0.75, textAlign: 'right' }}
+        >
+          Updated {formatAssignTurnTime(summaryUpdatedAt)}
+        </Typography>
+      ) : null}
       <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2 }}>
-        {summaryText}
+        {renderSummaryText(summaryText)}
       </Typography>
       <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
         Key insights
@@ -898,8 +1049,45 @@ function WorkspaceView() {
         ))}
       </Box>
       <Divider sx={{ mb: 2 }} />
-      <CopilotQuickActions actions={['Assign blocked submission', 'Show blocked only', 'Open intake summary']} />
+      <ThreadTurns
+        turns={threadTurns}
+        assignSlot={assignSlot}
+        showEmptyActions={!assignSessionOpen}
+        emptyActions={actions}
+        suggestedActions={assignSessionOpen ? null : actions}
+      />
     </>
+  )
+}
+
+function AssignBlockedSelectionPrompt({
+  nonBlockedCount,
+  totalCount,
+  openedAt,
+  onAssignBlockedOnly,
+  onCancel,
+}: {
+  nonBlockedCount: number
+  totalCount: number
+  openedAt: number
+  onAssignBlockedOnly: () => void
+  onCancel: () => void
+}) {
+  return (
+    <StudioAssistantMessage timeLabel={formatAssignTurnTime(openedAt)} showCopy={false}>
+      <Typography variant="body2" sx={{ ...bodySx, fontSize: '0.875rem', lineHeight: 1.6, mb: 1.25 }}>
+        {renderSummaryText(
+          `**${nonBlockedCount}** of **${totalCount}** selected aren’t blocked.`,
+        )}
+      </Typography>
+      <CopilotQuickActions
+        actions={['Assign blocked only', 'Cancel']}
+        onAction={(action) => {
+          if (action === 'Assign blocked only') onAssignBlockedOnly()
+          else onCancel()
+        }}
+      />
+    </StudioAssistantMessage>
   )
 }
 
@@ -907,6 +1095,14 @@ export function SubmissionsCopilotPanel({
   focusedSubmission = null,
   selectedSubmissions = [],
   queueSubmissions = [],
+  assignPoolSubmissions,
+  assignThreadTurns = [],
+  onAssignThreadTurnsChange,
+  assignCompose = null,
+  onAssignComposeChange,
+  assignBlockedPrompt = null,
+  onAssignBlockedPromptChange,
+  assignSummaryUpdatedAt = null,
   entryMode = 'insight',
   initialIssueId = null,
   onEntryModeChange,
@@ -919,6 +1115,9 @@ export function SubmissionsCopilotPanel({
   onSendConfirmation,
   onOpenNextReadySubmission,
   onShowReadyOnly,
+  onShowBlockedOnly,
+  onAssignBlocked,
+  onFocusSubmission,
   onClearFocus,
   onClose,
 }: SubmissionsCopilotPanelProps) {
@@ -928,6 +1127,9 @@ export function SubmissionsCopilotPanel({
   const [seedComposerMessage, setSeedComposerMessage] = useState<string | null>(null)
   const [issueNote, setIssueNote] = useState<IssueNoteDraft | null>(null)
   const multiSelectMode = selectedSubmissions.length > 1 && !focusedSubmission
+  const assignPool = assignPoolSubmissions ?? queueSubmissions
+  const blockedAssignOptions = useMemo(() => sortBlockedForAssign(assignPool), [assignPool])
+  const assignSessionOpen = Boolean(assignCompose || assignBlockedPrompt)
 
   const activeIssue = useMemo(() => {
     if (!focusedSubmission || !activeIssueId) return null
@@ -972,6 +1174,132 @@ export function SubmissionsCopilotPanel({
       setActiveIssueId(initialIssueId)
     }
   }, [focusedSubmission, initialIssueId, statusMode])
+
+  const openAssignCard = (selected: SubmissionListRecord[], focusAssignee: boolean) => {
+    const poolIds = new Set(assignPool.map((row) => row.id))
+    const allowed = sortBlockedForAssign(selected).filter((row) => poolIds.has(row.id))
+    const openedAt = Date.now()
+    const userTurnId = `assign-user-${openedAt}`
+    onAssignBlockedPromptChange?.(null)
+    setIssueNote(null)
+    onAssignThreadTurnsChange?.([
+      ...assignThreadTurns.filter(
+        (turn) => turn.id !== assignCompose?.userTurnId && turn.id !== assignBlockedPrompt?.userTurnId,
+      ),
+      { id: userTurnId, role: 'user', text: 'Assign blocked submission', at: openedAt },
+    ])
+    onAssignComposeChange?.({
+      selectedIds: allowed.map((row) => row.id),
+      focusAssignee,
+      openedAt,
+      userTurnId,
+    })
+  }
+
+  const cancelAssignCompose = () => {
+    if (assignCompose) {
+      onAssignThreadTurnsChange?.(
+        assignThreadTurns.filter((turn) => turn.id !== assignCompose.userTurnId),
+      )
+    }
+    onAssignComposeChange?.(null)
+  }
+
+  const cancelAssignPrompt = () => {
+    if (assignBlockedPrompt) {
+      onAssignThreadTurnsChange?.(
+        assignThreadTurns.filter((turn) => turn.id !== assignBlockedPrompt.userTurnId),
+      )
+    }
+    onAssignBlockedPromptChange?.(null)
+  }
+
+  const tryOpenAssignBlocked = () => {
+    const poolIds = new Set(assignPool.map((row) => row.id))
+    const candidates = (
+      selectedSubmissions.length > 0
+        ? selectedSubmissions
+        : focusedSubmission
+          ? [focusedSubmission]
+          : []
+    ).filter((row) => poolIds.has(row.id))
+
+    if (candidates.length === 0) {
+      openAssignCard([], false)
+      return
+    }
+
+    const blocked = candidates.filter((row) => row.status === 'Blocked')
+    const nonBlockedCount = candidates.length - blocked.length
+
+    if (nonBlockedCount > 0) {
+      const openedAt = Date.now()
+      const userTurnId = `assign-user-${openedAt}`
+      onAssignComposeChange?.(null)
+      onAssignThreadTurnsChange?.([
+        ...assignThreadTurns.filter(
+          (turn) => turn.id !== assignCompose?.userTurnId && turn.id !== assignBlockedPrompt?.userTurnId,
+        ),
+        { id: userTurnId, role: 'user', text: 'Assign blocked submission', at: openedAt },
+      ])
+      onAssignBlockedPromptChange?.({
+        nonBlockedCount,
+        totalCount: candidates.length,
+        blockedIds: sortBlockedForAssign(blocked).map((row) => row.id),
+        openedAt,
+        userTurnId,
+      })
+      return
+    }
+
+    openAssignCard(blocked, blocked.length === 1)
+  }
+
+  const handleAssignBlockedSubmit = (
+    submissions: SubmissionListRecord[],
+    assignee: string,
+    note: string,
+  ) => {
+    const receiptAt = Date.now()
+    const receiptText = buildAssignReceiptText(submissions, assignee, note)
+    onAssignBlocked?.(
+      submissions.map((row) => row.id),
+      assignee,
+      note,
+    )
+    onAssignThreadTurnsChange?.([
+      ...assignThreadTurns,
+      { id: `assign-receipt-${receiptAt}`, role: 'copilot', text: receiptText, at: receiptAt },
+    ])
+    onAssignComposeChange?.(null)
+    onAssignBlockedPromptChange?.(null)
+  }
+
+  const handleWorkspaceAction = (action: string) => {
+    if (action === 'Assign blocked submission') {
+      tryOpenAssignBlocked()
+      return
+    }
+    if (action === 'Show blocked only') {
+      onShowBlockedOnly?.()
+      return
+    }
+    if (action === 'Summarize blockers') {
+      const blocked = selectedSubmissions.filter((row) => row.status === 'Blocked')
+      const message =
+        blocked.length === 0
+          ? 'Summarize blockers across the current selection.'
+          : `Summarize blockers for ${blocked.map((row) => row.submissionNumber).join(', ')}.`
+      setSeedComposerMessage(null)
+      requestAnimationFrame(() => setSeedComposerMessage(message))
+      return
+    }
+    if (action === 'Open first blocked') {
+      const first =
+        sortBlockedForAssign(selectedSubmissions)[0] ?? sortBlockedForAssign(assignPool)[0] ?? null
+      if (first) onFocusSubmission?.(first)
+    }
+  }
 
   const confidence = focusedSubmission?.confidence ?? 0
   const showConfidence = Boolean(focusedSubmission && !multiSelectMode)
@@ -1308,12 +1636,12 @@ export function SubmissionsCopilotPanel({
                   ? 'Submission briefing'
                   : focusedSubmission
                     ? 'Submission issues'
-                    : 'Intake summary'
+                    : 'Submissions summary'
 
   const panelContentKey = multiSelectMode
-    ? `multi:${selectedSubmissions.map((row) => row.id).join('|')}`
+    ? `multi:${selectedSubmissions.map((row) => row.id).join('|')}:assign:${assignCompose ? 'card' : assignBlockedPrompt ? 'prompt' : 'none'}:${assignThreadTurns.length}`
     : !focusedSubmission
-      ? 'workspace'
+      ? `workspace:assign:${assignCompose ? 'card' : assignBlockedPrompt ? 'prompt' : 'none'}:${assignThreadTurns.length}`
       : focusedSubmission.status === 'Quoted'
         ? `quoted:${focusedSubmission.id}:${activeConfirmation ? 'sent' : 'package'}`
         : focusedSubmission.status === 'Declined'
@@ -1325,7 +1653,7 @@ export function SubmissionsCopilotPanel({
               : activeIssue
                 ? `issue:${focusedSubmission.id}:${activeIssue.id}:${activeIssue.resolvedAt ?? 'open'}`
                 : !statusMode
-                  ? `insight:${focusedSubmission.id}`
+                  ? `insight:${focusedSubmission.id}:assign:${assignCompose ? 'card' : assignBlockedPrompt ? 'prompt' : 'none'}:${assignThreadTurns.length}`
                   : `blocked:${focusedSubmission.id}:list`
 
   const seedComposer = (message: string) => {
@@ -1402,6 +1730,42 @@ export function SubmissionsCopilotPanel({
     )
   }
 
+  const composeSelected = useMemo(() => {
+    if (!assignCompose) return []
+    const idSet = new Set(assignCompose.selectedIds)
+    return blockedAssignOptions.filter((row) => idSet.has(row.id))
+  }, [assignCompose, blockedAssignOptions])
+
+  const assignSlot = assignBlockedPrompt ? (
+    <AssignBlockedSelectionPrompt
+      nonBlockedCount={assignBlockedPrompt.nonBlockedCount}
+      totalCount={assignBlockedPrompt.totalCount}
+      openedAt={assignBlockedPrompt.openedAt}
+      onAssignBlockedOnly={() => {
+        const prompt = assignBlockedPrompt
+        onAssignBlockedPromptChange?.(null)
+        onAssignComposeChange?.({
+          selectedIds: prompt.blockedIds,
+          focusAssignee: prompt.blockedIds.length === 1,
+          openedAt: prompt.openedAt,
+          userTurnId: prompt.userTurnId,
+        })
+      }}
+      onCancel={cancelAssignPrompt}
+    />
+  ) : assignCompose ? (
+    <StudioAssistantMessage timeLabel={formatAssignTurnTime(assignCompose.openedAt)} showCopy={false}>
+      <AssignBlockedComposeCard
+        key={`assign-${assignCompose.selectedIds.join('|')}-${assignCompose.focusAssignee}-${assignCompose.openedAt}`}
+        blockedOptions={blockedAssignOptions}
+        initialSelected={composeSelected}
+        focusAssignee={assignCompose.focusAssignee}
+        onCancel={cancelAssignCompose}
+        onAssign={handleAssignBlockedSubmit}
+      />
+    </StudioAssistantMessage>
+  ) : null
+
   return (
     <CopilotDrawerShell
       onClose={onClose}
@@ -1447,9 +1811,23 @@ export function SubmissionsCopilotPanel({
       showToolbar={!activeIssue || Boolean(activeConfirmation)}
     >
       {multiSelectMode ? (
-          <SummarizeView submissions={selectedSubmissions} />
+          <SummarizeView
+            submissions={selectedSubmissions}
+            threadTurns={assignThreadTurns}
+            assignSlot={assignSlot}
+            assignSessionOpen={assignSessionOpen}
+            summaryUpdatedAt={assignSummaryUpdatedAt}
+            onAction={handleWorkspaceAction}
+          />
         ) : !focusedSubmission ? (
-          <WorkspaceView />
+          <WorkspaceView
+            poolSubmissions={assignPool.length > 0 ? assignPool : submissionsMock}
+            threadTurns={assignThreadTurns}
+            assignSlot={assignSlot}
+            assignSessionOpen={assignSessionOpen}
+            summaryUpdatedAt={assignSummaryUpdatedAt}
+            onAction={handleWorkspaceAction}
+          />
         ) : focusedSubmission.status === 'Quoted' ? (
           <SendConfirmationView
             submissionNumber={focusedSubmission.submissionNumber}
@@ -1527,6 +1905,10 @@ export function SubmissionsCopilotPanel({
             onViewStatus={() => onEntryModeChange?.('status')}
             onSeedComposer={seedComposer}
             onDraftProducerEmail={() => openProducerEmail('Draft producer follow-up', null)}
+            onAssignBlocked={tryOpenAssignBlocked}
+            threadTurns={assignThreadTurns}
+            assignSlot={assignSlot}
+            assignSessionOpen={assignSessionOpen}
           />
         ) : (
           <>

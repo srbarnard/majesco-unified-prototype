@@ -86,7 +86,11 @@ export function buildSubmissionInsightBriefing(
       'If this stays blocked, the submission remains out of structure review and the producer cannot receive terms.',
     ]
     const statusQuickActionLabel = 'View status & resolve issues'
-    const quickActions = blockerQuickActions(blockerLabel)
+    const quickActions = [
+      statusQuickActionLabel,
+      'Assign blocked submission',
+      ...blockerQuickActions(blockerLabel).filter((action) => action !== statusQuickActionLabel),
+    ]
 
     return {
       header,

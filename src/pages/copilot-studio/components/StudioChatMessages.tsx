@@ -1,9 +1,10 @@
+import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
+import type { ReactNode } from 'react'
 import type { StudioChatMessage } from '@/pages/copilot-studio/data/mockCopilotStudio'
 import { chatAuthorAvatarSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -13,7 +14,14 @@ const bodySx = {
   fontWeight: 400,
 } as const
 
-function UserMessage({ message }: { message: StudioChatMessage }) {
+export type StudioUserMessageProps = {
+  children: ReactNode
+  /** Clock / duration label in Studio meta caption treatment. */
+  timeLabel?: string
+}
+
+/** Right-aligned user turn — avatar + You + muted bubble (Copilot Studio). */
+export function StudioUserMessage({ children, timeLabel }: StudioUserMessageProps) {
   return (
     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2.5 }}>
       <Box
@@ -25,15 +33,18 @@ function UserMessage({ message }: { message: StudioChatMessage }) {
         }}
       >
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
-          <Avatar sx={(theme) => chatAuthorAvatarSx(theme)}>
-            SB
-          </Avatar>
+          <Avatar sx={(theme) => chatAuthorAvatarSx(theme)}>SB</Avatar>
           <Typography
             variant="body2"
             sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.8125rem' }}
           >
             You
           </Typography>
+          {timeLabel ? (
+            <Typography variant="caption" color="text.secondary" sx={bodySx}>
+              {timeLabel}
+            </Typography>
+          ) : null}
         </Stack>
         <Box
           sx={(theme) => ({
@@ -43,8 +54,8 @@ function UserMessage({ message }: { message: StudioChatMessage }) {
             bgcolor: surfaceMuted(theme),
           })}
         >
-          <Typography variant="body2" sx={{ ...bodySx, fontSize: '0.875rem', lineHeight: 1.55 }}>
-            {message.content}
+          <Typography variant="body2" component="div" sx={{ ...bodySx, fontSize: '0.875rem', lineHeight: 1.55 }}>
+            {children}
           </Typography>
         </Box>
       </Box>
@@ -52,31 +63,52 @@ function UserMessage({ message }: { message: StudioChatMessage }) {
   )
 }
 
-function AssistantMessage({ message }: { message: StudioChatMessage }) {
+export type StudioAssistantMessageProps = {
+  children: ReactNode
+  /** Clock / duration label beside copy — same meta row as Studio. */
+  timeLabel?: string
+  showCopy?: boolean
+}
+
+/** Left-aligned Copilot turn — plain content, optional copy + meta caption. */
+export function StudioAssistantMessage({
+  children,
+  timeLabel,
+  showCopy = true,
+}: StudioAssistantMessageProps) {
   return (
     <Box sx={{ mb: 3 }}>
-      <Typography
-        variant="body2"
+      <Box
         sx={{
           ...bodySx,
           fontSize: '0.875rem',
           lineHeight: 1.6,
           color: 'text.primary',
-          mb: 1,
+          mb: showCopy || timeLabel ? 1 : 0,
         }}
       >
-        {message.content}
-      </Typography>
-      <Stack direction="row" spacing={1} alignItems="center">
-        <IconButton size="small" aria-label="Copy response" sx={{ ml: -0.75 }}>
-          <ContentCopyOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-        </IconButton>
-        {message.elapsedSeconds !== undefined && (
-          <Typography variant="caption" color="text.secondary" sx={bodySx}>
-            {message.elapsedSeconds.toFixed(2)}s
+        {typeof children === 'string' ? (
+          <Typography variant="body2" sx={{ ...bodySx, fontSize: '0.875rem', lineHeight: 1.6 }}>
+            {children}
           </Typography>
+        ) : (
+          children
         )}
-      </Stack>
+      </Box>
+      {(showCopy || timeLabel) && (
+        <Stack direction="row" spacing={1} alignItems="center">
+          {showCopy ? (
+            <IconButton size="small" aria-label="Copy response" sx={{ ml: -0.75 }}>
+              <ContentCopyOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+            </IconButton>
+          ) : null}
+          {timeLabel ? (
+            <Typography variant="caption" color="text.secondary" sx={bodySx}>
+              {timeLabel}
+            </Typography>
+          ) : null}
+        </Stack>
+      )}
     </Box>
   )
 }
@@ -90,9 +122,16 @@ export function StudioChatMessages({ messages }: StudioChatMessagesProps) {
     <Box sx={{ width: '100%' }}>
       {messages.map((message) =>
         message.role === 'user' ? (
-          <UserMessage key={message.id} message={message} />
+          <StudioUserMessage key={message.id}>{message.content}</StudioUserMessage>
         ) : (
-          <AssistantMessage key={message.id} message={message} />
+          <StudioAssistantMessage
+            key={message.id}
+            timeLabel={
+              message.elapsedSeconds !== undefined ? `${message.elapsedSeconds.toFixed(2)}s` : undefined
+            }
+          >
+            {message.content}
+          </StudioAssistantMessage>
         ),
       )}
     </Box>
