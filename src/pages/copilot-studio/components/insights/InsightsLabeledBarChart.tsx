@@ -27,6 +27,25 @@ type InsightsLabeledBarChartProps = {
   chartKey?: string
 }
 
+/** Matches details-screen ChartLegend (Pulse / Quotes / Insureds). */
+export function InsightsChartLegend({ items }: { items: Array<{ label: string; color: string }> }) {
+  return (
+    <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ mb: 0.75 }}>
+      {items.map(({ label, color }) => (
+        <Stack key={label} direction="row" spacing={0.75} alignItems="center">
+          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: color, flexShrink: 0 }} />
+          <Typography
+            variant="caption"
+            sx={{ ...analyticsBodySx, fontSize: '0.6875rem', color: 'text.secondary' }}
+          >
+            {label}
+          </Typography>
+        </Stack>
+      ))}
+    </Stack>
+  )
+}
+
 function ChartTooltip({
   active,
   payload,
@@ -75,12 +94,24 @@ export function InsightsLabeledBarChart({
   const remountKey = chartKey ?? `insights-bar-${barColor}-${theme.palette.mode}`
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%', minWidth: 0 }}>
+      <InsightsChartLegend items={[{ label: legendLabel, color: barColor }]} />
       <Box sx={{ width: '100%', height, minHeight: height }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart key={remountKey} data={data} margin={{ top: 16, right: 8, left: 0, bottom: 4 }}>
+          <BarChart
+            key={remountKey}
+            data={data}
+            margin={{ top: 12, right: 8, left: 0, bottom: 4 }}
+          >
             <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="label" tick={axisStyle} tickLine={false} axisLine={false} />
+            <XAxis
+              dataKey="label"
+              tick={axisStyle}
+              tickLine={false}
+              axisLine={false}
+              interval="preserveStartEnd"
+              minTickGap={28}
+            />
             <YAxis tick={axisStyle} tickLine={false} axisLine={false} width={36} />
             <Tooltip
               cursor={{ fill: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}
@@ -92,18 +123,10 @@ export function InsightsLabeledBarChart({
                 />
               )}
             />
-            <Bar dataKey="value" fill={barColor} radius={[4, 4, 0, 0]} maxBarSize={56} />
+            <Bar dataKey="value" fill={barColor} radius={[3, 3, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </Box>
-      <Stack direction="row" justifyContent="center" sx={{ mt: 1 }}>
-        <Stack direction="row" spacing={0.75} alignItems="center">
-          <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: barColor }} />
-          <Typography variant="caption" color="text.secondary" sx={analyticsBodySx}>
-            {legendLabel}
-          </Typography>
-        </Stack>
-      </Stack>
     </Box>
   )
 }

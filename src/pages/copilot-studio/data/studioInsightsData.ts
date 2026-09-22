@@ -198,14 +198,14 @@ export const studioEmailMailboxes: StudioInsightsMailboxRow[] = [
 ]
 
 export const studioMcpKpis: AnalyticsKpiMetric[] = [
-  { id: 'mcp-calls', title: 'Total Calls', value: '8', trend: { direction: 'neutral', label: 'in the selected time period' }, tone: 'neutral' },
-  { id: 'mcp-success', title: 'Success Rate', value: '100.0%', trend: { direction: 'neutral', label: '0 failed' }, tone: 'positive' },
-  { id: 'mcp-duration', title: 'Avg Duration', value: '2035 ms', trend: { direction: 'neutral', label: 'in the selected time period' }, tone: 'neutral' },
+  { id: 'mcp-calls', title: 'Total Calls', value: '148', trend: { direction: 'neutral', label: 'in the selected time period' }, tone: 'neutral' },
+  { id: 'mcp-success', title: 'Success Rate', value: '94.6%', trend: { direction: 'neutral', label: '8 failed' }, tone: 'positive' },
+  { id: 'mcp-duration', title: 'Avg Duration', value: '1842 ms', trend: { direction: 'neutral', label: 'in the selected time period' }, tone: 'neutral' },
   { id: 'mcp-tracked', title: 'MCPs Tracked', value: '7', trend: { direction: 'neutral', label: 'in the selected time period' }, tone: 'neutral' },
 ]
 
 const mcpInvocationValues = [
-  0, 1, 0, 2, 0, 0, 3, 1, 0, 0, 2, 0, 1, 0, 0, 4, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 0, 2,
+  2, 1, 3, 2, 0, 4, 3, 1, 2, 5, 2, 0, 1, 4, 3, 4, 2, 1, 3, 5, 2, 6, 3, 4, 2, 1, 5, 8,
 ].slice(-24)
 
 export const studioMcpInvocationTrend: AnalyticsTimeSeriesPoint[] = buildDailyTrend(mcpInvocationValues)
@@ -213,6 +213,42 @@ export const studioMcpInvocationTrend: AnalyticsTimeSeriesPoint[] = buildDailyTr
 export const studioMcpInvocations: StudioInsightsMcpRow[] = [
   {
     id: 'm1',
+    date: '2026-06-30',
+    mcp: 'ClaimMCPServer',
+    tool: 'Retrieve Claim Details',
+    status: 'success',
+    total: 4,
+    success: 4,
+    failed: 0,
+    avgMs: 1699,
+    users: 2,
+  },
+  {
+    id: 'm2',
+    date: '2026-06-29',
+    mcp: 'PolicyMCPServer',
+    tool: 'Get Policy Summary',
+    status: 'success',
+    total: 5,
+    success: 5,
+    failed: 0,
+    avgMs: 1420,
+    users: 3,
+  },
+  {
+    id: 'm3',
+    date: '2026-06-28',
+    mcp: 'QuoteMCPServer',
+    tool: 'List Open Quotes',
+    status: 'failed',
+    total: 2,
+    success: 1,
+    failed: 1,
+    avgMs: 3104,
+    users: 1,
+  },
+  {
+    id: 'm4',
     date: '2026-06-25',
     mcp: 'ClaimMCPServer',
     tool: 'Retrieve Claim Details',
@@ -222,5 +258,193 @@ export const studioMcpInvocations: StudioInsightsMcpRow[] = [
     failed: 0,
     avgMs: 1699,
     users: 1,
+  },
+]
+
+const mcpPerUserValues = [
+  1, 2, 1, 3, 2, 2, 4, 3, 2, 3, 4, 2, 3, 5, 4, 3, 2, 4, 5, 3, 4, 6, 3, 5,
+].slice(-24)
+
+export const studioMcpPerUserTrend: AnalyticsTimeSeriesPoint[] = buildDailyTrend(mcpPerUserValues)
+
+export type StudioInsightsMcpUserRow = {
+  id: string
+  user: string
+  calls: number
+  tools: number
+  avgMs: number
+  lastActive: string
+}
+
+export const studioMcpUsers: StudioInsightsMcpUserRow[] = [
+  { id: 'mu1', user: 'Default Administrator', calls: 42, tools: 6, avgMs: 1580, lastActive: '2026-06-30' },
+  { id: 'mu2', user: 'Tanmay.Yendhe', calls: 28, tools: 4, avgMs: 1720, lastActive: '2026-06-30' },
+  { id: 'mu3', user: 'pradipto.talukdar', calls: 24, tools: 5, avgMs: 1490, lastActive: '2026-06-29' },
+  { id: 'mu4', user: 'ROHAN.NAIK', calls: 18, tools: 3, avgMs: 2010, lastActive: '2026-06-29' },
+  { id: 'mu5', user: 'Sarah.Mitchell', calls: 14, tools: 3, avgMs: 1655, lastActive: '2026-06-28' },
+  { id: 'mu6', user: 'James.Chen', calls: 12, tools: 2, avgMs: 1880, lastActive: '2026-06-27' },
+  { id: 'mu7', user: 'Test Automation', calls: 10, tools: 4, avgMs: 980, lastActive: '2026-06-30' },
+]
+
+const mcpDiscoveryValues = [
+  0, 1, 0, 0, 2, 1, 0, 1, 0, 2, 1, 0, 0, 1, 3, 0, 1, 0, 2, 1, 0, 1, 2, 1,
+].slice(-24)
+
+export const studioMcpDiscoveryTrend: AnalyticsTimeSeriesPoint[] = buildDailyTrend(mcpDiscoveryValues)
+
+export type StudioInsightsMcpDiscoveryRow = {
+  id: string
+  date: string
+  mcp: string
+  event: string
+  toolsFound: number
+  status: 'success' | 'failed'
+}
+
+export const studioMcpDiscoveries: StudioInsightsMcpDiscoveryRow[] = [
+  {
+    id: 'md1',
+    date: '2026-06-30',
+    mcp: 'ClaimMCPServer',
+    event: 'Tool catalog refresh',
+    toolsFound: 12,
+    status: 'success',
+  },
+  {
+    id: 'md2',
+    date: '2026-06-29',
+    mcp: 'PolicyMCPServer',
+    event: 'Server handshake',
+    toolsFound: 8,
+    status: 'success',
+  },
+  {
+    id: 'md3',
+    date: '2026-06-28',
+    mcp: 'BillingMCPServer',
+    event: 'Tool catalog refresh',
+    toolsFound: 5,
+    status: 'success',
+  },
+  {
+    id: 'md4',
+    date: '2026-06-26',
+    mcp: 'QuoteMCPServer',
+    event: 'Schema probe',
+    toolsFound: 0,
+    status: 'failed',
+  },
+  {
+    id: 'md5',
+    date: '2026-06-24',
+    mcp: 'DocumentMCPServer',
+    event: 'Server handshake',
+    toolsFound: 6,
+    status: 'success',
+  },
+]
+
+const mcpErrorValues = [
+  0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 1, 0, 0, 0, 2, 1, 0, 0, 1, 0, 0, 1, 0, 2,
+].slice(-24)
+
+export const studioMcpErrorTrend: AnalyticsTimeSeriesPoint[] = buildDailyTrend(mcpErrorValues)
+
+export type StudioInsightsMcpErrorRow = {
+  id: string
+  date: string
+  mcp: string
+  tool: string
+  code: string
+  message: string
+  count: number
+}
+
+export const studioMcpErrors: StudioInsightsMcpErrorRow[] = [
+  {
+    id: 'me1',
+    date: '2026-06-30',
+    mcp: 'QuoteMCPServer',
+    tool: 'List Open Quotes',
+    code: 'TIMEOUT',
+    message: 'Upstream quote service exceeded 3s budget',
+    count: 2,
+  },
+  {
+    id: 'me2',
+    date: '2026-06-28',
+    mcp: 'ClaimMCPServer',
+    tool: 'Retrieve Claim Details',
+    code: 'VALIDATION',
+    message: 'Missing claimNumber argument',
+    count: 1,
+  },
+  {
+    id: 'me3',
+    date: '2026-06-26',
+    mcp: 'PolicyMCPServer',
+    tool: 'Get Policy Summary',
+    code: 'NOT_FOUND',
+    message: 'Policy 01-CA-000482 not in book',
+    count: 3,
+  },
+  {
+    id: 'me4',
+    date: '2026-06-22',
+    mcp: 'BillingMCPServer',
+    tool: 'Get Invoice Status',
+    code: 'RATE_LIMIT',
+    message: 'Billing API returned 429',
+    count: 2,
+  },
+]
+
+const mcpAuthFailureValues = [
+  0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 1, 0, 1,
+].slice(-24)
+
+export const studioMcpAuthFailureTrend: AnalyticsTimeSeriesPoint[] = buildDailyTrend(mcpAuthFailureValues)
+
+export type StudioInsightsMcpAuthFailureRow = {
+  id: string
+  date: string
+  mcp: string
+  user: string
+  reason: string
+  count: number
+}
+
+export const studioMcpAuthFailures: StudioInsightsMcpAuthFailureRow[] = [
+  {
+    id: 'ma1',
+    date: '2026-06-30',
+    mcp: 'DocumentMCPServer',
+    user: 'James.Chen',
+    reason: 'Expired OAuth token',
+    count: 1,
+  },
+  {
+    id: 'ma2',
+    date: '2026-06-27',
+    mcp: 'BillingMCPServer',
+    user: 'ROHAN.NAIK',
+    reason: 'Missing scope: billing.read',
+    count: 2,
+  },
+  {
+    id: 'ma3',
+    date: '2026-06-23',
+    mcp: 'ClaimMCPServer',
+    user: 'Sarah.Mitchell',
+    reason: 'SSO session revoked',
+    count: 1,
+  },
+  {
+    id: 'ma4',
+    date: '2026-06-18',
+    mcp: 'PolicyMCPServer',
+    user: 'Test Automation',
+    reason: 'API key rotated',
+    count: 3,
   },
 ]
