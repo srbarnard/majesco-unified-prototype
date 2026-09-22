@@ -45,7 +45,9 @@ import {
   buildQuotePackageSendConfirmation,
   buildQuoteSentMessageFromPackage,
   buildQuoteSentNextUpLine,
+  buildRequestInfoNextUpLine,
   buildRequestInfoSendConfirmation,
+  findNextBlockedSubmission,
   findNextReadySubmission,
   isAddNoteAction,
   isProducerRequestAction,
@@ -127,6 +129,7 @@ type SubmissionsCopilotPanelProps = {
   onSendConfirmation?: (confirmation: SubmissionsCopilotSendConfirmation | null) => void
   onOpenNextReadySubmission?: (submission: SubmissionListRecord) => void
   onShowReadyOnly?: () => void
+  onOpenNextBlockedSubmission?: (submission: SubmissionListRecord) => void
   onShowBlockedOnly?: () => void
   /** Assign blocked submissions in the list mock (ids → assignee). */
   onAssignBlocked?: (submissionIds: string[], assignee: string, note: string) => void
@@ -849,7 +852,7 @@ function SendConfirmationView({
             onAction={(action) => {
               if (action === 'Schedule producer follow-up') {
                 onSeedComposer?.(
-                  `Schedule a producer follow-up for ${submissionNumber} to review the quote options.`,
+                  `Schedule a producer follow-up for ${submissionNumber}.`,
                 )
                 return
               }
@@ -1115,6 +1118,7 @@ export function SubmissionsCopilotPanel({
   onSendConfirmation,
   onOpenNextReadySubmission,
   onShowReadyOnly,
+  onOpenNextBlockedSubmission,
   onShowBlockedOnly,
   onAssignBlocked,
   onFocusSubmission,
@@ -1146,6 +1150,11 @@ export function SubmissionsCopilotPanel({
   const confirmationNextReady = useMemo(() => {
     if (!focusedSubmission) return null
     return findNextReadySubmission(queueSubmissions, focusedSubmission.id)
+  }, [focusedSubmission, queueSubmissions])
+
+  const confirmationNextBlocked = useMemo(() => {
+    if (!focusedSubmission) return null
+    return findNextBlockedSubmission(queueSubmissions, focusedSubmission.id)
   }, [focusedSubmission, queueSubmissions])
 
   useEffect(() => {
@@ -1330,6 +1339,12 @@ export function SubmissionsCopilotPanel({
           !issue!.resolvedAt &&
           issue!.severity === 'blocking' &&
           openBlockingIssues(submission).every((open) => open.id === issue!.id)
+        const remainingIssueCount = issue
+          ? openBlockingIssues(submission).filter((open) => open.id !== issue.id).length
+          : openBlockingIssues(submission).length
+        const recipient = draft.to || SUBMISSION_PRODUCER_EMAIL
+        const requestSubtitle = `Producer follow-up · ${submission.submissionNumber}`
+        const nextBlocked = findNextBlockedSubmission(queueSubmissions, submission.id)
         flushSync(() => {
           if (issue && !issue.resolvedAt && issue.severity === 'blocking') {
             onResolveIssue?.(
@@ -1342,12 +1357,21 @@ export function SubmissionsCopilotPanel({
           if (!isLastBlocker) {
             onSendConfirmation?.({
               submissionId: submission.id,
-              message: buildRequestInfoSendConfirmation(
-                submission,
-                issue,
-                draft.to || SUBMISSION_PRODUCER_EMAIL,
-              ),
-              followUpActions: [],
+              message: buildRequestInfoSendConfirmation(submission, issue, recipient),
+              nextUpLine: buildRequestInfoNextUpLine(remainingIssueCount, nextBlocked),
+              followUpActions: [
+                ...(remainingIssueCount > 0 ? ['Continue remaining issues'] : []),
+                nextBlocked ? 'Open next Blocked submission' : 'Show Blocked only',
+                'Schedule producer follow-up',
+                'View sent email',
+              ],
+              sentEmail: {
+                to: recipient,
+                subject: draft.subject,
+                body: draft.body,
+                subtitle: requestSubtitle,
+                documents: [],
+              },
             })
           } else {
             onSendConfirmation?.(null)
@@ -1484,6 +1508,14 @@ export function SubmissionsCopilotPanel({
   }
 
   const handleQuoteConfirmationAction = (action: string) => {
+    if (action === 'Continue remaining issues') {
+      onSendConfirmation?.(null)
+      if (!focusedSubmission) return
+      const nextOpen = openBlockingIssues(focusedSubmission)[0] ?? null
+      setActiveIssueId(nextOpen?.id ?? null)
+      onEntryModeChange?.('status')
+      return
+    }
     if (action === 'Open next Ready submission') {
       const next =
         confirmationNextReady ??
@@ -1493,6 +1525,19 @@ export function SubmissionsCopilotPanel({
     }
     if (action === 'Show Ready only') {
       onShowReadyOnly?.()
+      return
+    }
+    if (action === 'Open next Blocked submission') {
+      const next =
+        confirmationNextBlocked ??
+        (focusedSubmission
+          ? findNextBlockedSubmission(queueSubmissions, focusedSubmission.id)
+          : null)
+      if (next) onOpenNextBlockedSubmission?.(next)
+      return
+    }
+    if (action === 'Show Blocked only') {
+      onShowBlockedOnly?.()
       return
     }
     if (action === 'View sent email') {
@@ -1887,7 +1932,27 @@ export function SubmissionsCopilotPanel({
           <SendConfirmationView
             submissionNumber={focusedSubmission.submissionNumber}
             message={activeConfirmation.message}
-            followUpActions={activeConfirmation.followUpActions}
+            nextUpLine={
+              activeConfirmation.nextUpLine ??
+              buildRequestInfoNextUpLine(
+                openBlockingIssues(focusedSubmission).length,
+                confirmationNextBlocked,
+              )
+            }
+            followUpActions={
+              activeConfirmation.followUpActions.length > 0
+                ? activeConfirmation.followUpActions
+                : [
+                    ...(openBlockingIssues(focusedSubmission).length > 0
+                      ? ['Continue remaining issues']
+                      : []),
+                    confirmationNextBlocked
+                      ? 'Open next Blocked submission'
+                      : 'Show Blocked only',
+                    'Schedule producer follow-up',
+                    ...(activeConfirmation.sentEmail ? ['View sent email'] : []),
+                  ]
+            }
             onAction={handleQuoteConfirmationAction}
             onSeedComposer={seedComposer}
           />

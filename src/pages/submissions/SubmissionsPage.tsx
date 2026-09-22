@@ -416,6 +416,27 @@ export function SubmissionsPage() {
     }))
   }, [])
 
+  const handleOpenNextBlockedSubmission = useCallback(
+    (submission: SubmissionListRecord) => {
+      setCopilotSendConfirmation(null)
+      setCopilotSubmissionFocus(submission)
+      setRowSelectionModel([submission.id])
+      setCopilotEntryMode('status')
+      setCopilotIssueFocusId(null)
+      setNotesTarget(null)
+      openTool('copilot')
+    },
+    [openTool],
+  )
+
+  const [assignToast, setAssignToast] = useState<string | null>(null)
+  const [assignThreadTurns, setAssignThreadTurns] = useState<AssignThreadTurn[]>([])
+  const [assignCompose, setAssignCompose] = useState<AssignComposeSession | null>(null)
+  const [assignBlockedPrompt, setAssignBlockedPrompt] = useState<AssignBlockedPromptSession | null>(
+    null,
+  )
+  const [assignSummaryUpdatedAt, setAssignSummaryUpdatedAt] = useState<number | null>(null)
+
   const handleShowBlockedOnly = useCallback(() => {
     const at = Date.now()
     const nextFilters: SubmissionsListFilters = {
@@ -442,14 +463,6 @@ export function SubmissionsPage() {
     setAppliedFilters(nextFilters)
     openTool('filter')
   }, [appliedFilters, openTool, rows])
-
-  const [assignToast, setAssignToast] = useState<string | null>(null)
-  const [assignThreadTurns, setAssignThreadTurns] = useState<AssignThreadTurn[]>([])
-  const [assignCompose, setAssignCompose] = useState<AssignComposeSession | null>(null)
-  const [assignBlockedPrompt, setAssignBlockedPrompt] = useState<AssignBlockedPromptSession | null>(
-    null,
-  )
-  const [assignSummaryUpdatedAt, setAssignSummaryUpdatedAt] = useState<number | null>(null)
 
   const handleAssignBlocked = useCallback(
     (submissionIds: string[], assignee: string, note: string) => {
@@ -547,6 +560,7 @@ export function SubmissionsPage() {
       onSendConfirmation={setCopilotSendConfirmation}
       onOpenNextReadySubmission={handleOpenNextReadySubmission}
       onShowReadyOnly={handleShowReadyOnly}
+      onOpenNextBlockedSubmission={handleOpenNextBlockedSubmission}
       onShowBlockedOnly={handleShowBlockedOnly}
       onAssignBlocked={handleAssignBlocked}
       assignThreadTurns={assignThreadTurns}
@@ -588,6 +602,7 @@ export function SubmissionsPage() {
       handleResolveIssue,
       handleShowBlockedOnly,
       handleShowReadyOnly,
+      handleOpenNextBlockedSubmission,
       filteredRows,
       assignThreadTurns,
       assignCompose,

@@ -48,7 +48,6 @@ import {
   buildQuotePackageSent,
   submissionsMock,
   syncSubmissionListRecord,
-  type PremiumEstimate,
   type SubmissionStatus,
 } from '@/pages/submissions/data/mockSubmissions'
 
@@ -377,6 +376,15 @@ export function SubmissionDetails() {
         }
         onSendConfirmation={setCopilotSendConfirmation}
         onOpenNextReadySubmission={(next) => {
+          setCopilotSendConfirmation(null)
+          navigate(`/submissions/${encodeURIComponent(next.submissionNumber)}`, {
+            state: {
+              openCopilot: true,
+              entryMode: 'status',
+            } satisfies SubmissionDetailLocationState,
+          })
+        }}
+        onOpenNextBlockedSubmission={(next) => {
           setCopilotSendConfirmation(null)
           navigate(`/submissions/${encodeURIComponent(next.submissionNumber)}`, {
             state: {
