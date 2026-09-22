@@ -385,7 +385,7 @@ export function DailySummaryContent({
                     }}
                   >
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
-                      <Avatar sx={(theme) => chatAuthorAvatarSx(theme)}>SB</Avatar>
+                      <Avatar sx={(theme) => chatAuthorAvatarSx(theme)}>CR</Avatar>
                       <Typography
                         variant="body2"
                         sx={{

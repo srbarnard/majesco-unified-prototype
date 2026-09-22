@@ -125,7 +125,7 @@ export function SubmissionsNotesPanel({
     if (activeThread) {
       const reply = {
         id: `${activeThread.id}-r-${Date.now()}`,
-        author: { initials: 'SB', name: 'You' },
+        author: { initials: 'CR', name: 'You' },
         text: message.trim(),
         createdAt,
       }
@@ -147,7 +147,7 @@ export function SubmissionsNotesPanel({
       submissionId: targetSubmission.id,
       preview: message.trim(),
       typeLabel: resolveNoteTypeLabel(message, activeTemplate),
-      author: { initials: 'SB', name: 'You' },
+      author: { initials: 'CR', name: 'You' },
       createdAt,
       replies: [],
     }

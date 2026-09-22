@@ -18,7 +18,7 @@ const bodySx = {
 } as const
 
 function isCurrentUser(message: NoteMessage) {
-  return message.author.initials === 'SB' || message.author.name === 'You'
+  return message.author.initials === 'CR' || message.author.name === 'You'
 }
 
 function authorKey(message: NoteMessage) {

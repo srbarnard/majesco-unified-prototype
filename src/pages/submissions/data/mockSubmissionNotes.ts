@@ -20,7 +20,7 @@ export type SubmissionNoteThread = {
   replies: NoteMessage[]
 }
 
-const you: NoteAuthor = { initials: 'SB', name: 'You' }
+const you: NoteAuthor = { initials: 'CR', name: 'You' }
 const brenda: NoteAuthor = { initials: 'BH', name: 'Brenda Holmes' }
 const carmen: NoteAuthor = { initials: 'CR', name: 'Carmen Ruiz' }
 const patrick: NoteAuthor = { initials: 'PH', name: 'Patrick Hale' }

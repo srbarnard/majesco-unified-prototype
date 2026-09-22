@@ -27,7 +27,7 @@ function UserMessage({ message }: { message: CopilotHistoryMessage }) {
       >
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
           <Avatar sx={(theme) => chatAuthorAvatarSx(theme)}>
-            SB
+            CR
           </Avatar>
           <Typography
             variant="body2"

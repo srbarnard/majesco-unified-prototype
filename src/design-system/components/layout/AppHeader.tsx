@@ -49,7 +49,7 @@ export function AppHeader({ title, onMenuClick }: AppHeaderProps) {
         <IconButton color="inherit" aria-label="Notifications">
           <NotificationsNoneOutlinedIcon />
         </IconButton>
-        <Avatar sx={{ width: 32, height: 32, ml: 0.5 }}>SB</Avatar>
+        <Avatar sx={{ width: 32, height: 32, ml: 0.5 }}>CR</Avatar>
       </Toolbar>
     </AppBar>
   )

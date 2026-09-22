@@ -33,7 +33,7 @@ export function StudioUserMessage({ children, timeLabel }: StudioUserMessageProp
         }}
       >
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
-          <Avatar sx={(theme) => chatAuthorAvatarSx(theme)}>SB</Avatar>
+          <Avatar sx={(theme) => chatAuthorAvatarSx(theme)}>CR</Avatar>
           <Typography
             variant="body2"
             sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.8125rem' }}
