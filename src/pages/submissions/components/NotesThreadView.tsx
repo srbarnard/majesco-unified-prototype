@@ -2,7 +2,12 @@ import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { chatAuthorAvatarSx, chatBubbleIncoming, chatBubbleOutgoing } from '@/design-system/theme/themeSurfaces'
+import {
+  chatAuthorAvatarSx,
+  chatBubbleIncoming,
+  chatBubbleOutgoing,
+  chatPeerAuthorAvatarSx,
+} from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { CopilotDrawerSubHeader } from '@/pages/policies/components/copilot/CopilotDrawerSubHeader'
 import type { NoteMessage, SubmissionNoteThread } from '@/pages/submissions/data/mockSubmissionNotes'
@@ -22,6 +27,7 @@ function authorKey(message: NoteMessage) {
 
 function NoteBubble({ message, side }: { message: NoteMessage; side: 'left' | 'right' }) {
   const isRight = side === 'right'
+  const isYou = isCurrentUser(message)
 
   return (
     <Box sx={{ display: 'flex', justifyContent: isRight ? 'flex-end' : 'flex-start', mb: 2 }}>
@@ -34,7 +40,7 @@ function NoteBubble({ message, side }: { message: NoteMessage; side: 'left' | 'r
         }}
       >
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
-          <Avatar sx={(theme) => chatAuthorAvatarSx(theme)}>
+          <Avatar sx={(theme) => (isYou ? chatAuthorAvatarSx(theme) : chatPeerAuthorAvatarSx(theme))}>
             {message.author.initials}
           </Avatar>
           <Typography

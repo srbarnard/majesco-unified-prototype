@@ -55,8 +55,20 @@ export function chatBubbleOutgoing(theme: Theme) {
   return isDarkMode(theme) ? theme.figmaPalette.blue[800] : theme.figmaPalette.blue[100]
 }
 
-/** Initials avatar for people in chat / notes threads. */
+/** Current-user initials avatar — matches global navbar (teal fill, white text). */
 export function chatAuthorAvatarSx(theme: Theme) {
+  return {
+    width: 24,
+    height: 24,
+    fontSize: '0.625rem',
+    fontWeight: 600,
+    bgcolor: theme.figmaPalette.teal[600],
+    color: theme.palette.common.white,
+  } as const
+}
+
+/** Peer / other-author initials in notes threads. */
+export function chatPeerAuthorAvatarSx(theme: Theme) {
   return {
     width: 24,
     height: 24,

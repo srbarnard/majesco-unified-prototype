@@ -3,18 +3,63 @@ import Divider from '@mui/material/Divider'
 import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import Avatar from '@mui/material/Avatar'
+import { useLayoutEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { homeDailySummaryBeats } from '@/app/data/homeMock'
+import { resolveDailySummaryQuickActionAnswer } from '@/app/data/resolveDailySummaryQuickAction'
 import { CopilotQuickActions } from '@/design-system/components'
+import { chatAuthorAvatarSx, chatBubbleIncoming, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
-import { copilotSubtitleSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
+import { copilotSectionHeadingSx, copilotSubtitleSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
+import {
+  COPILOT_REVEAL_ACTIONS_ATTR,
+  COPILOT_REVEAL_ATTR,
+} from '@/pages/policies/components/copilot/copilotReveal'
 
 const bodySx = {
   fontFamily: figmaFontFamilyStack.body,
   fontWeight: 400,
 } as const
+
+/** Real ul/li with outside bullets so wraps hang under the text, not the glyph. */
+const hangingListSx = {
+  m: 0,
+  pl: 2.5,
+  listStyleType: 'disc',
+  listStylePosition: 'outside',
+} as const
+
+const hangingListItemSx = {
+  ...bodySx,
+  display: 'list-item',
+  lineHeight: 1.55,
+  pl: 0.25,
+  mb: 1.25,
+  '&:last-child': { mb: 0 },
+} as const
+
+const DAILY_SUMMARY_ACTIONS = [
+  'Summarize blocked submissions',
+  'Which renewals need pricing approval?',
+  'What can wait until tomorrow?',
+] as const
+
+type DailySummaryTurn =
+  | {
+      id: string
+      role: 'user'
+      content: string
+    }
+  | {
+      id: string
+      role: 'assistant'
+      title: string
+      items: string[]
+      footer: string
+      elapsedSeconds?: number
+    }
 
 function SuggestedActions({
   actions,
@@ -220,12 +265,20 @@ export function AgenticSearchResults({ prompt }: AgenticSearchResultsProps) {
 }
 
 export function DailySummaryContent({
-  onQuickAction,
+  onRequestReveal,
 }: {
-  onQuickAction?: (action: string) => void
+  onRequestReveal?: () => void
 }) {
   const navigate = useNavigate()
   const { openTool } = useRightTool()
+  const [threadTurns, setThreadTurns] = useState<DailySummaryTurn[]>([])
+  const [usedActions, setUsedActions] = useState<string[]>([])
+
+  useLayoutEffect(() => {
+    if (threadTurns.length === 0) return
+    onRequestReveal?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reveal once per appended turn batch
+  }, [threadTurns[threadTurns.length - 1]?.id])
 
   const handleRecordLink = (to: string) => {
     navigate(to)
@@ -233,15 +286,47 @@ export function DailySummaryContent({
     openTool('copilot')
   }
 
+  const remainingActions = DAILY_SUMMARY_ACTIONS.filter((action) => !usedActions.includes(action))
+
+  const handleQuickAction = (action: string) => {
+    const answer = resolveDailySummaryQuickActionAnswer(action)
+    if (!answer) return
+
+    const at = Date.now()
+    setUsedActions((current) => (current.includes(action) ? current : [...current, action]))
+    setThreadTurns((current) => [
+      ...current,
+      { id: `daily-user-${at}`, role: 'user', content: action },
+      {
+        id: `daily-assistant-${at}`,
+        role: 'assistant',
+        title: answer.title,
+        items: answer.items,
+        footer: answer.footer,
+        elapsedSeconds: answer.elapsedSeconds,
+      },
+    ])
+    onRequestReveal?.()
+  }
+
+  const lastTurnId = threadTurns[threadTurns.length - 1]?.id
+  const showActionsAfterThread = threadTurns.length > 0 && remainingActions.length > 0
+
   return (
     <Stack spacing={2}>
       <Typography variant="body2" color="text.secondary" sx={bodySx}>
         Here&apos;s what needs your attention today.
       </Typography>
 
-      <Stack component="ul" spacing={1.25} sx={{ m: 0, pl: 2.25 }}>
+      <Box component="ul" sx={hangingListSx}>
         {homeDailySummaryBeats.bullets.map((bullet) => (
-          <Typography key={bullet.id} component="li" variant="body2" sx={{ ...bodySx, lineHeight: 1.55 }}>
+          <Typography
+            key={bullet.id}
+            component="li"
+            variant="body2"
+            color="text.primary"
+            sx={hangingListItemSx}
+          >
             {bullet.parts.map((part, index) =>
               part.to ? (
                 <Link
@@ -265,25 +350,117 @@ export function DailySummaryContent({
                   {part.text}
                 </Link>
               ) : (
-                <Box key={`${bullet.id}-${index}`} component="span" sx={{ color: 'text.primary' }}>
+                <Box key={`${bullet.id}-${index}`} component="span">
                   {part.text}
                 </Box>
               ),
             )}
           </Typography>
         ))}
-      </Stack>
+      </Box>
 
-      <Divider sx={{ my: 0 }} />
+      {threadTurns.length === 0 ? (
+        <>
+          <Divider sx={{ my: 0 }} />
+          <SuggestedActions actions={[...DAILY_SUMMARY_ACTIONS]} onAction={handleQuickAction} />
+        </>
+      ) : (
+        <Stack spacing={0}>
+          {threadTurns.map((turn) => {
+            const isLatest = turn.id === lastTurnId
+            const markReveal = isLatest && !showActionsAfterThread
+            if (turn.role === 'user') {
+              return (
+                <Box
+                  key={turn.id}
+                  {...(markReveal ? { [COPILOT_REVEAL_ATTR]: '' } : {})}
+                  sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}
+                >
+                  <Box
+                    sx={{
+                      maxWidth: '85%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                    }}
+                  >
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
+                      <Avatar sx={(theme) => chatAuthorAvatarSx(theme)}>SB</Avatar>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontFamily: figmaFontFamilyStack.heading,
+                          fontWeight: 600,
+                          fontSize: '0.8125rem',
+                        }}
+                      >
+                        You
+                      </Typography>
+                    </Stack>
+                    <Box
+                      sx={(theme) => ({
+                        px: 1.75,
+                        py: 1.25,
+                        borderRadius: 2,
+                        bgcolor: chatBubbleIncoming(theme),
+                      })}
+                    >
+                      <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.55 }}>
+                        {turn.content}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )
+            }
 
-      <SuggestedActions
-        actions={[
-          'Summarize blocked submissions',
-          'Which renewals need pricing approval?',
-          'What can wait until tomorrow?',
-        ]}
-        onAction={onQuickAction}
-      />
+            return (
+              <Box
+                key={turn.id}
+                {...(markReveal ? { [COPILOT_REVEAL_ATTR]: '' } : {})}
+                sx={{ mb: 2.5 }}
+              >
+                <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
+                  {turn.title}
+                </Typography>
+                <Box component="ul" sx={{ ...hangingListSx, mb: 1.5 }}>
+                  {turn.items.map((item) => (
+                    <Typography
+                      key={item}
+                      component="li"
+                      variant="body2"
+                      color="text.primary"
+                      sx={hangingListItemSx}
+                    >
+                      {item}
+                    </Typography>
+                  ))}
+                </Box>
+                <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.55, mb: 1 }}>
+                  {turn.footer}
+                </Typography>
+                {turn.elapsedSeconds != null ? (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={bodySx}
+                  >
+                    {turn.elapsedSeconds.toFixed(2)}s
+                  </Typography>
+                ) : null}
+              </Box>
+            )
+          })}
+
+          {showActionsAfterThread ? (
+            <Box {...{ [COPILOT_REVEAL_ATTR]: '', [COPILOT_REVEAL_ACTIONS_ATTR]: '' }}>
+              <Divider sx={{ mb: 2 }} />
+              <SuggestedActions actions={remainingActions} onAction={handleQuickAction} />
+            </Box>
+          ) : null}
+        </Stack>
+      )}
     </Stack>
   )
 }

@@ -550,11 +550,16 @@ function QuotedPackageSummary({ submission }: { submission: SubmissionDetailsRec
       '$900K - $1.1M',
   )
   const alsoSent = (sent?.included ?? []).filter((option) => option.label !== recommendedLabel)
-  const optimizedIncluded = alsoSent.some((option) => option.label === 'Optimized')
-  const optimizedRange = formatStructureRange(
-    alsoSent.find((option) => option.label === 'Optimized')?.range ??
-      estimates.find((option) => option.label === 'Optimized')?.range ??
-      '$1.1M - $1.3M',
+  const includedLabels = new Set((sent?.included ?? [{ label: recommendedLabel }]).map((o) => o.label))
+  const heldBack = estimates
+    .map((option) => option.label)
+    .filter((label) => !includedLabels.has(label))
+
+  const primaryAlso = alsoSent[0]
+  const alsoRange = formatStructureRange(
+    primaryAlso?.range ??
+      estimates.find((option) => option.label === primaryAlso?.label)?.range ??
+      '',
   )
 
   const recipient = sent?.recipient ?? 'commercial@libertygroup.com'
@@ -569,6 +574,20 @@ function QuotedPackageSummary({ submission }: { submission: SubmissionDetailsRec
       : recommendedLabel === 'Conservative'
         ? 'More limit / load'
         : 'Standard deductibles'
+
+  const alsoSupport =
+    primaryAlso?.label === 'Optimized'
+      ? 'Leaner rate, tighter terms'
+      : primaryAlso?.label === 'Conservative'
+        ? 'More limit / load'
+        : 'Standard deductibles'
+
+  const heldBackSupport =
+    heldBack.length === 0
+      ? 'All options included'
+      : heldBack.length === 1
+        ? `${heldBack[0]} held back`
+        : `${heldBack.join(' + ')} held back`
 
   type QuotedCard = {
     key: string
@@ -587,19 +606,25 @@ function QuotedPackageSummary({ submission }: { submission: SubmissionDetailsRec
       support: recommendedSupport,
       tone: 'success',
     },
-    optimizedIncluded
+    alsoSent.length > 0 && primaryAlso
       ? {
           key: 'also-sent',
-          hero: optimizedRange,
-          line2: 'Optimized · Also sent',
-          support: 'Leaner rate, tighter terms',
+          hero: alsoRange,
+          line2:
+            alsoSent.length === 1
+              ? `${primaryAlso.label} · Also sent`
+              : `${alsoSent.length} also sent`,
+          support:
+            alsoSent.length === 1
+              ? alsoSupport
+              : alsoSent.map((option) => option.label).join(' · '),
           tone: 'info',
         }
       : {
           key: 'single-option',
           hero: '1 option sent',
           line2: 'No alternatives',
-          support: 'Conservative held back',
+          support: heldBackSupport,
           tone: 'muted',
         },
     {

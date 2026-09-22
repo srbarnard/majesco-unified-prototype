@@ -391,6 +391,26 @@ export function findNextReadySubmission(
   return ready.find((row) => row.assignedTo === currentUser) ?? ready[0] ?? null
 }
 
+/** Next Ready or Blocked file assigned to the current underwriter. */
+export function findNextAssignedSubmission(
+  rows: SubmissionListRecord[],
+  excludeId: string,
+  currentUser = SUBMISSIONS_CURRENT_USER,
+): SubmissionListRecord | null {
+  const assigned = rows.filter(
+    (row) =>
+      row.id !== excludeId &&
+      row.assignedTo === currentUser &&
+      (row.status === 'Ready' || row.status === 'Blocked'),
+  )
+  if (assigned.length === 0) return null
+  return (
+    assigned.find((row) => row.status === 'Ready') ??
+    assigned.find((row) => row.status === 'Blocked') ??
+    null
+  )
+}
+
 export function findNextBlockedSubmission(
   rows: SubmissionListRecord[],
   excludeId: string,

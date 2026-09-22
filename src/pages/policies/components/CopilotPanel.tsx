@@ -6,7 +6,6 @@ import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useState } from 'react'
-import { resolveDailySummaryQuickAction } from '@/app/data/resolveDailySummaryQuickAction'
 import { CopilotQuickActions, RoutineIcon } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -17,7 +16,6 @@ import type { RecentActivityItem } from '@/app/data/homeMock'
 import { AgenticSearchResults, DailySummaryContent } from '@/pages/policies/components/AgenticSearchResults'
 import { CopilotConfidenceIndicator } from '@/pages/policies/components/copilot/CopilotConfidenceIndicator'
 import { CopilotDrawerShell } from '@/pages/policies/components/copilot/CopilotDrawerShell'
-import type { CopilotHistoryEntry } from '@/pages/policies/components/copilot/copilotDrawerData'
 import { copilotDrawerHeadingSx, copilotSectionHeadingSx, copilotSubtitleSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import { resolveCopilotConfidence } from '@/pages/policies/components/copilot/resolveCopilotConfidence'
 import { useAnimatedConfidence } from '@/pages/policies/components/copilot/useAnimatedConfidence'
@@ -374,8 +372,7 @@ export function CopilotPanel({
   onClose,
 }: CopilotPanelProps) {
   const [internalAttachMode, setInternalAttachMode] = useState<DocumentAttachMode | null>(null)
-  const [launchConversation, setLaunchConversation] = useState<CopilotHistoryEntry | null>(null)
-  const [launchConversationKey, setLaunchConversationKey] = useState(0)
+  const [chatRevealKey, setChatRevealKey] = useState(0)
   const isDocumentsTab = activePolicyTab === 'documents'
   const isQuotesContext = context === 'quotes'
   const isQuoteDetailContext = context === 'quote-detail'
@@ -433,15 +430,6 @@ export function CopilotPanel({
   const isAttachView = Boolean(activeAttachMode)
 
   const handleQuickActionClick = (action: string) => {
-    if (isDailySummaryView) {
-      const entry = resolveDailySummaryQuickAction(action)
-      if (entry) {
-        setLaunchConversation(entry)
-        setLaunchConversationKey((key) => key + 1)
-        return
-      }
-    }
-
     const attachTarget = quickActionToAttachTarget(action)
     const documents = activeAttachMode?.documents ?? (focusedDocument ? [focusedDocument] : [])
 
@@ -756,8 +744,7 @@ export function CopilotPanel({
           seedComposerMessage={isTaskRecommendationView ? seedComposerMessage : null}
           chatFocusKey={attachMode ? null : chatFocusKey}
           contentKey={panelContentKey}
-          launchConversation={launchConversation}
-          launchConversationKey={launchConversationKey}
+          revealKey={chatRevealKey}
           headerTrailing={
             confidenceState && !isAgenticView && !isDailySummaryView && !isTaskRecommendationView ? (
               <CopilotConfidenceIndicator
@@ -802,7 +789,9 @@ export function CopilotPanel({
           {isAgenticView && agenticPrompt ? (
             <AgenticSearchResults prompt={agenticPrompt} />
           ) : isDailySummaryView ? (
-            <DailySummaryContent onQuickAction={handleQuickActionClick} />
+            <DailySummaryContent
+              onRequestReveal={() => setChatRevealKey((key) => key + 1)}
+            />
           ) : isTaskRecommendationView && focusedTask && seedComposerMessage ? (
             <TaskRecommendationChat
               insight={seedComposerMessage}

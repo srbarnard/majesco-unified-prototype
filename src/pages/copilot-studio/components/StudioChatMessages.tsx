@@ -6,7 +6,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
 import type { StudioChatMessage } from '@/pages/copilot-studio/data/mockCopilotStudio'
-import { chatAuthorAvatarSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { chatAuthorAvatarSx, chatBubbleIncoming } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 
 const bodySx = {
@@ -20,7 +20,7 @@ export type StudioUserMessageProps = {
   timeLabel?: string
 }
 
-/** Right-aligned user turn — avatar + You + muted bubble (Copilot Studio). */
+/** Right-aligned user turn — avatar + You + teal bubble (Copilot Studio). */
 export function StudioUserMessage({ children, timeLabel }: StudioUserMessageProps) {
   return (
     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2.5 }}>
@@ -51,7 +51,7 @@ export function StudioUserMessage({ children, timeLabel }: StudioUserMessageProp
             px: 2,
             py: 1.5,
             borderRadius: 2,
-            bgcolor: surfaceMuted(theme),
+            bgcolor: chatBubbleIncoming(theme),
           })}
         >
           <Typography variant="body2" component="div" sx={{ ...bodySx, fontSize: '0.875rem', lineHeight: 1.55 }}>

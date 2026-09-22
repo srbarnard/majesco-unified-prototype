@@ -4,7 +4,7 @@ import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
-import { chatAuthorAvatarSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { chatAuthorAvatarSx, chatBubbleIncoming } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { CopilotDrawerSubHeader } from './CopilotDrawerSubHeader'
 import { copilotHistoryKindLabel, type CopilotHistoryEntry, type CopilotHistoryMessage } from './copilotDrawerData'
@@ -41,7 +41,7 @@ function UserMessage({ message }: { message: CopilotHistoryMessage }) {
             px: 1.75,
             py: 1.25,
             borderRadius: 2,
-            bgcolor: surfaceMuted(theme),
+            bgcolor: chatBubbleIncoming(theme),
           })}
         >
           <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.55 }}>

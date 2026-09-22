@@ -48,6 +48,7 @@ import {
   buildQuoteSentNextUpLine,
   buildRequestInfoNextUpLine,
   buildRequestInfoSendConfirmation,
+  findNextAssignedSubmission,
   findNextBlockedSubmission,
   findNextReadySubmission,
   isAddNoteAction,
@@ -70,6 +71,11 @@ import {
 } from '@/pages/submissions/data/submissionCopilotInsights'
 import { AssignBlockedComposeCard } from '@/pages/submissions/components/AssignBlockedComposeCard'
 import { OptionComparisonCard } from '@/pages/submissions/components/OptionComparisonCard'
+import {
+  ScheduleProducerFollowUpCard,
+  buildProducerFollowUpNotesPrefill,
+  formatFollowUpDueLabel,
+} from '@/pages/submissions/components/ScheduleProducerFollowUpCard'
 import {
   buildAssignReceiptText,
   formatAssignTurnTime,
@@ -925,6 +931,197 @@ function SendConfirmationView({
   )
 }
 
+const OPEN_NEXT_ASSIGNED_ACTION = 'Open next assigned submission'
+const OPEN_NEXT_READY_QUEUE_ACTION = 'Open next Ready in queue'
+const SCHEDULE_FOLLOW_UP_ACTION = 'Schedule producer follow-up'
+const VIEW_SENT_EMAIL_ACTION = 'View sent email'
+
+function quotedFollowUpActions(opts: {
+  offerReadyInQueue: boolean
+  canViewSentEmail: boolean
+}) {
+  return [
+    opts.offerReadyInQueue ? OPEN_NEXT_READY_QUEUE_ACTION : OPEN_NEXT_ASSIGNED_ACTION,
+    SCHEDULE_FOLLOW_UP_ACTION,
+    ...(opts.canViewSentEmail ? [VIEW_SENT_EMAIL_ACTION] : []),
+  ]
+}
+
+function QuotedConfirmationView({
+  submission,
+  message,
+  nextUpLine,
+  queueSubmissions,
+  canViewSentEmail,
+  onOpenSubmission,
+  onViewSentEmail,
+  onRequestReveal,
+}: {
+  submission: SubmissionListRecord
+  message: string
+  nextUpLine?: string
+  queueSubmissions: SubmissionListRecord[]
+  canViewSentEmail: boolean
+  onOpenSubmission?: (submission: SubmissionListRecord) => void
+  onViewSentEmail?: () => void
+  onRequestReveal?: () => void
+}) {
+  const [threadTurns, setThreadTurns] = useState<AssignThreadTurn[]>([])
+  const [scheduleCompose, setScheduleCompose] = useState<{
+    openedAt: number
+    userTurnId: string
+  } | null>(null)
+  const [offerReadyInQueue, setOfferReadyInQueue] = useState(false)
+
+  useEffect(() => {
+    setThreadTurns([])
+    setScheduleCompose(null)
+    setOfferReadyInQueue(false)
+  }, [submission.id])
+
+  useLayoutEffect(() => {
+    if (!scheduleCompose) return
+    onRequestReveal?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reveal once per compose open
+  }, [scheduleCompose?.openedAt])
+
+  const notesPrefill = buildProducerFollowUpNotesPrefill(submission, message)
+  const scheduleOpen = Boolean(scheduleCompose)
+
+  const followUpActions = quotedFollowUpActions({
+    offerReadyInQueue,
+    canViewSentEmail,
+  })
+
+  const openSchedule = () => {
+    const at = Date.now()
+    const userTurnId = `schedule-user-${submission.id}-${at}`
+    setThreadTurns((current) => [
+      ...current,
+      { id: userTurnId, role: 'user', text: SCHEDULE_FOLLOW_UP_ACTION, at },
+    ])
+    setScheduleCompose({ openedAt: at, userTurnId })
+    onRequestReveal?.()
+  }
+
+  const cancelSchedule = () => {
+    if (!scheduleCompose) return
+    const userTurnId = scheduleCompose.userTurnId
+    setScheduleCompose(null)
+    setThreadTurns((current) => current.filter((turn) => turn.id !== userTurnId))
+  }
+
+  const completeSchedule = (task: {
+    name: string
+    assignee: string
+    due: Date
+  }) => {
+    const at = Date.now()
+    const receipt = `Task created: ${task.name}\nAssigned to ${task.assignee} · Due ${formatFollowUpDueLabel(task.due)}.`
+    setScheduleCompose(null)
+    setThreadTurns((current) => [
+      ...current,
+      { id: `schedule-receipt-${at}`, role: 'copilot', text: receipt, at },
+    ])
+    onRequestReveal?.()
+  }
+
+  const handleAction = (action: string) => {
+    if (action === SCHEDULE_FOLLOW_UP_ACTION) {
+      openSchedule()
+      return
+    }
+    if (action === VIEW_SENT_EMAIL_ACTION) {
+      onViewSentEmail?.()
+      return
+    }
+    if (action === OPEN_NEXT_ASSIGNED_ACTION) {
+      const next = findNextAssignedSubmission(queueSubmissions, submission.id)
+      if (next) {
+        onOpenSubmission?.(next)
+        return
+      }
+      const at = Date.now()
+      setOfferReadyInQueue(true)
+      setThreadTurns((current) => [
+        ...current,
+        { id: `assigned-user-${at}`, role: 'user', text: OPEN_NEXT_ASSIGNED_ACTION, at },
+        {
+          id: `assigned-none-${at}`,
+          role: 'copilot',
+          text: 'No more assigned submissions.',
+          at: at + 1,
+        },
+      ])
+      onRequestReveal?.()
+      return
+    }
+    if (action === OPEN_NEXT_READY_QUEUE_ACTION) {
+      const next = findNextReadySubmission(queueSubmissions, submission.id)
+      if (next) onOpenSubmission?.(next)
+    }
+  }
+
+  const scheduleSlot = scheduleCompose ? (
+    <StudioAssistantMessage timeLabel={formatAssignTurnTime(scheduleCompose.openedAt)} showCopy={false}>
+      <ScheduleProducerFollowUpCard
+        key={`schedule-${submission.id}-${scheduleCompose.openedAt}`}
+        submission={submission}
+        notesPrefill={notesPrefill}
+        onCancel={cancelSchedule}
+        onCreate={(task) => completeSchedule(task)}
+      />
+    </StudioAssistantMessage>
+  ) : null
+
+  const suggestedActions =
+    !scheduleOpen && followUpActions.length > 0 ? (
+      <Box>
+        <Divider sx={{ my: 2 }} />
+        <CopilotQuickActions actions={followUpActions} onAction={handleAction} />
+      </Box>
+    ) : null
+
+  return (
+    <>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
+        {submission.submissionNumber}
+      </Typography>
+      <Typography
+        variant="body2"
+        sx={{
+          ...bodySx,
+          lineHeight: 1.6,
+          mb: nextUpLine ? 1.5 : 2,
+          whiteSpace: 'pre-line',
+        }}
+      >
+        {renderSummaryText(message)}
+      </Typography>
+      {nextUpLine ? (
+        <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.55, mb: 2 }}>
+          {renderSummaryText(nextUpLine)}
+        </Typography>
+      ) : null}
+
+      <ThreadTurns
+        turns={threadTurns}
+        assignSlot={scheduleSlot}
+        suggestedActions={suggestedActions}
+        showEmptyActions={!scheduleOpen && threadTurns.length === 0}
+        emptyActions={
+          followUpActions.length > 0 ? (
+            <>
+              <Divider sx={{ my: 2 }} />
+              <CopilotQuickActions actions={followUpActions} onAction={handleAction} />
+            </>
+          ) : null
+        }
+      />
+    </>
+  )
+}
+
 function ThreadTurns({
   turns,
   assignSlot = null,
@@ -1508,11 +1705,10 @@ export function SubmissionsCopilotPanel({
             recipient,
           ),
           nextUpLine: buildQuoteSentNextUpLine(nextReady),
-          followUpActions: [
-            nextReady ? 'Open next Ready submission' : 'Show Ready only',
-            'Schedule producer follow-up',
-            'View sent email',
-          ],
+          followUpActions: quotedFollowUpActions({
+            offerReadyInQueue: false,
+            canViewSentEmail: true,
+          }),
           sentEmail: {
             to: recipient,
             subject: draft.subject,
@@ -1634,7 +1830,7 @@ export function SubmissionsCopilotPanel({
       onShowBlockedOnly?.()
       return
     }
-    if (action === 'View sent email') {
+    if (action === 'View sent email' || action === VIEW_SENT_EMAIL_ACTION) {
       if (activeConfirmation?.sentEmail) {
         openSentQuoteEmail(activeConfirmation.sentEmail)
         return
@@ -1971,8 +2167,8 @@ export function SubmissionsCopilotPanel({
             onAction={handleWorkspaceAction}
           />
         ) : focusedSubmission.status === 'Quoted' ? (
-          <SendConfirmationView
-            submissionNumber={focusedSubmission.submissionNumber}
+          <QuotedConfirmationView
+            submission={focusedSubmission}
             message={
               activeConfirmation?.message ??
               buildQuoteSentMessageFromPackage(focusedSubmission)
@@ -1981,19 +2177,19 @@ export function SubmissionsCopilotPanel({
               activeConfirmation?.nextUpLine ??
               buildQuoteSentNextUpLine(confirmationNextReady)
             }
-            followUpActions={
-              activeConfirmation?.followUpActions?.length
-                ? activeConfirmation.followUpActions
-                : [
-                    confirmationNextReady ? 'Open next Ready submission' : 'Show Ready only',
-                    'Schedule producer follow-up',
-                    ...(activeConfirmation?.sentEmail || focusedSubmission.quotePackageSent
-                      ? ['View sent email']
-                      : []),
-                  ]
-            }
-            onAction={handleQuoteConfirmationAction}
-            onSeedComposer={seedComposer}
+            queueSubmissions={queueSubmissions}
+            canViewSentEmail={Boolean(
+              activeConfirmation?.sentEmail || focusedSubmission.quotePackageSent,
+            )}
+            onOpenSubmission={(next) => {
+              if (next.status === 'Blocked') {
+                onOpenNextBlockedSubmission?.(next)
+              } else {
+                onOpenNextReadySubmission?.(next)
+              }
+            }}
+            onViewSentEmail={() => handleQuoteConfirmationAction(VIEW_SENT_EMAIL_ACTION)}
+            onRequestReveal={requestChatReveal}
           />
         ) : focusedSubmission.status === 'Declined' ? (
           <SendConfirmationView
