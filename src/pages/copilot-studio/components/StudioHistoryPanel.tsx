@@ -139,7 +139,7 @@ export function StudioHistoryPanel({
                   // Panel is grey[100] (#F2F2F2); A200 (#EEEEEE) is a lighter step than grey[200].
                   bgcolor: isActive
                     ? isDarkMode(theme)
-                      ? theme.figmaPalette.grey[700]
+                      ? 'rgba(255, 255, 255, 0.28)'
                       : theme.figmaPalette.grey.A200
                     : 'transparent',
                   cursor: 'pointer',
@@ -150,7 +150,7 @@ export function StudioHistoryPanel({
                   '&:hover': {
                     bgcolor: isActive
                       ? isDarkMode(theme)
-                        ? theme.figmaPalette.grey[700]
+                        ? 'rgba(255, 255, 255, 0.28)'
                         : theme.figmaPalette.grey.A200
                       : surfaceMuted(theme),
                   },

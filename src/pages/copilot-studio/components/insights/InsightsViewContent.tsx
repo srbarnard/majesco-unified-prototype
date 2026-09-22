@@ -7,26 +7,36 @@ import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
+import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { PulseChartControls } from '@/app/pages/home/PulseToolbar'
+import {
+  getPulsePaletteColors,
+  usePulsePreferences,
+} from '@/app/pages/home/pulseChartPalettes'
+import type { PulseRange } from '@/app/data/pulseMock'
 import { StatusChip } from '@/design-system/components'
 import { AnalyticsAreaLineChart } from '@/design-system/components/analytics/charts/AnalyticsAreaLineChart'
 import { AnalyticsCard } from '@/design-system/components/analytics/AnalyticsCard'
-import { AnalyticsMetricHeader } from '@/design-system/components/analytics/AnalyticsMetricHeader'
 import { AnalyticsSectionTitle } from '@/design-system/components/analytics/AnalyticsSectionTitle'
 import { AnalyticsStatBox } from '@/design-system/components/analytics/AnalyticsStatBox'
 import {
   ANALYTICS_GUTTER,
   analyticsBodySx,
   analyticsFilterInputSx,
+  analyticsHeadingSx,
   analyticsMenuItemSx,
   type AnalyticsKpiMetric,
+  type AnalyticsTimeSeriesPoint,
 } from '@/design-system/components/analytics/analyticsStyles'
+import { tableActionIconButtonSx } from '@/design-system/components/Table/DataTable'
 import { sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { InsightsDataTable, InsightsTableLink } from '@/pages/copilot-studio/components/insights/InsightsDataTable'
 import { InsightsLabeledBarChart } from '@/pages/copilot-studio/components/insights/InsightsLabeledBarChart'
 import { InsightsPageHeader } from '@/pages/copilot-studio/components/insights/InsightsPageHeader'
 import {
+  sliceStudioInsightsSeriesByRange,
   studioAgentsKpis,
   studioAgentsTrend,
   studioAgentsUsers,
@@ -43,7 +53,6 @@ import {
   type StudioInsightsView,
 } from '@/pages/copilot-studio/data/studioInsightsData'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { figmaPalette } from '@/design-system/tokens/figma-palette'
 import { useTheme } from '@mui/material/styles'
 
 function KpiGrid({ metrics, columns = 3 }: { metrics: AnalyticsKpiMetric[]; columns?: 3 | 4 | 6 }) {
@@ -60,10 +69,141 @@ function KpiGrid({ metrics, columns = 3 }: { metrics: AnalyticsKpiMetric[]; colu
   )
 }
 
-function OverviewView() {
-  const theme = useTheme()
-  const barColor = theme.figmaPalette.blue[700]
+function InsightsChartCardHeader({
+  title,
+  range,
+  onRangeChange,
+  paletteId,
+  onPaletteChange,
+}: {
+  title: string
+  range: PulseRange
+  onRangeChange: (range: PulseRange) => void
+  paletteId: ReturnType<typeof usePulsePreferences>['paletteId']
+  onPaletteChange: ReturnType<typeof usePulsePreferences>['setPaletteId']
+}) {
+  return (
+    <Stack
+      direction={{ xs: 'column', sm: 'row' }}
+      alignItems={{ xs: 'flex-start', sm: 'center' }}
+      justifyContent="space-between"
+      spacing={1}
+      sx={{ width: '100%' }}
+    >
+      <Typography variant="subtitle2" sx={{ ...analyticsHeadingSx, fontSize: '0.9375rem' }}>
+        {title}
+      </Typography>
+      <Box sx={{ minWidth: 0, width: { xs: '100%', sm: 'auto' } }}>
+        <PulseChartControls
+          range={range}
+          onRangeChange={onRangeChange}
+          paletteId={paletteId}
+          onPaletteChange={onPaletteChange}
+        />
+      </Box>
+    </Stack>
+  )
+}
 
+function InsightsDownloadCardHeader({ title, downloadLabel }: { title: string; downloadLabel: string }) {
+  return (
+    <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ width: '100%' }}>
+      <Typography variant="subtitle2" sx={{ ...analyticsHeadingSx, fontSize: '0.9375rem' }}>
+        {title}
+      </Typography>
+      <Tooltip title="Download">
+        <IconButton size="small" aria-label={downloadLabel} sx={tableActionIconButtonSx}>
+          <FileDownloadOutlinedIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    </Stack>
+  )
+}
+
+function InsightsBarTrendCard({
+  title,
+  data,
+  legendLabel,
+}: {
+  title: string
+  data: AnalyticsTimeSeriesPoint[]
+  legendLabel?: string
+}) {
+  const theme = useTheme()
+  const { palette, paletteId, setPaletteId, range, setRange } = usePulsePreferences()
+  const colors = getPulsePaletteColors(palette, theme.palette.mode)
+  const barColor = colors[0]
+  const chartData = useMemo(() => sliceStudioInsightsSeriesByRange(data, range), [data, range])
+  const chartKey = `insights-bar-${title}-${range}-${barColor}-${theme.palette.mode}`
+
+  return (
+    <AnalyticsCard
+      header={
+        <InsightsChartCardHeader
+          title={title}
+          range={range}
+          onRangeChange={setRange}
+          paletteId={paletteId}
+          onPaletteChange={setPaletteId}
+        />
+      }
+      contentSx={{ pt: 0 }}
+    >
+      <InsightsLabeledBarChart
+        data={chartData}
+        barColor={barColor}
+        legendLabel={legendLabel}
+        chartKey={chartKey}
+      />
+    </AnalyticsCard>
+  )
+}
+
+function InsightsAreaTrendCard({
+  title,
+  data,
+  legendLabel,
+  comingSoon,
+}: {
+  title: string
+  data: AnalyticsTimeSeriesPoint[]
+  legendLabel: string
+  comingSoon?: boolean
+}) {
+  const theme = useTheme()
+  const { palette, paletteId, setPaletteId, range, setRange } = usePulsePreferences()
+  const colors = getPulsePaletteColors(palette, theme.palette.mode)
+  const lineColor = colors[0]
+  const chartData = useMemo(() => sliceStudioInsightsSeriesByRange(data, range), [data, range])
+  const chartKey = `insights-area-${title}-${range}-${lineColor}-${theme.palette.mode}`
+
+  return (
+    <AnalyticsCard
+      header={
+        <InsightsChartCardHeader
+          title={comingSoon ? `${title} (coming soon)` : title}
+          range={range}
+          onRangeChange={setRange}
+          paletteId={paletteId}
+          onPaletteChange={setPaletteId}
+        />
+      }
+      contentSx={{ pt: 0 }}
+    >
+      <AnalyticsAreaLineChart data={chartData} height={280} color={lineColor} chartKey={chartKey} />
+      <Stack direction="row" justifyContent="center" sx={{ mt: 1 }}>
+        <Stack direction="row" spacing={0.75} alignItems="center">
+          <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: lineColor }} />
+          <Typography variant="caption" color="text.secondary" sx={analyticsBodySx}>
+            {legendLabel}
+          </Typography>
+        </Stack>
+      </Stack>
+    </AnalyticsCard>
+  )
+}
+
+function OverviewView() {
   return (
     <Stack spacing={ANALYTICS_GUTTER}>
       <InsightsPageHeader
@@ -78,34 +218,15 @@ function OverviewView() {
         />
         <Grid container spacing={ANALYTICS_GUTTER}>
           <Grid size={{ xs: 12, lg: 6 }}>
-            <AnalyticsCard title="Interactions" contentSx={{ pt: 0 }}>
-              <InsightsLabeledBarChart data={studioOverviewInteractionTrend} barColor={barColor} />
-            </AnalyticsCard>
+            <InsightsBarTrendCard title="Interactions" data={studioOverviewInteractionTrend} />
           </Grid>
           <Grid size={{ xs: 12, lg: 6 }}>
-            <AnalyticsCard
-              header={
-                <Stack spacing={0.25}>
-                  <Typography variant="subtitle2" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600 }}>
-                    Credit usage (coming soon)
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
-                    Daily credit consumption across agents and assistants
-                  </Typography>
-                </Stack>
-              }
-              contentSx={{ pt: 0 }}
-            >
-              <AnalyticsAreaLineChart data={studioOverviewCreditTrend} height={280} />
-              <Stack direction="row" justifyContent="center" sx={{ mt: 1 }}>
-                <Stack direction="row" spacing={0.75} alignItems="center">
-                  <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: figmaPalette.teal[500] }} />
-                  <Typography variant="caption" color="text.secondary" sx={analyticsBodySx}>
-                    Credits used
-                  </Typography>
-                </Stack>
-              </Stack>
-            </AnalyticsCard>
+            <InsightsAreaTrendCard
+              title="Credit usage"
+              data={studioOverviewCreditTrend}
+              legendLabel="Credits used"
+              comingSoon
+            />
           </Grid>
         </Grid>
       </Stack>
@@ -114,10 +235,6 @@ function OverviewView() {
 }
 
 function AssistantsView() {
-  const theme = useTheme()
-  const barColor = theme.figmaPalette.blue[700]
-  const interactionMetric = studioAssistantsKpis[0]
-
   return (
     <Stack spacing={ANALYTICS_GUTTER}>
       <InsightsPageHeader
@@ -133,35 +250,13 @@ function AssistantsView() {
         <KpiGrid metrics={studioAssistantsKpis} />
       </Stack>
 
-      <AnalyticsCard
-        header={interactionMetric ? <AnalyticsMetricHeader metric={{ ...interactionMetric, title: `${interactionMetric.value} Assistant interactions` }} compact /> : undefined}
-        contentSx={{ pt: 0 }}
-      >
-        <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mb: 1.5 }}>
-          Chat messages, summarizations, and AI answers in the selected period
-        </Typography>
-        <InsightsLabeledBarChart data={studioAssistantsTrend} barColor={barColor} />
-      </AnalyticsCard>
+      <InsightsBarTrendCard title="Assistant interactions" data={studioAssistantsTrend} />
 
       <Stack spacing={1.5}>
         <AnalyticsSectionTitle title="Who are the most engaged users?" />
         <AnalyticsCard
           contentSx={{ pt: 0, px: 0, pb: 0 }}
-          header={
-            <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ px: 2.5, pt: 2, pb: 1 }}>
-              <Stack spacing={0.25}>
-                <Typography variant="subtitle2" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600 }}>
-                  Top assistant users
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
-                  in the selected time period
-                </Typography>
-              </Stack>
-              <IconButton size="small" aria-label="Download assistant users">
-                <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Stack>
-          }
+          header={<InsightsDownloadCardHeader title="Top assistant users" downloadLabel="Download assistant users" />}
         >
           <InsightsDataTable
             rows={studioAssistantsUsers}
@@ -182,10 +277,6 @@ function AssistantsView() {
 }
 
 function AgentsView() {
-  const theme = useTheme()
-  const barColor = theme.figmaPalette.green[700]
-  const interactionMetric = studioAgentsKpis[0]
-
   return (
     <Stack spacing={ANALYTICS_GUTTER}>
       <InsightsPageHeader title="Agents" subtitle="Track agent usage and execution activity." />
@@ -198,35 +289,13 @@ function AgentsView() {
         <KpiGrid metrics={studioAgentsKpis} />
       </Stack>
 
-      <AnalyticsCard
-        header={interactionMetric ? <AnalyticsMetricHeader metric={{ ...interactionMetric, title: `${interactionMetric.value} Agent interactions` }} compact /> : undefined}
-        contentSx={{ pt: 0 }}
-      >
-        <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mb: 1.5 }}>
-          Agent interactions in the selected period
-        </Typography>
-        <InsightsLabeledBarChart data={studioAgentsTrend} barColor={barColor} />
-      </AnalyticsCard>
+      <InsightsBarTrendCard title="Agent interactions" data={studioAgentsTrend} />
 
       <Stack spacing={1.5}>
         <AnalyticsSectionTitle title="Who are the most engaged users?" />
         <AnalyticsCard
           contentSx={{ pt: 0, px: 0, pb: 0 }}
-          header={
-            <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ px: 2.5, pt: 2, pb: 1 }}>
-              <Stack spacing={0.25}>
-                <Typography variant="subtitle2" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600 }}>
-                  Top agent users
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
-                  in the selected time period
-                </Typography>
-              </Stack>
-              <IconButton size="small" aria-label="Download agent users">
-                <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Stack>
-          }
+          header={<InsightsDownloadCardHeader title="Top agent users" downloadLabel="Download agent users" />}
         >
           <InsightsDataTable
             rows={studioAgentsUsers}
@@ -345,30 +414,11 @@ function McpView() {
 
       {activeTab === 'INVOCATIONS' ? (
         <>
-          <AnalyticsCard title="Invocations per day" contentSx={{ pt: 0 }}>
-            <AnalyticsAreaLineChart data={studioMcpInvocationTrend} height={280} />
-            <Stack direction="row" justifyContent="center" sx={{ mt: 1 }}>
-              <Stack direction="row" spacing={0.75} alignItems="center">
-                <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: figmaPalette.teal[500] }} />
-                <Typography variant="caption" color="text.secondary" sx={analyticsBodySx}>
-                  Calls
-                </Typography>
-              </Stack>
-            </Stack>
-          </AnalyticsCard>
+          <InsightsAreaTrendCard title="Invocations per day" data={studioMcpInvocationTrend} legendLabel="Calls" />
 
           <AnalyticsCard
             contentSx={{ pt: 0, px: 0, pb: 0 }}
-            header={
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2.5, pt: 2, pb: 1 }}>
-                <Typography variant="subtitle2" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600 }}>
-                  Invocation details
-                </Typography>
-                <IconButton size="small" aria-label="Download MCP invocations">
-                  <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </Stack>
-            }
+            header={<InsightsDownloadCardHeader title="Invocation details" downloadLabel="Download MCP invocations" />}
           >
             <InsightsDataTable
               rows={studioMcpInvocations}

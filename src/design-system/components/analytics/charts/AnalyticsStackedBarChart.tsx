@@ -18,6 +18,7 @@ import {
   type AnalyticsStackedSeries,
 } from '@/design-system/components/analytics/analyticsStyles'
 import { useTheme } from '@mui/material/styles'
+import { isDarkMode } from '@/design-system/theme/themeSurfaces'
 
 type AnalyticsStackedBarChartProps = {
   data: AnalyticsStackedPoint[]
@@ -47,7 +48,9 @@ function StackedBarTooltip({
         borderRadius: 1,
         bgcolor: 'background.paper',
         border: `1px solid ${theme.palette.divider}`,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        boxShadow: isDarkMode(theme)
+          ? '0 4px 16px rgba(0,0,0,0.45)'
+          : '0 4px 12px rgba(0,0,0,0.08)',
       })}
     >
       <Typography variant="caption" color="text.secondary" sx={analyticsBodySx} display="block">
@@ -69,6 +72,7 @@ export function AnalyticsStackedBarChart({
   yAxisFormatter = (value) => `$${Math.round(value / 1000)}K`,
 }: AnalyticsStackedBarChartProps) {
   const theme = useTheme()
+  const dark = isDarkMode(theme)
   const axisStyle = getAnalyticsChartAxisStyle(theme)
   const gridStroke = getAnalyticsChartGridStroke(theme)
 
@@ -104,6 +108,7 @@ export function AnalyticsStackedBarChart({
               tickFormatter={yAxisFormatter}
             />
             <Tooltip
+              cursor={{ fill: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}
               content={({ active, payload, label }) => (
                 <StackedBarTooltip
                   active={active}

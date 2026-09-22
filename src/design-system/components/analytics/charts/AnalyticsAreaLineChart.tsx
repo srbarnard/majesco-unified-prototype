@@ -17,12 +17,16 @@ import {
 } from '@/design-system/components/analytics/analyticsStyles'
 import { figmaPalette } from '@/design-system/tokens/figma-palette'
 import { useTheme } from '@mui/material/styles'
+import { isDarkMode } from '@/design-system/theme/themeSurfaces'
 
 type AnalyticsAreaLineChartProps = {
   data: AnalyticsTimeSeriesPoint[]
   yAxisLabel?: string
   valueFormatter?: (value: number) => string
   height?: number
+  /** Series stroke/fill color — defaults to teal; pass Pulse palette color on details-style charts. */
+  color?: string
+  chartKey?: string
 }
 
 function defaultValueFormatter(value: number) {
@@ -50,7 +54,9 @@ function ChartTooltipContent({
         borderRadius: 1,
         bgcolor: 'background.paper',
         border: `1px solid ${theme.palette.divider}`,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        boxShadow: isDarkMode(theme)
+          ? '0 4px 16px rgba(0,0,0,0.45)'
+          : '0 4px 12px rgba(0,0,0,0.08)',
       })}
     >
       <Typography variant="caption" color="text.secondary" sx={analyticsBodySx} display="block">
@@ -68,21 +74,27 @@ export function AnalyticsAreaLineChart({
   yAxisLabel,
   valueFormatter = defaultValueFormatter,
   height = 220,
+  color,
+  chartKey,
 }: AnalyticsAreaLineChartProps) {
   const theme = useTheme()
+  const dark = isDarkMode(theme)
   const axisStyle = getAnalyticsChartAxisStyle(theme)
   const gridStroke = getAnalyticsChartGridStroke(theme)
-  const lineColor = figmaPalette.teal[500]
-  const fillColor = theme.palette.mode === 'dark' ? figmaPalette.teal[900] : figmaPalette.teal[100]
+  const lineColor = color ?? figmaPalette.teal[500]
+  const fillTopOpacity = dark ? 0.42 : 0.35
+  const fillBottomOpacity = dark ? 0.08 : 0.04
+  const gradientId = `analyticsAreaFill-${(chartKey ?? lineColor).replace(/[^a-zA-Z0-9]/g, '')}`
+  const remountKey = chartKey ?? `area-${lineColor}-${theme.palette.mode}`
 
   return (
     <Box sx={{ width: '100%', height, minHeight: height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 12, right: 12, left: 4, bottom: 4 }}>
+        <AreaChart key={remountKey} data={data} margin={{ top: 12, right: 12, left: 4, bottom: 4 }}>
           <defs>
-            <linearGradient id="analyticsAreaFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={fillColor} stopOpacity={0.85} />
-              <stop offset="100%" stopColor={fillColor} stopOpacity={0.15} />
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={lineColor} stopOpacity={fillTopOpacity} />
+              <stop offset="100%" stopColor={lineColor} stopOpacity={fillBottomOpacity} />
             </linearGradient>
           </defs>
           <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
@@ -112,7 +124,7 @@ export function AnalyticsAreaLineChart({
             }
           />
           <Tooltip
-            cursor={{ stroke: figmaPalette.teal[300], strokeWidth: 1 }}
+            cursor={{ stroke: lineColor, strokeWidth: 1, strokeOpacity: dark ? 0.5 : 0.35 }}
             content={({ active, payload, label }) => (
               <ChartTooltipContent
                 active={active}
@@ -127,8 +139,8 @@ export function AnalyticsAreaLineChart({
             dataKey="value"
             stroke={lineColor}
             strokeWidth={2}
-            fill="url(#analyticsAreaFill)"
-            dot={{ r: 3, fill: lineColor, stroke: '#fff', strokeWidth: 1.5 }}
+            fill={`url(#${gradientId})`}
+            dot={{ r: 3, fill: lineColor, stroke: theme.palette.background.paper, strokeWidth: 1.5 }}
             activeDot={{ r: 4 }}
           />
         </AreaChart>

@@ -1,7 +1,6 @@
 import BoltOutlinedIcon from '@mui/icons-material/BoltOutlined'
 import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined'
 import PsychologyOutlinedIcon from '@mui/icons-material/PsychologyOutlined'
-import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
 import Grid from '@mui/material/Grid2'
 import Stack from '@mui/material/Stack'
@@ -16,8 +15,7 @@ import {
   type StudioPrompt,
   type StudioPromptCategory,
 } from '@/pages/copilot-studio/data/mockCopilotStudio'
-import { studioCardSx } from '@/pages/copilot-studio/data/studioCardStyles'
-import { accentSubtleHover } from '@/design-system/theme/themeSurfaces'
+import { surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 
 type PromptsTabProps = {
@@ -85,37 +83,38 @@ export function PromptsTab({ selectedPromptId, onPromptSelect }: PromptsTabProps
       onSelectorChange={handleTypeChange}
     >
       <Stack spacing={2.5}>
-        <Box
-          sx={(theme) => ({
-            ...studioCardSx(theme),
-            p: 2,
-          })}
+        <Stack
+          direction="row"
+          spacing={1}
+          flexWrap="wrap"
+          useFlexGap
+          aria-label="Prompt categories"
+          sx={{ width: '100%', minWidth: 0 }}
         >
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {studioPromptCategories.map((category) => {
-              const selected = categoryFilter === category
-              return (
-                <Chip
-                  key={category}
-                  label={category}
-                  onClick={() => setCategoryFilter(category)}
-                  sx={{
-                    fontFamily: figmaFontFamilyStack.body,
-                    fontWeight: selected ? 600 : 500,
-                    fontSize: '0.8125rem',
-                    bgcolor: selected ? 'primary.main' : 'background.paper',
-                    color: selected ? 'primary.contrastText' : 'text.secondary',
-                    border: '1px solid',
-                    borderColor: selected ? 'primary.main' : 'divider',
-                    '&:hover': {
-                      bgcolor: selected ? 'primary.main' : (theme) => accentSubtleHover(theme),
-                    },
-                  }}
-                />
-              )
-            })}
-          </Stack>
-        </Box>
+          {studioPromptCategories.map((category) => {
+            const selected = categoryFilter === category
+            return (
+              <Chip
+                key={category}
+                label={category}
+                onClick={() => setCategoryFilter(category)}
+                sx={{
+                  fontFamily: figmaFontFamilyStack.body,
+                  fontWeight: selected ? 600 : 500,
+                  fontSize: '0.8125rem',
+                  bgcolor: selected ? 'primary.main' : (theme) => surfaceMuted(theme),
+                  color: selected ? 'primary.contrastText' : 'text.secondary',
+                  border: '1px solid',
+                  borderColor: selected ? 'primary.main' : (theme) => surfaceMuted(theme),
+                  '&:hover': {
+                    bgcolor: selected ? 'primary.dark' : (theme) => surfaceSubtle(theme),
+                    borderColor: selected ? 'primary.dark' : (theme) => surfaceSubtle(theme),
+                  },
+                }}
+              />
+            )
+          })}
+        </Stack>
 
         <Grid container spacing={2.5}>
           {filteredPrompts.map((prompt) => (

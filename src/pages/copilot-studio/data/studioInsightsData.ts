@@ -1,4 +1,5 @@
 import type { AnalyticsKpiMetric, AnalyticsTimeSeriesPoint } from '@/design-system/components/analytics/analyticsStyles'
+import type { PulseRange } from '@/app/data/pulseMock'
 
 export type StudioInsightsView = 'overview' | 'assistants' | 'agents' | 'email' | 'mcp'
 
@@ -44,27 +45,47 @@ export type StudioInsightsMcpRow = {
 
 export const studioInsightsLastUpdated = 'Jun 30, 2026, 4:22 PM'
 
-export const studioOverviewInteractionTrend: AnalyticsTimeSeriesPoint[] = [
-  { label: 'Jun 23', value: 45 },
-  { label: 'Jun 24', value: 39 },
-  { label: 'Jun 25', value: 82 },
-  { label: 'Jun 26', value: 85 },
-  { label: 'Jun 27', value: 18 },
-  { label: 'Jun 28', value: 16 },
-  { label: 'Jun 29', value: 166 },
-  { label: 'Jun 30', value: 135 },
-]
+/** Point counts aligned with details-screen PulseChartControls ranges. */
+const INSIGHTS_RANGE_POINT_COUNTS: Record<PulseRange, number> = {
+  '30D': 8,
+  '90D': 14,
+  '6M': 24,
+}
 
-export const studioOverviewCreditTrend: AnalyticsTimeSeriesPoint[] = [
-  { label: 'Jun 23', value: 0 },
-  { label: 'Jun 24', value: 0 },
-  { label: 'Jun 25', value: 0 },
-  { label: 'Jun 26', value: 0 },
-  { label: 'Jun 27', value: 0 },
-  { label: 'Jun 28', value: 0 },
-  { label: 'Jun 29', value: 0 },
-  { label: 'Jun 30', value: 0 },
-]
+export function sliceStudioInsightsSeriesByRange<T>(data: T[], range: PulseRange): T[] {
+  const count = Math.min(INSIGHTS_RANGE_POINT_COUNTS[range], data.length)
+  return data.slice(-count)
+}
+
+function buildDailyTrend(values: number[], endLabel = 'Jun 30'): AnalyticsTimeSeriesPoint[] {
+  const monthMap: Record<string, number> = {
+    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+    Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+  }
+  const [mon, day] = endLabel.split(' ')
+  const endDate = new Date(2026, monthMap[mon] ?? 5, Number(day) || 30)
+
+  return values.map((value, index) => {
+    const date = new Date(endDate)
+    date.setDate(endDate.getDate() - (values.length - 1 - index))
+    const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    return { label, value }
+  })
+}
+
+const overviewInteractionValues = [
+  22, 28, 31, 19, 35, 41, 38, 44, 29, 33, 48, 52, 36, 40, 45, 39, 55, 61, 42, 45, 39, 82, 85, 18, 16, 166, 135,
+].slice(-24)
+
+const agentsInteractionValues = [
+  12, 15, 18, 11, 20, 22, 19, 24, 16, 18, 26, 28, 21, 23, 25, 20, 30, 34, 22, 41, 9, 23, 34, 97, 54, 38, 21,
+].slice(-24)
+
+export const studioOverviewInteractionTrend: AnalyticsTimeSeriesPoint[] = buildDailyTrend(overviewInteractionValues)
+
+export const studioOverviewCreditTrend: AnalyticsTimeSeriesPoint[] = buildDailyTrend(
+  Array.from({ length: 24 }, () => 0),
+)
 
 export const studioAssistantsKpis: AnalyticsKpiMetric[] = [
   {
@@ -126,16 +147,7 @@ export const studioAgentsKpis: AnalyticsKpiMetric[] = [
   },
 ]
 
-export const studioAgentsTrend: AnalyticsTimeSeriesPoint[] = [
-  { label: 'Jun 23', value: 41 },
-  { label: 'Jun 24', value: 9 },
-  { label: 'Jun 25', value: 23 },
-  { label: 'Jun 26', value: 34 },
-  { label: 'Jun 27', value: 97 },
-  { label: 'Jun 28', value: 54 },
-  { label: 'Jun 29', value: 38 },
-  { label: 'Jun 30', value: 21 },
-]
+export const studioAgentsTrend: AnalyticsTimeSeriesPoint[] = buildDailyTrend(agentsInteractionValues)
 
 export const studioAgentsUsers: StudioInsightsUserRow[] = [
   { id: 'a1', user: 'Default Administrator', interactions: 48, runs: 62, agentsUsed: 4, avgRunsPerInteraction: 1.3 },
@@ -192,16 +204,11 @@ export const studioMcpKpis: AnalyticsKpiMetric[] = [
   { id: 'mcp-tracked', title: 'MCPs Tracked', value: '7', trend: { direction: 'neutral', label: 'in the selected time period' }, tone: 'neutral' },
 ]
 
-export const studioMcpInvocationTrend: AnalyticsTimeSeriesPoint[] = [
-  { label: 'Jun 23', value: 0 },
-  { label: 'Jun 24', value: 0 },
-  { label: 'Jun 25', value: 6 },
-  { label: 'Jun 26', value: 0 },
-  { label: 'Jun 27', value: 0 },
-  { label: 'Jun 28', value: 0 },
-  { label: 'Jun 29', value: 0 },
-  { label: 'Jun 30', value: 2 },
-]
+const mcpInvocationValues = [
+  0, 1, 0, 2, 0, 0, 3, 1, 0, 0, 2, 0, 1, 0, 0, 4, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 0, 2,
+].slice(-24)
+
+export const studioMcpInvocationTrend: AnalyticsTimeSeriesPoint[] = buildDailyTrend(mcpInvocationValues)
 
 export const studioMcpInvocations: StudioInsightsMcpRow[] = [
   {

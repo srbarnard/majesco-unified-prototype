@@ -47,7 +47,9 @@ export function accentSubtleHover(theme: Theme) {
 
 /** Incoming note/chat bubble — Majesco secondary (teal) wash. */
 export function chatBubbleIncoming(theme: Theme) {
-  return isDarkMode(theme) ? theme.figmaPalette.teal[700] : theme.figmaPalette.teal[50]
+  return isDarkMode(theme)
+    ? getFigmaColors('dark').secondary.selected
+    : theme.figmaPalette.teal[50]
 }
 
 /** Outgoing note/chat bubble — Majesco primary (blue) wash. */

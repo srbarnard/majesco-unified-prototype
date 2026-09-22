@@ -34,21 +34,8 @@ export function StudioBrowseLayout({
         flexDirection: 'column',
         bgcolor: 'background.paper',
         overflow: 'hidden',
-        position: 'relative',
       }}
     >
-      <Box
-        aria-hidden
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          opacity: 0.35,
-          backgroundImage:
-            'radial-gradient(circle at 20% 30%, rgba(13,148,136,0.12) 0%, transparent 45%), radial-gradient(circle at 80% 70%, rgba(37,99,235,0.1) 0%, transparent 40%)',
-        }}
-      />
-
       <Box
         sx={{
           flex: 1,
@@ -56,7 +43,6 @@ export function StudioBrowseLayout({
           overflowY: 'auto',
           px: contentPx,
           py: 2,
-          position: 'relative',
         }}
       >
         {children}
@@ -68,7 +54,6 @@ export function StudioBrowseLayout({
           px: contentPx,
           pb: 2,
           pt: 1,
-          position: 'relative',
           bgcolor: 'background.paper',
         }}
       >

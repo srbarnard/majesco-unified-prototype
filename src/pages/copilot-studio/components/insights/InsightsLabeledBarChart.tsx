@@ -5,7 +5,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  LabelList,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -18,12 +17,14 @@ import {
   type AnalyticsTimeSeriesPoint,
 } from '@/design-system/components/analytics/analyticsStyles'
 import { useTheme } from '@mui/material/styles'
+import { isDarkMode } from '@/design-system/theme/themeSurfaces'
 
 type InsightsLabeledBarChartProps = {
   data: AnalyticsTimeSeriesPoint[]
   barColor: string
   height?: number
   legendLabel?: string
+  chartKey?: string
 }
 
 function ChartTooltip({
@@ -45,7 +46,9 @@ function ChartTooltip({
         borderRadius: 1,
         bgcolor: 'background.paper',
         border: `1px solid ${theme.palette.divider}`,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        boxShadow: isDarkMode(theme)
+          ? '0 4px 16px rgba(0,0,0,0.45)'
+          : '0 4px 12px rgba(0,0,0,0.08)',
       })}
     >
       <Typography variant="caption" color="text.secondary" sx={analyticsBodySx} display="block">
@@ -63,20 +66,24 @@ export function InsightsLabeledBarChart({
   barColor,
   height = 280,
   legendLabel = 'Interactions',
+  chartKey,
 }: InsightsLabeledBarChartProps) {
   const theme = useTheme()
+  const dark = isDarkMode(theme)
   const axisStyle = getAnalyticsChartAxisStyle(theme)
   const gridStroke = getAnalyticsChartGridStroke(theme)
+  const remountKey = chartKey ?? `insights-bar-${barColor}-${theme.palette.mode}`
 
   return (
     <Box sx={{ width: '100%' }}>
       <Box sx={{ width: '100%', height, minHeight: height }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 16, right: 8, left: 0, bottom: 4 }}>
+          <BarChart key={remountKey} data={data} margin={{ top: 16, right: 8, left: 0, bottom: 4 }}>
             <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="label" tick={axisStyle} tickLine={false} axisLine={false} />
             <YAxis tick={axisStyle} tickLine={false} axisLine={false} width={36} />
             <Tooltip
+              cursor={{ fill: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}
               content={({ active, payload, label }) => (
                 <ChartTooltip
                   active={active}
@@ -85,9 +92,7 @@ export function InsightsLabeledBarChart({
                 />
               )}
             />
-            <Bar dataKey="value" fill={barColor} radius={[4, 4, 0, 0]} maxBarSize={56}>
-              <LabelList dataKey="value" position="insideTop" fill="#fff" fontSize={11} fontWeight={600} />
-            </Bar>
+            <Bar dataKey="value" fill={barColor} radius={[4, 4, 0, 0]} maxBarSize={56} />
           </BarChart>
         </ResponsiveContainer>
       </Box>

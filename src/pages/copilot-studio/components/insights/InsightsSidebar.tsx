@@ -7,13 +7,17 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useState } from 'react'
 import type { StudioInsightsView } from '@/pages/copilot-studio/data/studioInsightsData'
-import { accentSubtle, accentSubtleHover, surfacePanel, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
+import { isDarkMode, surfaceMuted, surfacePanel, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 
 type InsightsSidebarProps = {
   activeView: StudioInsightsView
   onViewChange: (view: StudioInsightsView) => void
+}
+
+function navItemSelectedBg(theme: Parameters<typeof isDarkMode>[0]) {
+  return isDarkMode(theme) ? 'rgba(255, 255, 255, 0.28)' : theme.figmaPalette.grey.A200
 }
 
 function NavItem({
@@ -34,7 +38,7 @@ function NavItem({
       component="button"
       type="button"
       onClick={onClick}
-      sx={{
+      sx={(theme) => ({
         width: '100%',
         border: 'none',
         cursor: 'pointer',
@@ -47,15 +51,15 @@ function NavItem({
         pr: 1.5,
         py: 1,
         borderRadius: 1.5,
-        bgcolor: active ? (theme) => accentSubtle(theme) : 'transparent',
-        color: active ? 'primary.main' : 'text.primary',
+        bgcolor: active ? navItemSelectedBg(theme) : 'transparent',
+        color: 'text.primary',
         fontFamily: figmaFontFamilyStack.body,
         fontSize: '0.875rem',
-        fontWeight: active ? 600 : 400,
+        fontWeight: 400,
         '&:hover': {
-          bgcolor: (theme) => (active ? accentSubtleHover(theme) : surfaceSubtle(theme)),
+          bgcolor: active ? navItemSelectedBg(theme) : surfaceMuted(theme),
         },
-      }}
+      })}
     >
       <span>{label}</span>
       {badge && (
@@ -127,7 +131,7 @@ export function InsightsSidebar({ activeView, onViewChange }: InsightsSidebarPro
               fontFamily: figmaFontFamilyStack.body,
               fontSize: '0.875rem',
               fontWeight: 400,
-              '&:hover': { bgcolor: (theme) => surfaceSubtle(theme) },
+              '&:hover': { bgcolor: (theme) => surfaceMuted(theme) },
             }}
           >
             {triggersOpen ? <ExpandMoreIcon sx={{ fontSize: 18 }} /> : <ChevronRightIcon sx={{ fontSize: 18 }} />}
