@@ -33,6 +33,8 @@ export type DocumentAttachMode = {
     subject?: string
     body?: string
     saveLabel?: string
+    /** Overrides the Email tool panel heading (e.g. “Email quote”). */
+    title?: string
     subtitle?: string
   }
   /** When true, fields are locked and footer shows Close only (sent email review). */

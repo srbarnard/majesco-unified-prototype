@@ -69,6 +69,7 @@ import {
   type SubmissionCopilotEntryMode,
 } from '@/pages/submissions/data/submissionCopilotInsights'
 import { AssignBlockedComposeCard } from '@/pages/submissions/components/AssignBlockedComposeCard'
+import { OptionComparisonCard } from '@/pages/submissions/components/OptionComparisonCard'
 import {
   buildAssignReceiptText,
   formatAssignTurnTime,
@@ -534,12 +535,12 @@ function ReadyStructureOptionsView({
   submission,
   onEmailQuoteOptions,
   onDeclineToQuote,
-  onSeedComposer,
+  onRequestReveal,
 }: {
   submission: SubmissionListRecord
   onEmailQuoteOptions?: (recommended: PremiumEstimate, included: PremiumEstimate[]) => void
   onDeclineToQuote?: () => void
-  onSeedComposer?: (message: string) => void
+  onRequestReveal?: () => void
 }) {
   const options = useMemo(
     () =>
@@ -563,6 +564,9 @@ function ReadyStructureOptionsView({
     defaultRecommended ? [defaultRecommended] : [],
   )
   const [uncheckHint, setUncheckHint] = useState(false)
+  const [compareOpen, setCompareOpen] = useState(false)
+  const [compareOpenedAt, setCompareOpenedAt] = useState<number | null>(null)
+  const [compareUserTurn, setCompareUserTurn] = useState<AssignThreadTurn | null>(null)
 
   useEffect(() => {
     const nextRecommended =
@@ -572,7 +576,20 @@ function ReadyStructureOptionsView({
     setRecommendedLabel(nextRecommended)
     setIncludedLabels(nextRecommended ? [nextRecommended] : [])
     setUncheckHint(false)
-  }, [options, submission.id])
+    setCompareOpen(false)
+    setCompareOpenedAt(null)
+    setCompareUserTurn(null)
+    // Reset picker/compare when navigating to another submission — not when
+    // `options` gets a new array identity from parent re-renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- submission.id is the intentional trigger
+  }, [submission.id])
+
+  useLayoutEffect(() => {
+    if (!compareOpen || compareOpenedAt == null) return
+    onRequestReveal?.()
+    // Reveal once per compare open; parent reveal fn is recreated each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- compareOpenedAt is the trigger
+  }, [compareOpen, compareOpenedAt])
 
   const recommended = options.find((option) => option.label === recommendedLabel) ?? options[0]
   const included = options.filter((option) => includedLabels.includes(option.label))
@@ -597,11 +614,12 @@ function ReadyStructureOptionsView({
     ? `Reviewing **${recommended.label}** (recommended) at **${recommended.range}**. ${packageCountLabel}.`
     : null
 
-  const EMAIL_QUOTE_ACTION = 'Email quote options to producer'
-  const DECLINE_ACTION = 'Decline to quote'
+  const EMAIL_QUOTE_ACTION = 'Email quote options'
+  const COMPARE_ACTION = 'Compare options'
+  const DECLINE_ACTION = 'Email decline to quote'
   const quickActions = [
     EMAIL_QUOTE_ACTION,
-    ...(options.length > 1 ? ['Compare options'] : []),
+    ...(options.length > 1 ? [COMPARE_ACTION] : []),
     DECLINE_ACTION,
   ]
 
@@ -623,6 +641,24 @@ function ReadyStructureOptionsView({
     setUncheckHint(false)
     setRecommendedLabel(label)
     setIncludedLabels((current) => (current.includes(label) ? current : [...current, label]))
+  }
+
+  const openCompare = () => {
+    const at = Date.now()
+    setCompareUserTurn({
+      id: `compare-user-${submission.id}-${at}`,
+      role: 'user',
+      text: COMPARE_ACTION,
+      at,
+    })
+    setCompareOpenedAt(at)
+    setCompareOpen(true)
+    onRequestReveal?.()
+  }
+
+  const emailPackage = () => {
+    if (!recommended || includedCount === 0) return
+    onEmailQuoteOptions?.(recommended, included)
   }
 
   return (
@@ -775,7 +811,11 @@ function ReadyStructureOptionsView({
       ) : null}
 
       <CopilotContentTransition
-        contentKey={`${submission.id}:${recommendedLabel ?? 'none'}:${includedLabels.join('|')}`}
+        contentKey={
+          compareOpen
+            ? `${submission.id}:compare`
+            : `${submission.id}:${recommendedLabel ?? 'none'}:${includedLabels.join('|')}`
+        }
       >
         <>
           {helperText ? (
@@ -784,33 +824,52 @@ function ReadyStructureOptionsView({
             </Typography>
           ) : null}
 
-          <Divider sx={{ my: 2 }} />
-          <CopilotQuickActions
-            actions={quickActions}
-            onAction={(action) => {
-              if (action === DECLINE_ACTION) {
-                onDeclineToQuote?.()
-                return
-              }
-              if (!recommended) return
-              if (action === EMAIL_QUOTE_ACTION) {
-                if (includedCount === 0) return
-                onEmailQuoteOptions?.(recommended, included)
-                return
-              }
-              if (action === 'Compare options') {
-                const comparison = options
-                  .map(
-                    (option) =>
-                      `${option.label}${option.label === recommendedLabel ? ' (recommended)' : ''}${includedLabels.includes(option.label) ? ' · in package' : ''}: ${option.range} — ${option.rationale}`,
-                  )
-                  .join('\n')
-                onSeedComposer?.(
-                  `Compare the ${options.length} structure options for ${submission.submissionNumber}:\n${comparison}\n\nWhich should I prefer and why?`,
-                )
-              }
-            }}
-          />
+          {!compareOpen ? (
+            <>
+              <Divider sx={{ my: 2 }} />
+              <CopilotQuickActions
+                actions={quickActions}
+                onAction={(action) => {
+                  if (action === DECLINE_ACTION) {
+                    onDeclineToQuote?.()
+                    return
+                  }
+                  if (action === COMPARE_ACTION) {
+                    openCompare()
+                    return
+                  }
+                  if (action === EMAIL_QUOTE_ACTION) {
+                    emailPackage()
+                  }
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <Divider sx={{ my: 2 }} />
+              {compareUserTurn ? (
+                <Box sx={{ mb: 1.5 }}>
+                  <StudioUserMessage timeLabel={formatAssignTurnTime(compareUserTurn.at)}>
+                    {compareUserTurn.text}
+                  </StudioUserMessage>
+                </Box>
+              ) : null}
+              <StudioAssistantMessage
+                timeLabel={
+                  compareOpenedAt != null ? formatAssignTurnTime(compareOpenedAt) : undefined
+                }
+                showCopy={false}
+              >
+                <OptionComparisonCard
+                  options={options}
+                  recommendedLabel={recommendedLabel}
+                  includedLabels={includedLabels}
+                  onEmailSelected={emailPackage}
+                  onDeclineToQuote={() => onDeclineToQuote?.()}
+                />
+              </StudioAssistantMessage>
+            </>
+          )}
         </>
       </CopilotContentTransition>
     </>
@@ -1423,7 +1482,7 @@ export function SubmissionsCopilotPanel({
     const attachments = buildQuotePackageAttachments(focusedSubmission)
     const submission = focusedSubmission
     const recipient = draft.to || SUBMISSION_PRODUCER_EMAIL
-    const packageSubtitle = `Quote package · ${submission.submissionNumber} · ${attachments.length} attachments`
+    const packageSubtitle = `${submission.submissionNumber} · ${attachments.length} attachments`
     setEmailAttachMode({
       target: 'email',
       documents: attachments,
@@ -1431,7 +1490,8 @@ export function SubmissionsCopilotPanel({
         to: draft.to,
         subject: draft.subject,
         body: draft.body,
-        saveLabel: 'Send quote',
+        saveLabel: 'Send',
+        title: 'Email quote options',
         subtitle: packageSubtitle,
       },
       onCancel: () => {
@@ -1478,7 +1538,7 @@ export function SubmissionsCopilotPanel({
     const draft = buildDeclineToQuoteEmail(focusedSubmission)
     const submission = focusedSubmission
     const recipient = draft.to || SUBMISSION_PRODUCER_EMAIL
-    const declineSubtitle = `Decline to quote · ${submission.submissionNumber}`
+    const declineSubtitle = submission.submissionNumber
     setEmailAttachMode({
       target: 'email',
       documents: [],
@@ -1487,6 +1547,7 @@ export function SubmissionsCopilotPanel({
         subject: draft.subject,
         body: draft.body,
         saveLabel: 'Send',
+        title: 'Email decline to quote',
         subtitle: declineSubtitle,
       },
       onCancel: () => {
@@ -1610,7 +1671,7 @@ export function SubmissionsCopilotPanel({
         to: sent.recipient,
         subject: draft.subject,
         body: draft.body,
-        subtitle: `Quote package · ${focusedSubmission.submissionNumber} · ${attachments.length} attachments`,
+        subtitle: `${focusedSubmission.submissionNumber} · ${attachments.length} attachments`,
         documents: attachments,
       })
     }
@@ -1962,7 +2023,7 @@ export function SubmissionsCopilotPanel({
             submission={focusedSubmission}
             onEmailQuoteOptions={openQuotePackageEmail}
             onDeclineToQuote={openDeclineToQuoteEmail}
-            onSeedComposer={seedComposer}
+            onRequestReveal={requestChatReveal}
           />
         ) : activeConfirmation ? (
           <SendConfirmationView

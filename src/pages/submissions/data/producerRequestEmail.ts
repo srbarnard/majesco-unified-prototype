@@ -200,6 +200,32 @@ function emailOptionRationale(option: PremiumEstimate) {
   return option.rationale
 }
 
+/**
+ * Why-they-differ bullets for structure compare — short lines matching quote-email themes
+ * (deductibles/limits, leaner Optimized, construction class / loss history).
+ */
+export function buildStructureCompareWhyDiffer(
+  recommended: PremiumEstimate,
+  options: PremiumEstimate[],
+): string[] {
+  const describe = (option: PremiumEstimate) => {
+    if (option.label === 'Optimized') {
+      return 'Optimized: leaner limit/terms for a lower premium.'
+    }
+    if (option.label === 'Conservative') {
+      return 'Conservative: more limit given class and short loss history.'
+    }
+    return 'Balanced: standard deductibles; best fit for this file.'
+  }
+
+  const lines: string[] = [describe(recommended)]
+  for (const option of options) {
+    if (option.label === recommended.label) continue
+    lines.push(describe(option))
+  }
+  return lines
+}
+
 /** Quote package email after Structure review — cover note + attachment chips (renewal pattern). */
 export function buildQuotePackageEmail(
   submission: SubmissionListRecord,
@@ -243,7 +269,7 @@ Underwriting`
 
   return {
     issue: null,
-    action: 'Email quote options to producer',
+    action: 'Email quote options',
     to: SUBMISSION_PRODUCER_EMAIL,
     subject,
     body,
@@ -334,7 +360,7 @@ Underwriting`
 
   return {
     issue: null,
-    action: 'Decline to quote',
+    action: 'Email decline to quote',
     to: SUBMISSION_PRODUCER_EMAIL,
     subject,
     body,

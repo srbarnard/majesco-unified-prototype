@@ -96,7 +96,7 @@ export function EmailToolPanel() {
             component="h2"
             sx={{ ...copilotDrawerHeadingSx, lineHeight: 1.35, mb: 0.25 }}
           >
-            {documentViewerAttachLabels.email ?? targetLabels.email}
+            {draft?.title ?? documentViewerAttachLabels.email ?? targetLabels.email}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={bodySx}>
             {draft?.subtitle
