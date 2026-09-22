@@ -22,7 +22,7 @@ import {
   type AssignBlockedPromptSession,
   type AssignComposeSession,
   type AssignThreadTurn,
-} from '@/pages/submissions/components/AssignBlockedComposeCard'
+} from '@/pages/submissions/components/assignBlockedCompose'
 import { SubmissionsDataGrid } from '@/pages/submissions/components/SubmissionsDataGrid'
 import { SubmissionsFilterPanel } from '@/pages/submissions/components/SubmissionsFilterPanel'
 import { SubmissionsHeader } from '@/pages/submissions/components/SubmissionsHeader'

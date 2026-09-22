@@ -9,4 +9,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  // One fixed local URL — avoids stale multi-port Vite sessions during iteration.
+  server: {
+    port: 5200,
+    strictPort: true,
+  },
 })

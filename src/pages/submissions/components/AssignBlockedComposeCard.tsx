@@ -10,6 +10,11 @@ import { filterChipSx } from '@/design-system/components/ListFilterPanel/filterP
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import {
+  COPILOT_REVEAL_ACTIONS_ATTR,
+  COPILOT_REVEAL_ATTR,
+} from '@/pages/policies/components/copilot/copilotReveal'
+import { sortBlockedForAssign } from '@/pages/submissions/components/assignBlockedCompose'
 import type { SubmissionListRecord } from '@/pages/submissions/data/mockSubmissions'
 import { SUBMISSION_ASSIGNEE_OPTIONS } from '@/pages/submissions/filters/submissionsListFilterTypes'
 
@@ -18,18 +23,6 @@ const bodySx = {
   fontWeight: 400,
 } as const
 
-/** Blocked-only options: Underwriting Queue first, then oldest Sub #. */
-export function sortBlockedForAssign(rows: SubmissionListRecord[]) {
-  return [...rows]
-    .filter((row) => row.status === 'Blocked')
-    .sort((a, b) => {
-      const aQueue = a.assignedTo === 'Underwriting Queue' ? 0 : 1
-      const bQueue = b.assignedTo === 'Underwriting Queue' ? 0 : 1
-      if (aQueue !== bQueue) return aQueue - bQueue
-      return a.submissionNumber.localeCompare(b.submissionNumber)
-    })
-}
-
 function submissionOptionLabel(row: SubmissionListRecord) {
   const lob = row.linesOfBusiness.join(', ')
   return `${row.submissionNumber} · ${row.insuredName} · ${lob} · ${row.assignedTo}`
@@ -37,44 +30,6 @@ function submissionOptionLabel(row: SubmissionListRecord) {
 
 function submissionChipLabel(row: SubmissionListRecord) {
   return `${row.submissionNumber} · ${row.insuredName}`
-}
-
-export type AssignThreadTurn = {
-  id: string
-  role: 'user' | 'copilot'
-  text: string
-  at: number
-}
-
-export type AssignComposeSession = {
-  selectedIds: string[]
-  focusAssignee: boolean
-  openedAt: number
-  userTurnId: string
-}
-
-export type AssignBlockedPromptSession = {
-  nonBlockedCount: number
-  totalCount: number
-  blockedIds: string[]
-  openedAt: number
-  userTurnId: string
-}
-
-export function formatAssignTurnTime(at: number) {
-  return new Date(at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-}
-
-export function buildAssignReceiptText(
-  submissions: Pick<SubmissionListRecord, 'submissionNumber'>[],
-  assignee: string,
-  note: string,
-) {
-  const notePart = note ? ` Note: ${note}` : ''
-  if (submissions.length === 1) {
-    return `Assigned ${submissions[0]!.submissionNumber} to ${assignee}.${notePart}`
-  }
-  return `${submissions.length} submissions assigned to ${assignee}.${notePart}`
 }
 
 export type AssignBlockedComposeCardProps = {
@@ -104,7 +59,9 @@ export function AssignBlockedComposeCard({
 
   useEffect(() => {
     if (!focusAssignee) return
-    const timer = window.setTimeout(() => assigneeInputRef.current?.focus(), 50)
+    const timer = window.setTimeout(() => {
+      assigneeInputRef.current?.focus({ preventScroll: true })
+    }, 50)
     return () => window.clearTimeout(timer)
   }, [focusAssignee])
 
@@ -112,6 +69,7 @@ export function AssignBlockedComposeCard({
 
   return (
     <Box
+      {...{ [COPILOT_REVEAL_ATTR]: '' }}
       sx={(theme) => ({
         p: 2,
         borderRadius: `${layoutTokens.cardRadius}px`,
@@ -211,7 +169,13 @@ export function AssignBlockedComposeCard({
           />
         </Box>
 
-        <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ pt: 0.25 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          justifyContent="flex-end"
+          sx={{ pt: 0.25 }}
+          {...{ [COPILOT_REVEAL_ACTIONS_ATTR]: '' }}
+        >
           <Button size="small" variant="text" color="primary" onClick={onCancel}>
             Cancel
           </Button>

@@ -78,19 +78,14 @@ export function CopilotContentTransition({ contentKey, children }: CopilotConten
     <Box
       sx={{
         position: 'relative',
-        flex: 1,
-        minHeight: 0,
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
+        width: '100%',
+        // Fill short empty states; grow with tall chat so the scrollport can scroll.
+        minHeight: '100%',
       }}
     >
       <Box
         sx={{
-          flex: 1,
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
+          width: '100%',
           transformOrigin: 'top center',
           willChange: isExiting || isEntering ? 'opacity, transform' : 'auto',
           ...(isExiting

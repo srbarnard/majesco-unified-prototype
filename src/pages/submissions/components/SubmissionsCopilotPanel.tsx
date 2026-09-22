@@ -9,7 +9,7 @@ import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { CopilotQuickActions } from '@/design-system/components'
@@ -26,6 +26,7 @@ import {
 } from '@/pages/policies/components/copilot/copilotConfidence'
 import { CopilotConfidenceIndicator } from '@/pages/policies/components/copilot/CopilotConfidenceIndicator'
 import { CopilotDrawerShell } from '@/pages/policies/components/copilot/CopilotDrawerShell'
+import { COPILOT_REVEAL_ATTR } from '@/pages/policies/components/copilot/copilotReveal'
 import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import {
   copilotDrawerHeadingSx,
@@ -67,15 +68,15 @@ import {
   buildSubmissionInsightBriefing,
   type SubmissionCopilotEntryMode,
 } from '@/pages/submissions/data/submissionCopilotInsights'
+import { AssignBlockedComposeCard } from '@/pages/submissions/components/AssignBlockedComposeCard'
 import {
-  AssignBlockedComposeCard,
   buildAssignReceiptText,
   formatAssignTurnTime,
   sortBlockedForAssign,
   type AssignComposeSession,
   type AssignBlockedPromptSession,
   type AssignThreadTurn,
-} from '@/pages/submissions/components/AssignBlockedComposeCard'
+} from '@/pages/submissions/components/assignBlockedCompose'
 import {
   StudioAssistantMessage,
   StudioUserMessage,
@@ -880,23 +881,38 @@ function ThreadTurns({
   emptyActions?: ReactNode
 }) {
   const hasThread = turns.length > 0 || Boolean(assignSlot)
+  const lastTurnIndex = turns.length - 1
 
   return (
     <>
       {showEmptyActions && !hasThread ? emptyActions : null}
-      {turns.map((turn) =>
-        turn.role === 'user' ? (
-          <StudioUserMessage key={turn.id} timeLabel={formatAssignTurnTime(turn.at)}>
-            {turn.text}
-          </StudioUserMessage>
-        ) : (
-          <StudioAssistantMessage key={turn.id} timeLabel={formatAssignTurnTime(turn.at)}>
-            {turn.text}
-          </StudioAssistantMessage>
-        ),
-      )}
-      {assignSlot}
-      {hasThread && !assignSlot ? suggestedActions : null}
+      {turns.map((turn, index) => {
+        const isLatestClosedTurn = index === lastTurnIndex && !assignSlot
+        // When suggested actions follow the latest turn, they own the reveal target so the
+        // full action list pins above the composer (not just the receipt text).
+        const markReveal = isLatestClosedTurn && !suggestedActions
+        const message =
+          turn.role === 'user' ? (
+            <StudioUserMessage timeLabel={formatAssignTurnTime(turn.at)}>{turn.text}</StudioUserMessage>
+          ) : (
+            <StudioAssistantMessage timeLabel={formatAssignTurnTime(turn.at)}>
+              {turn.text}
+            </StudioAssistantMessage>
+          )
+        return (
+          <Box
+            key={turn.id}
+            {...(markReveal ? { [COPILOT_REVEAL_ATTR]: '' } : {})}
+            sx={markReveal ? undefined : { display: 'contents' }}
+          >
+            {message}
+          </Box>
+        )
+      })}
+      {assignSlot ? <Box {...{ [COPILOT_REVEAL_ATTR]: '' }}>{assignSlot}</Box> : null}
+      {hasThread && !assignSlot && suggestedActions ? (
+        <Box {...{ [COPILOT_REVEAL_ATTR]: '' }}>{suggestedActions}</Box>
+      ) : null}
     </>
   )
 }
@@ -1130,10 +1146,23 @@ export function SubmissionsCopilotPanel({
   const [attachRequestKey, setAttachRequestKey] = useState<number | null>(null)
   const [seedComposerMessage, setSeedComposerMessage] = useState<string | null>(null)
   const [issueNote, setIssueNote] = useState<IssueNoteDraft | null>(null)
+  const [chatRevealKey, setChatRevealKey] = useState(0)
   const multiSelectMode = selectedSubmissions.length > 1 && !focusedSubmission
   const assignPool = assignPoolSubmissions ?? queueSubmissions
   const blockedAssignOptions = useMemo(() => sortBlockedForAssign(assignPool), [assignPool])
   const assignSessionOpen = Boolean(assignCompose || assignBlockedPrompt)
+
+  const requestChatReveal = () => {
+    setChatRevealKey((key) => key + 1)
+  }
+
+  // Parent-owned assign/thread state often commits one render after a local reveal bump —
+  // re-bump once the new turn or compose card is actually in the tree.
+  const latestThreadTurnId = assignThreadTurns[assignThreadTurns.length - 1]?.id
+  useLayoutEffect(() => {
+    if (!assignCompose && !assignBlockedPrompt && !latestThreadTurnId) return
+    setChatRevealKey((key) => key + 1)
+  }, [assignCompose?.openedAt, assignBlockedPrompt?.openedAt, latestThreadTurnId])
 
   const activeIssue = useMemo(() => {
     if (!focusedSubmission || !activeIssueId) return null
@@ -1203,6 +1232,7 @@ export function SubmissionsCopilotPanel({
       openedAt,
       userTurnId,
     })
+    requestChatReveal()
   }
 
   const cancelAssignCompose = () => {
@@ -1258,6 +1288,7 @@ export function SubmissionsCopilotPanel({
         openedAt,
         userTurnId,
       })
+      requestChatReveal()
       return
     }
 
@@ -1282,6 +1313,7 @@ export function SubmissionsCopilotPanel({
     ])
     onAssignComposeChange?.(null)
     onAssignBlockedPromptChange?.(null)
+    requestChatReveal()
   }
 
   const handleWorkspaceAction = (action: string) => {
@@ -1291,6 +1323,7 @@ export function SubmissionsCopilotPanel({
     }
     if (action === 'Show blocked only') {
       onShowBlockedOnly?.()
+      requestChatReveal()
       return
     }
     if (action === 'Summarize blockers') {
@@ -1607,6 +1640,7 @@ export function SubmissionsCopilotPanel({
     const remainingAfter =
       openBlockingIssues(focusedSubmission).filter((issue) => issue.id !== targetIssue.id).length
     setActiveIssueId(remainingAfter === 0 ? null : targetIssue.id)
+    requestChatReveal()
   }
 
   const handleGuidedResolve = (issue: SubmissionIssue, action: string) => {
@@ -1684,9 +1718,9 @@ export function SubmissionsCopilotPanel({
                     : 'Submissions summary'
 
   const panelContentKey = multiSelectMode
-    ? `multi:${selectedSubmissions.map((row) => row.id).join('|')}:assign:${assignCompose ? 'card' : assignBlockedPrompt ? 'prompt' : 'none'}:${assignThreadTurns.length}`
+    ? `multi:${selectedSubmissions.map((row) => row.id).join('|')}`
     : !focusedSubmission
-      ? `workspace:assign:${assignCompose ? 'card' : assignBlockedPrompt ? 'prompt' : 'none'}:${assignThreadTurns.length}`
+      ? 'workspace:summary'
       : focusedSubmission.status === 'Quoted'
         ? `quoted:${focusedSubmission.id}:${activeConfirmation ? 'sent' : 'package'}`
         : focusedSubmission.status === 'Declined'
@@ -1698,7 +1732,7 @@ export function SubmissionsCopilotPanel({
               : activeIssue
                 ? `issue:${focusedSubmission.id}:${activeIssue.id}:${activeIssue.resolvedAt ?? 'open'}`
                 : !statusMode
-                  ? `insight:${focusedSubmission.id}:assign:${assignCompose ? 'card' : assignBlockedPrompt ? 'prompt' : 'none'}:${assignThreadTurns.length}`
+                  ? `insight:${focusedSubmission.id}`
                   : `blocked:${focusedSubmission.id}:list`
 
   const seedComposer = (message: string) => {
@@ -1795,6 +1829,7 @@ export function SubmissionsCopilotPanel({
           openedAt: prompt.openedAt,
           userTurnId: prompt.userTurnId,
         })
+        requestChatReveal()
       }}
       onCancel={cancelAssignPrompt}
     />
@@ -1818,6 +1853,7 @@ export function SubmissionsCopilotPanel({
       seedComposerMessage={seedComposerMessage}
       chatFocusKey={`${focusKey}:${entryMode}:${activeIssueId ?? 'list'}:${activeConfirmation ? 'sent' : 'open'}`}
       contentKey={panelContentKey}
+      revealKey={chatRevealKey}
       attachRequestKey={attachRequestKey}
       onComposerSubmit={handleSubmit}
       headerTrailing={
