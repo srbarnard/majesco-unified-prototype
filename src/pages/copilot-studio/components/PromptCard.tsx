@@ -18,7 +18,7 @@ type PromptCardProps = {
 }
 
 export function PromptCard({ prompt, selected = false, onSelect }: PromptCardProps) {
-  const typeLabel = prompt.type.charAt(0).toUpperCase() + prompt.type.slice(1)
+  const typeLabel = prompt.type === 'action' ? 'Action' : 'Prompt'
 
   return (
     <Box

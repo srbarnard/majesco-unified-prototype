@@ -8,11 +8,12 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useLocation } from 'react-router'
 import { useGlobalSearch } from '@/app/contexts/GlobalSearchContext'
 import type { DocumentAttachMode } from '@/pages/policies/components/DocumentAttachComposer'
 import type { CopilotPanelProps } from '@/pages/policies/components/CopilotPanel'
 
-export type RightToolId = 'copilot' | 'notes' | 'email' | 'filter' | 'parties'
+export type RightToolId = 'copilot' | 'notes' | 'email' | 'filter' | 'parties' | 'history'
 
 export type RightToolRecordContext = {
   title: string
@@ -42,6 +43,8 @@ type RightToolState = {
   filterContent: ReactNode | null
   /** Page-registered Parties/Contacts panel; non-null means Parties is available on the rail. */
   partiesContent: ReactNode | null
+  /** When true, History is available on the rail (Copilot Studio left drawer). */
+  historyAvailable: boolean
 }
 
 type RightToolDispatch = {
@@ -56,6 +59,7 @@ type RightToolDispatch = {
   setNoteAttachMode: (mode: RightToolNoteAttachMode) => void
   setFilterContent: (content: ReactNode | null) => void
   setPartiesContent: (content: ReactNode | null) => void
+  setHistoryAvailable: (available: boolean) => void
 }
 
 type RightToolContextValue = RightToolState & RightToolDispatch
@@ -64,6 +68,7 @@ const RightToolStateContext = createContext<RightToolState | null>(null)
 const RightToolDispatchContext = createContext<RightToolDispatch | null>(null)
 
 export function RightToolProvider({ children }: { children: ReactNode }) {
+  const location = useLocation()
   const { copilotOpen, openHomeCopilotDefault, closeCopilot } = useGlobalSearch()
   const [activeTool, setActiveTool] = useState<RightToolId | null>(null)
   const [recordContext, setRecordContext] = useState<RightToolRecordContext>(null)
@@ -75,6 +80,8 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
   const [noteAttachMode, setNoteAttachMode] = useState<RightToolNoteAttachMode>(null)
   const [filterContent, setFilterContent] = useState<ReactNode | null>(null)
   const [partiesContent, setPartiesContent] = useState<ReactNode | null>(null)
+  const [historyAvailable, setHistoryAvailable] = useState(false)
+  const isCopilotStudio = location.pathname === '/copilot-studio'
 
   const setCopilotCustomContent = useCallback((content: ReactNode | null) => {
     setCopilotCustomContentState(content)
@@ -96,6 +103,12 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
   const openTool = useCallback(
     (tool: RightToolId) => {
       if (tool === 'copilot') {
+        // Copilot Studio owns chat — keep the shell panel collapsed there.
+        if (isCopilotStudio) {
+          closeCopilot()
+          setActiveTool(null)
+          return
+        }
         setActiveTool((current) => (current === 'copilot' ? current : 'copilot'))
         // Preserve agentic / existing Copilot view when already open.
         if (!copilotOpenRef.current) {
@@ -107,7 +120,7 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       closeCopilot()
       setActiveTool(tool)
     },
-    [closeCopilot, openHomeCopilotDefault],
+    [closeCopilot, isCopilotStudio, openHomeCopilotDefault],
   )
 
   const toggleTool = useCallback(
@@ -121,15 +134,29 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
     [closeTool, openTool],
   )
 
+  // Collapse the right panel when entering Copilot Studio.
+  useEffect(() => {
+    if (!isCopilotStudio) return
+    closeTool()
+  }, [closeTool, isCopilotStudio])
+
   // Keep rail Copilot in sync with GlobalSearch open flags (agentic search, Home default, etc.).
   // Do not clear Notes/Email/Filter/Parties when Copilot flags turn off.
+  // Copilot Studio hides the shell Copilot control — never reopen it there.
   useEffect(() => {
+    if (isCopilotStudio) {
+      if (copilotOpen) {
+        closeCopilot()
+      }
+      setActiveTool((current) => (current === 'copilot' ? null : current))
+      return
+    }
     if (copilotOpen) {
       setActiveTool((current) => (current === 'copilot' ? current : 'copilot'))
       return
     }
     setActiveTool((current) => (current === 'copilot' ? null : current))
-  }, [copilotOpen])
+  }, [closeCopilot, copilotOpen, isCopilotStudio])
 
   // Drop contextual tools when the page unregisters their content.
   useEffect(() => {
@@ -144,6 +171,12 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
     }
   }, [activeTool, partiesContent])
 
+  useEffect(() => {
+    if (activeTool === 'history' && !historyAvailable) {
+      setActiveTool(null)
+    }
+  }, [activeTool, historyAvailable])
+
   const state = useMemo(
     () => ({
       activeTool,
@@ -156,6 +189,7 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       noteAttachMode,
       filterContent,
       partiesContent,
+      historyAvailable,
     }),
     [
       activeTool,
@@ -168,6 +202,7 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       noteAttachMode,
       filterContent,
       partiesContent,
+      historyAvailable,
     ],
   )
 
@@ -186,6 +221,7 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
       setNoteAttachMode,
       setFilterContent,
       setPartiesContent,
+      setHistoryAvailable,
     }),
     [openTool, closeTool, toggleTool, setCopilotCustomContent],
   )

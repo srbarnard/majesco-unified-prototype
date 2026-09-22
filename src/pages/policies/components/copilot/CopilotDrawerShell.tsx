@@ -422,11 +422,13 @@ export function CopilotDrawerShell({
     <CopilotPromptsView
       onBack={() => setDrawerView(null)}
       onSelectPrompt={(prompt) => handlePromptSelected(prompt.title)}
+      onOpenAgents={() => setDrawerView('agents')}
     />
   ) : drawerView === 'agents' ? (
     <CopilotAgentsView
       onBack={() => setDrawerView(null)}
       onSelectAgent={(agent) => handlePromptSelected(`Run ${agent.title}`)}
+      onOpenPrompts={() => setDrawerView('prompts')}
     />
   ) : activeConversation ? (
     <CopilotConversationView

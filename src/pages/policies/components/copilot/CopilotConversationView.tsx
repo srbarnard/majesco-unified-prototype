@@ -85,7 +85,6 @@ export function CopilotConversationView({ entry, onBack, backLabel }: CopilotCon
     <Box>
       <CopilotDrawerSubHeader
         title={backLabel ?? copilotHistoryKindLabel(entry.kind)}
-        detail={entry.title}
         onBack={onBack}
       />
 

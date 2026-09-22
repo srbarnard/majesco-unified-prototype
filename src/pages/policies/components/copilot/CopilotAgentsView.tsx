@@ -24,9 +24,10 @@ import {
 type CopilotAgentsViewProps = {
   onBack: () => void
   onSelectAgent: (agent: CopilotDrawerAgent) => void
+  onOpenPrompts: () => void
 }
 
-export function CopilotAgentsView({ onBack, onSelectAgent }: CopilotAgentsViewProps) {
+export function CopilotAgentsView({ onBack, onSelectAgent, onOpenPrompts }: CopilotAgentsViewProps) {
   const [search, setSearch] = useState('')
   const [favorites, setFavorites] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {}
@@ -65,8 +66,8 @@ export function CopilotAgentsView({ onBack, onSelectAgent }: CopilotAgentsViewPr
         title="Agents"
         onBack={onBack}
         actions={
-          <Tooltip title="New agent chat">
-            <IconButton size="small" aria-label="New agent chat">
+          <Tooltip title="Prompts">
+            <IconButton size="small" aria-label="Prompts" onClick={onOpenPrompts}>
               <PostAddOutlinedIcon fontSize="small" />
             </IconButton>
           </Tooltip>

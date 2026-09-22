@@ -15,23 +15,18 @@ function themeForPriority(priority: PriorityTaskCard['priority']): TaskTheme {
   return 'Compliance watch'
 }
 
-function nextActionForTask(title: string, isPastDue?: boolean) {
-  if (isPastDue) {
-    return `Resolve overdue items for "${title}" and update task status when complete.`
-  }
-  return `Review account context and complete "${title}" before the due date.`
+function nextActionForTask(card: PriorityTaskCard) {
+  return card.nextActionLabel
 }
 
 function descriptionForPriorityTask(card: PriorityTaskCard) {
   const lead = `${card.title} for ${card.account}. Policy ${card.policyNumber} requires follow-up from the home priority queue.`
   const context =
-    'Copilot surfaced this item based on due date, open workflow status, and recent account activity. Review supporting documents, confirm producer expectations, and document any underwriting or service exceptions before closing the task.'
+    'Review supporting documents, confirm producer expectations, and document any underwriting or service exceptions before closing the task.'
   const pastDue =
     'This task is past due — prioritize producer outreach, capture blockers in notes, and escalate if binding or renewal deadlines are at risk.'
-  const closing =
-    'Use Ask Copilot to draft a status update, checklist, or referral memo once account context has been validated.'
 
-  return [lead, context, card.isPastDue ? pastDue : null, closing].filter(Boolean).join(' ')
+  return [lead, context, card.isPastDue ? pastDue : null].filter(Boolean).join(' ')
 }
 
 export function resolvePriorityTaskRecord(card: PriorityTaskCard): TaskRecord {
@@ -48,7 +43,7 @@ export function resolvePriorityTaskRecord(card: PriorityTaskCard): TaskRecord {
     priorityReason: `${canonical.priority} priority item on ${canonical.account}; policy ${canonical.policyNumber}.`,
     status: canonical.isPastDue ? 'Started' : 'Pending',
     displayStatus: canonical.isPastDue ? 'Past due' : 'Open',
-    nextAction: nextActionForTask(canonical.title, canonical.isPastDue),
+    nextAction: nextActionForTask(canonical),
     theme: themeForPriority(canonical.priority),
     assignedDate: '2026-06-24',
     dueDate: '2026-06-28',
@@ -59,15 +54,9 @@ export function resolvePriorityTaskRecord(card: PriorityTaskCard): TaskRecord {
     referenceType: 'Policy',
     agingDays: canonical.isPastDue ? 2 : 1,
     isPastDue: Boolean(canonical.isPastDue),
-    hasAiInsights: true,
+    hasAiInsights: false,
     description: descriptionForPriorityTask(canonical),
-    copilotInsights: [
-      `Insured account: ${canonical.account}.`,
-      `Policy ${canonical.policyNumber} is linked to this task.`,
-      canonical.isPastDue
-        ? 'Task is past due — prioritize outreach and document any blockers.'
-        : 'Copilot can draft a status update or next-step checklist for this task.',
-    ],
+    copilotInsights: [],
     documents: [
       { id: 'doc-1', name: 'Supporting policy documents', status: 'Received', required: true },
       { id: 'doc-2', name: 'Producer correspondence', status: 'Missing', required: false },

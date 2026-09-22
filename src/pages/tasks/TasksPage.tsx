@@ -57,7 +57,6 @@ export function TasksPage() {
   const { activeTool, openTool, closeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<TasksTab>('all')
   const [copilotTaskFocus, setCopilotTaskFocus] = useState<TaskRecord | null>(null)
-  const [copilotSeedMessage, setCopilotSeedMessage] = useState<string | null>(null)
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
   const [taskDetailOpen, setTaskDetailOpen] = useState(false)
   const [skipTaskExitAnimation, setSkipTaskExitAnimation] = useState(false)
@@ -91,29 +90,18 @@ export function TasksPage() {
   const filtersActive = hasActiveTasksFilters(appliedFilters)
   const hasSelection = rowSelectionModel.length > 0
 
-  const handleBackToTaskDetails = useCallback(() => {
-    setCopilotSeedMessage(null)
-    setCopilotTaskFocus(null)
-    closeTool()
-    setTaskDetailOpen(true)
-  }, [closeTool])
-
   useRegisterRightToolCopilot(
     {
       context: 'tasks',
       focusedTask: copilotTaskFocus,
-      seedComposerMessage: copilotSeedMessage,
-      onBackToTaskDetails: copilotSeedMessage ? handleBackToTaskDetails : undefined,
-      onBackToSummary:
-        copilotTaskFocus && !copilotSeedMessage
-          ? () => {
-              setCopilotTaskFocus(null)
-              setCopilotSeedMessage(null)
-            }
-          : undefined,
+      onBackToSummary: copilotTaskFocus
+        ? () => {
+            setCopilotTaskFocus(null)
+          }
+        : undefined,
       summaryBackLabel: 'Tasks workspace',
     },
-    [copilotSeedMessage, copilotTaskFocus, handleBackToTaskDetails],
+    [copilotTaskFocus],
   )
 
   const handleApplyFilters = useCallback((filters: TasksFilters) => {
@@ -138,26 +126,12 @@ export function TasksPage() {
     setTaskDetailOpen(false)
     setSelectedTask(null)
     setCopilotTaskFocus(null)
-    setCopilotSeedMessage(null)
     openTool('copilot')
   }, [openTool])
 
   const handleTaskCopilot = useCallback(
     (task: TaskRecord) => {
       setCopilotTaskFocus(task)
-      setCopilotSeedMessage(null)
-      setSkipTaskExitAnimation(true)
-      setTaskDetailOpen(false)
-      openTool('copilot')
-    },
-    [openTool],
-  )
-
-  const handleTaskRecommendation = useCallback(
-    (task: TaskRecord, insight: string) => {
-      setSelectedTask(task)
-      setCopilotTaskFocus(task)
-      setCopilotSeedMessage(insight)
       setSkipTaskExitAnimation(true)
       setTaskDetailOpen(false)
       openTool('copilot')
@@ -315,7 +289,6 @@ export function TasksPage() {
             onBack={handleBackToCopilotSummary}
             onClose={handleCloseTaskDetail}
             onMarkComplete={handleTaskComplete}
-            onRecommendationClick={(insight) => handleTaskRecommendation(selectedTask, insight)}
           />
         ) : null}
       </ResizableRightPanel>

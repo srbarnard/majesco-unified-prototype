@@ -51,7 +51,7 @@ const promptTypeSelectorOptions: ComposerSelectorOption[] = [
 export function PromptsTab({ selectedPromptId, onPromptSelect }: PromptsTabProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<StudioPromptCategory>('All products')
-  const [typeFilter, setTypeFilter] = useState<PromptTypeFilter>('Prompts')
+  const [typeFilter, setTypeFilter] = useState<PromptTypeFilter>('View all')
 
   const filteredPrompts = useMemo(() => {
     const normalized = searchQuery.trim().toLowerCase()
@@ -61,12 +61,13 @@ export function PromptsTab({ selectedPromptId, onPromptSelect }: PromptsTabProps
         !normalized ||
         prompt.title.toLowerCase().includes(normalized) ||
         prompt.description.toLowerCase().includes(normalized)
-      return matchesCategory && matchesSearch
+      const matchesType =
+        typeFilter === 'View all' ||
+        (typeFilter === 'Actions' && prompt.type === 'action') ||
+        (typeFilter === 'Prompts' && prompt.type === 'prompt')
+      return matchesCategory && matchesSearch && matchesType
     })
-  }, [searchQuery, categoryFilter])
-
-  const showPrompts = typeFilter === 'Prompts' || typeFilter === 'View all'
-  const showActions = typeFilter === 'Actions' || typeFilter === 'View all'
+  }, [searchQuery, categoryFilter, typeFilter])
 
   const handleTypeChange = (value: string) => {
     if (value === 'Prompts' || value === 'Actions' || value === 'View all') {
@@ -116,44 +117,22 @@ export function PromptsTab({ selectedPromptId, onPromptSelect }: PromptsTabProps
           </Stack>
         </Box>
 
-        {showPrompts && (
-          <>
-            <Grid container spacing={2.5}>
-              {filteredPrompts.map((prompt) => (
-                <Grid key={prompt.id} size={{ xs: 12, sm: 6, lg: 4 }}>
-                  <PromptCard prompt={prompt} selected={selectedPromptId === prompt.id} onSelect={onPromptSelect} />
-                </Grid>
-              ))}
+        <Grid container spacing={2.5}>
+          {filteredPrompts.map((prompt) => (
+            <Grid key={prompt.id} size={{ xs: 12, sm: 6, lg: 4 }}>
+              <PromptCard prompt={prompt} selected={selectedPromptId === prompt.id} onSelect={onPromptSelect} />
             </Grid>
+          ))}
+        </Grid>
 
-            {filteredPrompts.length === 0 && (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ fontFamily: figmaFontFamilyStack.body, py: 4, textAlign: 'center' }}
-              >
-                No prompts match your search. Try a different title or category.
-              </Typography>
-            )}
-          </>
-        )}
-
-        {showActions && (
-          <Box
-            sx={(theme) => ({
-              ...studioCardSx(theme),
-              p: 4,
-              textAlign: 'center',
-            })}
+        {filteredPrompts.length === 0 && (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontFamily: figmaFontFamilyStack.body, py: 4, textAlign: 'center' }}
           >
-            <BoltOutlinedIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1.5 }} />
-            <Typography variant="subtitle1" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, mb: 0.5 }}>
-              Workflow actions
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body, maxWidth: 420, mx: 'auto' }}>
-              Connect agents to policy, billing, and claims workflows. Action templates will appear here as they are configured.
-            </Typography>
-          </Box>
+            No prompts match your search. Try a different title or category.
+          </Typography>
         )}
       </Stack>
     </StudioBrowseLayout>

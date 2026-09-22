@@ -1,5 +1,6 @@
 import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
+import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined'
 import MailOutlineIcon from '@mui/icons-material/MailOutline'
 import StickyNote2OutlinedIcon from '@mui/icons-material/StickyNote2Outlined'
 import Box from '@mui/material/Box'
@@ -8,6 +9,7 @@ import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import { useColorScheme, useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
+import { useLocation } from 'react-router'
 import { CopilotIcon } from '@/design-system/components'
 import { useRightTool, type RightToolId } from '@/app/contexts/RightToolContext'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -16,7 +18,7 @@ import { surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 type ToolDef = {
   id: RightToolId
   label: string
-  icon: 'copilot' | 'notes' | 'email' | 'filter' | 'parties'
+  icon: 'copilot' | 'notes' | 'email' | 'filter' | 'parties' | 'history'
 }
 
 const GLOBAL_TOOLS: ToolDef[] = [
@@ -48,20 +50,28 @@ function ToolIcon({
   if (kind === 'filter') {
     return <FilterListOutlinedIcon sx={{ fontSize: 20 }} />
   }
+  if (kind === 'history') {
+    return <HistoryOutlinedIcon sx={{ fontSize: 20 }} />
+  }
   return <GroupsOutlinedIcon sx={{ fontSize: 20 }} />
 }
 
 /** Persistent tool rail — vertical on desktop, fixed bottom bar on mobile/tablet. */
 export function AppRightToolRail() {
   const theme = useTheme()
+  const location = useLocation()
   const isDesktopTools = useMediaQuery(theme.breakpoints.up('lg'))
-  const { activeTool, toggleTool, filterContent, partiesContent } = useRightTool()
+  const { activeTool, toggleTool, filterContent, partiesContent, historyAvailable } = useRightTool()
   const { mode, systemMode } = useColorScheme()
   const resolvedMode = mode === 'system' ? systemMode : mode
   const isDarkMode = resolvedMode === 'dark'
+  const hideCopilotTool = location.pathname === '/copilot-studio'
 
   const tools: ToolDef[] = [
-    ...GLOBAL_TOOLS,
+    ...GLOBAL_TOOLS.filter((tool) => !(hideCopilotTool && tool.id === 'copilot')),
+    ...(historyAvailable
+      ? [{ id: 'history' as const, label: 'History', icon: 'history' as const }]
+      : []),
     ...(filterContent != null ? [{ id: 'filter' as const, label: 'Filter', icon: 'filter' as const }] : []),
     ...(partiesContent != null
       ? [{ id: 'parties' as const, label: 'Parties', icon: 'parties' as const }]

@@ -1,4 +1,5 @@
 import type { AnalyticsKpiMetric, AnalyticsTimeSeriesPoint } from '@/design-system/components/analytics/analyticsStyles'
+import { copilotDrawerPromptGroups } from '@/pages/policies/components/copilot/copilotDrawerData'
 
 export type StudioTab = 'chat' | 'prompts' | 'agents' | 'insights'
 
@@ -19,14 +20,14 @@ export type StudioAgent = {
   favorite: boolean
 }
 
-export type StudioPromptCategory = 'All products' | 'Policy' | 'Billing' | 'Claims'
+export type StudioPromptCategory = 'All products' | 'Actions' | 'Information' | 'Help' | 'Other'
 
 export type StudioPrompt = {
   id: string
   title: string
   description: string
   category: Exclude<StudioPromptCategory, 'All products'>
-  type: 'system' | 'helper'
+  type: 'action' | 'prompt'
   favorite: boolean
 }
 
@@ -328,81 +329,18 @@ export const studioAgentsMock: StudioAgent[] = agentSeed.map((agent, index) => (
   ...agent,
 }))
 
-export const studioPromptsMock: StudioPrompt[] = [
-  {
-    id: 'prompt-1',
-    title: 'Show me all billing terms and effective dates',
-    description:
-      'Can you show me all billing terms, installment schedules, and effective dates for policy [POLICY NUMBER]?',
-    category: 'Billing',
-    type: 'system',
-    favorite: true,
-  },
-  {
-    id: 'prompt-2',
-    title: 'Find policy',
-    description: 'Look up policy [POLICY NUMBER] and summarize coverage, status, and recent activity.',
-    category: 'Policy',
-    type: 'helper',
-    favorite: false,
-  },
-  {
-    id: 'prompt-3',
-    title: 'List all policies under account',
-    description: 'Show all active and pending policies for insured [ACCOUNT NAME] with expiration dates.',
-    category: 'Policy',
-    type: 'system',
-    favorite: false,
-  },
-  {
-    id: 'prompt-4',
-    title: 'Which claims need my attention?',
-    description: 'Summarize open claims assigned to me with reserves above threshold and aging over 14 days.',
-    category: 'Claims',
-    type: 'system',
-    favorite: true,
-  },
-  {
-    id: 'prompt-5',
-    title: 'Summarize upcoming renewals',
-    description: 'List renewals due in the next 60 days sorted by premium with loss ratio trends.',
-    category: 'Policy',
-    type: 'helper',
-    favorite: false,
-  },
-  {
-    id: 'prompt-6',
-    title: 'Generate renewal quote package',
-    description: 'Create a renewal quote for policy [POLICY NUMBER] including loss runs and rate indication.',
-    category: 'Policy',
-    type: 'system',
-    favorite: false,
-  },
-  {
-    id: 'prompt-7',
-    title: 'Review past-due invoices',
-    description: 'Show all accounts with invoices past due over 30 days and total outstanding balance.',
-    category: 'Billing',
-    type: 'helper',
-    favorite: false,
-  },
-  {
-    id: 'prompt-8',
-    title: 'Draft claim status update',
-    description: 'Write a producer-friendly status update for claim [CLAIM NUMBER] including reserve and next steps.',
-    category: 'Claims',
-    type: 'helper',
-    favorite: false,
-  },
-  {
-    id: 'prompt-9',
-    title: 'Compare fleet schedule to policy',
-    description: 'Compare the latest fleet schedule upload against bound vehicles on policy [POLICY NUMBER].',
-    category: 'Policy',
-    type: 'system',
-    favorite: false,
-  },
-]
+export const studioPromptsMock: StudioPrompt[] = copilotDrawerPromptGroups.flatMap((group) => {
+  const category = group.label as Exclude<StudioPromptCategory, 'All products'>
+  const type: StudioPrompt['type'] = group.id === 'actions' ? 'action' : 'prompt'
+  return group.prompts.map((prompt) => ({
+    id: prompt.id,
+    title: prompt.title,
+    description: `${group.label} prompt shared with the Copilot drawer.`,
+    category,
+    type,
+    favorite: prompt.favorite,
+  }))
+})
 
 export const studioChatThreadsMock: StudioChatThread[] = [
   {
@@ -425,12 +363,126 @@ export const studioChatThreadsMock: StudioChatThread[] = [
       },
     ],
   },
-  { id: 'chat-1', title: 'Which claims need my attention?', timestamp: 'Today', agentRun: false },
-  { id: 'chat-2', title: 'Run Commercial Package Quote Creation Agent', timestamp: 'Today', agentRun: true },
-  { id: 'chat-3', title: 'Run Payment Allocation Agent', timestamp: 'Today', agentRun: true },
-  { id: 'chat-4', title: 'Summarize upcoming renewals', timestamp: 'Yesterday', agentRun: false },
-  { id: 'chat-5', title: 'Create a note for HO13413 claim file', timestamp: 'Yesterday', agentRun: false },
-  { id: 'chat-6', title: 'Review loss runs for Midwest Fabrication', timestamp: 'Jun 24, 2026', agentRun: false },
+  {
+    id: 'chat-1',
+    title: 'Which claims need my attention?',
+    timestamp: 'Today',
+    agentRun: false,
+    messages: [
+      {
+        id: 'chat-1-u1',
+        role: 'user',
+        content: 'Which claims need my attention?',
+      },
+      {
+        id: 'chat-1-a1',
+        role: 'assistant',
+        content:
+          'Three open claims need attention: CLM-2026-004412 (reserve review), CLM-2026-003891 (awaiting estimate), and CLM-2026-003104 (litigation referral pending). I can summarize any of these in detail.',
+        elapsedSeconds: 3.62,
+      },
+    ],
+  },
+  {
+    id: 'chat-2',
+    title: 'Run Commercial Package Quote Creation Agent',
+    timestamp: 'Today',
+    agentRun: true,
+    messages: [
+      {
+        id: 'chat-2-u1',
+        role: 'user',
+        content: 'Run Commercial Package Quote Creation Agent',
+      },
+      {
+        id: 'chat-2-a1',
+        role: 'assistant',
+        content:
+          'Commercial Package Quote Creation Agent finished for Atlantic Ridge Construction LLC. Draft package is ready with GL, property, and inland marine options. Open the agent run to review rating factors and referral flags.',
+        elapsedSeconds: 6.41,
+      },
+    ],
+  },
+  {
+    id: 'chat-3',
+    title: 'Run Payment Allocation Agent',
+    timestamp: 'Today',
+    agentRun: true,
+    messages: [
+      {
+        id: 'chat-3-u1',
+        role: 'user',
+        content: 'Run Payment Allocation Agent',
+      },
+      {
+        id: 'chat-3-a1',
+        role: 'assistant',
+        content:
+          'Payment Allocation Agent applied $48,250 across 6 open invoices for Midwest Fabrication Inc. Two residual credits remain unmatched and need producer confirmation.',
+        elapsedSeconds: 5.27,
+      },
+    ],
+  },
+  {
+    id: 'chat-4',
+    title: 'Summarize upcoming renewals',
+    timestamp: 'Yesterday',
+    agentRun: false,
+    messages: [
+      {
+        id: 'chat-4-u1',
+        role: 'user',
+        content: 'Summarize upcoming renewals',
+      },
+      {
+        id: 'chat-4-a1',
+        role: 'assistant',
+        content:
+          'You have 14 renewals due in the next 60 days totaling $2.4M in premium. Four accounts show loss ratio increases above 10 points — I recommend prioritizing Atlantic Ridge Construction and Red Oak Hospitality Group.',
+        elapsedSeconds: 5.08,
+      },
+    ],
+  },
+  {
+    id: 'chat-5',
+    title: 'Create a note for HO13413 claim file',
+    timestamp: 'Yesterday',
+    agentRun: false,
+    messages: [
+      {
+        id: 'chat-5-u1',
+        role: 'user',
+        content: 'Create a note for HO13413 claim file',
+      },
+      {
+        id: 'chat-5-a1',
+        role: 'assistant',
+        content:
+          'Draft note ready for claim HO13413: inspected damages confirmed, estimate pending from contractor, and insured notified of next steps. Save to the file or edit before posting.',
+        elapsedSeconds: 2.94,
+      },
+    ],
+  },
+  {
+    id: 'chat-6',
+    title: 'Review loss runs for Midwest Fabrication',
+    timestamp: 'Jun 24, 2026',
+    agentRun: false,
+    messages: [
+      {
+        id: 'chat-6-u1',
+        role: 'user',
+        content: 'Review loss runs for Midwest Fabrication',
+      },
+      {
+        id: 'chat-6-a1',
+        role: 'assistant',
+        content:
+          '5-year loss runs for Midwest Fabrication show 4 closed claims and 1 open water-damage claim. Frequency is within appetite; severity on the open claim is driving the renewal referral.',
+        elapsedSeconds: 4.55,
+      },
+    ],
+  },
 ]
 
 export const studioInsightsKpis: AnalyticsKpiMetric[] = [
@@ -475,6 +527,12 @@ export const studioInteractionTrend: AnalyticsTimeSeriesPoint[] = [
   { label: 'Jun 30', value: 10 },
 ]
 
-export const studioPromptCategories: StudioPromptCategory[] = ['All products', 'Policy', 'Billing', 'Claims']
+export const studioPromptCategories: StudioPromptCategory[] = [
+  'All products',
+  'Actions',
+  'Information',
+  'Help',
+  'Other',
+]
 
 export const studioAgentStatusFilters: StudioAgentStatus[] = ['Active', 'Inactive', 'Draft']

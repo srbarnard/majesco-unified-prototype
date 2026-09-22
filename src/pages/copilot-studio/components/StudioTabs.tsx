@@ -1,6 +1,6 @@
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined'
-import PsychologyOutlinedIcon from '@mui/icons-material/PsychologyOutlined'
+import PostAddOutlinedIcon from '@mui/icons-material/PostAddOutlined'
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
@@ -54,7 +54,7 @@ export function StudioTabs({ value, onChange }: StudioTabsProps) {
       }}
     >
       <Tab icon={<ChatBubbleOutlineOutlinedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Chat" value="chat" />
-      <Tab icon={<PsychologyOutlinedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Prompts" value="prompts" />
+      <Tab icon={<PostAddOutlinedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Prompts" value="prompts" />
       <Tab icon={<SmartToyOutlinedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Agents" value="agents" />
       <Tab icon={<BarChartOutlinedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Insights" value="insights" />
     </Tabs>

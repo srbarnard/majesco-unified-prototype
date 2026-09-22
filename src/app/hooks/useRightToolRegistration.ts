@@ -153,3 +153,16 @@ export function useRegisterRightToolParties(content: ReactNode | null, deps: Rea
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
 }
+
+/**
+ * Register History as a right-rail tool (Copilot Studio).
+ * Opens the left history drawer — does not fill the right tool panel.
+ */
+export function useRegisterRightToolHistory(available: boolean) {
+  const { setHistoryAvailable } = useRightToolDispatch()
+
+  useEffect(() => {
+    setHistoryAvailable(available)
+    return () => setHistoryAvailable(false)
+  }, [available, setHistoryAvailable])
+}

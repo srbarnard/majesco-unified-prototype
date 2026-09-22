@@ -68,7 +68,8 @@ export function AppRightToolDrawer() {
   const { activeTool, closeTool } = useRightTool()
   const { width, startResize } = useRightPanelWidth()
 
-  const open = activeTool != null
+  // History is a rail toggle for Copilot Studio's left drawer — not a right panel.
+  const open = activeTool != null && activeTool !== 'history'
   const bottomOffset = `calc(${layoutTokens.toolRailBottomHeight}px + env(safe-area-inset-bottom, 0px))`
 
   if (!isDesktopTools) {

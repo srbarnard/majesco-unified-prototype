@@ -26,14 +26,12 @@ function getGreeting() {
 
 export function DashboardPage() {
   const { copilotOpen, copilotView, agenticPrompt, closeCopilot, openHomeCopilotDefault } = useGlobalSearch()
-  const { openTool, closeTool } = useRightTool()
+  const { openTool } = useRightTool()
   const isDesktop = useIsDesktopLayout()
   const contentPx = `${layoutTokens.contentPaddingX}px`
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
   const [taskDetailOpen, setTaskDetailOpen] = useState(false)
   const [copilotTaskFocus, setCopilotTaskFocus] = useState<TaskRecord | null>(null)
-  const [copilotSeedMessage, setCopilotSeedMessage] = useState<string | null>(null)
-  const [returnToTask, setReturnToTask] = useState<TaskRecord | null>(null)
   const [selectedActivity, setSelectedActivity] = useState<RecentActivityItem | null>(null)
   const [activityDetailOpen, setActivityDetailOpen] = useState(false)
   const [focusedActivity, setFocusedActivity] = useState<RecentActivityItem | null>(null)
@@ -65,8 +63,6 @@ export function DashboardPage() {
 
   const clearCopilotFocus = useCallback(() => {
     setCopilotTaskFocus(null)
-    setCopilotSeedMessage(null)
-    setReturnToTask(null)
     setFocusedActivity(null)
   }, [])
 
@@ -96,27 +92,6 @@ export function DashboardPage() {
     [clearCopilotFocus, closeCopilot, handleCloseActivityDetail],
   )
 
-  const handleTaskRecommendation = useCallback(
-    (insight: string) => {
-      if (!selectedTask) return
-      setReturnToTask(selectedTask)
-      setCopilotTaskFocus(selectedTask)
-      setCopilotSeedMessage(insight)
-      setFocusedActivity(null)
-      dismissDetailForCopilot()
-      openTool('copilot')
-    },
-    [dismissDetailForCopilot, openTool, selectedTask],
-  )
-
-  const handleBackToTaskDetails = useCallback(() => {
-    if (!returnToTask) return
-    setSelectedTask(returnToTask)
-    setTaskDetailOpen(true)
-    clearCopilotFocus()
-    closeTool()
-  }, [clearCopilotFocus, closeTool, returnToTask])
-
   const handleBackToDailySummary = useCallback(() => {
     clearCopilotFocus()
     openHomeCopilotDefault()
@@ -132,8 +107,6 @@ export function DashboardPage() {
       handleCloseTaskDetail()
       handleCloseActivityDetail()
       setCopilotTaskFocus(null)
-      setCopilotSeedMessage(null)
-      setReturnToTask(null)
       setFocusedActivity(activity)
       openTool('copilot')
     },
@@ -165,21 +138,16 @@ export function DashboardPage() {
       agenticPrompt: hasEntityFocus ? null : agenticPrompt,
       focusedTask: copilotTaskFocus,
       focusedActivity,
-      seedComposerMessage: copilotSeedMessage,
-      onBackToTaskDetails: copilotSeedMessage && returnToTask ? handleBackToTaskDetails : undefined,
       onBackToSummary: focusedActivity ? handleBackToDailySummary : undefined,
       summaryBackLabel: 'Daily summary',
     },
     [
       agenticPrompt,
-      copilotSeedMessage,
       copilotTaskFocus,
       copilotView,
       focusedActivity,
       handleBackToDailySummary,
-      handleBackToTaskDetails,
       hasEntityFocus,
-      returnToTask,
     ],
   )
 
@@ -268,7 +236,6 @@ export function DashboardPage() {
               onBack={handleBackToCopilotSummary}
               onClose={handleCloseTaskDetail}
               onMarkComplete={handleCloseTaskDetail}
-              onRecommendationClick={handleTaskRecommendation}
             />
           ) : activityDetailOpen && selectedActivity ? (
             <ActivityDetailsPanel

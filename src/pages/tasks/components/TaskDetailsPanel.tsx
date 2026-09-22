@@ -1,9 +1,7 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import CloseIcon from '@mui/icons-material/Close'
-import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined'
 import Box from '@mui/material/Box'
-import Divider from '@mui/material/Divider'
+import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import MuiButton from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
@@ -12,7 +10,6 @@ import { Link as RouterLink } from 'react-router'
 import {
   Button,
   InsightCallout,
-  StatusChip,
 } from '@/design-system/components'
 import { filterFooterButtonSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -27,18 +24,37 @@ import {
   TaskDetailText,
   TaskEntityRow,
 } from '@/pages/tasks/components/TaskDetailSection'
-import { TaskDescriptionCard } from '@/pages/tasks/components/TaskDescriptionCard'
 import { TaskPriorityIndicator } from '@/pages/tasks/components/TaskPriorityIndicator'
 import { TaskStatusChip } from '@/pages/tasks/components/TaskStatusChip'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
 import { getTaskRelatedEntityRoute, getTaskRelatedSummary } from '@/pages/tasks/data/mockTasks'
-import {
-  getTaskDocumentChipVariant,
-  getTaskSlaTone,
-} from '@/pages/tasks/utils/taskDisplayUtils'
+import { getTaskSlaTone } from '@/pages/tasks/utils/taskDisplayUtils'
 
 const GUTTER = layoutTokens.contentPaddingX / 8
-const contentPaddingX = `${layoutTokens.contentPaddingX}px`
+/** Match CopilotDrawerShell chat content inset (`px: 2`). */
+const panelPx = 2
+
+const bodySx = {
+  fontFamily: figmaFontFamilyStack.body,
+  fontWeight: 400,
+  fontSize: '0.875rem',
+  lineHeight: 1.55,
+} as const
+
+const labeledTitleSx = {
+  fontFamily: figmaFontFamilyStack.heading,
+  fontWeight: 600,
+  fontSize: '0.8125rem',
+  color: 'text.secondary',
+  letterSpacing: '0.01em',
+} as const
+
+const documentChipSx = {
+  maxWidth: '100%',
+  fontFamily: figmaFontFamilyStack.body,
+  fontSize: '0.75rem',
+  '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+} as const
 
 type TaskDetailsPanelProps = {
   task: TaskRecord
@@ -46,7 +62,6 @@ type TaskDetailsPanelProps = {
   /** Return to the Copilot summary without closing the right panel. */
   onBack?: () => void
   onMarkComplete?: (task: TaskRecord) => void
-  onRecommendationClick?: (insight: string) => void
 }
 
 function formatDueDate(dueDate: string) {
@@ -62,20 +77,19 @@ export function TaskDetailsPanel({
   onClose,
   onBack,
   onMarkComplete,
-  onRecommendationClick,
 }: TaskDetailsPanelProps) {
   const related = getTaskRelatedSummary(task)
   const relatedRoute = getTaskRelatedEntityRoute(task)
   const { relatedEntities } = task
-  const dueLabel = formatDueDate(task.dueDate)
+  const dueRowLabel = `${task.ageIndicator} · ${formatDueDate(task.dueDate)}`
 
   return (
     <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', overflow: 'hidden' }}>
       <Box
         sx={{
-          px: contentPaddingX,
+          px: panelPx,
           pt: layoutTokens.policyHeaderTopPadding,
-          pb: 1.5,
+          pb: 0,
           bgcolor: 'background.paper',
           flexShrink: 0,
         }}
@@ -94,7 +108,7 @@ export function TaskDetailsPanel({
 
       <Box
         sx={{
-          px: contentPaddingX,
+          px: panelPx,
           pt: 2,
           pb: GUTTER,
           flex: 1,
@@ -102,21 +116,32 @@ export function TaskDetailsPanel({
           overflowY: 'auto',
         }}
       >
-        <Stack spacing={0.75} sx={{ mb: 1.5 }}>
+        <Box sx={{ mb: 1.5 }}>
           {onBack ? (
-            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ minWidth: 0 }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'auto minmax(0, 1fr)',
+                columnGap: 0.5,
+                alignItems: 'center',
+              }}
+            >
               <IconButton
                 size="small"
                 onClick={onBack}
                 aria-label="Back to Copilot"
-                sx={{ ml: -0.75, flexShrink: 0 }}
+                sx={{ ml: -0.75, gridRow: 1, gridColumn: 1 }}
               >
                 <ArrowBackIcon fontSize="small" />
               </IconButton>
-              <Typography variant="subtitle2" noWrap sx={{ ...copilotSubtitleSx, minWidth: 0 }}>
+              <Typography
+                variant="subtitle2"
+                noWrap
+                sx={{ ...copilotSubtitleSx, gridRow: 1, gridColumn: 2, minWidth: 0 }}
+              >
                 {task.taskName}
               </Typography>
-            </Stack>
+            </Box>
           ) : (
             <Typography variant="subtitle2" sx={copilotSubtitleSx}>
               {task.taskName}
@@ -128,7 +153,7 @@ export function TaskDetailsPanel({
             flexWrap="wrap"
             useFlexGap
             spacing={0.75}
-            sx={{ rowGap: 0.5 }}
+            sx={{ rowGap: 0.5, mt: 0.75 }}
           >
             <TaskPriorityIndicator priority={task.priority} />
             <Typography
@@ -163,7 +188,7 @@ export function TaskDetailsPanel({
             </Typography>
             <TaskStatusChip displayStatus={task.displayStatus} />
           </Stack>
-        </Stack>
+        </Box>
 
         <CopilotContentTransition contentKey={task.id}>
           <Stack spacing={GUTTER}>
@@ -173,65 +198,39 @@ export function TaskDetailsPanel({
               </InsightCallout>
             )}
 
-            <TaskDescriptionCard
-              description={task.description}
-              copilotInsights={task.copilotInsights}
-              onRecommendationClick={onRecommendationClick}
-            />
+            <Typography variant="body2" color="text.primary" sx={bodySx}>
+              {task.description}
+            </Typography>
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ ...labeledTitleSx, mb: 0.5 }}>
+                Next action
+              </Typography>
+              <Typography variant="body2" color="text.primary" sx={bodySx}>
+                {task.nextAction}
+              </Typography>
+            </Box>
+
+            <Typography
+              variant="body2"
+              sx={{
+                ...bodySx,
+                color: getTaskSlaTone(task),
+                fontWeight: task.isPastDue ? 600 : 400,
+              }}
+            >
+              {dueRowLabel}
+            </Typography>
+
+            {task.documents.length > 0 ? (
+              <Stack direction="row" flexWrap="wrap" gap={0.75}>
+                {task.documents.map((doc) => (
+                  <Chip key={doc.id} size="small" label={doc.name} sx={documentChipSx} />
+                ))}
+              </Stack>
+            ) : null}
 
             <Stack spacing={0}>
-              <TaskDetailAccordion title="Next action" defaultExpanded>
-                <TaskDetailText>{task.nextAction}</TaskDetailText>
-              </TaskDetailAccordion>
-
-              <TaskDetailAccordion
-                title="SLA / due"
-                subtitle={`${task.ageIndicator} · Due ${dueLabel}`}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontFamily: figmaFontFamilyStack.body,
-                    fontSize: '0.875rem',
-                    lineHeight: 1.55,
-                    color: getTaskSlaTone(task),
-                    fontWeight: task.isPastDue ? 600 : 400,
-                  }}
-                >
-                  {task.ageIndicator}
-                  {' · '}
-                  Due {dueLabel}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.75 }}
-                >
-                  {task.agingDays}d open · {task.priorityReason}
-                </Typography>
-                <Divider sx={{ my: 1.25 }} />
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    fontFamily: figmaFontFamilyStack.heading,
-                    fontWeight: 600,
-                    fontSize: '0.75rem',
-                    color: 'text.secondary',
-                    mb: 0.5,
-                  }}
-                >
-                  Assignment
-                </Typography>
-                <TaskDetailText>{task.assignedTo}</TaskDetailText>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.5 }}
-                >
-                  {task.team} · Assigned by {task.assigner}
-                </Typography>
-              </TaskDetailAccordion>
-
               <TaskDetailAccordion title="Related entities" subtitle={related.primary}>
                 <Stack spacing={0.75}>
                   <TaskEntityRow label="Insured" value={relatedEntities.insuredName} />
@@ -242,34 +241,6 @@ export function TaskDetailsPanel({
                   <TaskEntityRow label="Producer" value={relatedEntities.producer} />
                 </Stack>
               </TaskDetailAccordion>
-
-              {task.documents.length > 0 && (
-                <TaskDetailAccordion
-                  title="Documents"
-                  subtitle={`${task.documents.length} file${task.documents.length === 1 ? '' : 's'}`}
-                >
-                  <Stack spacing={0.75} divider={<Divider flexItem />}>
-                    {task.documents.map((doc) => (
-                      <Stack
-                        key={doc.name}
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        spacing={1}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem', flex: 1 }}
-                        >
-                          {doc.name}
-                          {doc.required ? '' : ' (optional)'}
-                        </Typography>
-                        <StatusChip label={doc.status} status={getTaskDocumentChipVariant(doc.status)} />
-                      </Stack>
-                    ))}
-                  </Stack>
-                </TaskDetailAccordion>
-              )}
 
               {task.notes && (
                 <TaskDetailAccordion title="Notes">
@@ -283,7 +254,7 @@ export function TaskDetailsPanel({
 
       <Box
         sx={{
-          px: contentPaddingX,
+          px: panelPx,
           py: GUTTER,
           bgcolor: 'background.paper',
           flexShrink: 0,
@@ -295,7 +266,6 @@ export function TaskDetailsPanel({
               variant="contained"
               color="primary"
               fullWidth
-              startIcon={<CheckCircleOutlineIcon sx={{ fontSize: 18 }} />}
               onClick={() => onMarkComplete?.(task)}
               sx={filterFooterButtonSx}
             >
@@ -309,7 +279,6 @@ export function TaskDetailsPanel({
                 color="primary"
                 fullWidth
                 disableElevation
-                startIcon={<OpenInNewOutlinedIcon sx={{ fontSize: 18 }} />}
                 sx={{
                   ...filterFooterButtonSx,
                   borderWidth: 2,

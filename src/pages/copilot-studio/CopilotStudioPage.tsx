@@ -1,5 +1,7 @@
 import Box from '@mui/material/Box'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useRightTool } from '@/app/contexts/RightToolContext'
+import { useRegisterRightToolHistory } from '@/app/hooks/useRightToolRegistration'
 import { AgentsTab } from '@/pages/copilot-studio/components/AgentsTab'
 import { ChatTab } from '@/pages/copilot-studio/components/ChatTab'
 import { InsightsTab } from '@/pages/copilot-studio/components/InsightsTab'
@@ -8,16 +10,14 @@ import { StudioChatDrawer } from '@/pages/copilot-studio/components/StudioChatDr
 import { StudioHeader } from '@/pages/copilot-studio/components/StudioHeader'
 import type { StudioAgent, StudioChatMessage, StudioChatThread, StudioPrompt, StudioTab } from '@/pages/copilot-studio/data/mockCopilotStudio'
 import { resolveStudioChatResponse } from '@/pages/copilot-studio/data/resolveStudioChatResponse'
-import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
 import { layoutTokens } from '@/design-system/tokens/layout'
 
 const LIST_SECTION_GAP = layoutTokens.listSectionVerticalGap
 
 export function CopilotStudioPage() {
-  const isDesktop = useIsDesktopLayout()
   const contentPx = `${layoutTokens.contentPaddingX}px`
+  const { activeTool, closeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<StudioTab>('chat')
-  const [chatDrawerOpen, setChatDrawerOpen] = useState(true)
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null)
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null)
@@ -26,21 +26,9 @@ export function CopilotStudioPage() {
   const isChatTab = activeTab === 'chat'
   const isExploreTab = activeTab === 'prompts' || activeTab === 'agents'
   const isFullBleedTab = isChatTab || isExploreTab || activeTab === 'insights'
+  const chatDrawerOpen = activeTool === 'history'
 
-  useEffect(() => {
-    if (!isDesktop) {
-      setChatDrawerOpen(false)
-    }
-  }, [isDesktop])
-
-  const handleToggleChatDrawer = useCallback(() => {
-    setChatDrawerOpen((current) => !current)
-  }, [])
-
-  const handleCloseChatDrawer = useCallback(() => {
-    setChatDrawerOpen(false)
-  }, [])
-
+  useRegisterRightToolHistory(true)
   const handleTabChange = useCallback((tab: StudioTab) => {
     setActiveTab(tab)
   }, [])
@@ -80,7 +68,8 @@ export function CopilotStudioPage() {
     setActiveThreadId(null)
     setChatMessages([])
     setActiveTab('chat')
-  }, [])
+    closeTool()
+  }, [closeTool])
 
   return (
     <Box
@@ -96,7 +85,7 @@ export function CopilotStudioPage() {
     >
       <StudioChatDrawer
         open={chatDrawerOpen}
-        onClose={handleCloseChatDrawer}
+        onClose={closeTool}
         activeThreadId={activeThreadId}
         onThreadSelect={handleThreadSelect}
         onNewChat={handleNewChat}
@@ -113,12 +102,7 @@ export function CopilotStudioPage() {
           bgcolor: 'background.paper',
         }}
       >
-        <StudioHeader
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          chatDrawerOpen={chatDrawerOpen}
-          onToggleChatDrawer={handleToggleChatDrawer}
-        />
+        <StudioHeader activeTab={activeTab} onTabChange={handleTabChange} />
 
         <Box
           sx={{
