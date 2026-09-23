@@ -130,12 +130,10 @@ function InsightsAreaTrendCard({
   title,
   data,
   legendLabel,
-  comingSoon,
 }: {
   title: string
   data: AnalyticsTimeSeriesPoint[]
   legendLabel: string
-  comingSoon?: boolean
 }) {
   const theme = useTheme()
   const { palette, paletteId, setPaletteId, range, setRange } = usePulsePreferences()
@@ -155,7 +153,7 @@ function InsightsAreaTrendCard({
           sx={{ width: '100%' }}
         >
           <Typography variant="subtitle2" sx={{ ...analyticsHeadingSx, fontSize: '0.9375rem' }}>
-            {comingSoon ? `${title} (coming soon)` : title}
+            {title}
           </Typography>
           <Box sx={{ minWidth: 0, width: { xs: '100%', sm: 'auto' } }}>
             <PulseChartControls
@@ -306,7 +304,6 @@ function OverviewView() {
               title="Credit usage"
               data={studioOverviewCreditTrend}
               legendLabel="Credits used"
-              comingSoon
             />
           </Grid>
         </Grid>

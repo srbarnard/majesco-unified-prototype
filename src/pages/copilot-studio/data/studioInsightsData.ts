@@ -83,9 +83,12 @@ const agentsInteractionValues = [
 
 export const studioOverviewInteractionTrend: AnalyticsTimeSeriesPoint[] = buildDailyTrend(overviewInteractionValues)
 
-export const studioOverviewCreditTrend: AnalyticsTimeSeriesPoint[] = buildDailyTrend(
-  Array.from({ length: 24 }, () => 0),
-)
+/** Daily credit consumption — tracks interaction volume with a bit of noise. */
+const overviewCreditValues = [
+  180, 210, 245, 160, 290, 320, 305, 360, 240, 270, 390, 420, 295, 330, 370, 315, 450, 490, 340, 365, 310, 640, 680, 150, 130, 1280, 1050,
+].slice(-24)
+
+export const studioOverviewCreditTrend: AnalyticsTimeSeriesPoint[] = buildDailyTrend(overviewCreditValues)
 
 export const studioAssistantsKpis: AnalyticsKpiMetric[] = [
   {

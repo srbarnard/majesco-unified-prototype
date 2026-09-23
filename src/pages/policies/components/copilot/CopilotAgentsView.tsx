@@ -160,7 +160,7 @@ export function CopilotAgentsView({ onBack, onSelectAgent, onOpenPrompts }: Copi
                         onClick={() => toggleFavorite(agent.id)}
                       >
                         {favorites[agent.id] ? (
-                          <FavoriteIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                          <FavoriteIcon fontSize="small" sx={{ color: 'error.main' }} />
                         ) : (
                           <FavoriteBorderIcon fontSize="small" sx={{ color: 'text.secondary' }} />
                         )}

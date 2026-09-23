@@ -256,7 +256,7 @@ export function CopilotPromptsView({ onBack, onSelectPrompt, onOpenAgents }: Cop
                         onClick={() => toggleFavorite(prompt.id)}
                       >
                         {favorites[prompt.id] ? (
-                          <FavoriteIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                          <FavoriteIcon fontSize="small" sx={{ color: 'error.main' }} />
                         ) : (
                           <FavoriteBorderIcon fontSize="small" sx={{ color: 'text.secondary' }} />
                         )}
