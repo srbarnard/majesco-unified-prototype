@@ -17,11 +17,15 @@ export type TaskTheme =
   | 'Producer support'
   | 'Automated quote issues'
 
+export type TaskDocumentType = 'pdf' | 'spreadsheet' | 'image' | 'form' | 'package' | 'email'
+
 export type TaskDocument = {
   id: string
   name: string
   status: string
   required: boolean
+  /** Visual chip / file-type cue in the task drawer. */
+  type?: TaskDocumentType
 }
 
 export type TaskRelatedEntities = {
@@ -158,9 +162,10 @@ export const tasksMock: TaskRecord[] = [
       'Generate draft referral memo citing 3 largest water losses and mitigation recommendations.',
     ],
     documents: [
-      { id: 'doc-1', name: 'Updated loss runs (5-year)', status: 'Received', required: true },
-      { id: 'doc-2', name: 'Property inspection report (2024)', status: 'Received', required: true },
-      { id: 'doc-3', name: 'Signed renewal application', status: 'Missing', required: true },
+      { id: 'task-att-loss-runs-5yr', name: 'Updated loss runs (5-year)', status: 'Received', required: true, type: 'pdf' },
+      { id: 'task-att-property-inspection-2024', name: 'Property inspection report (2024)', status: 'Received', required: true, type: 'pdf' },
+      { id: 'task-att-site-photos', name: 'Site photos (Omaha elevator)', status: 'Received', required: false, type: 'image' },
+      { id: 'task-att-signed-renewal-app', name: 'Signed renewal application', status: 'Missing', required: true, type: 'form' },
     ],
     blockingIssues: 'Signed renewal application not yet uploaded by producer portal.',
     notes: 'Producer requested hold on rate discussion until inspection findings reviewed.',
@@ -203,9 +208,9 @@ export const tasksMock: TaskRecord[] = [
       'Auto-generate endorsement draft with standard primary/non-contributory language if producer confirms.',
     ],
     documents: [
-      { id: 'doc-4', name: 'Executed lease (exhibit B)', status: 'Received', required: true },
-      { id: 'doc-5', name: 'Additional insured schedule', status: 'Missing', required: true },
-      { id: 'doc-6', name: 'Producer authorization', status: 'Received', required: false },
+      { id: 'task-att-executed-lease', name: 'Executed lease (exhibit B)', status: 'Received', required: true, type: 'pdf' },
+      { id: 'task-att-ai-schedule', name: 'Additional insured schedule', status: 'Missing', required: true, type: 'spreadsheet' },
+      { id: 'task-att-producer-auth', name: 'Producer authorization', status: 'Received', required: false, type: 'email' },
     ],
     blockingIssues: 'Additional insured schedule PDF is password-protected; cannot extract entity list.',
     notes: null,
@@ -248,8 +253,9 @@ export const tasksMock: TaskRecord[] = [
       'One-click fix available: apply MVR garaging + decoded trim, then re-rate.',
     ],
     documents: [
-      { id: 'qdoc-1', name: 'MVR (driver 1)', status: 'Received', required: true },
-      { id: 'qdoc-2', name: 'Vehicle photos', status: 'Not required', required: false },
+      { id: 'task-att-mvr-driver-1', name: 'MVR (driver 1)', status: 'Received', required: true, type: 'pdf' },
+      { id: 'task-att-vehicle-photos', name: 'Vehicle photos', status: 'Not required', required: false, type: 'image' },
+      { id: 'task-att-vin-decode', name: 'VIN decode worksheet', status: 'Received', required: true, type: 'spreadsheet' },
     ],
     blockingIssues: 'Rating engine error code VIN-TRIM-004 prevents bind until resolved.',
     notes: 'Producer noted customer traded vehicles last week.',
@@ -292,9 +298,9 @@ export const tasksMock: TaskRecord[] = [
       'If escalated, assign to Tier 2 compliance; do not release quote to bind until status = Cleared.',
     ],
     documents: [
-      { id: 'doc-1', name: 'Owner ID verification', status: 'Received', required: true },
-      { id: 'doc-2', name: 'OFAC screening report', status: 'Received', required: true },
-      { id: 'doc-3', name: 'Compliance clearance form', status: 'Missing', required: true },
+      { id: 'task-att-owner-id', name: 'Owner ID verification', status: 'Received', required: true, type: 'image' },
+      { id: 'task-att-ofac-report', name: 'OFAC screening report', status: 'Received', required: true, type: 'pdf' },
+      { id: 'task-att-compliance-clearance', name: 'Compliance clearance form', status: 'Missing', required: true, type: 'form' },
     ],
     blockingIssues: 'Quote bind blocked by compliance hold COM-HOLD-881.',
     notes: 'Producer aware of delay; requested callback after clearance.',
@@ -337,9 +343,10 @@ export const tasksMock: TaskRecord[] = [
       'Draft producer response email with line-item reconciliation once finance confirms.',
     ],
     documents: [
-      { id: 'doc-4', name: 'May 2026 commission statement', status: 'Received', required: true },
-      { id: 'doc-5', name: 'Cancellation notice', status: 'Received', required: true },
-      { id: 'doc-6', name: 'Rewrite bind confirmation', status: 'Received', required: true },
+      { id: 'task-att-commission-may-2026', name: 'May 2026 commission statement', status: 'Received', required: true, type: 'spreadsheet' },
+      { id: 'task-att-cancellation-notice', name: 'Cancellation notice', status: 'Received', required: true, type: 'pdf' },
+      { id: 'task-att-rewrite-bind', name: 'Rewrite bind confirmation', status: 'Received', required: true, type: 'email' },
+      { id: 'task-att-rewrite-packet', name: 'Rewrite bind packet', status: 'Received', required: false, type: 'package' },
     ],
     blockingIssues: null,
     notes: 'Producer POC: Amanda Cho — prefers email response.',
@@ -382,9 +389,10 @@ export const tasksMock: TaskRecord[] = [
       'Suggest Copilot-drafted reserve memo template for claims file.',
     ],
     documents: [
-      { id: 'doc-1', name: 'Engineer report (final draft)', status: 'Received', required: true },
-      { id: 'doc-2', name: 'Proof of loss', status: 'Received', required: true },
-      { id: 'doc-3', name: 'UW reserve approval memo', status: 'Missing', required: true },
+      { id: 'task-att-engineer-report', name: 'Engineer report (final draft)', status: 'Received', required: true, type: 'pdf' },
+      { id: 'task-att-proof-of-loss', name: 'Proof of loss', status: 'Received', required: true, type: 'form' },
+      { id: 'task-att-damage-photos', name: 'Damage photos', status: 'Received', required: false, type: 'image' },
+      { id: 'task-att-uw-reserve-memo', name: 'UW reserve approval memo', status: 'Missing', required: true, type: 'email' },
     ],
     blockingIssues: 'Reserve change pending UW approval; payment hold on structural repairs.',
     notes: 'Linked to renewal task RNW-284719 — coordinate messaging.',
@@ -427,10 +435,11 @@ export const tasksMock: TaskRecord[] = [
       'If producer uploads revised SOV, re-parse and route to UW within 2 hrs.',
     ],
     documents: [
-      { id: 'doc-4', name: 'Statement of values (partial)', status: 'Received', required: true },
-      { id: 'doc-5', name: 'ACORD 125/126', status: 'Received', required: true },
-      { id: 'doc-6', name: '5-year loss runs', status: 'Missing', required: true },
-      { id: 'doc-1', name: 'Complete SOV', status: 'Missing', required: true },
+      { id: 'task-att-sov-partial', name: 'Statement of values (partial)', status: 'Received', required: true, type: 'spreadsheet' },
+      { id: 'task-att-acord-125-126', name: 'ACORD 125/126', status: 'Received', required: true, type: 'form' },
+      { id: 'task-att-5yr-loss-runs', name: '5-year loss runs', status: 'Missing', required: true, type: 'pdf' },
+      { id: 'task-att-complete-sov', name: 'Complete SOV', status: 'Missing', required: true, type: 'spreadsheet' },
+      { id: 'task-att-submission-package', name: 'Submission package', status: 'Received', required: false, type: 'package' },
     ],
     blockingIssues: 'PAS routing blocked — data completeness 77% (min 85%).',
     notes: 'Target effective date 08/01/2026.',
@@ -473,9 +482,10 @@ export const tasksMock: TaskRecord[] = [
       'Est. premium impact +$3.2K–$5.8K if reclass confirmed.',
     ],
     documents: [
-      { id: 'doc-2', name: 'Payroll reports (Q1–Q2)', status: 'Received', required: true },
-      { id: 'doc-3', name: 'Job description packet', status: 'Missing', required: true },
-      { id: 'doc-4', name: 'Prior audit worksheet', status: 'Received', required: false },
+      { id: 'task-att-payroll-q1q2', name: 'Payroll reports (Q1–Q2)', status: 'Received', required: true, type: 'spreadsheet' },
+      { id: 'task-att-job-descriptions', name: 'Job description packet', status: 'Missing', required: true, type: 'package' },
+      { id: 'task-att-prior-audit', name: 'Prior audit worksheet', status: 'Received', required: false, type: 'spreadsheet' },
+      { id: 'task-att-audit-email', name: 'Audit correspondence', status: 'Received', required: false, type: 'email' },
     ],
     blockingIssues: null,
     notes: 'Insured finance contact prefers audit correspondence via portal.',
@@ -518,9 +528,10 @@ export const tasksMock: TaskRecord[] = [
       'Send insured SMS-friendly payment link via producer portal (template available).',
     ],
     documents: [
-      { id: 'qdoc-3', name: 'Signed application', status: 'Received', required: true },
-      { id: 'qdoc-4', name: 'Payment authorization log', status: 'Received', required: true },
-      { id: 'qdoc-5', name: 'Alternate payment confirmation', status: 'Missing', required: true },
+      { id: 'task-att-signed-application', name: 'Signed application', status: 'Received', required: true, type: 'form' },
+      { id: 'task-att-payment-auth-log', name: 'Payment authorization log', status: 'Received', required: true, type: 'pdf' },
+      { id: 'task-att-card-scan', name: 'Alternate card scan', status: 'Not required', required: false, type: 'image' },
+      { id: 'task-att-alt-payment', name: 'Alternate payment confirmation', status: 'Missing', required: true, type: 'email' },
     ],
     blockingIssues: 'Bind transaction BTX-994102-03 failed; policy shell not created.',
     notes: 'Producer on live call with insured — prioritize.',
@@ -563,9 +574,10 @@ export const tasksMock: TaskRecord[] = [
       'Generate outreach brief: highlight umbrella limit gap vs expiring carrier schedule.',
     ],
     documents: [
-      { id: 'qdoc-6', name: 'Indication proposal', status: 'Received', required: false },
-      { id: 'qdoc-7', name: 'Competitor expiring dec page', status: 'Missing', required: false },
-      { id: 'qdoc-1', name: 'Extension approval', status: 'Missing', required: true },
+      { id: 'task-att-indication-proposal', name: 'Indication proposal', status: 'Received', required: false, type: 'pdf' },
+      { id: 'task-att-competitor-dec', name: 'Competitor expiring dec page', status: 'Missing', required: false, type: 'pdf' },
+      { id: 'task-att-rate-sheet', name: 'Competitor rate sheet', status: 'Received', required: false, type: 'spreadsheet' },
+      { id: 'task-att-extension-approval', name: 'Extension approval', status: 'Missing', required: true, type: 'email' },
     ],
     blockingIssues: null,
     notes: 'Added to Quotes watchlist 06/26; linked insured also on insured watchlist.',

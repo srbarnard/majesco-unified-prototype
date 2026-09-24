@@ -1,3 +1,4 @@
+import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CloseIcon from '@mui/icons-material/Close'
 import Box from '@mui/material/Box'
@@ -14,6 +15,7 @@ import {
 import { filterFooterButtonSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { motionTokens } from '@/design-system/tokens/motion'
 import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import {
   copilotDrawerHeadingSx,
@@ -25,10 +27,9 @@ import {
   TaskEntityRow,
 } from '@/pages/tasks/components/TaskDetailSection'
 import { TaskPriorityIndicator } from '@/pages/tasks/components/TaskPriorityIndicator'
-import { TaskStatusChip } from '@/pages/tasks/components/TaskStatusChip'
-import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
-import { getTaskRelatedEntityRoute, getTaskRelatedSummary } from '@/pages/tasks/data/mockTasks'
-import { getTaskSlaTone } from '@/pages/tasks/utils/taskDisplayUtils'
+import type { TaskDocument, TaskRecord } from '@/pages/tasks/data/mockTasks'
+import { getTaskDocumentHref, getTaskRelatedEntityRoute, getTaskRelatedSummary } from '@/pages/tasks/data/mockTasks'
+import { formatTaskDocumentChipLabel } from '@/pages/tasks/utils/taskDisplayUtils'
 
 const GUTTER = layoutTokens.contentPaddingX / 8
 /** Match CopilotDrawerShell chat content inset (`px: 2`). */
@@ -49,12 +50,45 @@ const labeledTitleSx = {
   letterSpacing: '0.01em',
 } as const
 
+const motionSafe = '@media (prefers-reduced-motion: no-preference)'
+
 const documentChipSx = {
   maxWidth: '100%',
   fontFamily: figmaFontFamilyStack.body,
   fontSize: '0.75rem',
-  '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+  cursor: 'pointer',
+  position: 'relative',
+  transition: `transform ${motionTokens.durationFastMs}ms ${motionTokens.easing}, color 0.15s ease`,
+  '& .MuiChip-label': {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    transition: 'color 0.15s ease',
+  },
+  '&:hover': {
+    '& .MuiChip-label': { color: 'primary.main' },
+  },
+  [motionSafe]: {
+    '&:hover': {
+      transform: `translateY(${motionTokens.cardHoverTranslateY}px) scale(${motionTokens.cardHoverScale})`,
+      zIndex: 1,
+    },
+  },
 } as const
+
+function TaskAttachmentChip({ task, doc }: { task: TaskRecord; doc: TaskDocument }) {
+  return (
+    <Chip
+      component={RouterLink}
+      to={getTaskDocumentHref(task, doc)}
+      clickable
+      size="small"
+      variant="filled"
+      color="default"
+      label={formatTaskDocumentChipLabel(doc)}
+      sx={documentChipSx}
+    />
+  )
+}
 
 type TaskDetailsPanelProps = {
   task: TaskRecord
@@ -64,12 +98,19 @@ type TaskDetailsPanelProps = {
   onMarkComplete?: (task: TaskRecord) => void
 }
 
-function formatDueDate(dueDate: string) {
-  return new Date(dueDate).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+/** Card-style relative due text (e.g. Due in 3 days, Past due, Due today). */
+function getDueTimingLabel(task: TaskRecord) {
+  const due = task.dueLabel.trim()
+  if (/^(past due|due\b)/i.test(due)) return due
+  if (/^today$/i.test(due)) return 'Due today'
+  return task.ageIndicator
+}
+
+function getDueTimingIconColor(task: TaskRecord) {
+  if (task.isPastDue || task.ageIndicator.toLowerCase().includes('past due')) {
+    return 'error.main' as const
+  }
+  return 'text.secondary' as const
 }
 
 export function TaskDetailsPanel({
@@ -81,7 +122,6 @@ export function TaskDetailsPanel({
   const related = getTaskRelatedSummary(task)
   const relatedRoute = getTaskRelatedEntityRoute(task)
   const { relatedEntities } = task
-  const dueRowLabel = `${task.ageIndicator} · ${formatDueDate(task.dueDate)}`
 
   return (
     <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', overflow: 'hidden' }}>
@@ -155,7 +195,7 @@ export function TaskDetailsPanel({
             spacing={0.75}
             sx={{ rowGap: 0.5, mt: 0.75 }}
           >
-            <TaskPriorityIndicator priority={task.priority} />
+            <TaskPriorityIndicator priority={task.priority} size="card" />
             <Typography
               component="span"
               variant="caption"
@@ -164,29 +204,20 @@ export function TaskDetailsPanel({
             >
               ·
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
-              Ref. {task.refNumber}
-            </Typography>
-            <Typography
-              component="span"
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontFamily: figmaFontFamilyStack.body, userSelect: 'none' }}
-            >
-              ·
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
-              {task.theme}
-            </Typography>
-            <Typography
-              component="span"
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontFamily: figmaFontFamilyStack.body, userSelect: 'none' }}
-            >
-              ·
-            </Typography>
-            <TaskStatusChip displayStatus={task.displayStatus} />
+            <Stack direction="row" alignItems="center" spacing={0.5}>
+              <AccessTimeOutlinedIcon sx={{ fontSize: 14, color: getDueTimingIconColor(task) }} />
+              <Typography
+                variant="caption"
+                sx={{
+                  fontFamily: figmaFontFamilyStack.body,
+                  fontSize: '0.6875rem',
+                  fontWeight: task.isPastDue ? 600 : 400,
+                  color: getDueTimingIconColor(task),
+                }}
+              >
+                {getDueTimingLabel(task)}
+              </Typography>
+            </Stack>
           </Stack>
         </Box>
 
@@ -211,23 +242,17 @@ export function TaskDetailsPanel({
               </Typography>
             </Box>
 
-            <Typography
-              variant="body2"
-              sx={{
-                ...bodySx,
-                color: getTaskSlaTone(task),
-                fontWeight: task.isPastDue ? 600 : 400,
-              }}
-            >
-              {dueRowLabel}
-            </Typography>
-
             {task.documents.length > 0 ? (
-              <Stack direction="row" flexWrap="wrap" gap={0.75}>
-                {task.documents.map((doc) => (
-                  <Chip key={doc.id} size="small" label={doc.name} sx={documentChipSx} />
-                ))}
-              </Stack>
+              <Box>
+                <Typography variant="subtitle2" sx={{ ...labeledTitleSx, mb: 0.75 }}>
+                  Attachments
+                </Typography>
+                <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ overflow: 'visible' }}>
+                  {task.documents.map((doc) => (
+                    <TaskAttachmentChip key={doc.id} task={task} doc={doc} />
+                  ))}
+                </Stack>
+              </Box>
             ) : null}
 
             <Stack spacing={0}>
@@ -260,47 +285,37 @@ export function TaskDetailsPanel({
           flexShrink: 0,
         }}
       >
-        <Stack spacing={1.25}>
-          <Stack direction="row" spacing={1.5} alignItems="stretch">
-            <Button
-              variant="contained"
+        <Stack direction="row" spacing={1.5} alignItems="stretch">
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
+            onClick={() => onMarkComplete?.(task)}
+            sx={filterFooterButtonSx}
+          >
+            Mark complete
+          </Button>
+          {relatedRoute ? (
+            <MuiButton
+              component={RouterLink}
+              to={relatedRoute.to}
+              variant="outlined"
               color="primary"
               fullWidth
-              onClick={() => onMarkComplete?.(task)}
-              sx={filterFooterButtonSx}
+              disableElevation
+              sx={{
+                ...filterFooterButtonSx,
+                borderWidth: 2,
+                '&:hover': { borderWidth: 2 },
+              }}
             >
-              Mark complete
+              {relatedRoute.label}
+            </MuiButton>
+          ) : (
+            <Button variant="outlined" color="primary" disabled fullWidth sx={filterFooterButtonSx}>
+              No link
             </Button>
-            {relatedRoute ? (
-              <MuiButton
-                component={RouterLink}
-                to={relatedRoute.to}
-                variant="outlined"
-                color="primary"
-                fullWidth
-                disableElevation
-                sx={{
-                  ...filterFooterButtonSx,
-                  borderWidth: 2,
-                  '&:hover': { borderWidth: 2 },
-                }}
-              >
-                {relatedRoute.label}
-              </MuiButton>
-            ) : (
-              <Button variant="outlined" color="primary" disabled fullWidth sx={filterFooterButtonSx}>
-                No link
-              </Button>
-            )}
-          </Stack>
-
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ fontFamily: figmaFontFamilyStack.body, textAlign: 'center', lineHeight: 1.4 }}
-          >
-            {related.primary} · {related.secondary}
-          </Typography>
+          )}
         </Stack>
       </Box>
     </Box>
