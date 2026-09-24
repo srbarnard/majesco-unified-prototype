@@ -58,6 +58,7 @@ export type TaskRecord = {
   referenceType: TaskReferenceType
   agingDays: number
   isPastDue: boolean
+  hasAlert: boolean
   hasAiInsights: boolean
   description: string
   copilotInsights: string[]
@@ -141,6 +142,7 @@ export const tasksMock: TaskRecord[] = [
     ageIndicator: 'Due in 6 days',
     agingDays: 2,
     isPastDue: false,
+    hasAlert: true,
     assignedTo: 'Jordan Ellis',
     team: 'Commercial UW — Midwest',
     assigner: 'Pamela Hollingsworth',
@@ -187,6 +189,7 @@ export const tasksMock: TaskRecord[] = [
     ageIndicator: 'Due in 4 days',
     agingDays: 1,
     isPastDue: false,
+    hasAlert: false,
     assignedTo: 'Maria Santos',
     team: 'Policy Services',
     assigner: 'Chris Reynolds',
@@ -232,6 +235,7 @@ export const tasksMock: TaskRecord[] = [
     ageIndicator: 'Due today',
     agingDays: 0,
     isPastDue: false,
+    hasAlert: false,
     assignedTo: 'Auto Installer Queue',
     team: 'Personal Lines Processing',
     assigner: 'System',
@@ -277,6 +281,7 @@ export const tasksMock: TaskRecord[] = [
     ageIndicator: 'SLA due today',
     agingDays: 0,
     isPastDue: false,
+    hasAlert: true,
     assignedTo: 'Compliance Ops',
     team: 'Enterprise Compliance',
     assigner: 'System',
@@ -322,6 +327,7 @@ export const tasksMock: TaskRecord[] = [
     ageIndicator: 'Due in 8 days',
     agingDays: 3,
     isPastDue: false,
+    hasAlert: false,
     assignedTo: 'Account Support — Producer Desk',
     team: 'Distribution Operations',
     assigner: 'Leslie Neuman',
@@ -368,6 +374,7 @@ export const tasksMock: TaskRecord[] = [
     ageIndicator: 'Past due 1 day',
     agingDays: 5,
     isPastDue: true,
+    hasAlert: true,
     assignedTo: 'Jordan Ellis',
     team: 'Commercial UW — Midwest',
     assigner: 'Dana Patel',
@@ -414,6 +421,7 @@ export const tasksMock: TaskRecord[] = [
     ageIndicator: 'Due in 2 days',
     agingDays: 4,
     isPastDue: false,
+    hasAlert: true,
     assignedTo: 'Submission Processing',
     team: 'BML Commercial Lines',
     assigner: 'Ethan Brooks',
@@ -461,6 +469,7 @@ export const tasksMock: TaskRecord[] = [
     ageIndicator: 'Due in 15 days',
     agingDays: 7,
     isPastDue: false,
+    hasAlert: false,
     assignedTo: 'Premium Audit',
     team: 'Policy Administration',
     assigner: 'Brenda Holmes',
@@ -507,6 +516,7 @@ export const tasksMock: TaskRecord[] = [
     ageIndicator: 'Due today',
     agingDays: 0,
     isPastDue: false,
+    hasAlert: false,
     assignedTo: 'Bind Desk',
     team: 'Personal Lines Processing',
     assigner: 'System',
@@ -553,6 +563,7 @@ export const tasksMock: TaskRecord[] = [
     ageIndicator: 'Due in 3 days',
     agingDays: 1,
     isPastDue: false,
+    hasAlert: true,
     assignedTo: 'Maria Santos',
     team: 'Account Management',
     assigner: 'Leslie Neuman',

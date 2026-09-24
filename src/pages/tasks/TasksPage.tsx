@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useGridApiRef } from '@mui/x-data-grid-premium'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { GridRowSelectionModel } from '@mui/x-data-grid-premium'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import {
@@ -13,7 +13,9 @@ import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { useTasksLookupFromUrl } from '@/hooks/useLookupFromUrl'
 import { useSearchQueryFromUrl } from '@/hooks/useSearchQueryFromUrl'
+import { resolveTasksLookup } from '@/app/navigation/globalSearchConfig'
 import { ResizableRightPanel } from '@/pages/policies/components/ResizableRightPanel'
+import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
 import { TaskDetailsPanel } from '@/pages/tasks/components/TaskDetailsPanel'
 import { TasksActionBar } from '@/pages/tasks/components/TasksActionBar'
 import { TasksAnalyticsTab } from '@/pages/tasks/components/TasksAnalyticsTab'
@@ -54,8 +56,10 @@ function matchesSearch(row: TaskRecord, query: string) {
 
 export function TasksPage() {
   const apiRef = useGridApiRef()
+  const isDesktop = useIsDesktopLayout()
   const { activeTool, openTool, closeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<TasksTab>('all')
+  const [taskRows, setTaskRows] = useState<TaskRecord[]>(() => tasksMock)
   const [copilotTaskFocus, setCopilotTaskFocus] = useState<TaskRecord | null>(null)
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
   const [taskDetailOpen, setTaskDetailOpen] = useState(false)
@@ -63,6 +67,8 @@ export function TasksPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<TasksFilters>(emptyTasksFilters)
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
+  const didInitCopilot = useRef(false)
+  const wasDesktop = useRef(isDesktop)
 
   useSearchQueryFromUrl(useCallback((query) => {
     setSearchQuery(query)
@@ -77,23 +83,67 @@ export function TasksPage() {
   useTasksLookupFromUrl(setAppliedFilters, handleLookupApplied)
 
   useEffect(() => {
+    // Wait until desktop layout is known, then open once with Tasks summary.
+    if (!isDesktop || activeTab !== 'all') return
+    if (didInitCopilot.current) return
+    didInitCopilot.current = true
+    openTool('copilot')
+  }, [activeTab, isDesktop, openTool])
+
+  useEffect(() => {
+    if (wasDesktop.current && !isDesktop && activeTool === 'copilot') {
+      closeTool()
+    }
+    wasDesktop.current = isDesktop
+  }, [activeTool, closeTool, isDesktop])
+
+  useEffect(() => {
     if (activeTool === 'filter') {
       setTaskDetailOpen(false)
     }
   }, [activeTool])
 
   const filteredRows = useMemo(() => {
-    const withFilters = applyTasksFilters(tasksMock, appliedFilters)
+    const withFilters = applyTasksFilters(taskRows, appliedFilters)
     return withFilters.filter((row) => matchesSearch(row, searchQuery))
-  }, [appliedFilters, searchQuery])
+  }, [appliedFilters, searchQuery, taskRows])
 
   const filtersActive = hasActiveTasksFilters(appliedFilters)
   const hasSelection = rowSelectionModel.length > 0
+
+  const handleApplyFilters = useCallback((filters: TasksFilters) => {
+    setAppliedFilters(filters)
+  }, [])
+
+  const handleCopilotQuickAction = useCallback(
+    (action: string) => {
+      const normalized = action.trim().toLowerCase()
+      const lookupId =
+        normalized === 'show high priority'
+          ? 'tasks-high-priority'
+          : normalized === 'show past due'
+            ? 'tasks-overdue'
+            : null
+      if (!lookupId) return
+
+      const patch = resolveTasksLookup(lookupId)
+      if (!patch) return
+
+      setAppliedFilters({ ...emptyTasksFilters, ...patch })
+      setSkipTaskExitAnimation(true)
+      setTaskDetailOpen(false)
+      setSelectedTask(null)
+      setCopilotTaskFocus(null)
+      openTool('filter')
+    },
+    [openTool],
+  )
 
   useRegisterRightToolCopilot(
     {
       context: 'tasks',
       focusedTask: copilotTaskFocus,
+      onQuickAction: handleCopilotQuickAction,
       onBackToSummary: copilotTaskFocus
         ? () => {
             setCopilotTaskFocus(null)
@@ -101,12 +151,8 @@ export function TasksPage() {
         : undefined,
       summaryBackLabel: 'Tasks workspace',
     },
-    [copilotTaskFocus],
+    [copilotTaskFocus, handleCopilotQuickAction],
   )
-
-  const handleApplyFilters = useCallback((filters: TasksFilters) => {
-    setAppliedFilters(filters)
-  }, [])
 
   const showFilter = activeTab === 'all' || activeTab === 'team'
 
@@ -158,6 +204,12 @@ export function TasksPage() {
 
   const handleTaskComplete = useCallback((task: TaskRecord) => {
     void task
+  }, [])
+
+  const handleToggleAlert = useCallback((task: TaskRecord) => {
+    setTaskRows((current) =>
+      current.map((row) => (row.id === task.id ? { ...row, hasAlert: !row.hasAlert } : row)),
+    )
   }, [])
 
   const handleTabChange = useCallback(
@@ -256,6 +308,7 @@ export function TasksPage() {
                   onTaskOpen={handleTaskOpen}
                   onTaskCopilot={handleTaskCopilot}
                   onTaskComplete={handleTaskComplete}
+                  onToggleAlert={handleToggleAlert}
                   activeCopilotTaskId={activeCopilotTaskId}
                   activeTaskId={selectedTask?.id ?? null}
                 />

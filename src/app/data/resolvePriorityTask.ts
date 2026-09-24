@@ -117,6 +117,7 @@ export function resolvePriorityTaskRecord(card: PriorityTaskCard): TaskRecord {
     referenceType: 'Policy',
     agingDays: canonical.isPastDue ? 2 : 1,
     isPastDue: Boolean(canonical.isPastDue),
+    hasAlert: Boolean(canonical.isPastDue),
     hasAiInsights: false,
     description: descriptionForPriorityTask(canonical),
     copilotInsights: [],

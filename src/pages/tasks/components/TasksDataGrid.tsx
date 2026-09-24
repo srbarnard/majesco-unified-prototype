@@ -1,6 +1,6 @@
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
-import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined'
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive'
+import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
@@ -23,7 +23,6 @@ import { useResponsivePinnedColumns } from '@/design-system/hooks/useResponsiveP
 import {
   CopilotIcon,
   copilotActiveIconSx,
-  dataGridInteractionSx,
   getListDataGridSlotProps,
   listDataGridActionColumnProps,
   listDataGridFilterProps,
@@ -31,15 +30,54 @@ import {
   tableLinkSx,
 } from '@/design-system/components'
 import { listDataGridContainerSx } from '@/design-system/tokens/tableLayout'
-import { accentSubtle, dataGridPinnedShadow, dataGridShellSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { accentSubtle, dataGridPinnedBodyCellBackground, dataGridPinnedShadow, dataGridShellSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { TaskPriorityIndicator } from '@/pages/tasks/components/TaskPriorityIndicator'
 import { TaskStatusChip } from '@/pages/tasks/components/TaskStatusChip'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
-import { getTaskPolicyRoute, getTaskRelatedEntityRoute, getTaskRelatedSummary } from '@/pages/tasks/data/mockTasks'
+import { getTaskPolicyRoute, getTaskRelatedSummary } from '@/pages/tasks/data/mockTasks'
 import { getTaskSlaTone, isTaskSlaUrgent } from '@/pages/tasks/utils/taskDisplayUtils'
 
 const CHECKBOX_COLUMN_WIDTH = 50
+
+/** Tasks list: no blue row / link-cell hover fills (selected + active stay static). */
+const tasksDataGridNoHoverSx = {
+  '& .MuiDataGrid-row:hover, & .MuiDataGrid-row.Mui-hovered': {
+    bgcolor: 'transparent !important',
+    backgroundColor: 'transparent !important',
+  },
+  '& .MuiDataGrid-row:hover .MuiDataGrid-cell, & .MuiDataGrid-row.Mui-hovered .MuiDataGrid-cell': {
+    bgcolor: 'transparent !important',
+    backgroundColor: 'transparent !important',
+    background: 'transparent !important',
+  },
+  '& .MuiDataGrid-row:hover .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-row:hover .MuiDataGrid-cell--pinnedRight, & .MuiDataGrid-row.Mui-hovered .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-row.Mui-hovered .MuiDataGrid-cell--pinnedRight':
+    {
+      bgcolor: (theme: Theme) => `${dataGridPinnedBodyCellBackground(theme)} !important`,
+      backgroundColor: (theme: Theme) => `${dataGridPinnedBodyCellBackground(theme)} !important`,
+      background: (theme: Theme) => `${dataGridPinnedBodyCellBackground(theme)} !important`,
+    },
+  '& .MuiDataGrid-cell:has(.MuiLink-root:hover), & .MuiDataGrid-cell--pinnedLeft:has(.MuiLink-root:hover), & .MuiDataGrid-cell--pinnedRight:has(.MuiLink-root:hover)':
+    {
+      bgcolor: 'transparent !important',
+      backgroundColor: 'transparent !important',
+      background: 'transparent !important',
+    },
+  '& .MuiDataGrid-row.Mui-selected:hover, & .MuiDataGrid-row.Mui-selected.Mui-hovered, & .MuiDataGrid-row.task-row-active:hover, & .MuiDataGrid-row.task-row-active.Mui-hovered':
+    {
+      bgcolor: (theme: Theme) => `${accentSubtle(theme)} !important`,
+      backgroundColor: (theme: Theme) => `${accentSubtle(theme)} !important`,
+    },
+  '& .MuiDataGrid-row.Mui-selected:hover .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-row.Mui-selected:hover .MuiDataGrid-cell--pinnedRight, & .MuiDataGrid-row.Mui-selected.Mui-hovered .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-row.Mui-selected.Mui-hovered .MuiDataGrid-cell--pinnedRight, & .MuiDataGrid-row.task-row-active:hover .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-row.task-row-active:hover .MuiDataGrid-cell--pinnedRight, & .MuiDataGrid-row.task-row-active.Mui-hovered .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-row.task-row-active.Mui-hovered .MuiDataGrid-cell--pinnedRight':
+    {
+      bgcolor: (theme: Theme) => `${accentSubtle(theme)} !important`,
+      backgroundColor: (theme: Theme) => `${accentSubtle(theme)} !important`,
+      background: (theme: Theme) => `${accentSubtle(theme)} !important`,
+    },
+  '& .MuiDataGrid-cell .MuiIconButton-root:not([aria-pressed="true"])': {
+    ...tableActionIconButtonSx,
+  },
+} as const
 
 const taskRowMenuItemSx = {
   fontFamily: figmaFontFamilyStack.body,
@@ -57,6 +95,7 @@ type TasksDataGridProps = {
   onTaskOpen?: (task: TaskRecord) => void
   onTaskCopilot?: (task: TaskRecord) => void
   onTaskComplete?: (task: TaskRecord) => void
+  onToggleAlert?: (task: TaskRecord) => void
   activeCopilotTaskId?: string | null
   activeTaskId?: string | null
 }
@@ -140,27 +179,41 @@ function RowActionsMenu({
   row,
   onTaskCopilot,
   onTaskComplete,
+  onToggleAlert,
   isCopilotActive,
 }: {
   row: TaskRecord
   onTaskCopilot?: (task: TaskRecord) => void
   onTaskComplete?: (task: TaskRecord) => void
+  onToggleAlert?: (task: TaskRecord) => void
   isCopilotActive?: boolean
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const relatedRoute = getTaskRelatedEntityRoute(row)
+  const alertLabel = row.hasAlert ? 'Turn off alerts' : 'Turn on alerts'
 
   return (
     <>
       <Stack direction="row" spacing={0.25} justifyContent="flex-end" alignItems="center" sx={{ width: '100%' }}>
-        <Tooltip title="Mark complete">
+        <Tooltip title={alertLabel}>
           <IconButton
             size="small"
-            aria-label={`Mark ${row.taskName} complete`}
-            onClick={() => onTaskComplete?.(row)}
-            sx={tableActionIconButtonSx}
+            aria-label={`${alertLabel} for ${row.taskName}`}
+            aria-pressed={row.hasAlert}
+            onClick={(event) => {
+              event.stopPropagation()
+              onToggleAlert?.(row)
+            }}
+            onMouseDown={(event) => event.stopPropagation()}
+            sx={{
+              ...tableActionIconButtonSx,
+              color: row.hasAlert ? 'primary.main' : 'text.secondary',
+            }}
           >
-            <CheckCircleOutlineIcon fontSize="small" />
+            {row.hasAlert ? (
+              <NotificationsActiveIcon fontSize="small" />
+            ) : (
+              <NotificationsNoneOutlinedIcon fontSize="small" />
+            )}
           </IconButton>
         </Tooltip>
         <Tooltip title="Ask Copilot about this task">
@@ -200,32 +253,6 @@ function RowActionsMenu({
         >
           Mark as complete
         </MenuItem>
-        <MenuItem
-          onClick={() => {
-            onTaskCopilot?.(row)
-            setAnchorEl(null)
-          }}
-          sx={taskRowMenuItemSx}
-        >
-          Ask Copilot
-        </MenuItem>
-        {relatedRoute ? (
-          <MenuItem
-            component={RouterLink}
-            to={relatedRoute.to}
-            onClick={() => setAnchorEl(null)}
-            sx={taskRowMenuItemSx}
-          >
-            <Stack direction="row" spacing={0.75} alignItems="center">
-              <OpenInNewOutlinedIcon sx={{ fontSize: 16 }} />
-              <span>{relatedRoute.label}</span>
-            </Stack>
-          </MenuItem>
-        ) : (
-          <MenuItem disabled sx={taskRowMenuItemSx}>
-            View related record
-          </MenuItem>
-        )}
         <MenuItem onClick={() => setAnchorEl(null)} sx={taskRowMenuItemSx}>
           Reassign
         </MenuItem>
@@ -245,6 +272,7 @@ export function TasksDataGrid({
   onTaskOpen,
   onTaskCopilot,
   onTaskComplete,
+  onToggleAlert,
   activeCopilotTaskId,
   activeTaskId,
 }: TasksDataGridProps) {
@@ -345,12 +373,13 @@ export function TasksDataGrid({
             row={row}
             onTaskCopilot={onTaskCopilot}
             onTaskComplete={onTaskComplete}
+            onToggleAlert={onToggleAlert}
             isCopilotActive={activeCopilotTaskId === row.id}
           />
         ),
       },
     ],
-    [activeCopilotTaskId, activeTaskId, onTaskComplete, onTaskCopilot, onTaskOpen],
+    [activeCopilotTaskId, activeTaskId, onTaskComplete, onTaskCopilot, onTaskOpen, onToggleAlert],
   )
 
   const { pinnedColumns, disableColumnPinning } = useResponsivePinnedColumns({
@@ -461,7 +490,7 @@ export function TasksDataGrid({
               borderColor: 'divider',
               minHeight: 52,
             },
-          }, { headerFilters: true, footer: true }), dataGridInteractionSx] as SxProps<Theme>}
+          }, { headerFilters: true, footer: true }), tasksDataGridNoHoverSx] as SxProps<Theme>}
       />
     </Box>
   )
