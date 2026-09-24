@@ -26,7 +26,7 @@ function getGreeting() {
 
 export function DashboardPage() {
   const { copilotOpen, copilotView, agenticPrompt, closeCopilot, openHomeCopilotDefault } = useGlobalSearch()
-  const { openTool } = useRightTool()
+  const { openTool, activeTool } = useRightTool()
   const isDesktop = useIsDesktopLayout()
   const contentPx = `${layoutTokens.contentPaddingX}px`
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
@@ -48,6 +48,14 @@ export function DashboardPage() {
 
   const didInitCopilot = useRef(false)
   const wasDesktop = useRef(isDesktop)
+
+  // Closing the mobile bottom sheet (or any tool dismiss) must clear rail selection.
+  useEffect(() => {
+    if (activeTool != null) return
+    if (!focusedActivity && !copilotTaskFocus) return
+    setFocusedActivity(null)
+    setCopilotTaskFocus(null)
+  }, [activeTool, focusedActivity, copilotTaskFocus])
 
   const handleCloseTaskDetail = useCallback(() => {
     setSkipDetailExitAnimation(false)
@@ -217,7 +225,9 @@ export function DashboardPage() {
             <Box sx={{ mt: 4, minWidth: 0 }}>
               <PulseModule
                 onActivityCopilot={handleActivityCopilot}
-                activeCopilotActivityId={focusedActivity?.id ?? null}
+                activeCopilotActivityId={
+                  activeTool === 'copilot' ? (focusedActivity?.id ?? null) : null
+                }
               />
             </Box>
           </Stack>

@@ -159,6 +159,12 @@ export function PolicyDetails() {
     wasDesktop.current = isDesktop
   }, [activeTool, closeTool, isDesktop])
 
+  // Backdrop / swipe dismiss of the mobile sheet only calls closeTool — clear selection too.
+  useEffect(() => {
+    if (activeTool != null || !focusedActivity) return
+    setFocusedActivity(null)
+  }, [activeTool, focusedActivity])
+
   const syncTabPanels = useCallback(
     (tab: PolicyTab) => {
       if (tab === 'overview' || tab === 'documents') {
