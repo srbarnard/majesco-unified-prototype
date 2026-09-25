@@ -239,7 +239,7 @@ export function DashboardPage() {
         onClose={handleCloseRightPanel}
         skipExitAnimation={skipDetailExitAnimation}
       >
-        <CopilotContentTransition contentKey={rightPanelContentKey}>
+        <CopilotContentTransition fill contentKey={rightPanelContentKey}>
           {taskDetailOpen && selectedTask ? (
             <TaskDetailsPanel
               task={selectedTask}

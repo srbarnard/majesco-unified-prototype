@@ -107,7 +107,9 @@ export function buildProducerFollowUpNotesPrefill(
 }
 
 export type ScheduleProducerFollowUpCardProps = {
-  submission: SubmissionListRecord
+  submission?: SubmissionListRecord | null
+  /** Used when `submission` is omitted (e.g. Notes on a policy). */
+  defaultTaskName?: string
   notesPrefill: string
   onCancel: () => void
   onCreate: (task: {
@@ -119,14 +121,19 @@ export type ScheduleProducerFollowUpCardProps = {
   }) => void
 }
 
-/** In-thread create-task mini-form for Quoted producer follow-up. */
+/** In-thread create-task mini-form (Copilot / Notes follow-up). */
 export function ScheduleProducerFollowUpCard({
-  submission,
+  submission = null,
+  defaultTaskName,
   notesPrefill,
   onCancel,
   onCreate,
 }: ScheduleProducerFollowUpCardProps) {
-  const [taskName, setTaskName] = useState(() => buildProducerFollowUpTaskName(submission))
+  const [taskName, setTaskName] = useState(
+    () =>
+      defaultTaskName ??
+      (submission ? buildProducerFollowUpTaskName(submission) : 'Follow-up task'),
+  )
   const [assignee, setAssignee] = useState<string | null>(SUBMISSIONS_CURRENT_USER)
   const [priority, setPriority] = useState<FollowUpPriority>('Normal')
   const [duePreset, setDuePreset] = useState<FollowUpDuePreset>('tomorrow')

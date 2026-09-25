@@ -5,6 +5,11 @@ import { copilotContentMotion } from '@/design-system/tokens/motion'
 type CopilotContentTransitionProps = {
   /** Change this to trigger an out → in content swap. */
   contentKey: string
+  /**
+   * Fill a fixed-height flex shell (e.g. ResizableRightPanel) so children like
+   * TaskDetailsPanel can scroll internally. Default grows with content for chat bodies.
+   */
+  fill?: boolean
   children: ReactNode
 }
 
@@ -24,7 +29,11 @@ function prefersReducedMotion() {
  * Subtle drawer body transition: outgoing ease-out fade/slide,
  * then incoming quicker ease-in. Reduced-motion safe.
  */
-export function CopilotContentTransition({ contentKey, children }: CopilotContentTransitionProps) {
+export function CopilotContentTransition({
+  contentKey,
+  fill = false,
+  children,
+}: CopilotContentTransitionProps) {
   const [rendered, setRendered] = useState<RenderedContent>({ key: contentKey, node: children })
   const [phase, setPhase] = useState<'idle' | 'exiting' | 'entering'>('idle')
   const pendingRef = useRef<RenderedContent | null>(null)
@@ -79,13 +88,34 @@ export function CopilotContentTransition({ contentKey, children }: CopilotConten
       sx={{
         position: 'relative',
         width: '100%',
-        // Fill short empty states; grow with tall chat so the scrollport can scroll.
-        minHeight: '100%',
+        ...(fill
+          ? {
+              flex: 1,
+              alignSelf: 'stretch',
+              height: '100%',
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }
+          : {
+              // Fill short empty states; grow with tall chat so the scrollport can scroll.
+              minHeight: '100%',
+            }),
       }}
     >
       <Box
         sx={{
           width: '100%',
+          ...(fill
+            ? {
+                flex: 1,
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }
+            : null),
           transformOrigin: 'top center',
           willChange: isExiting || isEntering ? 'opacity, transform' : 'auto',
           ...(isExiting

@@ -132,7 +132,10 @@ export function ActivityPage() {
 
       {isDesktop && (
         <ResizableRightPanel open={activityDetailOpen} onClose={handleCloseRightPanel}>
-          <CopilotContentTransition contentKey={activityDetailOpen ? 'section:activity' : 'empty'}>
+          <CopilotContentTransition
+            fill
+            contentKey={activityDetailOpen ? 'section:activity' : 'empty'}
+          >
             {activityDetailOpen && selectedActivity ? (
               <ActivityDetailsPanel
                 activity={selectedActivity}

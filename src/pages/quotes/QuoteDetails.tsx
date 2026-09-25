@@ -4,7 +4,7 @@ import Typography from '@mui/material/Typography'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import type { RecentActivityItem } from '@/app/data/homeMock'
-import { useRightTool } from '@/app/contexts/RightToolContext'
+import { useRightTool, useRightToolDispatch } from '@/app/contexts/RightToolContext'
 import {
   useRegisterRightToolCopilot,
   useRegisterRightToolCopilotCustom,
@@ -16,7 +16,7 @@ import { ActivityDetailsPanel } from '@/app/pages/home/ActivityDetailsPanel'
 import { Card } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { type DocumentAttachMode, type DocumentAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
+import { type DocumentAttachMode, type DocumentAttachTarget, quickActionToAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
 import { DocumentsFilterPanel } from '@/pages/policies/components/DocumentsFilterPanel'
 import { DocumentsTab } from '@/pages/policies/components/DocumentsTab'
 import { PartiesPanel } from '@/pages/policies/components/PartiesPanel'
@@ -63,6 +63,7 @@ export function QuoteDetails() {
   const quote = useMemo(() => resolveQuoteContext(quoteId), [quoteId])
   const isDesktop = useIsDesktopLayout()
   const { openTool, closeTool, activeTool } = useRightTool()
+  const { setNoteAttachMode } = useRightToolDispatch()
   const [activeTab, setActiveTab] = useState<QuoteTab>(() => parseQuoteTab(searchParams.get('tab')) ?? 'overview')
   const [starred, setStarred] = useState(false)
   const [appliedDocumentsFilters, setAppliedDocumentsFilters] = useState<DocumentsFilters>(emptyDocumentsFilters)
@@ -118,6 +119,18 @@ export function QuoteDetails() {
       attachContextLabel: quote.quoteNumber,
       onCloseAttach: () => setAttachMode(null),
       onAttachSave: () => setAttachMode(null),
+      onQuickAction: (action) => {
+        const target = quickActionToAttachTarget(action)
+        if (target === 'note' && copilotDocumentFocus) {
+          setNoteAttachMode({ target: 'note', documents: [copilotDocumentFocus] })
+          openTool('notes')
+          return
+        }
+        if (target === 'email' && copilotDocumentFocus) {
+          setAttachMode({ target: 'email', documents: [copilotDocumentFocus] })
+          openTool('email')
+        }
+      },
     },
     // Primitives only — `quote` from resolveQuoteContext() is a new object each call and
     // would re-fire registration → RightTool setState → freeze SPA navigation.
@@ -237,11 +250,17 @@ export function QuoteDetails() {
 
   const handleAttachTo = useCallback(
     (target: DocumentAttachTarget, documents: PolicyDocument[]) => {
+      if (target === 'note') {
+        setNoteAttachMode({ target: 'note', documents })
+        openTool('notes')
+        return
+      }
+      setNoteAttachMode(null)
       setAttachMode({ target, documents })
       setCopilotDocumentFocus(documents[0] ?? null)
       openTool('copilot')
     },
-    [openTool],
+    [openTool, setNoteAttachMode],
   )
 
   const activeCopilotDocumentId =

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import type { RecentActivityItem } from '@/app/data/homeMock'
 import { useFavorites } from '@/app/contexts/FavoritesContext'
-import { useRightTool } from '@/app/contexts/RightToolContext'
+import { useRightTool, useRightToolDispatch } from '@/app/contexts/RightToolContext'
 import {
   useRegisterRightToolCopilot,
   useRegisterRightToolCopilotCustom,
@@ -28,7 +28,7 @@ import {
   getInsuredPolicies,
   getInsuredPrimaryPolicyNumber,
 } from '@/pages/insureds/data/mockInsuredOverview'
-import { type DocumentAttachMode, type DocumentAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
+import { type DocumentAttachMode, type DocumentAttachTarget, quickActionToAttachTarget } from '@/pages/policies/components/DocumentAttachComposer'
 import { DocumentsFilterPanel } from '@/pages/policies/components/DocumentsFilterPanel'
 import { DocumentsTab } from '@/pages/policies/components/DocumentsTab'
 import {
@@ -64,6 +64,7 @@ export function InsuredDetails() {
   const insured = useMemo(() => resolveInsuredContext(insuredId), [insuredId])
   const isDesktop = useIsDesktopLayout()
   const { openTool, closeTool, activeTool } = useRightTool()
+  const { setNoteAttachMode } = useRightToolDispatch()
   const { isFavorite, isHighRisk, toggleFavorite, toggleHighRisk } = useFavorites()
   const [activeTab, setActiveTab] = useState<InsuredTab>(
     () => parseInsuredTab(searchParams.get('tab')) ?? 'overview',
@@ -131,6 +132,18 @@ export function InsuredDetails() {
       attachContextLabel: insured.name,
       onCloseAttach: () => setAttachMode(null),
       onAttachSave: () => setAttachMode(null),
+      onQuickAction: (action) => {
+        const target = quickActionToAttachTarget(action)
+        if (target === 'note' && copilotDocumentFocus) {
+          setNoteAttachMode({ target: 'note', documents: [copilotDocumentFocus] })
+          openTool('notes')
+          return
+        }
+        if (target === 'email' && copilotDocumentFocus) {
+          setAttachMode({ target: 'email', documents: [copilotDocumentFocus] })
+          openTool('email')
+        }
+      },
     },
     // Primitives only — object `insured` identity would re-fire every render and freeze SPA nav.
     [
@@ -268,12 +281,19 @@ export function InsuredDetails() {
 
   const handleAttachTo = useCallback(
     (target: DocumentAttachTarget, documents: PolicyDocument[]) => {
+      if (target === 'note') {
+        setNoteAttachMode({ target: 'note', documents })
+        setFocusedActivity(null)
+        openTool('notes')
+        return
+      }
+      setNoteAttachMode(null)
       setAttachMode({ target, documents })
       setCopilotDocumentFocus(documents[0] ?? null)
       setFocusedActivity(null)
       openTool('copilot')
     },
-    [openTool],
+    [openTool, setNoteAttachMode],
   )
 
   const activeCopilotDocumentId =

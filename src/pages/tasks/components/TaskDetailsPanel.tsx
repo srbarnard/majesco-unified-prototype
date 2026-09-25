@@ -1,34 +1,45 @@
 import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CloseIcon from '@mui/icons-material/Close'
+import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
+import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import MuiButton from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { useLayoutEffect, useMemo, useState } from 'react'
 import { Link as RouterLink } from 'react-router'
+import { useRightTool } from '@/app/contexts/RightToolContext'
 import {
   Button,
+  CopilotQuickActions,
   InsightCallout,
 } from '@/design-system/components'
 import { filterFooterButtonSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
+import { chatAuthorAvatarSx, chatBubbleIncoming } from '@/design-system/theme/themeSurfaces'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { motionTokens } from '@/design-system/tokens/motion'
 import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import {
+  COPILOT_REVEAL_ACTIONS_ATTR,
+  COPILOT_REVEAL_ATTR,
+} from '@/pages/policies/components/copilot/copilotReveal'
+import {
   copilotDrawerHeadingSx,
+  copilotSectionHeadingSx,
   copilotSubtitleSx,
 } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import {
-  TaskDetailAccordion,
+  TaskDetailSection,
   TaskDetailText,
   TaskEntityRow,
 } from '@/pages/tasks/components/TaskDetailSection'
 import { TaskPriorityIndicator } from '@/pages/tasks/components/TaskPriorityIndicator'
 import type { TaskDocument, TaskRecord } from '@/pages/tasks/data/mockTasks'
-import { getTaskDocumentHref, getTaskRelatedEntityRoute, getTaskRelatedSummary } from '@/pages/tasks/data/mockTasks'
+import { getTaskDocumentHref, getTaskRelatedEntityRoute } from '@/pages/tasks/data/mockTasks'
 import { formatTaskDocumentChipLabel } from '@/pages/tasks/utils/taskDisplayUtils'
 
 const GUTTER = layoutTokens.contentPaddingX / 8
@@ -40,14 +51,6 @@ const bodySx = {
   fontWeight: 400,
   fontSize: '0.875rem',
   lineHeight: 1.55,
-} as const
-
-const labeledTitleSx = {
-  fontFamily: figmaFontFamilyStack.heading,
-  fontWeight: 600,
-  fontSize: '0.8125rem',
-  color: 'text.secondary',
-  letterSpacing: '0.01em',
 } as const
 
 const motionSafe = '@media (prefers-reduced-motion: no-preference)'
@@ -74,6 +77,13 @@ const documentChipSx = {
     },
   },
 } as const
+
+const VIEW_NOTES_ACTION = 'View notes (related to this task)'
+const ADD_NOTE_ACTION = 'Add note'
+
+type TaskThreadTurn =
+  | { id: string; role: 'user'; content: string }
+  | { id: string; role: 'assistant'; title: string; text: string; elapsedSeconds: number }
 
 function TaskAttachmentChip({ task, doc }: { task: TaskRecord; doc: TaskDocument }) {
   return (
@@ -119,12 +129,81 @@ export function TaskDetailsPanel({
   onBack,
   onMarkComplete,
 }: TaskDetailsPanelProps) {
-  const related = getTaskRelatedSummary(task)
+  const { openTool } = useRightTool()
   const relatedRoute = getTaskRelatedEntityRoute(task)
   const { relatedEntities } = task
 
+  const [threadTurns, setThreadTurns] = useState<TaskThreadTurn[]>([])
+  const [usedActions, setUsedActions] = useState<string[]>([])
+
+  useLayoutEffect(() => {
+    setThreadTurns([])
+    setUsedActions([])
+  }, [task.id])
+
+  const suggestedActions = useMemo(() => {
+    const actions = [task.nextAction, ADD_NOTE_ACTION]
+    if (task.notes) actions.push(VIEW_NOTES_ACTION)
+    return actions
+  }, [task.nextAction, task.notes])
+
+  const remainingActions = suggestedActions.filter((action) => !usedActions.includes(action))
+
+  const handleSuggestedAction = (action: string) => {
+    if (action === ADD_NOTE_ACTION) {
+      setUsedActions((current) => (current.includes(action) ? current : [...current, action]))
+      openTool('notes')
+      return
+    }
+
+    const at = Date.now()
+    setUsedActions((current) => (current.includes(action) ? current : [...current, action]))
+
+    if (action === VIEW_NOTES_ACTION && task.notes) {
+      setThreadTurns((current) => [
+        ...current,
+        { id: `task-user-${at}`, role: 'user', content: action },
+        {
+          id: `task-assistant-${at}`,
+          role: 'assistant',
+          title: 'Notes on this task',
+          text: task.notes!,
+          elapsedSeconds: 0.86,
+        },
+      ])
+      return
+    }
+
+    // Next action — acknowledge in-thread (same Daily summary / Summarize pattern).
+    setThreadTurns((current) => [
+      ...current,
+      { id: `task-user-${at}`, role: 'user', content: action },
+      {
+        id: `task-assistant-${at}`,
+        role: 'assistant',
+        title: 'Next action',
+        text: `Got it — next step on file: ${task.nextAction}`,
+        elapsedSeconds: 0.74,
+      },
+    ])
+  }
+
+  const lastTurnId = threadTurns[threadTurns.length - 1]?.id
+  const showActionsAfterThread = threadTurns.length > 0 && remainingActions.length > 0
+
   return (
-    <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', overflow: 'hidden' }}>
+    <Box
+      sx={{
+        flex: 1,
+        alignSelf: 'stretch',
+        height: '100%',
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: 'background.paper',
+        overflow: 'hidden',
+      }}
+    >
       <Box
         sx={{
           px: panelPx,
@@ -153,7 +232,11 @@ export function TaskDetailsPanel({
           pb: GUTTER,
           flex: 1,
           minHeight: 0,
+          overflowX: 'hidden',
           overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+          touchAction: 'pan-y',
         }}
       >
         <Box sx={{ mb: 1.5 }}>
@@ -233,18 +316,30 @@ export function TaskDetailsPanel({
               {task.description}
             </Typography>
 
-            <Box>
-              <Typography variant="subtitle2" sx={{ ...labeledTitleSx, mb: 0.5 }}>
-                Next action
-              </Typography>
-              <Typography variant="body2" color="text.primary" sx={bodySx}>
-                {task.nextAction}
-              </Typography>
-            </Box>
+            <TaskDetailSection title="Related entities">
+              <Stack spacing={0.75}>
+                <TaskEntityRow label="Insured" value={relatedEntities.insuredName} />
+                <TaskEntityRow label="Policy #" value={relatedEntities.policyNumber} />
+                <TaskEntityRow label="Quote #" value={relatedEntities.quoteNumber} />
+                <TaskEntityRow label="Claim #" value={relatedEntities.claimNumber} />
+                <TaskEntityRow label="Submission" value={relatedEntities.submissionId} />
+                <TaskEntityRow label="Producer" value={relatedEntities.producer} />
+              </Stack>
+            </TaskDetailSection>
 
             {task.documents.length > 0 ? (
               <Box>
-                <Typography variant="subtitle2" sx={{ ...labeledTitleSx, mb: 0.75 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontFamily: figmaFontFamilyStack.heading,
+                    fontWeight: 600,
+                    fontSize: '0.8125rem',
+                    color: 'text.primary',
+                    letterSpacing: '0.01em',
+                    mb: 0.75,
+                  }}
+                >
                   Attachments
                 </Typography>
                 <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ overflow: 'visible' }}>
@@ -255,24 +350,91 @@ export function TaskDetailsPanel({
               </Box>
             ) : null}
 
-            <Stack spacing={0}>
-              <TaskDetailAccordion title="Related entities" subtitle={related.primary}>
-                <Stack spacing={0.75}>
-                  <TaskEntityRow label="Insured" value={relatedEntities.insuredName} />
-                  <TaskEntityRow label="Policy #" value={relatedEntities.policyNumber} />
-                  <TaskEntityRow label="Quote #" value={relatedEntities.quoteNumber} />
-                  <TaskEntityRow label="Claim #" value={relatedEntities.claimNumber} />
-                  <TaskEntityRow label="Submission" value={relatedEntities.submissionId} />
-                  <TaskEntityRow label="Producer" value={relatedEntities.producer} />
-                </Stack>
-              </TaskDetailAccordion>
+            {threadTurns.length === 0 ? (
+              <>
+                <Divider sx={{ my: 0 }} />
+                <CopilotQuickActions actions={suggestedActions} onAction={handleSuggestedAction} />
+              </>
+            ) : (
+              <Stack spacing={0}>
+                {threadTurns.map((turn) => {
+                  const isLatest = turn.id === lastTurnId
+                  const markReveal = isLatest && !showActionsAfterThread
+                  if (turn.role === 'user') {
+                    return (
+                      <Box
+                        key={turn.id}
+                        {...(markReveal ? { [COPILOT_REVEAL_ATTR]: '' } : {})}
+                        sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}
+                      >
+                        <Box
+                          sx={{
+                            maxWidth: '85%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                          }}
+                        >
+                          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
+                            <Avatar sx={(theme) => chatAuthorAvatarSx(theme)}>CR</Avatar>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontFamily: figmaFontFamilyStack.heading,
+                                fontWeight: 600,
+                                fontSize: '0.8125rem',
+                              }}
+                            >
+                              You
+                            </Typography>
+                          </Stack>
+                          <Box
+                            sx={(theme) => ({
+                              px: 1.75,
+                              py: 1.25,
+                              borderRadius: 2,
+                              bgcolor: chatBubbleIncoming(theme),
+                            })}
+                          >
+                            <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.55 }}>
+                              {turn.content}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    )
+                  }
 
-              {task.notes && (
-                <TaskDetailAccordion title="Notes">
-                  <TaskDetailText>{task.notes}</TaskDetailText>
-                </TaskDetailAccordion>
-              )}
-            </Stack>
+                  return (
+                    <Box
+                      key={turn.id}
+                      {...(markReveal ? { [COPILOT_REVEAL_ATTR]: '' } : {})}
+                      sx={{ mb: 2.5 }}
+                    >
+                      <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
+                        {turn.title}
+                      </Typography>
+                      <Typography variant="body2" color="text.primary" sx={{ ...bodySx, mb: 1 }}>
+                        {turn.text}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" display="block" sx={bodySx}>
+                        {turn.elapsedSeconds.toFixed(2)}s
+                      </Typography>
+                    </Box>
+                  )
+                })}
+
+                {showActionsAfterThread ? (
+                  <Box {...{ [COPILOT_REVEAL_ATTR]: '', [COPILOT_REVEAL_ACTIONS_ATTR]: '' }}>
+                    <Divider sx={{ mb: 2 }} />
+                    <CopilotQuickActions
+                      actions={remainingActions}
+                      onAction={handleSuggestedAction}
+                    />
+                  </Box>
+                ) : null}
+              </Stack>
+            )}
           </Stack>
         </CopilotContentTransition>
       </Box>

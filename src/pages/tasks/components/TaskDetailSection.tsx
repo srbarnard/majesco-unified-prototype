@@ -14,7 +14,7 @@ const sectionTitleSx = {
   fontFamily: figmaFontFamilyStack.heading,
   fontWeight: 600,
   fontSize: '0.8125rem',
-  color: 'text.secondary',
+  color: 'text.primary',
   letterSpacing: '0.01em',
 } as const
 
@@ -38,6 +38,9 @@ const accordionSx = {
   borderRadius: 0,
   bgcolor: 'transparent',
   boxShadow: 'none',
+  '&:last-child': {
+    borderBottom: 'none',
+  },
 } as const
 
 type TaskDetailSectionProps = {

@@ -23,13 +23,7 @@ const bodySx = {
 const emptyEmailAttachMode: DocumentAttachMode = { target: 'email', documents: [] }
 
 function defaultEmailBody(contextLabel?: string) {
-  if (!contextLabel) {
-    return `Hi,
-
-Please review the details below and let me know if you have any questions.
-
-Best regards`
-  }
+  if (!contextLabel) return ''
 
   return `Hi,
 
@@ -94,17 +88,23 @@ export function EmailToolPanel() {
           <Typography
             variant="subtitle1"
             component="h2"
-            sx={{ ...copilotDrawerHeadingSx, lineHeight: 1.35, mb: 0.25 }}
+            sx={{
+              ...copilotDrawerHeadingSx,
+              lineHeight: 1.35,
+              mb: draft?.subtitle || hasDocuments || contextLabel ? 0.25 : 0,
+            }}
           >
             {draft?.title ?? documentViewerAttachLabels.email ?? targetLabels.email}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={bodySx}>
-            {draft?.subtitle
-              ? draft.subtitle
-              : hasDocuments
-                ? getAttachPanelSubtitle(attachMode)
-                : (contextLabel ?? 'No record selected')}
-          </Typography>
+          {draft?.subtitle || hasDocuments || contextLabel ? (
+            <Typography variant="caption" color="text.secondary" sx={bodySx}>
+              {draft?.subtitle
+                ? draft.subtitle
+                : hasDocuments
+                  ? getAttachPanelSubtitle(attachMode)
+                  : contextLabel}
+            </Typography>
+          ) : null}
         </Box>
         <IconButton size="small" onClick={clearDraftAndClose} aria-label="Close Email" sx={{ mt: -0.25 }}>
           <CloseIcon fontSize="small" />

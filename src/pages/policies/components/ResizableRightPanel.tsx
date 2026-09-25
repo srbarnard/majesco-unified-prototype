@@ -5,6 +5,7 @@ import { useTheme } from '@mui/material/styles'
 import type { ReactNode } from 'react'
 import { useAnimatedPanelPresence } from '@/design-system/hooks/useAnimatedPanelPresence'
 import { isDarkMode } from '@/design-system/theme/themeSurfaces'
+import { layoutTokens } from '@/design-system/tokens/layout'
 import {
   bottomSheetBackdropMotionSx,
   bottomSheetMotionSx,
@@ -30,7 +31,16 @@ type ResizableRightPanelProps = {
 
 function PanelContent({ children }: { children: ReactNode }) {
   return (
-    <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <Box
+      sx={{
+        flex: 1,
+        minHeight: 0,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
       {children}
     </Box>
   )
@@ -100,6 +110,10 @@ export function ResizableRightPanel({
     reducedMotion: prefersReducedMotion,
   })
 
+  // Match AppRightToolDrawer — sit above the mobile bottom tool rail, not under it.
+  const bottomOffset = `calc(${layoutTokens.toolRailBottomHeight}px + env(safe-area-inset-bottom, 0px))`
+  const sheetMaxHeight = `calc(100dvh - ${layoutTokens.headerHeight}px - ${layoutTokens.toolRailBottomHeight}px - env(safe-area-inset-bottom, 0px))`
+
   return (
     <>
       {sheetMounted ? (
@@ -111,12 +125,19 @@ export function ResizableRightPanel({
           disableEnforceFocus
           disableRestoreFocus
           disableScrollLock={false}
-          sx={{ zIndex: theme.zIndex.drawer + 1 }}
+          sx={{
+            zIndex: theme.zIndex.drawer + 1,
+            // Keep the fixed bottom tool rail outside the modal hit-area.
+            bottom: bottomOffset,
+          }}
         >
           <Box
             sx={{
               position: 'fixed',
-              inset: 0,
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: bottomOffset,
               display: 'flex',
               alignItems: 'flex-end',
               outline: 'none',
@@ -149,6 +170,10 @@ export function ResizableRightPanel({
                 bgcolor: 'background.paper',
                 display: 'flex',
                 flexDirection: 'column',
+                // Keep flex children (task/activity drawers) height-bounded so
+                // their internal overflowY:auto regions can scroll on mobile.
+                minHeight: 0,
+                maxHeight: sheetMaxHeight,
               }}
             >
               <BottomSheetDragHandle />

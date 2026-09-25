@@ -104,8 +104,8 @@ export function useRegisterRightToolEmailAttach(
 }
 
 /**
- * Register a document-backed Note draft for the Notes tool (document viewer).
- * When set, rail Notes opens the document-specific composer instead of a blank note.
+ * Register a document-backed Note context for the Notes tool (document viewer / Attach → Note).
+ * Seed documents drive document starters; the unified NotesWorkspacePanel consumes them.
  */
 export function useRegisterRightToolNoteAttach(
   mode: RightToolNoteAttachMode,

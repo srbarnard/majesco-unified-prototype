@@ -1,6 +1,5 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import BlockIcon from '@mui/icons-material/Block'
-import CloseIcon from '@mui/icons-material/Close'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -14,12 +13,7 @@ import { flushSync } from 'react-dom'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { CopilotQuickActions } from '@/design-system/components'
 import { accentSubtle, accentSubtleHover } from '@/design-system/theme/themeSurfaces'
-import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import {
-  DocumentAttachPanelContent,
-  targetLabels,
-} from '@/pages/policies/components/DocumentAttachComposer'
 import {
   DEFAULT_COPILOT_CONFIDENCE_TIERS,
   getCopilotConfidenceStatusLabel,
@@ -29,7 +23,6 @@ import { CopilotDrawerShell } from '@/pages/policies/components/copilot/CopilotD
 import { COPILOT_REVEAL_ATTR } from '@/pages/policies/components/copilot/copilotReveal'
 import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import {
-  copilotDrawerHeadingSx,
   copilotSectionHeadingSx,
   copilotSubtitleSx,
 } from '@/pages/policies/components/copilot/copilotDrawerStyles'
@@ -37,7 +30,6 @@ import { useAnimatedConfidence } from '@/pages/policies/components/copilot/useAn
 import type { CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
 import { kindLabel } from '@/pages/quotes/utils/quoteWizardDocuments'
 import {
-  buildIssueNoteDraft,
   buildDeclineToQuoteEmail,
   buildDeclineToQuoteSendConfirmation,
   buildProducerRequestEmail,
@@ -55,7 +47,6 @@ import {
   isProducerRequestAction,
   producerRequestResolvedDetails,
   SUBMISSION_PRODUCER_EMAIL,
-  type IssueNoteDraft,
 } from '@/pages/submissions/data/producerRequestEmail'
 import {
   resolvePremiumStructureOptions,
@@ -1401,7 +1392,6 @@ export function SubmissionsCopilotPanel({
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null)
   const [attachRequestKey, setAttachRequestKey] = useState<number | null>(null)
   const [seedComposerMessage, setSeedComposerMessage] = useState<string | null>(null)
-  const [issueNote, setIssueNote] = useState<IssueNoteDraft | null>(null)
   const [chatRevealKey, setChatRevealKey] = useState(0)
   const multiSelectMode = selectedSubmissions.length > 1 && !focusedSubmission
   const assignPool = assignPoolSubmissions ?? queueSubmissions
@@ -1444,7 +1434,6 @@ export function SubmissionsCopilotPanel({
 
   useEffect(() => {
     setSeedComposerMessage(null)
-    setIssueNote(null)
     if (!statusMode) {
       setActiveIssueId(null)
     }
@@ -1475,7 +1464,6 @@ export function SubmissionsCopilotPanel({
     const openedAt = Date.now()
     const userTurnId = `assign-user-${openedAt}`
     onAssignBlockedPromptChange?.(null)
-    setIssueNote(null)
     onAssignThreadTurnsChange?.([
       ...assignThreadTurns.filter(
         (turn) => turn.id !== assignCompose?.userTurnId && turn.id !== assignBlockedPrompt?.userTurnId,
@@ -1607,7 +1595,6 @@ export function SubmissionsCopilotPanel({
 
   const openProducerEmail = (action: string, issue: SubmissionIssue | null) => {
     if (!focusedSubmission) return
-    setIssueNote(null)
     const draft = buildProducerRequestEmail(focusedSubmission, action, issue)
     const submission = focusedSubmission
     setEmailAttachMode({
@@ -1674,7 +1661,6 @@ export function SubmissionsCopilotPanel({
 
   const openQuotePackageEmail = (recommended: PremiumEstimate, included: PremiumEstimate[]) => {
     if (!focusedSubmission) return
-    setIssueNote(null)
     const draft = buildQuotePackageEmail(focusedSubmission, recommended, included)
     const attachments = buildQuotePackageAttachments(focusedSubmission)
     const submission = focusedSubmission
@@ -1730,7 +1716,6 @@ export function SubmissionsCopilotPanel({
 
   const openDeclineToQuoteEmail = () => {
     if (!focusedSubmission) return
-    setIssueNote(null)
     const draft = buildDeclineToQuoteEmail(focusedSubmission)
     const submission = focusedSubmission
     const recipient = draft.to || SUBMISSION_PRODUCER_EMAIL
@@ -1873,9 +1858,8 @@ export function SubmissionsCopilotPanel({
     }
   }
 
-  const openIssueNote = (issue: SubmissionIssue, action = 'Add a note') => {
-    if (!focusedSubmission) return
-    setIssueNote(buildIssueNoteDraft(focusedSubmission, issue, action))
+  const openIssueNote = (_issue: SubmissionIssue, _action = 'Add a note') => {
+    openTool('notes')
   }
 
   const handleSubmit = (message: string, files: CopilotAttachedFile[] = []) => {
@@ -1922,13 +1906,6 @@ export function SubmissionsCopilotPanel({
     const remainingAfter =
       openBlockingIssues(focusedSubmission).filter((open) => open.id !== issue.id).length
     setActiveIssueId(remainingAfter === 0 ? null : issue.id)
-  }
-
-  const handleSaveIssueNote = () => {
-    if (!issueNote) return
-    // Note is captured in the compose flow; keep the issue open for follow-up resolution.
-    setActiveIssueId(issueNote.issue.id)
-    setIssueNote(null)
   }
 
   const composerPlaceholder =
@@ -1995,75 +1972,6 @@ export function SubmissionsCopilotPanel({
   const seedComposer = (message: string) => {
     setSeedComposerMessage(null)
     requestAnimationFrame(() => setSeedComposerMessage(message))
-  }
-
-  if (issueNote) {
-    const attachMode = {
-      target: 'note' as const,
-      documents: [],
-    }
-    return (
-      <Box
-        sx={{
-          height: '100%',
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          bgcolor: 'background.paper',
-          overflow: 'hidden',
-        }}
-      >
-        <Stack
-          direction="row"
-          alignItems="flex-start"
-          justifyContent="space-between"
-          spacing={1}
-          sx={{
-            px: `${layoutTokens.contentPaddingX}px`,
-            pt: layoutTokens.policyHeaderTopPadding,
-            pb: layoutTokens.contentPaddingX / 8,
-            bgcolor: 'background.paper',
-            flexShrink: 0,
-          }}
-        >
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="subtitle1" component="h2" sx={{ ...copilotDrawerHeadingSx, lineHeight: 1.35, mb: 0.5 }}>
-              {targetLabels.note}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={bodySx}>
-              Submission note · {focusedSubmission?.submissionNumber}
-            </Typography>
-          </Box>
-          {onClose ? (
-            <IconButton size="small" aria-label="Close panel" onClick={onClose} sx={{ mt: -0.25 }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          ) : null}
-        </Stack>
-
-        <Box
-          sx={{
-            flex: 1,
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            px: `${layoutTokens.contentPaddingX}px`,
-            pt: layoutTokens.contentPaddingX / 8,
-            pb: layoutTokens.contentPaddingX / 8,
-            overflow: 'hidden',
-          }}
-        >
-          <DocumentAttachPanelContent
-            attachMode={attachMode}
-            contextLabel={focusedSubmission?.submissionNumber}
-            initialSubject={issueNote.subject}
-            initialBody={issueNote.body}
-            onCancel={() => setIssueNote(null)}
-            onSave={handleSaveIssueNote}
-          />
-        </Box>
-      </Box>
-    )
   }
 
   const composeSelected = useMemo(() => {

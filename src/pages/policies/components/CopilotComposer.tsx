@@ -274,6 +274,8 @@ export type CopilotComposerProps = {
   /** When this changes, clear staged attachments (e.g. switching Copilot focus). */
   attachmentResetKey?: string | number | null
   onSubmit?: (message: string, files?: CopilotAttachedFile[]) => void
+  /** Focus the multiline field when the composer mounts (e.g. Notes New tab). */
+  autoFocus?: boolean
 }
 
 export function CopilotComposer({
@@ -295,6 +297,7 @@ export function CopilotComposer({
   attachRequestKey = null,
   attachmentResetKey = null,
   onSubmit,
+  autoFocus = false,
 }: CopilotComposerProps) {
   const [mode, setMode] = useState<CopilotMode>('fast')
   const [internalMessage, setInternalMessage] = useState('')
@@ -432,6 +435,7 @@ export function CopilotComposer({
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           onFocus={onFocus}
+          autoFocus={autoFocus}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault()

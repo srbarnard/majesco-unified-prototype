@@ -71,6 +71,8 @@ export function ActivityDetailsPanel({
   return (
     <Box
       sx={{
+        flex: 1,
+        alignSelf: 'stretch',
         height: '100%',
         minHeight: 0,
         display: 'flex',
@@ -107,7 +109,11 @@ export function ActivityDetailsPanel({
           pb: GUTTER,
           flex: 1,
           minHeight: 0,
+          overflowX: 'hidden',
           overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+          touchAction: 'pan-y',
         }}
       >
         <Stack spacing={0.75} sx={{ mb: 1.5 }}>

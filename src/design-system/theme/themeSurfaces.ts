@@ -69,18 +69,49 @@ export function chatAuthorAvatarSx(theme: Theme) {
   } as const
 }
 
-/** Peer / other-author initials in notes threads. */
-export function chatPeerAuthorAvatarSx(theme: Theme) {
+/** Peer / other-author initials — stable color from design system keyed to user id. */
+export function chatPeerAuthorAvatarSx(theme: Theme, userKey = '') {
+  const dark = isDarkMode(theme)
+  const swatches = dark
+    ? [
+        theme.figmaPalette.blue[400],
+        theme.figmaPalette.teal[400],
+        theme.figmaPalette.amber[400],
+        theme.figmaPalette.lightBlue[400],
+        theme.figmaPalette.green[400],
+        theme.figmaPalette.red[300],
+        theme.figmaPalette.grey[500],
+      ]
+    : [
+        theme.figmaPalette.blue[600],
+        theme.figmaPalette.teal[700],
+        theme.figmaPalette.amber[800],
+        theme.figmaPalette.lightBlue[700],
+        theme.figmaPalette.green[700],
+        theme.figmaPalette.red[600],
+        theme.figmaPalette.grey[600],
+      ]
+
+  let hash = 0
+  const key = userKey.trim() || 'peer'
+  for (let i = 0; i < key.length; i += 1) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0
+  }
+  const bgcolor = swatches[hash % swatches.length]
+
   return {
     width: 24,
     height: 24,
     fontSize: '0.625rem',
     fontWeight: 600,
-    bgcolor: isDarkMode(theme)
-      ? theme.figmaPalette.grey[600]
-      : theme.figmaPalette.grey[200],
-    color: isDarkMode(theme) ? theme.palette.common.white : theme.palette.text.secondary,
+    bgcolor,
+    color: theme.palette.common.white,
   } as const
+}
+
+/** Peer message bubble — neutral wash (not the You teal plate). */
+export function chatPeerBubble(theme: Theme) {
+  return isDarkMode(theme) ? theme.figmaPalette.grey[800] : theme.figmaPalette.grey[100]
 }
 
 /** Light-blue insight / callout surfaces — no chrome border or shadow. */

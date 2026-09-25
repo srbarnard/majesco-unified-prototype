@@ -9,13 +9,13 @@ import { useState } from 'react'
 import { CopilotQuickActions, RoutineIcon } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import type { PolicyTab } from '@/pages/policies/components/PolicyTabs'
 import type { GlobalCopilotView } from '@/app/contexts/GlobalSearchContext'
 import type { RecentActivityItem } from '@/app/data/homeMock'
 import { AgenticSearchResults, DailySummaryContent } from '@/pages/policies/components/AgenticSearchResults'
 import { CopilotConfidenceIndicator } from '@/pages/policies/components/copilot/CopilotConfidenceIndicator'
 import { CopilotDrawerShell } from '@/pages/policies/components/copilot/CopilotDrawerShell'
+import { DocumentSummarizeContent } from '@/pages/policies/components/copilot/DocumentSummarizeContent'
 import { copilotDrawerHeadingSx, copilotSectionHeadingSx, copilotSubtitleSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import { resolveCopilotConfidence } from '@/pages/policies/components/copilot/resolveCopilotConfidence'
 import { useAnimatedConfidence } from '@/pages/policies/components/copilot/useAnimatedConfidence'
@@ -427,17 +427,21 @@ export function CopilotPanel({
   ].join(':')
 
   const activeAttachMode = attachMode ?? internalAttachMode
-  const isAttachView = Boolean(activeAttachMode)
+  const isAttachView = Boolean(activeAttachMode && activeAttachMode.target !== 'note')
 
   const handleQuickActionClick = (action: string) => {
     const attachTarget = quickActionToAttachTarget(action)
     const documents = activeAttachMode?.documents ?? (focusedDocument ? [focusedDocument] : [])
 
     if (attachTarget && documents.length > 0) {
-      // Document viewer registers onQuickAction to open Notes / Email rail tools (active icon +
-      // document draft) instead of nesting the composer inside Copilot.
+      // Notes / Email open their own rail tools (active icon + draft) — never nest note UI in Copilot.
       if ((attachTarget === 'email' || attachTarget === 'note') && onQuickAction) {
         onQuickAction(action)
+        return
+      }
+      if (attachTarget === 'note') {
+        // Callers without onQuickAction must not fall back to Subject/Note textarea.
+        onQuickAction?.(action)
         return
       }
       if (attachMode) {
@@ -463,13 +467,7 @@ export function CopilotPanel({
     handleCloseAttach()
   }
 
-  const documentPreviewQuickActions = [
-    'Summarize',
-    'Draft Email',
-    'Create Note',
-    'Explain to Underwriters',
-    'Copy key terms',
-  ]
+  const documentPreviewQuickActions = ['Draft Email', 'Create Note']
 
   const quickActions = documentPreviewMode && focusedDocument
     ? documentPreviewQuickActions
@@ -505,6 +503,8 @@ export function CopilotPanel({
                         ? ['Renewals due', 'Billing exceptions', 'Portfolio summary']
                         : ['See endorsements', 'Review documents']
 
+  const isDocumentSummarizeView = Boolean(documentPreviewMode && focusedDocument)
+
   const focusedListBriefing = focusedPolicyList
     ? buildPolicyRecordBriefing(focusedPolicyList)
     : focusedQuote
@@ -514,7 +514,7 @@ export function CopilotPanel({
   const isDocumentsImpact = isDocumentsTab && !focusedDocument && documentsCopilotMode === 'impact'
 
   const summaryTitle = focusedDocument
-    ? 'Document summary'
+    ? 'Summarize'
     : isDocumentsImpact
       ? documentsImpactTitle
       : isDocumentsTab
@@ -792,6 +792,19 @@ export function CopilotPanel({
             <DailySummaryContent
               onRequestReveal={() => setChatRevealKey((key) => key + 1)}
             />
+          ) : isDocumentSummarizeView && focusedDocument ? (
+            <DocumentSummarizeContent
+              document={focusedDocument}
+              summaryText={buildDocumentSummary(focusedDocument)}
+              insights={
+                documentPreviewInsights?.length
+                  ? documentPreviewInsights
+                  : documentInsights(focusedDocument)
+              }
+              extractedText={documentExtractedText ?? ''}
+              onRailAction={handleQuickActionClick}
+              onRequestReveal={() => setChatRevealKey((key) => key + 1)}
+            />
           ) : isTaskRecommendationView && focusedTask && seedComposerMessage ? (
             <TaskRecommendationChat
               insight={seedComposerMessage}
@@ -857,32 +870,6 @@ export function CopilotPanel({
                 <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2 }}>
                   {renderSummaryText(summaryText)}
                 </Typography>
-              </>
-            )}
-            {documentPreviewMode && documentExtractedText && (
-              <>
-                <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
-                  Extracted text
-                </Typography>
-                <Box
-                  sx={{
-                    mb: 2,
-                    px: 1.5,
-                    py: 1.25,
-                    borderRadius: `${layoutTokens.cardRadius}px`,
-                    bgcolor: (theme) => surfaceMuted(theme),
-                    maxHeight: 140,
-                    overflowY: 'auto',
-                  }}
-                >
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ ...bodySx, lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.8125rem' }}
-                  >
-                    {documentExtractedText}
-                  </Typography>
-                </Box>
               </>
             )}
             {!focusedListBriefing && (

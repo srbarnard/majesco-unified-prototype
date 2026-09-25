@@ -230,20 +230,24 @@ export function DocumentAttachPanelContent({
     setBody(initialBody ?? defaultAttachBody(target, documents))
   }, [target, documents, contextLabel, initialTo, initialSubject, initialBody])
 
+  const locked = readOnly || Boolean(attachMode.readOnly)
+
+  // Notes use NotesWorkspacePanel — never render subject/textarea here.
+  if (target === 'note') return null
+
   const saveLabel =
     saveLabelProp ??
-    (target === 'email' ? 'Send' : target === 'task' ? 'Create Task' : 'Save Note')
+    (target === 'email' ? 'Send' : target === 'task' ? 'Create Task' : 'Attach')
   const bodySectionTitle =
-    target === 'email' ? 'Email message' : target === 'task' ? 'Description' : target === 'note' ? 'Note' : 'Notes'
+    target === 'email' ? 'Email message' : target === 'task' ? 'Description' : 'Notes'
   const subjectSectionTitle = target === 'task' ? 'Task name' : 'Subject'
   const bodyFieldLabel =
-    target === 'email' ? 'Message' : target === 'task' ? 'Description' : target === 'note' ? 'Note' : 'Notes'
-  const locked = readOnly || Boolean(attachMode.readOnly)
+    target === 'email' ? 'Message' : target === 'task' ? 'Description' : 'Notes'
 
   return (
     <>
       <Stack
-        spacing={target === 'email' || target === 'note' ? 2 : 0}
+        spacing={target === 'email' ? 2 : 0}
         sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
       >
         {target === 'email' ? (
@@ -268,30 +272,6 @@ export function DocumentAttachPanelContent({
             <Box>
               <QuoteWizardFormField
                 label="Message"
-                value={body}
-                onChange={setBody}
-                multiline
-                minRows={8}
-                fullWidth
-                aiFilled
-                disabled={locked}
-              />
-              <AttachedDocumentChips documents={documents} placement="below" />
-            </Box>
-          </>
-        ) : target === 'note' ? (
-          <>
-            <QuoteWizardFormField
-              label="Subject"
-              value={subject}
-              onChange={setSubject}
-              fullWidth
-              aiFilled
-              disabled={locked}
-            />
-            <Box>
-              <QuoteWizardFormField
-                label="Note"
                 value={body}
                 onChange={setBody}
                 multiline
