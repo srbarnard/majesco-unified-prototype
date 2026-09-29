@@ -744,7 +744,6 @@ export function NotesWorkspacePanel({
         <Box sx={{ flexShrink: 0 }}>
           <CopilotComposer
             key={composerKey}
-            autoFocus={notesTab === 'new' && !activeThread}
             placeholder={activeThread ? 'Write a reply…' : 'Write a note…'}
             value={composerMessage}
             onChange={setComposerMessage}

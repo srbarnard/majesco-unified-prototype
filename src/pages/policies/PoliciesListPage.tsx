@@ -1,5 +1,4 @@
 import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
 import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
@@ -11,7 +10,6 @@ import {
 import { ListDataGridToolbar } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
-import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { usePoliciesLookupFromUrl } from '@/hooks/useLookupFromUrl'
 import { useSearchQueryFromUrl } from '@/hooks/useSearchQueryFromUrl'
 import { FilterPanel } from '@/pages/policies/components/FilterPanel'
@@ -20,14 +18,12 @@ import { PoliciesListDataGrid } from '@/pages/policies/components/PoliciesListDa
 import { PoliciesListHeader } from '@/pages/policies/components/PoliciesListHeader'
 import type { PoliciesListTab } from '@/pages/policies/components/PoliciesListTabs'
 import {
-  POLICIES_TOTAL_ROWS,
   policiesListMock,
   type PolicyListRecord,
 } from '@/pages/policies/data/mockPoliciesList'
 import { applyPoliciesListFilters } from '@/pages/policies/filters/applyPoliciesListFilters'
 import {
   emptyPoliciesListFilters,
-  hasActiveFilters,
   type PoliciesListFilters,
 } from '@/pages/policies/filters/policiesListFilterTypes'
 
@@ -103,8 +99,6 @@ export function PoliciesListPage() {
     const withFilters = applyPoliciesListFilters(policiesListMock, appliedFilters)
     return withFilters.filter((row) => matchesSearch(row, searchQuery))
   }, [appliedFilters, searchQuery])
-
-  const filtersActive = hasActiveFilters(appliedFilters)
 
   useRegisterRightToolCopilot(
     {
@@ -235,13 +229,6 @@ export function PoliciesListPage() {
                   activeCopilotPolicyId={activeCopilotPolicyId}
                 />
               </Box>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontFamily: figmaFontFamilyStack.body, textAlign: 'right', flexShrink: 0 }}
-              >
-                Total Rows: {filtersActive || searchQuery.trim() ? filteredRows.length : POLICIES_TOTAL_ROWS}
-              </Typography>
             </Box>
           ) : (
             <PoliciesListAnalyticsDashboard />

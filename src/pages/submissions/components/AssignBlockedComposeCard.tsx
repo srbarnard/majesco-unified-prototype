@@ -4,7 +4,7 @@ import Chip from '@mui/material/Chip'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from '@/design-system/components'
 import { filterChipSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
@@ -35,7 +35,6 @@ function submissionChipLabel(row: SubmissionListRecord) {
 export type AssignBlockedComposeCardProps = {
   blockedOptions: SubmissionListRecord[]
   initialSelected: SubmissionListRecord[]
-  focusAssignee?: boolean
   onCancel: () => void
   onAssign: (submissions: SubmissionListRecord[], assignee: string, note: string) => void
 }
@@ -44,7 +43,6 @@ export type AssignBlockedComposeCardProps = {
 export function AssignBlockedComposeCard({
   blockedOptions,
   initialSelected,
-  focusAssignee = false,
   onCancel,
   onAssign,
 }: AssignBlockedComposeCardProps) {
@@ -55,15 +53,6 @@ export function AssignBlockedComposeCard({
   )
   const [assignee, setAssignee] = useState<string | null>(null)
   const [note, setNote] = useState('')
-  const assigneeInputRef = useRef<HTMLInputElement | null>(null)
-
-  useEffect(() => {
-    if (!focusAssignee) return
-    const timer = window.setTimeout(() => {
-      assigneeInputRef.current?.focus({ preventScroll: true })
-    }, 50)
-    return () => window.clearTimeout(timer)
-  }, [focusAssignee])
 
   const canAssign = selected.length > 0 && Boolean(assignee)
 
@@ -142,12 +131,7 @@ export function AssignBlockedComposeCard({
             value={assignee}
             onChange={(_, next) => setAssignee(next)}
             renderInput={(params) => (
-              <TextField
-                {...params}
-                size="small"
-                placeholder="Assignee or queue"
-                inputRef={assigneeInputRef}
-              />
+              <TextField {...params} size="small" placeholder="Assignee or queue" />
             )}
           />
         </Box>

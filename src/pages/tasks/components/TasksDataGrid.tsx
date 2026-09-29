@@ -36,9 +36,8 @@ import { TaskPriorityIndicator } from '@/pages/tasks/components/TaskPriorityIndi
 import { TaskStatusChip } from '@/pages/tasks/components/TaskStatusChip'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
 import { getTaskPolicyRoute, getTaskRelatedSummary } from '@/pages/tasks/data/mockTasks'
-import { getTaskSlaTone, isTaskSlaUrgent } from '@/pages/tasks/utils/taskDisplayUtils'
-
 const CHECKBOX_COLUMN_WIDTH = 50
+const TASK_ROW_HEIGHT = 52
 
 /** Tasks list: no blue row / link-cell hover fills (selected + active stay static). */
 const tasksDataGridNoHoverSx = {
@@ -109,50 +108,79 @@ function TaskNameCell({
   onTaskOpen?: (task: TaskRecord) => void
   isActive?: boolean
 }) {
+  const subtitle = taskSubtitle(row)
   return (
-    <Stack spacing={0.25} sx={{ py: 0.25, minWidth: 0, alignItems: 'flex-start' }}>
+    <Stack spacing={0} sx={{ minWidth: 0, width: '100%', alignItems: 'flex-start' }}>
       <Link
         component="button"
         variant="body2"
         underline="hover"
         onClick={() => onTaskOpen?.(row)}
+        title={row.taskName}
         sx={{
-          fontWeight: 400,
+          fontWeight: 500,
+          fontSize: '0.8125rem',
+          lineHeight: 1.35,
           textAlign: 'left',
+          maxWidth: '100%',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
           color: isActive ? 'primary.main' : undefined,
           ...tableLinkSx,
         }}
       >
         {row.taskName}
       </Link>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        noWrap
-        sx={{
-          fontFamily: figmaFontFamilyStack.body,
-          fontSize: '0.6875rem',
-          maxWidth: '100%',
-          display: 'block',
-        }}
-      >
-        {row.nextAction}
-      </Typography>
+      {subtitle ? (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          noWrap
+          title={subtitle}
+          sx={{
+            fontFamily: figmaFontFamilyStack.body,
+            fontSize: '0.6875rem',
+            lineHeight: 1.35,
+            maxWidth: '100%',
+            display: 'block',
+          }}
+        >
+          {subtitle}
+        </Typography>
+      ) : null}
     </Stack>
   )
 }
+
+/** One-line subtitle: the next step, unless it just restates the title. */
+function taskSubtitle(row: TaskRecord) {
+  const title = row.taskName.toLowerCase()
+  const next = row.nextAction.trim()
+  if (!next) return null
+  const lead = next.toLowerCase().split(/\s+/).slice(0, 3).join(' ')
+  return title.includes(lead) ? null : next
+}
+
+const singleLineSx = {
+  fontFamily: figmaFontFamilyStack.body,
+  fontSize: '0.8125rem',
+  lineHeight: 1.35,
+} as const
 
 function RelatedCell({ row }: { row: TaskRecord }) {
   const related = getTaskRelatedSummary(row)
   const policyRoute = getTaskPolicyRoute(row)
 
   return (
-    <Stack spacing={0.125} sx={{ py: 0.25, minWidth: 0 }}>
-      <Typography
-        variant="body2"
-        noWrap
-        sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem', fontWeight: 400 }}
-      >
+    <Stack
+      direction="row"
+      spacing={0.75}
+      alignItems="baseline"
+      sx={{ minWidth: 0, width: '100%' }}
+      title={`${related.primary} · ${related.secondary}`}
+    >
+      <Typography variant="body2" noWrap sx={{ ...singleLineSx, minWidth: 0, flexShrink: 1 }}>
         {related.primary}
       </Typography>
       {policyRoute ? (
@@ -162,12 +190,17 @@ function RelatedCell({ row }: { row: TaskRecord }) {
           variant="caption"
           underline="hover"
           onClick={(event) => event.stopPropagation()}
-          sx={{ fontFamily: figmaFontFamilyStack.body, ...tableLinkSx }}
+          sx={{ fontFamily: figmaFontFamilyStack.body, flexShrink: 0, whiteSpace: 'nowrap', ...tableLinkSx }}
         >
           {related.secondary}
         </Link>
       ) : (
-        <Typography variant="caption" color="text.secondary" noWrap sx={{ fontFamily: figmaFontFamilyStack.body }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          noWrap
+          sx={{ fontFamily: figmaFontFamilyStack.body, flexShrink: 0 }}
+        >
           {related.secondary}
         </Typography>
       )}
@@ -281,7 +314,7 @@ export function TasksDataGrid({
       {
         field: 'taskName',
         headerName: 'Task',
-        flex: 1.35,
+        width: 300,
         minWidth: 240,
         sortable: true,
         renderCell: ({ row }) => (
@@ -291,8 +324,8 @@ export function TasksDataGrid({
       {
         field: 'priority',
         headerName: 'Priority',
-        flex: 0.75,
-        minWidth: 100,
+        flex: 0.6,
+        minWidth: 96,
         sortable: true,
         valueGetter: (_, row) => row.priority,
         renderCell: ({ row }) => <TaskPriorityIndicator priority={row.priority} />,
@@ -300,33 +333,25 @@ export function TasksDataGrid({
       {
         field: 'ageIndicator',
         headerName: 'SLA / Age',
-        flex: 0.95,
-        minWidth: 130,
+        flex: 0.8,
+        minWidth: 120,
         sortable: true,
         valueGetter: (_, row) => row.dueDate,
         renderCell: ({ row }) => (
-          <Stack spacing={0.125} sx={{ py: 0.25 }}>
-            <Typography
-              variant="body2"
-              sx={{
-                fontFamily: figmaFontFamilyStack.body,
-                fontSize: '0.8125rem',
-                color: getTaskSlaTone(row),
-                fontWeight: isTaskSlaUrgent(row) ? 600 : 400,
-              }}
-            >
+          <Tooltip
+            title={`${row.agingDays}d open${/\d{4}/.test(row.dueLabel) ? ` · due ${row.dueLabel}` : ''}`}
+            placement="top-start"
+          >
+            <Typography variant="body2" noWrap sx={singleLineSx}>
               {row.ageIndicator}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
-              {row.agingDays}d open
-            </Typography>
-          </Stack>
+          </Tooltip>
         ),
       },
       {
         field: 'displayStatus',
         headerName: 'Status',
-        flex: 0.95,
+        flex: 0.85,
         minWidth: 130,
         sortable: true,
         renderCell: ({ row }) => <TaskStatusChip displayStatus={row.displayStatus} />,
@@ -334,8 +359,8 @@ export function TasksDataGrid({
       {
         field: 'relatedSummary',
         headerName: 'Related policy / Insured',
-        flex: 1.2,
-        minWidth: 180,
+        flex: 1.3,
+        minWidth: 230,
         sortable: true,
         valueGetter: (_, row) => getTaskRelatedSummary(row).primary,
         renderCell: ({ row }) => <RelatedCell row={row} />,
@@ -343,18 +368,13 @@ export function TasksDataGrid({
       {
         field: 'assignedTo',
         headerName: 'Assigned',
-        flex: 1,
-        minWidth: 150,
+        flex: 0.85,
+        minWidth: 130,
         sortable: true,
         renderCell: ({ row }) => (
-          <Stack spacing={0.125} sx={{ py: 0.25, minWidth: 0 }}>
-            <Typography variant="body2" sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem' }} noWrap>
-              {row.assignedTo}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" noWrap sx={{ fontFamily: figmaFontFamilyStack.body }}>
-              {row.team}
-            </Typography>
-          </Stack>
+          <Typography variant="body2" noWrap title={`${row.assignedTo} · ${row.team}`} sx={singleLineSx}>
+            {row.assignedTo}
+          </Typography>
         ),
       },
       {
@@ -408,7 +428,7 @@ export function TasksDataGrid({
         disableColumnPinning={disableColumnPinning}
         disableColumnReorder
         columnHeaderHeight={40}
-        getRowHeight={() => 'auto'}
+        rowHeight={TASK_ROW_HEIGHT}
         getRowClassName={({ id }) => (activeTaskId === id ? 'task-row-active' : '')}
         slotProps={getListDataGridSlotProps()}
         {...listDataGridFilterProps}
@@ -441,7 +461,7 @@ export function TasksDataGrid({
             },
             '& .MuiDataGrid-cell:not(.MuiDataGrid-cellCheckbox)': {
               px: 1.5,
-              py: 1,
+              py: 0,
               display: 'flex',
               alignItems: 'center',
               borderColor: 'divider',

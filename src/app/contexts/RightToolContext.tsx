@@ -13,7 +13,14 @@ import { useGlobalSearch } from '@/app/contexts/GlobalSearchContext'
 import type { DocumentAttachMode } from '@/pages/policies/components/DocumentAttachComposer'
 import type { CopilotPanelProps } from '@/pages/policies/components/CopilotPanel'
 
-export type RightToolId = 'copilot' | 'notes' | 'email' | 'filter' | 'parties' | 'history'
+export type RightToolId =
+  | 'copilot'
+  | 'notes'
+  | 'email'
+  | 'filter'
+  | 'parties'
+  | 'history'
+  | 'newTask'
 
 export type RightToolRecordContext = {
   title: string

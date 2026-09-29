@@ -8,8 +8,12 @@ import { useMemo } from 'react'
 import { dataGridInteractionSx } from '@/design-system/components'
 import { listDataGridContainerSx } from '@/design-system/tokens/tableLayout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { dataGridShellSx, isDarkMode, surfaceMuted } from '@/design-system/theme/themeSurfaces'
-import { teamMembersMock, type TeamMemberRecord } from '@/pages/tasks/data/mockTasks'
+import { dataGridShellSx, surfaceMuted, teamMemberAvatarSx } from '@/design-system/theme/themeSurfaces'
+import {
+  getTeamMemberIndex,
+  teamMembersMock,
+  type TeamMemberRecord,
+} from '@/pages/tasks/data/mockTasks'
 
 type TeamStructureOverviewProps = {
   searchQuery: string
@@ -36,24 +40,28 @@ export function TeamStructureOverview({ searchQuery }: TeamStructureOverviewProp
         minWidth: 220,
         sortable: true,
         renderCell: ({ row }) => (
-          <Stack direction="row" spacing={1.25} alignItems="center" sx={{ py: 0.25 }}>
-            <Avatar
-              sx={(theme) => ({
-                width: 32,
-                height: 32,
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                bgcolor: isDarkMode(theme)
-                  ? theme.figmaPalette.grey[600]
-                  : theme.figmaPalette.grey[200],
-                color: isDarkMode(theme) ? theme.palette.common.white : theme.palette.text.secondary,
-              })}
-            >
+          <Stack direction="row" spacing={1.25} alignItems="center" sx={{ py: 0.25, minWidth: 0 }}>
+            <Avatar sx={(theme) => teamMemberAvatarSx(theme, getTeamMemberIndex(row.id))}>
               {row.initials}
             </Avatar>
-            <Typography variant="body2" sx={{ fontFamily: figmaFontFamilyStack.body, fontWeight: 500, fontSize: '0.8125rem' }}>
-              {row.name}
-            </Typography>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                variant="body2"
+                noWrap
+                sx={{ fontFamily: figmaFontFamilyStack.body, fontWeight: 500, fontSize: '0.8125rem', lineHeight: 1.35 }}
+              >
+                {row.name}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                noWrap
+                display="block"
+                sx={{ fontFamily: figmaFontFamilyStack.body, lineHeight: 1.3 }}
+              >
+                {row.title}
+              </Typography>
+            </Box>
           </Stack>
         ),
       },

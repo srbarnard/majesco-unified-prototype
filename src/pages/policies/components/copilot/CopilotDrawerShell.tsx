@@ -145,16 +145,6 @@ function scrollChatRevealTarget(scrollRoot: HTMLElement, target: HTMLElement) {
   return actions.getBoundingClientRect().bottom <= idealBottom + 2
 }
 
-function focusRevealField(target: HTMLElement) {
-  // Only auto-focus interactive reveal cards (assign form). Receipts / suggested actions
-  // have no actions row — focusing into the thread can cause an abrupt native scroll.
-  if (!target.querySelector(`[${COPILOT_REVEAL_ACTIONS_ATTR}]`)) return
-  const focusable = target.querySelector<HTMLElement>(
-    'input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
-  )
-  focusable?.focus({ preventScroll: true })
-}
-
 type CopilotDrawerShellProps = {
   onClose?: () => void
   composerPlaceholder?: string
@@ -258,7 +248,6 @@ export function CopilotDrawerShell({
       if (!target) return false
 
       const pinned = scrollChatRevealTarget(root, target)
-      focusRevealField(target)
       requestAnimationFrame(() => {
         if (cancelled) return
         scrollChatRevealTarget(root, target)

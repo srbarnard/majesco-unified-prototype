@@ -13,7 +13,12 @@ import { TeamStructureOverview } from '@/pages/tasks/components/TeamStructureOve
 
 export type TeamStructureView = 'overview' | 'org-chart'
 
-export function TeamStructureTab() {
+type TeamStructureTabProps = {
+  /** Filter All tasks to these assignees (a person and their reports). */
+  onMemberSelect?: (assignees: string[]) => void
+}
+
+export function TeamStructureTab({ onMemberSelect }: TeamStructureTabProps) {
   const [view, setView] = useState<TeamStructureView>('overview')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -71,7 +76,7 @@ export function TeamStructureTab() {
         {view === 'overview' ? (
           <TeamStructureOverview searchQuery={searchQuery} />
         ) : (
-          <TeamOrgChart searchQuery={searchQuery} />
+          <TeamOrgChart searchQuery={searchQuery} onMemberSelect={onMemberSelect} />
         )}
       </Box>
     </Box>

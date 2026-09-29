@@ -301,7 +301,7 @@ export function CustomersDataGrid({
   })
 
   return (
-    <Box sx={listDataGridContainerSx({ headerFilters: true })}>
+    <Box sx={listDataGridContainerSx({ headerFilters: true, footer: true })}>
       <DataGridPremium
         apiRef={apiRef}
         rows={rows}
@@ -316,7 +316,6 @@ export function CustomersDataGrid({
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}
-        hideFooter
         slotProps={getListDataGridSlotProps()}
         {...listDataGridFilterProps}
         sx={[
@@ -327,7 +326,7 @@ export function CustomersDataGrid({
             '& .MuiDataGrid-cell[data-field="billingStatus"]': {
               justifyContent: 'center',
             },
-          }),
+          }, { headerFilters: true, footer: true }),
           dataGridInteractionSx,
         ] as SxProps<Theme>}
       />

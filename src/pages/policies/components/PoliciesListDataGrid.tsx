@@ -380,7 +380,7 @@ export function PoliciesListDataGrid({
   })
 
   return (
-    <Box sx={listDataGridContainerSx({ headerFilters: true })}>
+    <Box sx={listDataGridContainerSx({ headerFilters: true, footer: true })}>
       <DataGridPremium
         apiRef={apiRef}
         rows={rows}
@@ -395,10 +395,14 @@ export function PoliciesListDataGrid({
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}
-        hideFooter
         slotProps={getListDataGridSlotProps()}
         {...listDataGridFilterProps}
-        sx={[...dataGridShellSx(), dataGridInteractionSx] as SxProps<Theme>}
+        sx={
+          [
+            ...dataGridShellSx(undefined, { headerFilters: true, footer: true }),
+            dataGridInteractionSx,
+          ] as SxProps<Theme>
+        }
       />
     </Box>
   )

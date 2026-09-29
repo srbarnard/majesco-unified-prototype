@@ -1,16 +1,15 @@
 import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
 import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { GridRowSelectionModel } from '@mui/x-data-grid-premium'
 import { useRightTool } from '@/app/contexts/RightToolContext'
+import { useTasksStore } from '@/app/contexts/TasksContext'
 import {
   useRegisterRightToolCopilot,
   useRegisterRightToolFilter,
 } from '@/app/hooks/useRightToolRegistration'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
-import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { useTasksLookupFromUrl } from '@/hooks/useLookupFromUrl'
 import { useSearchQueryFromUrl } from '@/hooks/useSearchQueryFromUrl'
 import { resolveTasksLookup } from '@/app/navigation/globalSearchConfig'
@@ -24,11 +23,11 @@ import { TasksFilterPanel } from '@/pages/tasks/components/TasksFilterPanel'
 import { TasksHeader } from '@/pages/tasks/components/TasksHeader'
 import { TeamStructureTab } from '@/pages/tasks/components/TeamStructureTab'
 import type { TasksTab } from '@/pages/tasks/components/TasksTabs'
-import { TASKS_TOTAL_ROWS, tasksMock, type TaskRecord } from '@/pages/tasks/data/mockTasks'
+import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
+import { TASKS_NEXT_STEPS } from '@/pages/tasks/data/tasksNextSteps'
 import { applyTasksFilters } from '@/pages/tasks/filters/applyTasksFilters'
 import {
   emptyTasksFilters,
-  hasActiveTasksFilters,
   type TasksFilters,
 } from '@/pages/tasks/filters/tasksFilterTypes'
 
@@ -59,7 +58,7 @@ export function TasksPage() {
   const isDesktop = useIsDesktopLayout()
   const { activeTool, openTool, closeTool } = useRightTool()
   const [activeTab, setActiveTab] = useState<TasksTab>('all')
-  const [taskRows, setTaskRows] = useState<TaskRecord[]>(() => tasksMock)
+  const { taskRows, setTaskRows, pendingOpenTaskId, clearPendingOpenTask } = useTasksStore()
   const [copilotTaskFocus, setCopilotTaskFocus] = useState<TaskRecord | null>(null)
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
   const [taskDetailOpen, setTaskDetailOpen] = useState(false)
@@ -67,8 +66,24 @@ export function TasksPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<TasksFilters>(emptyTasksFilters)
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
-  const didInitCopilot = useRef(false)
+  // Arriving with a drawer already open (New task, History → open task) skips the default Copilot.
+  const didInitCopilot = useRef(activeTool != null || pendingOpenTaskId != null)
   const wasDesktop = useRef(isDesktop)
+
+  useEffect(() => {
+    if (!pendingOpenTaskId) return
+    const task = taskRows.find((row) => row.id === pendingOpenTaskId)
+    clearPendingOpenTask()
+    if (!task) return
+    didInitCopilot.current = true
+    setActiveTab('all')
+    setAppliedFilters(emptyTasksFilters)
+    setSearchQuery('')
+    setCopilotTaskFocus(null)
+    setSkipTaskExitAnimation(true)
+    setSelectedTask(task)
+    setTaskDetailOpen(true)
+  }, [clearPendingOpenTask, pendingOpenTaskId, taskRows])
 
   useSearchQueryFromUrl(useCallback((query) => {
     setSearchQuery(query)
@@ -98,7 +113,7 @@ export function TasksPage() {
   }, [activeTool, closeTool, isDesktop])
 
   useEffect(() => {
-    if (activeTool === 'filter') {
+    if (activeTool === 'filter' || activeTool === 'newTask') {
       setTaskDetailOpen(false)
     }
   }, [activeTool])
@@ -108,7 +123,6 @@ export function TasksPage() {
     return withFilters.filter((row) => matchesSearch(row, searchQuery))
   }, [appliedFilters, searchQuery, taskRows])
 
-  const filtersActive = hasActiveTasksFilters(appliedFilters)
   const hasSelection = rowSelectionModel.length > 0
 
   const handleApplyFilters = useCallback((filters: TasksFilters) => {
@@ -117,6 +131,17 @@ export function TasksPage() {
 
   const handleCopilotQuickAction = useCallback(
     (action: string) => {
+      const nextStep = TASKS_NEXT_STEPS.find((step) => step.label === action)
+      if (nextStep) {
+        const task = taskRows.find((row) => row.taskName === nextStep.taskName)
+        if (!task) return
+        setSkipTaskExitAnimation(false)
+        setSelectedTask(task)
+        setCopilotTaskFocus(null)
+        closeTool()
+        setTaskDetailOpen(true)
+        return
+      }
       const normalized = action.trim().toLowerCase()
       const lookupId =
         normalized === 'show high priority'
@@ -136,7 +161,7 @@ export function TasksPage() {
       setCopilotTaskFocus(null)
       openTool('filter')
     },
-    [openTool],
+    [closeTool, openTool, taskRows],
   )
 
   useRegisterRightToolCopilot(
@@ -202,6 +227,27 @@ export function TasksPage() {
     setSelectedTask(null)
   }, [])
 
+  const handleOpenAddTask = useCallback(() => {
+    setCopilotTaskFocus(null)
+    setSkipTaskExitAnimation(true)
+    setTaskDetailOpen(false)
+    setSelectedTask(null)
+    openTool('newTask')
+  }, [openTool])
+
+  const handleTeamMemberSelect = useCallback(
+    (assignees: string[]) => {
+      setAppliedFilters({ ...emptyTasksFilters, assignedTo: assignees })
+      setSearchQuery('')
+      setActiveTab('all')
+      setTaskDetailOpen(false)
+      setSelectedTask(null)
+      setCopilotTaskFocus(null)
+      openTool('filter')
+    },
+    [openTool],
+  )
+
   const handleTaskComplete = useCallback((task: TaskRecord) => {
     void task
   }, [])
@@ -255,7 +301,11 @@ export function TasksPage() {
         }}
       >
         <Box sx={{ flexShrink: 0 }}>
-          <TasksHeader activeTab={activeTab} onTabChange={handleTabChange} />
+          <TasksHeader
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            onAddTask={handleOpenAddTask}
+          />
         </Box>
 
         <Box
@@ -313,17 +363,10 @@ export function TasksPage() {
                   activeTaskId={selectedTask?.id ?? null}
                 />
               </Box>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontFamily: figmaFontFamilyStack.body, textAlign: 'right', flexShrink: 0 }}
-              >
-                Total Rows: {filtersActive || searchQuery.trim() ? filteredRows.length : TASKS_TOTAL_ROWS}
-              </Typography>
             </Box>
           ) : isTeamTab ? (
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              <TeamStructureTab />
+              <TeamStructureTab onMemberSelect={handleTeamMemberSelect} />
             </Box>
           ) : (
             <TasksAnalyticsTab />

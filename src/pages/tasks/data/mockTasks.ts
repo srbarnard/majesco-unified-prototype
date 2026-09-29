@@ -124,7 +124,7 @@ export function getTaskDocumentHref(task: TaskRecord, document: TaskDocument): s
   return `/policies/01-CA-000100005-0/documents/${document.id}`
 }
 
-export const tasksMock: TaskRecord[] = [
+const baseTasks: TaskRecord[] = [
   {
     id: 'task-001',
     theme: 'AI-assisted renewal queue',
@@ -595,6 +595,141 @@ export const tasksMock: TaskRecord[] = [
   },
 ]
 
+type TaskSeed = {
+  name: string
+  theme: TaskTheme
+  priority: TaskPriority
+  status: TaskStatus
+  displayStatus: string
+  nextAction: string
+  assignedTo: string
+  assigner: string
+  team: string
+  /** Days from the mock "today" (Jun 26, 2026); negative = past due. */
+  dueIn: number
+  agingDays: number
+  refPrefix: string
+  referenceType: TaskReferenceType
+  insured: string
+  producer: string
+  policy?: string
+  quote?: string
+  claim?: string
+  blocker?: string
+  alert?: boolean
+}
+
+const MOCK_TODAY = Date.UTC(2026, 5, 26)
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+function mockDate(offsetDays: number) {
+  const d = new Date(MOCK_TODAY + offsetDays * 86_400_000)
+  const iso = d.toISOString().slice(0, 10)
+  return { iso, label: `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}` }
+}
+
+function ageIndicatorFor(dueIn: number) {
+  if (dueIn < 0) return `Past due ${-dueIn} ${dueIn === -1 ? 'day' : 'days'}`
+  if (dueIn === 0) return 'Due today'
+  return `Due in ${dueIn} ${dueIn === 1 ? 'day' : 'days'}`
+}
+
+function buildSeedTask(seed: TaskSeed, index: number): TaskRecord {
+  const assigned = mockDate(-seed.agingDays)
+  const due = mockDate(seed.dueIn)
+  const refNumber = `${seed.refPrefix}-${String(400_000 + index * 7_919).slice(0, 6)}`
+  return {
+    id: `task-${String(baseTasks.length + index + 1).padStart(3, '0')}`,
+    taskName: seed.name,
+    assigner: seed.assigner,
+    assignedTo: seed.assignedTo,
+    team: seed.team,
+    priority: seed.priority,
+    priorityReason: seed.dueIn <= 0 ? 'SLA at or past due' : `Due in ${seed.dueIn} days`,
+    status: seed.status,
+    displayStatus: seed.displayStatus,
+    nextAction: seed.nextAction,
+    theme: seed.theme,
+    assignedDate: assigned.iso,
+    dueDate: due.iso,
+    assignedLabel: assigned.label,
+    dueLabel: due.label,
+    ageIndicator: ageIndicatorFor(seed.dueIn),
+    refNumber,
+    referenceType: seed.referenceType,
+    agingDays: seed.agingDays,
+    isPastDue: seed.dueIn < 0,
+    hasAlert: seed.alert ?? seed.dueIn <= 0,
+    hasAiInsights: index % 3 !== 2,
+    description: `${seed.name} for ${seed.insured}. ${seed.nextAction}.`,
+    copilotInsights: [
+      `Similar ${seed.theme.toLowerCase()} items for ${seed.producer} closed in ~${Math.max(1, seed.agingDays)} days on average.`,
+      'Draft a producer update summarizing outstanding items and next steps.',
+    ],
+    documents: [
+      { id: `${refNumber}-doc-1`, name: 'Supporting documentation', status: 'Received', required: true, type: 'pdf' },
+      {
+        id: `${refNumber}-doc-2`,
+        name: 'Producer correspondence',
+        status: seed.blocker ? 'Missing' : 'Received',
+        required: false,
+        type: 'email',
+      },
+    ],
+    blockingIssues: seed.blocker ?? null,
+    notes: null,
+    relatedEntities: {
+      policyNumber: seed.policy ?? null,
+      quoteNumber: seed.quote ?? null,
+      insuredName: seed.insured,
+      producer: seed.producer,
+      submissionId: null,
+      claimNumber: seed.claim ?? null,
+    },
+  }
+}
+
+const UW = 'Commercial UW — Midwest'
+const CLIENT = 'Client Relations'
+const OPS = 'Distribution Operations'
+
+const taskSeeds: TaskSeed[] = [
+  { name: 'Renewal pricing review — property schedule update', theme: 'AI-assisted renewal queue', priority: 'High', status: 'Started', displayStatus: 'In review', nextAction: 'Confirm updated TIV and release renewal terms', assignedTo: 'Chris Reynolds', assigner: 'Pamela Hollingsworth', team: UW, dueIn: 2, agingDays: 3, refPrefix: 'RNW', referenceType: 'Policy', insured: 'Riverbend Foods Inc.', producer: 'Hartwell Insurance Group', policy: 'CP-7710-204' },
+  { name: 'Referral — umbrella limit above authority', theme: 'Exception handling', priority: 'High', status: 'Pending', displayStatus: 'Pending documents', nextAction: 'Obtain underlying auto schedule before approving $10M excess', assignedTo: 'Brenda Holmes', assigner: 'Chris Reynolds', team: UW, dueIn: -2, agingDays: 6, refPrefix: 'REF', referenceType: 'Policy', insured: 'Keystone Freight Co.', producer: 'NorthBridge Commercial', policy: 'UM-3321-088', blocker: 'Underlying auto schedule not received from producer.' },
+  { name: 'Loss control recommendations follow-up', theme: 'Compliance watch', priority: 'Medium', status: 'Started', displayStatus: 'In progress', nextAction: 'Confirm sprinkler remediation at Building 3', assignedTo: 'Brenda Holmes', assigner: 'Chris Reynolds', team: UW, dueIn: 5, agingDays: 9, refPrefix: 'LCR', referenceType: 'Policy', insured: 'Lakeshore Plastics LLC', producer: 'Summit Risk Partners', policy: 'CP-6604-512' },
+  { name: 'New business quote — contractor GL', theme: 'Automated quote issues', priority: 'Medium', status: 'Started', displayStatus: 'In review', nextAction: 'Validate subcontractor cost exposure and rate', assignedTo: 'Landon Wilson', assigner: 'Chris Reynolds', team: UW, dueIn: 3, agingDays: 2, refPrefix: 'NBQ', referenceType: 'Quote', insured: 'Prairie Build Group', producer: 'Hartwell Insurance Group', quote: 'Q-GL-884120' },
+  { name: 'Cancellation — non-payment notice review', theme: 'Exception handling', priority: 'High', status: 'Pending', displayStatus: 'Open', nextAction: 'Verify reinstatement eligibility before notice issues', assignedTo: 'Landon Wilson', assigner: 'Dana Patel', team: 'Policy Services', dueIn: 0, agingDays: 4, refPrefix: 'CXL', referenceType: 'Policy', insured: 'Bluewater Marina Group', producer: 'Coastal Brokerage', policy: 'IM-2209-731' },
+  { name: 'Mid-term endorsement — add location', theme: 'Producer support', priority: 'Low', status: 'Pending', displayStatus: 'Pending insured', nextAction: 'Collect COPE details for new warehouse', assignedTo: 'Jordan Ellis', assigner: 'Chris Reynolds', team: UW, dueIn: 8, agingDays: 1, refPrefix: 'END', referenceType: 'Policy', insured: 'Summit Logistics LLC', producer: 'NorthBridge Commercial', policy: 'GL-5521-447' },
+  { name: 'Inspection report review — roof condition', theme: 'AI-assisted renewal queue', priority: 'Medium', status: 'Started', displayStatus: 'In progress', nextAction: 'Decide on roof surfacing exclusion', assignedTo: 'Maria Santos', assigner: 'Chris Reynolds', team: UW, dueIn: 4, agingDays: 5, refPrefix: 'INS', referenceType: 'Policy', insured: 'Heartland Cold Storage', producer: 'Summit Risk Partners', policy: 'CP-9012-330' },
+  { name: 'Producer onboarding — appointment paperwork', theme: 'Producer support', priority: 'Low', status: 'Pending', displayStatus: 'Waiting on internal', nextAction: 'Route E&O certificate to licensing', assignedTo: 'Leslie Neuman', assigner: 'Pamela Hollingsworth', team: CLIENT, dueIn: 10, agingDays: 3, refPrefix: 'PRD', referenceType: 'Policy', insured: 'Granite Peak Agency', producer: 'Granite Peak Agency' },
+  { name: 'Key account stewardship review', theme: 'AI-assisted renewal queue', priority: 'Medium', status: 'Started', displayStatus: 'In review', nextAction: 'Prepare stewardship deck for Q3 meeting', assignedTo: 'Leslie Neuman', assigner: 'Pamela Hollingsworth', team: CLIENT, dueIn: 6, agingDays: 8, refPrefix: 'STW', referenceType: 'Policy', insured: 'Midwest Grain Cooperative', producer: 'Hartwell Insurance Group', policy: 'CP-8842-019' },
+  { name: 'Billing dispute — audit premium adjustment', theme: 'Producer support', priority: 'High', status: 'Started', displayStatus: 'In progress', nextAction: 'Reconcile payroll classes with insured controller', assignedTo: 'Alex Carter', assigner: 'Leslie Neuman', team: CLIENT, dueIn: -1, agingDays: 12, refPrefix: 'BIL', referenceType: 'Policy', insured: 'Crescent Staffing Solutions', producer: 'Summit Risk Partners', policy: 'WC-4471-902' },
+  { name: 'Certificate request — owner/GC requirements', theme: 'Producer support', priority: 'Low', status: 'Completed', displayStatus: 'Completed', nextAction: 'Certificate issued; confirm receipt with producer', assignedTo: 'Alex Carter', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 1, agingDays: 2, refPrefix: 'COI', referenceType: 'Policy', insured: 'Prairie Build Group', producer: 'Hartwell Insurance Group', policy: 'GL-6120-515' },
+  { name: 'Renewal outreach — expiring in 45 days', theme: 'AI-assisted renewal queue', priority: 'Medium', status: 'Pending', displayStatus: 'Open', nextAction: 'Send renewal questionnaire to producer', assignedTo: 'Alex Carter', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 0, agingDays: 1, refPrefix: 'RNW', referenceType: 'Policy', insured: 'Oakridge Dental Group', producer: 'Coastal Brokerage', policy: 'BOP-1180-266' },
+  { name: 'Coverage question — cyber sublimit', theme: 'Producer support', priority: 'Low', status: 'Started', displayStatus: 'In progress', nextAction: 'Draft response on social engineering sublimit', assignedTo: 'Brianna Lopez', assigner: 'Alex Carter', team: CLIENT, dueIn: 3, agingDays: 2, refPrefix: 'CVQ', referenceType: 'Policy', insured: 'Oakridge Dental Group', producer: 'Coastal Brokerage', policy: 'CY-3390-120' },
+  { name: 'Payment plan change request', theme: 'Producer support', priority: 'Low', status: 'Pending', displayStatus: 'Pending insured', nextAction: 'Confirm EFT authorization for quarterly plan', assignedTo: 'Brianna Lopez', assigner: 'Alex Carter', team: CLIENT, dueIn: 7, agingDays: 1, refPrefix: 'PAY', referenceType: 'Policy', insured: 'Lakeview Medical Partners', producer: 'Summit Risk Partners', policy: 'PL-7702-441' },
+  { name: 'OFAC potential match — named insured', theme: 'Compliance watch', priority: 'High', status: 'Pending', displayStatus: 'Open', nextAction: 'Clear or escalate potential SDN match', assignedTo: 'Jasmine Nguyen', assigner: 'System', team: 'Enterprise Compliance', dueIn: 0, agingDays: 0, refPrefix: 'OFC', referenceType: 'Policy', insured: 'Atlas Import Traders', producer: 'Coastal Brokerage', policy: 'IM-5530-018', alert: true },
+  { name: 'Account review — multi-line cross-sell', theme: 'AI-assisted renewal queue', priority: 'Low', status: 'Started', displayStatus: 'In review', nextAction: 'Review Copilot umbrella and cyber recommendations', assignedTo: 'Jasmine Nguyen', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 12, agingDays: 4, refPrefix: 'XSL', referenceType: 'Policy', insured: 'Riverbend Foods Inc.', producer: 'Hartwell Insurance Group', policy: 'CP-7710-204' },
+  { name: 'Claim notice — water damage FNOL', theme: 'Exception handling', priority: 'High', status: 'Started', displayStatus: 'In progress', nextAction: 'Confirm coverage and assign field adjuster', assignedTo: 'Jasmine Nguyen', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 1, agingDays: 1, refPrefix: 'CLM', referenceType: 'Claim', insured: 'Heartland Cold Storage', producer: 'Summit Risk Partners', policy: 'CP-9012-330', claim: 'CLM-2026-04418' },
+  { name: 'Quote follow-up — producer decision pending', theme: 'Automated quote issues', priority: 'Medium', status: 'Pending', displayStatus: 'Pending insured', nextAction: 'Follow up on bind decision before quote expires', assignedTo: 'Ethan Brooks', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 2, agingDays: 7, refPrefix: 'QFU', referenceType: 'Quote', insured: 'Granite Ridge Hospitality', producer: 'Granite Peak Agency', quote: 'Q-BOP-771034' },
+  { name: 'Bind failure — payment gateway timeout', theme: 'Automated quote issues', priority: 'High', status: 'Started', displayStatus: 'Failed', nextAction: 'Retry bind and confirm premium collected', assignedTo: 'Ethan Brooks', assigner: 'System', team: 'Personal Lines Processing', dueIn: -1, agingDays: 2, refPrefix: 'BND', referenceType: 'Quote', insured: 'Sarah & Tom Whitfield', producer: 'Direct', quote: 'Q-HO-552190', blocker: 'Payment gateway returned timeout on 3 retries.' },
+  { name: 'Renewal — declined coverage restoration', theme: 'AI-assisted renewal queue', priority: 'Medium', status: 'Suspended', displayStatus: 'Waiting on internal', nextAction: 'Await actuarial sign-off on restored EPL', assignedTo: 'Ethan Brooks', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 9, agingDays: 5, refPrefix: 'RNW', referenceType: 'Policy', insured: 'Crescent Staffing Solutions', producer: 'Summit Risk Partners', policy: 'EPL-2280-615' },
+  { name: 'Producer commission reconciliation', theme: 'Producer support', priority: 'Medium', status: 'Started', displayStatus: 'In progress', nextAction: 'Match June statement to booked premium', assignedTo: 'Dana Patel', assigner: 'Pamela Hollingsworth', team: OPS, dueIn: 4, agingDays: 6, refPrefix: 'COM', referenceType: 'Policy', insured: 'Hartwell Insurance Group', producer: 'Hartwell Insurance Group' },
+  { name: 'Workflow exception — document indexing backlog', theme: 'Exception handling', priority: 'High', status: 'Started', displayStatus: 'Exception', nextAction: 'Reassign 42 unindexed documents to overflow queue', assignedTo: 'Dana Patel', assigner: 'System', team: OPS, dueIn: 0, agingDays: 3, refPrefix: 'WFX', referenceType: 'Policy', insured: 'Multiple insureds', producer: 'Internal' },
+  { name: 'Premium audit — scheduled field visit', theme: 'Compliance watch', priority: 'Low', status: 'Pending', displayStatus: 'Scheduled', nextAction: 'Confirm audit date with insured', assignedTo: 'Kevin Ortiz', assigner: 'Dana Patel', team: OPS, dueIn: 11, agingDays: 2, refPrefix: 'AUD', referenceType: 'Policy', insured: 'Keystone Freight Co.', producer: 'NorthBridge Commercial', policy: 'CA-1109-874' },
+  { name: 'Reinstatement request — lapse under 30 days', theme: 'Exception handling', priority: 'High', status: 'Pending', displayStatus: 'Pending documents', nextAction: 'Obtain no-loss statement and process reinstatement', assignedTo: 'Kevin Ortiz', assigner: 'Dana Patel', team: 'Policy Services', dueIn: -3, agingDays: 8, refPrefix: 'RIN', referenceType: 'Policy', insured: 'Bluewater Marina Group', producer: 'Coastal Brokerage', policy: 'IM-2209-731', blocker: 'Signed no-loss statement not received.' },
+  { name: 'Auto ID card reissue — vehicle added', theme: 'Automated quote issues', priority: 'Low', status: 'Completed', displayStatus: 'Completed', nextAction: 'ID cards issued; notify producer', assignedTo: 'Kevin Ortiz', assigner: 'System', team: 'Personal Lines Processing', dueIn: 2, agingDays: 1, refPrefix: 'AID', referenceType: 'Policy', insured: 'Keystone Freight Co.', producer: 'NorthBridge Commercial', policy: 'CA-1109-874' },
+  { name: 'Large loss review — reserve adequacy', theme: 'Exception handling', priority: 'High', status: 'Started', displayStatus: 'In review', nextAction: 'Approve reserve increase to $1.2M', assignedTo: 'Pamela Hollingsworth', assigner: 'System', team: 'Executive', dueIn: 1, agingDays: 4, refPrefix: 'LLR', referenceType: 'Claim', insured: 'Riverbend Foods Inc.', producer: 'Hartwell Insurance Group', policy: 'CP-7710-204', claim: 'CLM-2026-03982' },
+  { name: 'Authority exception — rate deviation approval', theme: 'Exception handling', priority: 'Medium', status: 'Pending', displayStatus: 'Open', nextAction: 'Review -15% deviation request against portfolio targets', assignedTo: 'Pamela Hollingsworth', assigner: 'Chris Reynolds', team: 'Executive', dueIn: 3, agingDays: 2, refPrefix: 'AUX', referenceType: 'Quote', insured: 'Granite Ridge Hospitality', producer: 'Granite Peak Agency', quote: 'Q-CP-903311' },
+  { name: 'Submission clearance — duplicate check', theme: 'Automated quote issues', priority: 'Medium', status: 'Unassigned', displayStatus: 'Open', nextAction: 'Resolve duplicate submission from two producers', assignedTo: 'Submission Processing', assigner: 'System', team: 'BML Commercial Lines', dueIn: 1, agingDays: 1, refPrefix: 'SUB', referenceType: 'Quote', insured: 'Northwind Brewing Co.', producer: 'Granite Peak Agency', quote: 'Q-GL-903577' },
+  { name: 'Sanctions rescreen — renewal batch', theme: 'Compliance watch', priority: 'Medium', status: 'Started', displayStatus: 'In progress', nextAction: 'Review 6 flagged records from nightly rescreen', assignedTo: 'Compliance Ops', assigner: 'System', team: 'Enterprise Compliance', dueIn: 2, agingDays: 1, refPrefix: 'SAN', referenceType: 'Policy', insured: 'Multiple insureds', producer: 'Internal' },
+  { name: 'Rating error — territory code missing', theme: 'Automated quote issues', priority: 'High', status: 'Started', displayStatus: 'Exception', nextAction: 'Correct territory mapping and re-rate', assignedTo: 'Auto Installer Queue', assigner: 'System', team: 'Personal Lines Processing', dueIn: 0, agingDays: 0, refPrefix: 'AQE', referenceType: 'Quote', insured: 'Daniel Okafor', producer: 'Direct', quote: 'Q-PA-661408' },
+  { name: 'Producer portal access issue', theme: 'Producer support', priority: 'Low', status: 'Discarded', displayStatus: 'Discarded', nextAction: 'Duplicate of existing ticket; no action required', assignedTo: 'Account Support — Producer Desk', assigner: 'Leslie Neuman', team: OPS, dueIn: 5, agingDays: 3, refPrefix: 'PPA', referenceType: 'Policy', insured: 'Coastal Brokerage', producer: 'Coastal Brokerage' },
+  { name: 'Excess placement — layered program quote', theme: 'AI-assisted renewal queue', priority: 'Medium', status: 'Started', displayStatus: 'In review', nextAction: 'Compare reinsurer indications for $25M xs $10M layer', assignedTo: 'Chris Reynolds', assigner: 'Pamela Hollingsworth', team: UW, dueIn: 7, agingDays: 5, refPrefix: 'XSP', referenceType: 'Quote', insured: 'Keystone Freight Co.', producer: 'NorthBridge Commercial', quote: 'Q-XS-440921' },
+]
+
+export const tasksMock: TaskRecord[] = [...baseTasks, ...taskSeeds.map(buildSeedTask)]
+
 export const teamMembersMock: TeamMemberRecord[] = [
   {
     id: 'tm-1',
@@ -634,7 +769,7 @@ export const teamMembersMock: TeamMemberRecord[] = [
     days0to2: 2,
     days3to5: 1,
     days6plus: 2,
-    directReports: 3,
+    directReports: 4,
     managerId: 'tm-1',
   },
   {
@@ -749,6 +884,52 @@ export const teamMembersMock: TeamMemberRecord[] = [
     directReports: 0,
     managerId: 'tm-2',
   },
+  {
+    id: 'tm-12',
+    name: 'Jordan Ellis',
+    initials: 'JE',
+    title: 'Senior Underwriter',
+    totalTasks: 2,
+    dueToday: 0,
+    pastDue: 0,
+    days0to2: 1,
+    days3to5: 1,
+    days6plus: 0,
+    directReports: 0,
+    managerId: 'tm-3',
+  },
+  {
+    id: 'tm-13',
+    name: 'Maria Santos',
+    initials: 'MS',
+    title: 'Underwriter',
+    totalTasks: 2,
+    dueToday: 1,
+    pastDue: 0,
+    days0to2: 1,
+    days3to5: 0,
+    days6plus: 1,
+    directReports: 0,
+    managerId: 'tm-3',
+  },
 ]
+
+/** Stable per-person index for avatar color (roster order). */
+export function getTeamMemberIndex(memberId: string) {
+  return Math.max(0, teamMembersMock.findIndex((member) => member.id === memberId))
+}
+
+/** A person plus everyone under them — used to filter All tasks from the org chart. */
+export function getTeamSubtreeNames(memberId: string): string[] {
+  const names: string[] = []
+  const visit = (id: string) => {
+    const member = teamMembersMock.find((m) => m.id === id)
+    if (!member) return
+    names.push(member.name)
+    teamMembersMock.filter((m) => m.managerId === id).forEach((m) => visit(m.id))
+  }
+  visit(memberId)
+  return names
+}
 
 export const TASKS_TOTAL_ROWS = tasksMock.length

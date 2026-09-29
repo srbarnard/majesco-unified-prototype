@@ -69,6 +69,33 @@ export function chatAuthorAvatarSx(theme: Theme) {
   } as const
 }
 
+const TEAM_AVATAR_FAMILIES = [
+  'blue',
+  'teal',
+  'green',
+  'amber',
+  'lightBlue',
+  'indigo',
+  'deepPurple',
+] as const
+
+/**
+ * Team roster initials — soft tint + deep text from the Majesco One palette, varied per person.
+ * Red is excluded so avatars never compete with past-due counts.
+ */
+export function teamMemberAvatarSx(theme: Theme, index: number, size = 32) {
+  const family = theme.figmaPalette[TEAM_AVATAR_FAMILIES[Math.abs(index) % TEAM_AVATAR_FAMILIES.length]!]
+  const dark = isDarkMode(theme)
+  return {
+    width: size,
+    height: size,
+    fontSize: size >= 32 ? '0.75rem' : '0.625rem',
+    fontWeight: 600,
+    bgcolor: dark ? family[800] : family[100],
+    color: dark ? family[100] : family[800],
+  } as const
+}
+
 /** Peer / other-author initials — stable color from design system keyed to user id. */
 export function chatPeerAuthorAvatarSx(theme: Theme, userKey = '') {
   const dark = isDarkMode(theme)
@@ -359,6 +386,13 @@ const dataGridShellBaseSx = {
   },
 } as const
 
+/** Built-in grid footer ("Total Rows: N") — the single row-total pattern for list grids. */
+export const dataGridFooterSx = {
+  borderTop: 1,
+  borderColor: 'divider',
+  minHeight: 52,
+} as const
+
 export function dataGridShellSx(
   extra?: Record<string, unknown>,
   heightOptions?: ListDataGridHeightOptions,
@@ -366,6 +400,7 @@ export function dataGridShellSx(
   const shell = {
     ...dataGridShellBaseSx,
     ...listDataGridShellHeightSx(heightOptions ?? { headerFilters: true }),
+    ...(heightOptions?.footer ? { '& .MuiDataGrid-footerContainer': dataGridFooterSx } : {}),
   }
   return extra ? [shell, extra] : [shell]
 }

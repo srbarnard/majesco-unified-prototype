@@ -1,11 +1,9 @@
 import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
 import type { GridRowSelectionModel } from '@mui/x-data-grid-premium'
 import { useMemo, useState } from 'react'
 import type { Theme } from '@mui/material/styles'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listDataGridMinHeight } from '@/design-system/tokens/tableLayout'
-import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { isDarkMode } from '@/design-system/theme/themeSurfaces'
 import { applyDocumentsFilters } from '@/pages/policies/filters/applyDocumentsFilters'
 import type { DocumentsFilters } from '@/pages/policies/filters/documentsFilterTypes'
@@ -78,8 +76,6 @@ export function DocumentsTab({
   }, [rows, appliedFilters, searchQuery])
 
   const filterCount = countActiveDocumentsFilters(appliedFilters)
-  const searchActive = searchQuery.trim().length > 0
-  const filtersActive = filterCount > 0 || searchActive
   const selectedDocuments = useMemo(
     () => rows.filter((row) => rowSelectionModel.includes(row.id)),
     [rows, rowSelectionModel],
@@ -130,21 +126,6 @@ export function DocumentsTab({
           activeCopilotDocumentId={activeCopilotDocumentId}
         />
       </Box>
-
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{
-          fontFamily: figmaFontFamilyStack.body,
-          textAlign: 'right',
-          flexShrink: 0,
-          mt: -1,
-        }}
-      >
-        {filtersActive
-          ? `Showing ${filteredRows.length} of ${rows.length} documents`
-          : `Total documents: ${rows.length}`}
-      </Typography>
     </Box>
   )
 }

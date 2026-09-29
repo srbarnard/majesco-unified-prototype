@@ -274,6 +274,8 @@ export type CopilotComposerProps = {
   /** When this changes, clear staged attachments (e.g. switching Copilot focus). */
   attachmentResetKey?: string | number | null
   onSubmit?: (message: string, files?: CopilotAttachedFile[]) => void
+  /** Staged (not yet sent) attachments — lets a parent act on files without a send. */
+  onFilesChange?: (files: CopilotAttachedFile[]) => void
   /** Focus the multiline field when the composer mounts (e.g. Notes New tab). */
   autoFocus?: boolean
 }
@@ -297,11 +299,17 @@ export function CopilotComposer({
   attachRequestKey = null,
   attachmentResetKey = null,
   onSubmit,
+  onFilesChange,
   autoFocus = false,
 }: CopilotComposerProps) {
   const [mode, setMode] = useState<CopilotMode>('fast')
   const [internalMessage, setInternalMessage] = useState('')
   const [files, setFiles] = useState<CopilotAttachedFile[]>([])
+  const onFilesChangeRef = useRef(onFilesChange)
+  onFilesChangeRef.current = onFilesChange
+  useEffect(() => {
+    onFilesChangeRef.current?.(files)
+  }, [files])
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isControlled = value !== undefined && onChange !== undefined

@@ -503,7 +503,12 @@ export function InsuredsDataGrid({
         getRowHeight={() => 'auto'}
         slotProps={getListDataGridSlotProps()}
         {...listDataGridFilterProps}
-        sx={[...dataGridShellSx(), dataGridInteractionSx] as SxProps<Theme>}
+        sx={
+          [
+            ...dataGridShellSx(undefined, { headerFilters: true, footer: true }),
+            dataGridInteractionSx,
+          ] as SxProps<Theme>
+        }
       />
     </Box>
   )

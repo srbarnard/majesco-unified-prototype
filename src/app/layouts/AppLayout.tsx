@@ -7,6 +7,7 @@ import { GlobalSearchProvider } from '@/app/contexts/GlobalSearchContext'
 import { FavoritesProvider } from '@/app/contexts/FavoritesContext'
 import { RightToolProvider } from '@/app/contexts/RightToolContext'
 import { SidebarProvider } from '@/app/contexts/SidebarContext'
+import { TasksProvider } from '@/app/contexts/TasksContext'
 import {
   AppRightToolDrawer,
   AppRightToolRail,
@@ -127,7 +128,9 @@ export function AppLayout() {
       <FavoritesProvider>
         <GlobalSearchProvider>
           <RightToolProvider>
-            <AppLayoutContent />
+            <TasksProvider>
+              <AppLayoutContent />
+            </TasksProvider>
           </RightToolProvider>
         </GlobalSearchProvider>
       </FavoritesProvider>

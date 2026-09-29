@@ -23,6 +23,7 @@ import Typography from '@mui/material/Typography'
 import { type Theme } from '@mui/material/styles'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
+import { useRightToolDispatch, type RightToolId } from '@/app/contexts/RightToolContext'
 import { GlobalSearchField } from '@/design-system/components/GlobalSearch/GlobalSearchField'
 import { useBrowserHistoryNavigation } from '@/hooks/useBrowserHistoryNavigation'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -49,6 +50,8 @@ type CreateMenuItem = {
   label: string
   disabled: boolean
   path?: string
+  /** Opens a right-panel tool in place instead of navigating. */
+  tool?: RightToolId
 }
 
 const CREATE_MENU_ITEMS: CreateMenuItem[] = [
@@ -56,7 +59,7 @@ const CREATE_MENU_ITEMS: CreateMenuItem[] = [
   { label: 'Quote', disabled: false, path: '/quotes/new' },
   { label: 'Policy', disabled: true },
   { label: 'Claim', disabled: true },
-  { label: 'Task', disabled: true },
+  { label: 'Task', disabled: false, tool: 'newTask' },
 ]
 
 /** Prototype unread count for account avatar + Notifications menu badge. */
@@ -100,6 +103,7 @@ const navMenuPaperSx = {
 
 export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopNavbarProps) {
   const navigate = useNavigate()
+  const { openTool } = useRightToolDispatch()
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [createMenuAnchor, setCreateMenuAnchor] = useState<null | HTMLElement>(null)
   const [settingsMenuAnchor, setSettingsMenuAnchor] = useState<null | HTMLElement>(null)
@@ -108,9 +112,10 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
 
   const handleCreateMenuClose = () => setCreateMenuAnchor(null)
 
-  const handleCreateMenuSelect = (path?: string) => {
+  const handleCreateMenuSelect = (item: CreateMenuItem) => {
     handleCreateMenuClose()
-    if (path) navigate(path)
+    if (item.tool) openTool(item.tool)
+    else if (item.path) navigate(item.path)
   }
 
   const handleSettingsMenuClose = () => setSettingsMenuAnchor(null)
@@ -293,7 +298,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
               <MenuItem
                 key={item.label}
                 disabled={item.disabled}
-                onClick={() => handleCreateMenuSelect(item.path)}
+                onClick={() => handleCreateMenuSelect(item)}
               >
                 {item.label}
               </MenuItem>

@@ -12,9 +12,10 @@ import { TasksTabs, type TasksTab } from './TasksTabs'
 type TasksHeaderProps = {
   activeTab: TasksTab
   onTabChange: (tab: TasksTab) => void
+  onAddTask?: () => void
 }
 
-export function TasksHeader({ activeTab, onTabChange }: TasksHeaderProps) {
+export function TasksHeader({ activeTab, onTabChange, onAddTask }: TasksHeaderProps) {
   const contentPx = `${layoutTokens.contentPaddingX}px`
 
   return (
@@ -44,6 +45,7 @@ export function TasksHeader({ activeTab, onTabChange }: TasksHeaderProps) {
           color="primary"
           startIcon={<AddIcon />}
           aria-label="Add task"
+          onClick={onAddTask}
           sx={listPageCreateButtonSx}
         >
           <span className="create-btn-label">Add task</span>

@@ -1,5 +1,4 @@
 import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
 import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
@@ -11,7 +10,6 @@ import {
 import { ListDataGridToolbar } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
-import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { useQuotesLookupFromUrl } from '@/hooks/useLookupFromUrl'
 import { useSearchQueryFromUrl } from '@/hooks/useSearchQueryFromUrl'
 import { QuotesAnalyticsTab } from '@/pages/quotes/components/QuotesAnalyticsTab'
@@ -19,11 +17,10 @@ import { QuotesDataGrid } from '@/pages/quotes/components/QuotesDataGrid'
 import { QuotesFilterPanel } from '@/pages/quotes/components/QuotesFilterPanel'
 import { QuotesHeader } from '@/pages/quotes/components/QuotesHeader'
 import type { QuotesTab } from '@/pages/quotes/components/QuotesTabs'
-import { QUOTES_TOTAL_ROWS, quotesMock, type Quote } from '@/pages/quotes/data/mockQuotes'
+import { quotesMock, type Quote } from '@/pages/quotes/data/mockQuotes'
 import { applyQuotesListFilters } from '@/pages/quotes/filters/applyQuotesListFilters'
 import {
   emptyQuotesListFilters,
-  hasActiveQuotesFilters,
   type QuotesListFilters,
 } from '@/pages/quotes/filters/quotesListFilterTypes'
 
@@ -93,8 +90,6 @@ export function QuotesPage() {
     const withFilters = applyQuotesListFilters(quotesMock, appliedFilters)
     return withFilters.filter((row) => matchesSearch(row, searchQuery))
   }, [appliedFilters, searchQuery])
-
-  const filtersActive = hasActiveQuotesFilters(appliedFilters)
 
   useRegisterRightToolCopilot(
     {
@@ -223,13 +218,6 @@ export function QuotesPage() {
                   activeCopilotQuoteId={activeCopilotQuoteId}
                 />
               </Box>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontFamily: figmaFontFamilyStack.body, textAlign: 'right', flexShrink: 0 }}
-              >
-                Total Rows: {filtersActive || searchQuery.trim() ? filteredRows.length : QUOTES_TOTAL_ROWS}
-              </Typography>
             </Box>
           ) : (
             <QuotesAnalyticsTab />

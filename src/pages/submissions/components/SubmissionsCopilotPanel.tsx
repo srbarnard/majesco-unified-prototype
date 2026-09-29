@@ -2004,7 +2004,6 @@ export function SubmissionsCopilotPanel({
         key={`assign-${assignCompose.selectedIds.join('|')}-${assignCompose.focusAssignee}-${assignCompose.openedAt}`}
         blockedOptions={blockedAssignOptions}
         initialSelected={composeSelected}
-        focusAssignee={assignCompose.focusAssignee}
         onCancel={cancelAssignCompose}
         onAssign={handleAssignBlockedSubmit}
       />

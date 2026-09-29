@@ -37,6 +37,7 @@ import type { Quote } from '@/pages/quotes/data/mockQuotes'
 import { QUOTES_TOTAL_ROWS } from '@/pages/quotes/data/mockQuotes'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
 import { TASKS_TOTAL_ROWS } from '@/pages/tasks/data/mockTasks'
+import { TASKS_NEXT_STEPS } from '@/pages/tasks/data/tasksNextSteps'
 import { TaskRecommendationChat } from '@/pages/tasks/components/TaskRecommendationChat'
 import type { CustomerRecord } from '@/pages/customers/data/mockCustomers'
 import {
@@ -282,13 +283,7 @@ const tasksWorkspaceInsights = [
   '8 tasks assigned to you due this week',
 ]
 
-const tasksNextSteps = [
-  'Review past-due loss run analysis',
-  'Complete finalize proposal for Acme Corp',
-  'Reassign suspended inspection follow-up',
-]
-
-const taskQuickActions = ['Show high priority', 'Show past due']
+const taskQuickActions = [...TASKS_NEXT_STEPS.map((step) => step.label), 'Show high priority', 'Show past due']
 const focusedTaskQuickActions = ['Summarize task', 'Reassign', 'Mark complete', 'Ask about ref #']
 const focusedActivityQuickActions = [
   'Summarize activity',
@@ -887,13 +882,13 @@ export function CopilotPanel({
               ))}
             </Box>
 
-            {((isTasksContext && !focusedTask) || (isInsuredsContext && !focusedInsured)) && (
+            {isInsuredsContext && !focusedInsured && (
               <>
                 <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
                   Next steps
                 </Typography>
                 <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }}>
-                  {(isInsuredsContext ? insuredsNextSteps : tasksNextSteps).map((step) => (
+                  {insuredsNextSteps.map((step) => (
                     <Typography component="li" variant="body2" color="text.primary" key={step} sx={{ ...bodySx, mb: 0.5 }}>
                       {step}
                     </Typography>

@@ -6,6 +6,7 @@ import StickyNote2OutlinedIcon from '@mui/icons-material/StickyNote2Outlined'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
+import SvgIcon, { type SvgIconProps } from '@mui/material/SvgIcon'
 import Tooltip from '@mui/material/Tooltip'
 import { useColorScheme, useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
@@ -18,14 +19,24 @@ import { surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 type ToolDef = {
   id: RightToolId
   label: string
-  icon: 'copilot' | 'notes' | 'email' | 'filter' | 'parties' | 'history'
+  icon: 'copilot' | 'notes' | 'email' | 'newTask' | 'filter' | 'parties' | 'history'
 }
 
 const GLOBAL_TOOLS: ToolDef[] = [
   { id: 'copilot', label: 'Copilot', icon: 'copilot' },
   { id: 'notes', label: 'Notes', icon: 'notes' },
   { id: 'email', label: 'Email', icon: 'email' },
+  { id: 'newTask', label: 'New task', icon: 'newTask' },
 ]
+
+/** Material Symbols `list_alt_check` (outlined) — not shipped in @mui/icons-material. */
+function ListAltCheckIcon(props: SvgIconProps) {
+  return (
+    <SvgIcon viewBox="0 -960 960 960" {...props}>
+      <path d="M200-200v-560 454-85 191Zm0 80q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v320h-80v-320H200v560h280v80H200Zm494 40L552-222l57-56 85 85 170-170 56 57L694-80ZM348.5-451.5Q360-463 360-480t-11.5-28.5Q337-520 320-520t-28.5 11.5Q280-497 280-480t11.5 28.5Q303-440 320-440t28.5-11.5Zm0-160Q360-623 360-640t-11.5-28.5Q337-680 320-680t-28.5 11.5Q280-657 280-640t11.5 28.5Q303-600 320-600t28.5-11.5ZM440-440h240v-80H440v80Zm0-160h240v-80H440v80Z" />
+    </SvgIcon>
+  )
+}
 
 function ToolIcon({
   kind,
@@ -46,6 +57,9 @@ function ToolIcon({
   }
   if (kind === 'email') {
     return <MailOutlineIcon sx={{ fontSize: 20 }} />
+  }
+  if (kind === 'newTask') {
+    return <ListAltCheckIcon sx={{ fontSize: 20 }} />
   }
   if (kind === 'filter') {
     return <FilterListOutlinedIcon sx={{ fontSize: 20 }} />

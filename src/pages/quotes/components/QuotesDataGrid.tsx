@@ -354,7 +354,7 @@ export function QuotesDataGrid({
   })
 
   return (
-    <Box sx={listDataGridContainerSx({ headerFilters: true })}>
+    <Box sx={listDataGridContainerSx({ headerFilters: true, footer: true })}>
       <DataGridPremium
         apiRef={apiRef}
         rows={rows}
@@ -369,7 +369,6 @@ export function QuotesDataGrid({
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}
-        hideFooter
         slotProps={getListDataGridSlotProps()}
         {...listDataGridFilterProps}
         sx={[...dataGridShellSx({
@@ -379,7 +378,7 @@ export function QuotesDataGrid({
             '& .MuiDataGrid-cell[data-field="status"]': {
               justifyContent: 'center',
             },
-          }), dataGridInteractionSx] as SxProps<Theme>}
+          }, { headerFilters: true, footer: true }), dataGridInteractionSx] as SxProps<Theme>}
       />
     </Box>
   )

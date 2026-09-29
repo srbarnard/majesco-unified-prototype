@@ -1,5 +1,4 @@
 import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
 import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useMemo, useState } from 'react'
 import { useRightTool } from '@/app/contexts/RightToolContext'
@@ -10,19 +9,16 @@ import {
 import { ListDataGridToolbar } from '@/design-system/components'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { listPageContentOverflowSx } from '@/design-system/tokens/tableLayout'
-import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { CustomersDataGrid } from '@/pages/customers/components/CustomersDataGrid'
 import { CustomersFilterPanel } from '@/pages/customers/components/CustomersFilterPanel'
 import { CustomersHeader } from '@/pages/customers/components/CustomersHeader'
 import {
-  CUSTOMERS_TOTAL_ROWS,
   customersMock,
   type CustomerRecord,
 } from '@/pages/customers/data/mockCustomers'
 import { applyCustomersListFilters } from '@/pages/customers/filters/applyCustomersListFilters'
 import {
   emptyCustomersListFilters,
-  hasActiveCustomersFilters,
   type CustomersListFilters,
 } from '@/pages/customers/filters/customersListFilterTypes'
 
@@ -59,8 +55,6 @@ export function CustomersPage() {
     const withFilters = applyCustomersListFilters(customersMock, appliedFilters)
     return withFilters.filter((row) => matchesSearch(row, searchQuery))
   }, [appliedFilters, searchQuery])
-
-  const filtersActive = hasActiveCustomersFilters(appliedFilters)
 
   useRegisterRightToolCopilot(
     {
@@ -176,13 +170,6 @@ export function CustomersPage() {
                 activeCopilotCustomerId={activeCopilotCustomerId}
               />
             </Box>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontFamily: figmaFontFamilyStack.body, textAlign: 'right', flexShrink: 0 }}
-            >
-              Total Rows: {filtersActive || searchQuery.trim() ? filteredRows.length : CUSTOMERS_TOTAL_ROWS}
-            </Typography>
           </Box>
         </Box>
       </Box>

@@ -15,6 +15,7 @@ import {
 } from '@/design-system/tokens/motion'
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { useRightPanelWidth } from '@/pages/policies/hooks/useCopilotWidth'
+import { NewTaskToolPanel } from '@/pages/tasks/components/NewTaskToolPanel'
 
 function ToolPanelBody() {
   const {
@@ -54,6 +55,7 @@ function ToolPanelBody() {
       {activeTool === 'email' ? <EmailToolPanel /> : null}
       {activeTool === 'filter' ? filterContent : null}
       {activeTool === 'parties' ? partiesContent : null}
+      {activeTool === 'newTask' ? <NewTaskToolPanel /> : null}
     </Box>
   )
 }
