@@ -168,9 +168,14 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
           </IconButton>
           <Box
             component="img"
-            src="/assets/majesco-logo.png"
-            alt="Majesco"
-            sx={{ width: 28, height: 28, objectFit: 'contain' }}
+            src="/assets/latent-needs-logo.svg"
+            alt="Latent Needs"
+            sx={(theme) => ({
+              width: 28,
+              height: 28,
+              objectFit: 'contain',
+              ...theme.applyStyles('dark', { filter: 'invert(1)' }),
+            })}
           />
           <Select
             value="pc-policy"

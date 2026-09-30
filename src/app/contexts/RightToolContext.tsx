@@ -21,6 +21,7 @@ export type RightToolId =
   | 'parties'
   | 'history'
   | 'newTask'
+  | 'newCustomer'
 
 export type RightToolRecordContext = {
   title: string

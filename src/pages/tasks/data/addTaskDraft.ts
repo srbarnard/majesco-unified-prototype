@@ -178,6 +178,15 @@ export function relatedLabel(related: AddTaskRelated) {
 }
 
 /** Catalog record for a grid row, so the row menu and the typeahead link the same entry. */
+export const RELATED_BY_LABEL = new Map(ADD_TASK_RELATED.map((record) => [relatedLabel(record), record]))
+export const RELATED_OPTIONS = [...RELATED_BY_LABEL.keys()]
+
+/** Typeahead matches a Related option on its label plus every linked name (insured, producer, agency). */
+export function relatedSearchText(label: string) {
+  const record = RELATED_BY_LABEL.get(label)
+  return record ? `${label} ${record.names.join(' ')}` : label
+}
+
 export function findRelated(
   kind: AddTaskRelatedKind,
   ref: string,
@@ -322,7 +331,7 @@ type RelatedMatch = { record: AddTaskRelated; name: string; strength: number }
  * Best record the sentence refers to. Stronger evidence wins (ref number > full name > short name >
  * lead word); ties go to the page's record type, then insured names over producer names.
  */
-function inferRelated(text: string, context: AddTaskPageContext | undefined): AddTaskRelated | null {
+export function inferRelated(text: string, context: AddTaskPageContext | undefined): AddTaskRelated | null {
   const lower = text.toLowerCase()
   const matches: RelatedMatch[] = []
   for (const record of ADD_TASK_RELATED) {

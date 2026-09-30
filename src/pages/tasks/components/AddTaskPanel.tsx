@@ -1,35 +1,35 @@
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import BlockIcon from '@mui/icons-material/Block'
-import CheckIcon from '@mui/icons-material/Check'
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined'
-import CloseIcon from '@mui/icons-material/Close'
-import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
-import Box from '@mui/material/Box'
-import ButtonBase from '@mui/material/ButtonBase'
 import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
-import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
-import Tab from '@mui/material/Tab'
-import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Button, CopilotQuickActions } from '@/design-system/components'
-import { filterFooterButtonSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
-import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
-import { layoutTokens } from '@/design-system/tokens/layout'
+import { useMemo, useState } from 'react'
+import { CopilotQuickActions } from '@/design-system/components'
 import { CopilotComposer, type CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
 import {
-  copilotDrawerHeadingSx,
-  copilotDrawerTabsSx,
-  copilotSubtitleSx,
-} from '@/pages/policies/components/copilot/copilotDrawerStyles'
+  DraftDrawerShell,
+  DraftHeader,
+  DraftHistoryList,
+  DraftInlineLookup,
+  DraftInlineOptions,
+  DraftInlineTextEdit,
+  DraftNeededList,
+  DraftWelcome,
+  draftChipSx,
+  draftInputSx,
+  draftUid,
+  formatDraftCreatedTime,
+  useDebouncedValue,
+  type DraftNeededRow,
+  type DraftTab,
+  type DraftThreadMessage,
+} from '@/pages/shared/components/DraftDrawer'
 import {
   ADD_TASK_ASSIGNEES,
-  ADD_TASK_RELATED,
   ADD_TASK_SEEDS,
+  RELATED_BY_LABEL,
+  RELATED_OPTIONS,
+  relatedSearchText,
   buildDueOptions,
   buildTaskFromDraft,
   emptyAddTaskDraft,
@@ -44,46 +44,16 @@ import {
 } from '@/pages/tasks/data/addTaskDraft'
 import type { TaskPriority, TaskRecord } from '@/pages/tasks/data/mockTasks'
 
-const panelPx = 2
-
-const bodySx = {
-  fontFamily: figmaFontFamilyStack.body,
-  fontWeight: 400,
-  fontSize: '0.875rem',
-  lineHeight: 1.55,
-} as const
-
-const chipSx = {
-  fontFamily: figmaFontFamilyStack.body,
-  fontSize: '0.75rem',
-  height: 28,
-  maxWidth: '100%',
-  '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
-} as const
-
-const inputSx = {
-  '& .MuiInputBase-input': { fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem' },
-} as const
-
 const PRIORITY_OPTIONS: TaskPriority[] = ['Low', 'Medium', 'High']
-const backRowSx = {
-  display: 'grid',
-  gridTemplateColumns: 'auto minmax(0, 1fr)',
-  columnGap: 0.5,
-  alignItems: 'center',
-} as const
 
 const ADD_BLOCKER_ACTION = 'Add blocker'
 const CANCEL_TASK_ACTION = 'Cancel task'
-const LIVE_PARSE_DEBOUNCE_MS = 300
 
 type EditField = 'title' | 'assignee' | 'related' | 'priority' | 'due' | 'description'
 
-type ThreadMessage = { id: string; text: string; files?: string[] }
-
 export type AddTaskSavedState = {
   draft: AddTaskDraft
-  messages: ThreadMessage[]
+  messages: DraftThreadMessage[]
 }
 
 export type AddTaskHistoryEntry = {
@@ -93,7 +63,7 @@ export type AddTaskHistoryEntry = {
 
 type AddTaskPanelProps = {
   initialState?: AddTaskSavedState | null
-  initialTab?: 'new' | 'history'
+  initialTab?: DraftTab
   history: AddTaskHistoryEntry[]
   onClose: () => void
   onSaveDraft: (state: AddTaskSavedState) => void
@@ -104,25 +74,6 @@ type AddTaskPanelProps = {
   initialRelated?: AddTaskRelated | null
 }
 
-function uid(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-}
-
-const RELATED_BY_LABEL = new Map(ADD_TASK_RELATED.map((record) => [relatedLabel(record), record]))
-const RELATED_OPTIONS = [...RELATED_BY_LABEL.keys()]
-
-function relatedSearchText(label: string) {
-  const record = RELATED_BY_LABEL.get(label)
-  return record ? `${label} ${record.names.join(' ')}` : label
-}
-
-function formatCreatedTime(date: Date) {
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-}
-
-const prefersFinePointer = () =>
-  typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches === true
-
 function FileChip({ name }: { name: string }) {
   return (
     <Chip
@@ -130,37 +81,8 @@ function FileChip({ name }: { name: string }) {
       variant="outlined"
       icon={<AttachFileOutlinedIcon sx={{ fontSize: 16 }} />}
       label={name}
-      sx={{ ...chipSx, height: 24, borderColor: 'divider', bgcolor: 'background.paper' }}
+      sx={{ ...draftChipSx, height: 24, borderColor: 'divider', bgcolor: 'background.paper' }}
     />
-  )
-}
-
-function InlineOptions({
-  options,
-  selected,
-  onPick,
-}: {
-  options: string[]
-  selected: string | null
-  onPick: (option: string) => void
-}) {
-  return (
-    <Stack direction="row" flexWrap="wrap" useFlexGap gap={0.75}>
-      {options.map((option) => {
-        const isSelected = option === selected
-        return (
-          <Chip
-            key={option}
-            label={option}
-            clickable
-            color={isSelected ? 'primary' : 'default'}
-            variant={isSelected ? 'filled' : 'outlined'}
-            onClick={() => onPick(option)}
-            sx={{ ...chipSx, ...(isSelected ? {} : { borderColor: 'divider' }) }}
-          />
-        )
-      })}
-    </Stack>
   )
 }
 
@@ -200,7 +122,7 @@ function DueEditor({
               variant={isSelected ? 'filled' : 'outlined'}
               aria-expanded={option === CUSTOM_DUE ? showPicker : undefined}
               onClick={() => (option === CUSTOM_DUE ? setShowPicker((open) => !open) : onPickPreset(option))}
-              sx={{ ...chipSx, ...(isSelected ? {} : { borderColor: 'divider' }) }}
+              sx={{ ...draftChipSx, ...(isSelected ? {} : { borderColor: 'divider' }) }}
             />
           )
         })}
@@ -216,287 +138,10 @@ function DueEditor({
             if (!year || year < 1000 || !month || !day) return
             onPickDate(new Date(year, month - 1, day))
           }}
-          sx={{ ...inputSx, maxWidth: 200 }}
+          sx={{ ...draftInputSx, maxWidth: 200 }}
         />
       ) : null}
     </Stack>
-  )
-}
-
-function InlineLookup({
-  options,
-  placeholder,
-  hint,
-  searchText,
-  onPick,
-  onDismiss,
-}: {
-  options: string[]
-  placeholder: string
-  hint?: string
-  /** Extra text an option matches on beyond its label (e.g. producer names). */
-  searchText?: (option: string) => string
-  onPick: (option: string) => void
-  onDismiss: () => void
-}) {
-  const filterOptions = useMemo(
-    () => (searchText ? createFilterOptions<string>({ stringify: searchText }) : undefined),
-    [searchText],
-  )
-  return (
-    <Box>
-      <Autocomplete
-        size="small"
-        options={options}
-        filterOptions={filterOptions}
-        openOnFocus
-        autoHighlight
-        onChange={(_, next) => {
-          if (next) onPick(next)
-        }}
-        onClose={(_, reason) => {
-          if (reason === 'escape') onDismiss()
-        }}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            placeholder={placeholder}
-            autoFocus={prefersFinePointer()}
-            inputProps={{ ...params.inputProps, 'aria-label': placeholder }}
-            sx={inputSx}
-          />
-        )}
-        slotProps={{ listbox: { sx: { fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem' } } }}
-      />
-      {hint ? (
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.5 }}
-        >
-          {hint}
-        </Typography>
-      ) : null}
-    </Box>
-  )
-}
-
-function InlineTextEdit({
-  initialValue,
-  multiline = false,
-  label,
-  onCommit,
-  onDismiss,
-}: {
-  initialValue: string
-  multiline?: boolean
-  label: string
-  onCommit: (value: string) => void
-  onDismiss: () => void
-}) {
-  const [value, setValue] = useState(initialValue)
-  const commit = () => {
-    const next = value.trim()
-    if (next) onCommit(next)
-    else onDismiss()
-  }
-  return (
-    <TextField
-      size="small"
-      fullWidth
-      multiline={multiline}
-      minRows={multiline ? 3 : undefined}
-      value={value}
-      autoFocus={prefersFinePointer()}
-      onChange={(event) => setValue(event.target.value)}
-      onBlur={commit}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') onDismiss()
-        if (event.key === 'Enter' && (!multiline || event.metaKey || event.ctrlKey)) {
-          event.preventDefault()
-          commit()
-        }
-      }}
-      inputProps={{ 'aria-label': label }}
-      sx={inputSx}
-    />
-  )
-}
-
-function HistoryList({
-  entries,
-  onOpenTask,
-}: {
-  entries: AddTaskHistoryEntry[]
-  onOpenTask: (taskId: string) => void
-}) {
-  if (entries.length === 0) {
-    return (
-      <Typography variant="body2" color="text.secondary" sx={{ ...bodySx, textAlign: 'center', py: 4 }}>
-        Tasks you create this session show up here.
-      </Typography>
-    )
-  }
-  return (
-    <Stack sx={{ mx: -panelPx, mt: -1 }}>
-      {entries.map(({ task, createdAt }) => (
-        <Box
-          key={task.id}
-          component="button"
-          type="button"
-          onClick={() => onOpenTask(task.id)}
-          sx={{
-            width: '100%',
-            display: 'block',
-            px: panelPx,
-            py: 1.5,
-            border: 'none',
-            borderBottom: 1,
-            borderColor: 'divider',
-            bgcolor: 'transparent',
-            cursor: 'pointer',
-            textAlign: 'left',
-            '&:hover': { bgcolor: 'action.hover' },
-          }}
-        >
-          <Typography variant="body2" noWrap sx={{ ...bodySx, fontWeight: 600 }}>
-            {task.taskName}
-          </Typography>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.25 }}
-          >
-            {[task.assignedTo, formatCreatedTime(createdAt)].join(' · ')}
-          </Typography>
-        </Box>
-      ))}
-    </Stack>
-  )
-}
-
-type NeededRow = {
-  term: string
-  /** Plain text for the row; null = still needed. */
-  value: string | null
-  field?: EditField
-  tone?: 'error'
-  extra?: ReactNode
-}
-
-function NeededStatusBadge({ tone }: { tone: 'success' | 'error' | 'empty' }) {
-  return (
-    <Box
-      aria-label={tone === 'empty' ? 'Still needed' : tone === 'error' ? 'Blocker' : 'Filled'}
-      sx={(theme) => {
-        const isLight = theme.palette.mode === 'light'
-        const palette =
-          tone === 'error'
-            ? theme.figmaPalette.red
-            : tone === 'success'
-              ? theme.figmaPalette.green
-              : null
-        return {
-          width: 32,
-          height: 32,
-          borderRadius: '10px',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          bgcolor: palette ? (isLight ? palette[100] : palette[900]) : 'action.hover',
-          color: palette ? (isLight ? palette[800] : palette[200]) : 'text.disabled',
-        }
-      }}
-    >
-      {tone === 'error' ? (
-        <BlockIcon sx={{ fontSize: 18 }} />
-      ) : tone === 'success' ? (
-        <CheckIcon sx={{ fontSize: 18 }} />
-      ) : (
-        <RadioButtonUncheckedIcon sx={{ fontSize: 18 }} />
-      )}
-    </Box>
-  )
-}
-
-function NeededItem({
-  row,
-  expanded,
-  onToggle,
-  children,
-}: {
-  row: NeededRow
-  expanded: boolean
-  onToggle?: () => void
-  children?: ReactNode
-}) {
-  const missing = row.value == null
-  const line = (
-    <>
-      <NeededStatusBadge tone={row.tone === 'error' ? 'error' : missing ? 'empty' : 'success'} />
-      <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography
-          variant="body2"
-          sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.875rem', lineHeight: 1.35 }}
-        >
-          {row.term}
-        </Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ ...bodySx, fontSize: '0.8125rem', lineHeight: 1.4, mt: 0.25, overflowWrap: 'anywhere' }}
-        >
-          {missing ? 'still needed' : row.value}
-        </Typography>
-      </Box>
-    </>
-  )
-  const lineSx = {
-    width: '100%',
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: 1.25,
-    px: 2,
-    py: 1.5,
-    textAlign: 'left',
-  } as const
-
-  return (
-    <Box
-      component="li"
-      sx={{
-        listStyle: 'none',
-        borderBottom: 1,
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
-        boxShadow: (theme) => (expanded ? `inset 3px 0 0 ${theme.palette.primary.main}` : 'none'),
-      }}
-    >
-      {onToggle ? (
-        <ButtonBase
-          disableRipple
-          onClick={onToggle}
-          aria-expanded={expanded}
-          aria-label={`${missing ? 'Set' : 'Edit'} ${row.term.toLowerCase()}`}
-          sx={{
-            ...lineSx,
-            color: 'text.primary',
-            '&.Mui-focusVisible': { outline: 2, outlineColor: 'primary.main', outlineOffset: -2 },
-          }}
-        >
-          {line}
-        </ButtonBase>
-      ) : (
-        <Box sx={{ ...lineSx, color: 'text.primary' }}>{line}</Box>
-      )}
-      {row.extra || children ? (
-        <Box sx={{ pl: 7.25, pr: 2, pb: 2, pt: 0.5 }}>
-          {row.extra}
-          {children ? <Box sx={{ mt: row.extra ? 0.75 : 0 }}>{children}</Box> : null}
-        </Box>
-      ) : null}
-    </Box>
   )
 }
 
@@ -511,13 +156,13 @@ export function AddTaskPanel({
   pageContext,
   initialRelated,
 }: AddTaskPanelProps) {
-  const [tab, setTab] = useState<'new' | 'history'>(initialTab)
+  const [tab, setTab] = useState<DraftTab>(initialTab)
   const [draft, setDraft] = useState<AddTaskDraft>(() =>
     initialRelated
       ? { ...emptyAddTaskDraft, related: initialRelated }
       : (initialState?.draft ?? emptyAddTaskDraft),
   )
-  const [messages, setMessages] = useState<ThreadMessage[]>(() =>
+  const [messages, setMessages] = useState<DraftThreadMessage[]>(() =>
     initialRelated ? [] : (initialState?.messages ?? []),
   )
   const [composerValue, setComposerValue] = useState('')
@@ -527,13 +172,7 @@ export function AddTaskPanel({
   const [promptedAtCreate, setPromptedAtCreate] = useState(false)
   const [blockerMode, setBlockerMode] = useState(false)
   const dueOptions = useMemo(() => buildDueOptions(), [])
-
-  const [parsedComposerValue, setParsedComposerValue] = useState('')
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setParsedComposerValue(composerValue), LIVE_PARSE_DEBOUNCE_MS)
-    return () => window.clearTimeout(timer)
-  }, [composerValue])
+  const [parsedComposerValue, setParsedComposerValue] = useDebouncedValue(composerValue)
 
   // A linked record (prefilled or picked) outranks the page's own record; text naming another record still wins.
   const inferContext = useMemo<AddTaskPageContext>(
@@ -565,7 +204,7 @@ export function AddTaskPanel({
   const applySeed = (label: string, prefill: string) => {
     setEditing(null)
     setBlockerMode(false)
-    setMessages((current) => [...current, { id: uid('user'), text: label }])
+    setMessages((current) => [...current, { id: draftUid('user'), text: label }])
     setDraft((current) => ({ ...mergeDraft(current, infer(prefill)), notes: prefill }))
   }
 
@@ -586,7 +225,7 @@ export function AddTaskPanel({
     if (!text && files.length === 0) return
     setMessages((current) => [
       ...current,
-      { id: uid('user'), text, files: files.length > 0 ? files.map((file) => file.name) : undefined },
+      { id: draftUid('user'), text, files: files.length > 0 ? files.map((file) => file.name) : undefined },
     ])
     setComposerValue('')
     setParsedComposerValue('')
@@ -647,7 +286,7 @@ export function AddTaskPanel({
 
   const description = [previewDraft.notes, liveComposerText].filter(Boolean).join('\n')
 
-  const rows: NeededRow[] = [
+  const rows: DraftNeededRow<EditField>[] = [
     { term: 'Title', value: previewDraft.title || null, field: 'title' },
     { term: 'Assignee', value: previewDraft.assignee, field: 'assignee' },
     { term: 'Related', value: previewDraft.related ? relatedLabel(previewDraft.related) : null, field: 'related' },
@@ -678,7 +317,7 @@ export function AddTaskPanel({
     switch (field) {
       case 'title':
         return (
-          <InlineTextEdit
+          <DraftInlineTextEdit
             initialValue={previewDraft.title}
             label="Task title"
             onCommit={(value) => applyEdit('title', value)}
@@ -687,7 +326,7 @@ export function AddTaskPanel({
         )
       case 'description':
         return (
-          <InlineTextEdit
+          <DraftInlineTextEdit
             multiline
             initialValue={description}
             label="Task description"
@@ -697,7 +336,7 @@ export function AddTaskPanel({
         )
       case 'assignee':
         return (
-          <InlineLookup
+          <DraftInlineLookup
             key={`assignee-${editing?.atCreate}`}
             options={ADD_TASK_ASSIGNEES}
             placeholder="Search people or queues"
@@ -708,7 +347,7 @@ export function AddTaskPanel({
         )
       case 'related':
         return (
-          <InlineLookup
+          <DraftInlineLookup
             key={`related-${editing?.atCreate}`}
             options={RELATED_OPTIONS}
             placeholder="Search policies, quotes, submissions, customers"
@@ -720,7 +359,7 @@ export function AddTaskPanel({
         )
       case 'priority':
         return (
-          <InlineOptions
+          <DraftInlineOptions
             options={PRIORITY_OPTIONS}
             selected={previewDraft.priority}
             onPick={(value) => applyEdit('priority', value)}
@@ -750,7 +389,7 @@ export function AddTaskPanel({
   const handleCreate = () => {
     const finalDraft = buildFinalDraft()
     if (!finalDraft.title) return
-    // Offer one lookup for a missing assignee / policy; a second Create commits as-is.
+    // Offer one lookup for a missing assignee / related record; a second Create commits as-is.
     const missing: EditField | null = !finalDraft.assignee ? 'assignee' : !finalDraft.related ? 'related' : null
     if (missing && !promptedAtCreate) {
       setPromptedAtCreate(true)
@@ -760,160 +399,75 @@ export function AddTaskPanel({
     onCreate(buildTaskFromDraft(finalDraft))
   }
 
-  const handleSaveDraft = () => {
-    onSaveDraft({ draft: buildFinalDraft(), messages })
-  }
-
   return (
-    <Box
-      sx={{
-        flex: 1,
-        alignSelf: 'stretch',
-        height: '100%',
-        minHeight: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        bgcolor: 'background.paper',
-        overflow: 'hidden',
-      }}
+    <DraftDrawerShell
+      heading="New task"
+      closeLabel="Close new task drawer"
+      tab={tab}
+      onTabChange={setTab}
+      onClose={onClose}
+      createLabel="Create task"
+      createDisabled={!commitDraft.title}
+      onCreate={handleCreate}
+      onSaveDraft={() => onSaveDraft({ draft: buildFinalDraft(), messages })}
+      history={
+        <DraftHistoryList
+          entries={history.map(({ task, createdAt }) => ({
+            id: task.id,
+            title: task.taskName,
+            subtitle: [task.assignedTo, formatDraftCreatedTime(createdAt)].join(' · '),
+          }))}
+          emptyText="Tasks you create this session show up here."
+          onOpen={onOpenTask}
+        />
+      }
+      composer={
+        <CopilotComposer
+          key={composerKey}
+          placeholder={blockerMode ? 'Describe the blocker…' : 'Describe the task…'}
+          value={composerValue}
+          onChange={setComposerValue}
+          minRows={1}
+          showModeSelector={false}
+          showDisclaimer={false}
+          onSubmit={handleSend}
+          onFilesChange={setStagedFiles}
+        />
+      }
     >
-      <Box
-        sx={{
-          px: panelPx,
-          pt: layoutTokens.policyHeaderTopPadding,
-          pb: 0,
-          borderBottom: 1,
-          borderColor: 'divider',
-          flexShrink: 0,
-        }}
-      >
-        <Stack direction="row" alignItems="center" spacing={0.5}>
-          <Typography variant="subtitle1" component="h2" sx={{ ...copilotDrawerHeadingSx, flex: 1 }}>
-            New task
-          </Typography>
-          <IconButton size="small" onClick={onClose} aria-label="Close new task drawer">
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-        <Tabs value={tab} onChange={(_, next) => setTab(next)} sx={copilotDrawerTabsSx}>
-          <Tab label="New" value="new" />
-          <Tab label="History" value="history" />
-        </Tabs>
-      </Box>
-
-      <Box
-        sx={{
-          px: panelPx,
-          pt: 2,
-          pb: 2,
-          flex: 1,
-          minHeight: 0,
-          overflowY: 'auto',
-          overscrollBehavior: 'contain',
-        }}
-      >
-        {tab === 'history' ? (
-          <HistoryList entries={history} onOpenTask={onOpenTask} />
-        ) : (
-          <>
-            {!showNeeded ? (
-              <>
-                <Typography variant="subtitle1" sx={{ ...copilotSubtitleSx, lineHeight: 1.35, mb: 0.75 }}>
-                  What’s the task?
-                </Typography>
-                <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2, color: 'text.primary' }}>
-                  Describe it in the composer. Copilot will draft the title, assignee, and related record and
-                  suggest the next step.
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <CopilotQuickActions
-                  label="Suggested actions"
-                  actions={ADD_TASK_SEEDS.map((seed) => seed.label)}
-                  onAction={(label) => {
-                    const seed = ADD_TASK_SEEDS.find((item) => item.label === label)
-                    if (seed) applySeed(seed.label, seed.prefill)
-                  }}
-                />
-              </>
-            ) : (
-              <>
-                <Box sx={{ ...backRowSx, mb: 1 }}>
-                  <IconButton size="small" onClick={resetDraft} aria-label="Cancel task" sx={{ ml: -0.75 }}>
-                    <ArrowBackIcon fontSize="small" />
-                  </IconButton>
-                  <Typography variant="subtitle1" sx={{ ...copilotSubtitleSx, lineHeight: 1.35 }}>
-                    {previewDraft.title || 'Untitled task'}
-                  </Typography>
-                  {originalRequest ? (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ ...bodySx, gridColumn: 2, lineHeight: 1.5, overflowWrap: 'anywhere' }}
-                    >
-                      {originalRequest}
-                    </Typography>
-                  ) : null}
-                </Box>
-                <Box
-                  component="ul"
-                  sx={{ m: 0, p: 0, mx: -panelPx, mb: 2 }}
-                >
-                  {rows.map((row) => {
-                    const field = row.field
-                    const expanded = field != null && editing?.field === field
-                    return (
-                      <NeededItem
-                        key={row.term}
-                        row={row}
-                        expanded={expanded}
-                        onToggle={field ? () => toggleEditing(field) : undefined}
-                      >
-                        {expanded && field ? renderEditor(field) : null}
-                      </NeededItem>
-                    )
-                  })}
-                </Box>
-
-                <CopilotQuickActions label="Suggested actions" actions={suggestedActions} onAction={handleAction} />
-              </>
-            )}
-          </>
-        )}
-      </Box>
-
-      <Box sx={{ display: tab === 'new' ? 'contents' : 'none' }}>
-        <Box sx={{ flexShrink: 0 }}>
-          <CopilotComposer
-            key={composerKey}
-            placeholder={blockerMode ? 'Describe the blocker…' : 'Describe the task…'}
-            value={composerValue}
-            onChange={setComposerValue}
-            minRows={1}
-            showModeSelector={false}
-            showDisclaimer={false}
-            onSubmit={handleSend}
-            onFilesChange={setStagedFiles}
+      {!showNeeded ? (
+        <>
+          <DraftWelcome
+            title="What’s the task?"
+            body="Describe it in the composer. Copilot will draft the title, assignee, and related record and suggest the next step."
           />
-        </Box>
-
-        <Box sx={{ px: panelPx, pb: 2, pt: 0.5, flexShrink: 0 }}>
-          <Stack direction="row" spacing={1.5}>
-            <Button variant="outlined" color="primary" fullWidth onClick={handleSaveDraft} sx={filterFooterButtonSx}>
-              Save draft
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              disabled={!commitDraft.title}
-              onClick={handleCreate}
-              sx={filterFooterButtonSx}
-            >
-              Create task
-            </Button>
-          </Stack>
-        </Box>
-      </Box>
-    </Box>
+          <Divider sx={{ mb: 2 }} />
+          <CopilotQuickActions
+            label="Suggested actions"
+            actions={ADD_TASK_SEEDS.map((seed) => seed.label)}
+            onAction={(label) => {
+              const seed = ADD_TASK_SEEDS.find((item) => item.label === label)
+              if (seed) applySeed(seed.label, seed.prefill)
+            }}
+          />
+        </>
+      ) : (
+        <>
+          <DraftHeader
+            title={previewDraft.title || 'Untitled task'}
+            request={originalRequest}
+            backLabel="Cancel task"
+            onBack={resetDraft}
+          />
+          <DraftNeededList
+            rows={rows}
+            editingField={editing?.field ?? null}
+            onToggle={(field) => toggleEditing(field)}
+            renderEditor={renderEditor}
+          />
+          <CopilotQuickActions label="Suggested actions" actions={suggestedActions} onAction={handleAction} />
+        </>
+      )}
+    </DraftDrawerShell>
   )
 }

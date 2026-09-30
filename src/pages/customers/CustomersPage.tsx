@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box'
 import { useGridApiRef } from '@mui/x-data-grid-premium'
 import { useCallback, useMemo, useState } from 'react'
+import { useCustomersStore } from '@/app/contexts/CustomersContext'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import {
   useRegisterRightToolCopilot,
@@ -51,10 +52,12 @@ export function CustomersPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<CustomersListFilters>(emptyCustomersListFilters)
 
+  const { createdCustomers } = useCustomersStore()
+
   const filteredRows = useMemo(() => {
-    const withFilters = applyCustomersListFilters(customersMock, appliedFilters)
+    const withFilters = applyCustomersListFilters([...createdCustomers, ...customersMock], appliedFilters)
     return withFilters.filter((row) => matchesSearch(row, searchQuery))
-  }, [appliedFilters, searchQuery])
+  }, [appliedFilters, createdCustomers, searchQuery])
 
   useRegisterRightToolCopilot(
     {

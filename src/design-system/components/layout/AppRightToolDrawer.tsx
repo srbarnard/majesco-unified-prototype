@@ -16,6 +16,7 @@ import {
 import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { useRightPanelWidth } from '@/pages/policies/hooks/useCopilotWidth'
 import { NewTaskToolPanel } from '@/pages/tasks/components/NewTaskToolPanel'
+import { CreateCustomerToolPanel } from '@/pages/customers/components/CreateCustomerToolPanel'
 
 function ToolPanelBody() {
   const {
@@ -56,6 +57,7 @@ function ToolPanelBody() {
       {activeTool === 'filter' ? filterContent : null}
       {activeTool === 'parties' ? partiesContent : null}
       {activeTool === 'newTask' ? <NewTaskToolPanel /> : null}
+      {activeTool === 'newCustomer' ? <CreateCustomerToolPanel /> : null}
     </Box>
   )
 }

@@ -113,7 +113,7 @@ export function TasksPage() {
   }, [activeTool, closeTool, isDesktop])
 
   useEffect(() => {
-    if (activeTool === 'filter' || activeTool === 'newTask') {
+    if (activeTool === 'filter' || activeTool === 'newTask' || activeTool === 'newCustomer') {
       setTaskDetailOpen(false)
     }
   }, [activeTool])
