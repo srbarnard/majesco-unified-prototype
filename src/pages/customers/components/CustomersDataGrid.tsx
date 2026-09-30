@@ -31,6 +31,8 @@ import { dataGridShellSx } from '@/design-system/theme/themeSurfaces'
 import { CustomerBillingStatusChip } from '@/pages/customers/components/CustomerBillingStatusChip'
 import type { CustomerRecord } from '@/pages/customers/data/mockCustomers'
 import { insuredIdFromName } from '@/pages/shared/insuredId'
+import { useNewTaskSelection, useTasksStore } from '@/app/contexts/TasksContext'
+import { findRelated } from '@/pages/tasks/data/addTaskDraft'
 
 type CustomersDataGridProps = {
   apiRef: MutableRefObject<GridApi>
@@ -56,6 +58,10 @@ function formatDate(value: string) {
   })
 }
 
+function customerRelated(row: CustomerRecord) {
+  return findRelated('Customer', row.customerNumber, [row.name])
+}
+
 function RowActionsMenu({
   row,
   onCustomerCopilot,
@@ -66,6 +72,7 @@ function RowActionsMenu({
   isCopilotActive?: boolean
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const { openNewTask } = useTasksStore()
 
   return (
     <>
@@ -95,6 +102,14 @@ function RowActionsMenu({
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={() => setAnchorEl(null)}>View customer</MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>Edit customer</MenuItem>
+        <MenuItem
+          onClick={() => {
+            setAnchorEl(null)
+            openNewTask(customerRelated(row))
+          }}
+        >
+          Add task
+        </MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>View policies</MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>View billing</MenuItem>
       </Menu>
@@ -108,6 +123,9 @@ export function CustomersDataGrid({
   onCustomerCopilot,
   activeCopilotCustomerId,
 }: CustomersDataGridProps) {
+  const selectedCustomer = rows.find((row) => row.id === activeCopilotCustomerId)
+  useNewTaskSelection(selectedCustomer ? customerRelated(selectedCustomer) : null)
+
   const columns = useMemo<GridColDef<CustomerRecord>[]>(
     () => [
       {

@@ -1,22 +1,43 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useTasksStore } from '@/app/contexts/TasksContext'
 import { AddTaskPanel } from '@/pages/tasks/components/AddTaskPanel'
+import { resolveTaskPageContext, type AddTaskRelated } from '@/pages/tasks/data/addTaskDraft'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
 
 /** Global New task drawer — opens over whatever page is active. */
 export function NewTaskToolPanel() {
   const { closeTool } = useRightTool()
-  const { createdTaskHistory, savedAddTask, setSavedAddTask, createTask, requestOpenTask } =
-    useTasksStore()
+  const {
+    createdTaskHistory,
+    savedAddTask,
+    setSavedAddTask,
+    createTask,
+    requestOpenTask,
+    newTaskRequest,
+    clearNewTaskRequest,
+    selectedRecord,
+  } = useTasksStore()
   const location = useLocation()
   const navigate = useNavigate()
   const [session, setSession] = useState<{ key: number; tab: 'new' | 'history' }>({
     key: 0,
     tab: 'new',
   })
+  // Captured when the drawer opens; a later row-menu click replaces it and restarts the draft.
+  const [prefill, setPrefill] = useState<AddTaskRelated | null>(
+    () => newTaskRequest?.related ?? selectedRecord,
+  )
   const onTasksPage = location.pathname === '/tasks'
+  const pageContext = useMemo(() => resolveTaskPageContext(location.pathname), [location.pathname])
+
+  useEffect(() => {
+    if (!newTaskRequest) return
+    setPrefill(newTaskRequest.related)
+    setSession((current) => ({ key: current.key + 1, tab: 'new' }))
+    clearNewTaskRequest()
+  }, [clearNewTaskRequest, newTaskRequest])
 
   const openTask = (taskId: string) => {
     requestOpenTask(taskId)
@@ -26,6 +47,7 @@ export function NewTaskToolPanel() {
 
   const handleCreate = (task: TaskRecord) => {
     createTask(task)
+    setPrefill(null)
     if (onTasksPage) {
       openTask(task.id)
       return
@@ -37,7 +59,8 @@ export function NewTaskToolPanel() {
   return (
     <AddTaskPanel
       key={session.key}
-      initialState={savedAddTask}
+      initialState={prefill ? null : savedAddTask}
+      initialRelated={prefill}
       initialTab={session.tab}
       history={createdTaskHistory}
       onClose={closeTool}
@@ -47,6 +70,7 @@ export function NewTaskToolPanel() {
       }}
       onCreate={handleCreate}
       onOpenTask={openTask}
+      pageContext={pageContext}
     />
   )
 }

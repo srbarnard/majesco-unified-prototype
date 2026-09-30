@@ -36,6 +36,8 @@ import { TaskPriorityIndicator } from '@/pages/tasks/components/TaskPriorityIndi
 import { TaskStatusChip } from '@/pages/tasks/components/TaskStatusChip'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
 import { getTaskPolicyRoute, getTaskRelatedSummary } from '@/pages/tasks/data/mockTasks'
+import { useNewTaskSelection, useTasksStore } from '@/app/contexts/TasksContext'
+import { relatedForTask } from '@/pages/tasks/data/addTaskDraft'
 const CHECKBOX_COLUMN_WIDTH = 50
 const TASK_ROW_HEIGHT = 52
 
@@ -222,6 +224,8 @@ function RowActionsMenu({
   isCopilotActive?: boolean
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const { openNewTask } = useTasksStore()
+  const related = relatedForTask(row)
   const alertLabel = row.hasAlert ? 'Turn off alerts' : 'Turn on alerts'
 
   return (
@@ -286,6 +290,16 @@ function RowActionsMenu({
         >
           Mark as complete
         </MenuItem>
+        <MenuItem
+          disabled={!related}
+          onClick={() => {
+            setAnchorEl(null)
+            if (related) openNewTask(related)
+          }}
+          sx={taskRowMenuItemSx}
+        >
+          Add related task
+        </MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)} sx={taskRowMenuItemSx}>
           Reassign
         </MenuItem>
@@ -309,6 +323,11 @@ export function TasksDataGrid({
   activeCopilotTaskId,
   activeTaskId,
 }: TasksDataGridProps) {
+  const selectedId =
+    rowSelectionModel.length === 1 ? rowSelectionModel[0] : (activeCopilotTaskId ?? activeTaskId)
+  const selectedTask = rows.find((row) => row.id === selectedId)
+  useNewTaskSelection(selectedTask ? relatedForTask(selectedTask) : null)
+
   const columns = useMemo<GridColDef<TaskRecord>[]>(
     () => [
       {

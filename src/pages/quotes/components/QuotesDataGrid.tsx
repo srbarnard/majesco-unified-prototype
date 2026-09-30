@@ -36,6 +36,8 @@ import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { accentSubtle, dataGridShellSx, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import { QuoteStatusChip } from '@/pages/quotes/components/QuoteStatusChip'
 import type { Quote } from '@/pages/quotes/data/mockQuotes'
+import { useNewTaskSelection, useTasksStore } from '@/app/contexts/TasksContext'
+import { findRelated } from '@/pages/tasks/data/addTaskDraft'
 
 type QuotesDataGridProps = {
   apiRef: MutableRefObject<GridApi>
@@ -159,6 +161,10 @@ function copilotActionIconSx(active?: boolean) {
   return copilotActiveIconSx(active)
 }
 
+function quoteRelated(row: Quote) {
+  return findRelated('Quote', row.quoteNumber, [row.insured, row.producer])
+}
+
 function RowActionsMenu({
   row,
   onQuoteCopilot,
@@ -169,6 +175,7 @@ function RowActionsMenu({
   isCopilotActive?: boolean
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const { openNewTask } = useTasksStore()
 
   return (
     <>
@@ -198,6 +205,14 @@ function RowActionsMenu({
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={() => setAnchorEl(null)}>View quote</MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>Edit quote</MenuItem>
+        <MenuItem
+          onClick={() => {
+            setAnchorEl(null)
+            openNewTask(quoteRelated(row))
+          }}
+        >
+          Add task
+        </MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>Duplicate</MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>Archive</MenuItem>
       </Menu>
@@ -211,6 +226,9 @@ export function QuotesDataGrid({
   onQuoteCopilot,
   activeCopilotQuoteId,
 }: QuotesDataGridProps) {
+  const selectedQuote = rows.find((row) => row.id === activeCopilotQuoteId)
+  useNewTaskSelection(selectedQuote ? quoteRelated(selectedQuote) : null)
+
   const columns = useMemo<GridColDef<Quote>[]>(
     () => [
       {

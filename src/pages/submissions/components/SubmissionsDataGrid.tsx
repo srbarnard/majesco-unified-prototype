@@ -34,6 +34,8 @@ import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { dataGridShellSx } from '@/design-system/theme/themeSurfaces'
 import { SubmissionStatusChip } from '@/pages/submissions/components/SubmissionStatusChip'
 import type { SubmissionListRecord } from '@/pages/submissions/data/mockSubmissions'
+import { useNewTaskSelection, useTasksStore } from '@/app/contexts/TasksContext'
+import { findRelated } from '@/pages/tasks/data/addTaskDraft'
 import type { SubmissionDetailLocationState } from '@/pages/submissions/data/submissionCopilotInsights'
 
 const CHECKBOX_COLUMN_WIDTH = 50
@@ -129,6 +131,10 @@ function LobCell({ lines }: { lines: string[] }) {
   )
 }
 
+function submissionRelated(row: SubmissionListRecord) {
+  return findRelated('Submission', row.submissionNumber, [row.insuredName])
+}
+
 function RowActionsMenu({
   row,
   onAskCopilot,
@@ -149,6 +155,7 @@ function RowActionsMenu({
   isCopilotActive?: boolean
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const { openNewTask } = useTasksStore()
   const alertLabel = row.hasAlert ? 'Turn off alerts' : 'Turn on alerts'
 
   return (
@@ -244,6 +251,14 @@ function RowActionsMenu({
         <MenuItem
           onClick={() => {
             setAnchorEl(null)
+            openNewTask(submissionRelated(row))
+          }}
+        >
+          Add task
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setAnchorEl(null)
             onDiscard?.(row)
           }}
         >
@@ -268,6 +283,9 @@ export function SubmissionsDataGrid({
   activeCopilotSubmissionId,
 }: SubmissionsDataGridProps) {
   const navigate = useNavigate()
+  const selectedId = rowSelectionModel.length === 1 ? rowSelectionModel[0] : activeCopilotSubmissionId
+  const selectedSubmission = rows.find((row) => row.id === selectedId)
+  useNewTaskSelection(selectedSubmission ? submissionRelated(selectedSubmission) : null)
 
   const handleViewDetails = (row: SubmissionListRecord) => {
     navigate(`/submissions/${encodeURIComponent(row.submissionNumber)}`, {

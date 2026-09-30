@@ -4,7 +4,7 @@ import CheckIcon from '@mui/icons-material/Check'
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined'
 import CloseIcon from '@mui/icons-material/Close'
-import Autocomplete from '@mui/material/Autocomplete'
+import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
 import ButtonBase from '@mui/material/ButtonBase'
 import Chip from '@mui/material/Chip'
@@ -28,15 +28,19 @@ import {
 } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import {
   ADD_TASK_ASSIGNEES,
-  ADD_TASK_POLICIES,
+  ADD_TASK_RELATED,
   ADD_TASK_SEEDS,
   buildDueOptions,
   buildTaskFromDraft,
   emptyAddTaskDraft,
+  formatDueLabel,
   inferFromText,
   mergeDraft,
+  relatedLabel,
   type AddTaskDraft,
-  type AddTaskPolicyLink,
+  type AddTaskDue,
+  type AddTaskPageContext,
+  type AddTaskRelated,
 } from '@/pages/tasks/data/addTaskDraft'
 import type { TaskPriority, TaskRecord } from '@/pages/tasks/data/mockTasks'
 
@@ -73,7 +77,7 @@ const ADD_BLOCKER_ACTION = 'Add blocker'
 const CANCEL_TASK_ACTION = 'Cancel task'
 const LIVE_PARSE_DEBOUNCE_MS = 300
 
-type EditField = 'title' | 'assignee' | 'policy' | 'priority' | 'due' | 'description'
+type EditField = 'title' | 'assignee' | 'related' | 'priority' | 'due' | 'description'
 
 type ThreadMessage = { id: string; text: string; files?: string[] }
 
@@ -95,14 +99,21 @@ type AddTaskPanelProps = {
   onSaveDraft: (state: AddTaskSavedState) => void
   onCreate: (task: TaskRecord) => void
   onOpenTask: (taskId: string) => void
+  pageContext?: AddTaskPageContext
+  /** Record from a row menu or the selected grid row; starts a fresh draft with only Related set. */
+  initialRelated?: AddTaskRelated | null
 }
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
 
-function policyLabel(policy: AddTaskPolicyLink) {
-  return `${policy.insuredName} · ${policy.policyNumber}`
+const RELATED_BY_LABEL = new Map(ADD_TASK_RELATED.map((record) => [relatedLabel(record), record]))
+const RELATED_OPTIONS = [...RELATED_BY_LABEL.keys()]
+
+function relatedSearchText(label: string) {
+  const record = RELATED_BY_LABEL.get(label)
+  return record ? `${label} ${record.names.join(' ')}` : label
 }
 
 function formatCreatedTime(date: Date) {
@@ -153,24 +164,91 @@ function InlineOptions({
   )
 }
 
+const CUSTOM_DUE = 'Custom'
+
+function toDateInputValue(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+function DueEditor({
+  presets,
+  due,
+  onPickPreset,
+  onPickDate,
+}: {
+  presets: AddTaskDue[]
+  due: AddTaskDue | null
+  onPickPreset: (label: string) => void
+  onPickDate: (date: Date) => void
+}) {
+  const isCustom = due != null && !presets.some((preset) => preset.label === due.label)
+  const [showPicker, setShowPicker] = useState(isCustom)
+  const today = toDateInputValue(new Date())
+
+  return (
+    <Stack spacing={1.25}>
+      <Stack direction="row" flexWrap="wrap" useFlexGap gap={0.75}>
+        {[...presets.map((preset) => preset.label), CUSTOM_DUE].map((option) => {
+          const isSelected = option === CUSTOM_DUE ? showPicker || isCustom : option === due?.label && !showPicker
+          return (
+            <Chip
+              key={option}
+              label={option}
+              clickable
+              color={isSelected ? 'primary' : 'default'}
+              variant={isSelected ? 'filled' : 'outlined'}
+              aria-expanded={option === CUSTOM_DUE ? showPicker : undefined}
+              onClick={() => (option === CUSTOM_DUE ? setShowPicker((open) => !open) : onPickPreset(option))}
+              sx={{ ...chipSx, ...(isSelected ? {} : { borderColor: 'divider' }) }}
+            />
+          )
+        })}
+      </Stack>
+      {showPicker ? (
+        <TextField
+          type="date"
+          size="small"
+          defaultValue={isCustom && due ? toDateInputValue(due.date) : ''}
+          inputProps={{ min: today, 'aria-label': 'Custom due date' }}
+          onChange={(event) => {
+            const [year, month, day] = event.target.value.split('-').map(Number)
+            if (!year || year < 1000 || !month || !day) return
+            onPickDate(new Date(year, month - 1, day))
+          }}
+          sx={{ ...inputSx, maxWidth: 200 }}
+        />
+      ) : null}
+    </Stack>
+  )
+}
+
 function InlineLookup({
   options,
   placeholder,
   hint,
+  searchText,
   onPick,
   onDismiss,
 }: {
   options: string[]
   placeholder: string
   hint?: string
+  /** Extra text an option matches on beyond its label (e.g. producer names). */
+  searchText?: (option: string) => string
   onPick: (option: string) => void
   onDismiss: () => void
 }) {
+  const filterOptions = useMemo(
+    () => (searchText ? createFilterOptions<string>({ stringify: searchText }) : undefined),
+    [searchText],
+  )
   return (
     <Box>
       <Autocomplete
         size="small"
         options={options}
+        filterOptions={filterOptions}
         openOnFocus
         autoHighlight
         onChange={(_, next) => {
@@ -430,10 +508,18 @@ export function AddTaskPanel({
   onSaveDraft,
   onCreate,
   onOpenTask,
+  pageContext,
+  initialRelated,
 }: AddTaskPanelProps) {
   const [tab, setTab] = useState<'new' | 'history'>(initialTab)
-  const [draft, setDraft] = useState<AddTaskDraft>(initialState?.draft ?? emptyAddTaskDraft)
-  const [messages, setMessages] = useState<ThreadMessage[]>(initialState?.messages ?? [])
+  const [draft, setDraft] = useState<AddTaskDraft>(() =>
+    initialRelated
+      ? { ...emptyAddTaskDraft, related: initialRelated }
+      : (initialState?.draft ?? emptyAddTaskDraft),
+  )
+  const [messages, setMessages] = useState<ThreadMessage[]>(() =>
+    initialRelated ? [] : (initialState?.messages ?? []),
+  )
   const [composerValue, setComposerValue] = useState('')
   const [composerKey, setComposerKey] = useState(0)
   const [stagedFiles, setStagedFiles] = useState<CopilotAttachedFile[]>([])
@@ -441,7 +527,6 @@ export function AddTaskPanel({
   const [promptedAtCreate, setPromptedAtCreate] = useState(false)
   const [blockerMode, setBlockerMode] = useState(false)
   const dueOptions = useMemo(() => buildDueOptions(), [])
-  const policyLookupOptions = useMemo(() => ADD_TASK_POLICIES.map(policyLabel), [])
 
   const [parsedComposerValue, setParsedComposerValue] = useState('')
 
@@ -450,17 +535,29 @@ export function AddTaskPanel({
     return () => window.clearTimeout(timer)
   }, [composerValue])
 
+  // A linked record (prefilled or picked) outranks the page's own record; text naming another record still wins.
+  const inferContext = useMemo<AddTaskPageContext>(
+    () => ({
+      kind: pageContext?.kind ?? null,
+      record: draft.related ?? pageContext?.record ?? null,
+    }),
+    [draft.related, pageContext],
+  )
+  const infer = (text: string) => inferFromText(text, inferContext)
   const liveComposerText = blockerMode ? '' : parsedComposerValue.trim()
-  const liveInference = useMemo(() => inferFromText(liveComposerText), [liveComposerText])
+  const liveInference = useMemo(
+    () => inferFromText(liveComposerText, inferContext),
+    [liveComposerText, inferContext],
+  )
   const previewDraft = useMemo(() => mergeDraft(draft, liveInference), [draft, liveInference])
   // Create / Save read the composer without the debounce so nothing typed is lost.
   const commitDraft = useMemo(
-    () => mergeDraft(draft, blockerMode ? {} : inferFromText(composerValue)),
-    [blockerMode, composerValue, draft],
+    () => mergeDraft(draft, blockerMode ? {} : inferFromText(composerValue, inferContext)),
+    [blockerMode, composerValue, draft, inferContext],
   )
   const hasThread = messages.length > 0
   const draftHasContent =
-    Boolean(draft.title || draft.notes || draft.assignee || draft.policy || draft.blocker) ||
+    Boolean(draft.title || draft.notes || draft.assignee || draft.related || draft.blocker) ||
     draft.attachments.length > 0
   const showNeeded = hasThread || draftHasContent || Boolean(liveComposerText)
   const originalRequest = messages.find((message) => message.text)?.text ?? ''
@@ -469,7 +566,7 @@ export function AddTaskPanel({
     setEditing(null)
     setBlockerMode(false)
     setMessages((current) => [...current, { id: uid('user'), text: label }])
-    setDraft((current) => ({ ...mergeDraft(current, inferFromText(prefill)), notes: prefill }))
+    setDraft((current) => ({ ...mergeDraft(current, infer(prefill)), notes: prefill }))
   }
 
   const resetDraft = () => {
@@ -503,7 +600,7 @@ export function AddTaskPanel({
       if (!text) return { ...current, attachments }
       if (blockerMode) return { ...current, blocker: text, attachments }
       const notes = current.notes ? `${current.notes}\n${text}` : text
-      return { ...mergeDraft(current, inferFromText(text)), notes, attachments }
+      return { ...mergeDraft(current, infer(text)), notes, attachments }
     })
     setBlockerMode(false)
   }
@@ -523,8 +620,8 @@ export function AddTaskPanel({
           return { ...current, notes: value }
         case 'assignee':
           return { ...current, assignee: value }
-        case 'policy':
-          return { ...current, policy: ADD_TASK_POLICIES.find((p) => policyLabel(p) === value) ?? current.policy }
+        case 'related':
+          return { ...current, related: RELATED_BY_LABEL.get(value) ?? current.related }
         case 'priority':
           return { ...current, priority: PRIORITY_OPTIONS.find((p) => p === value) ?? current.priority }
         case 'due':
@@ -553,7 +650,7 @@ export function AddTaskPanel({
   const rows: NeededRow[] = [
     { term: 'Title', value: previewDraft.title || null, field: 'title' },
     { term: 'Assignee', value: previewDraft.assignee, field: 'assignee' },
-    { term: 'Policy', value: previewDraft.policy ? policyLabel(previewDraft.policy) : null, field: 'policy' },
+    { term: 'Related', value: previewDraft.related ? relatedLabel(previewDraft.related) : null, field: 'related' },
     { term: 'Priority', value: previewDraft.priority, field: 'priority' },
     { term: 'Due', value: previewDraft.due?.label ?? null, field: 'due' },
   ]
@@ -609,14 +706,15 @@ export function AddTaskPanel({
             onDismiss={() => setEditing(null)}
           />
         )
-      case 'policy':
+      case 'related':
         return (
           <InlineLookup
-            key={`policy-${editing?.atCreate}`}
-            options={policyLookupOptions}
-            placeholder="Search policy # or insured"
+            key={`related-${editing?.atCreate}`}
+            options={RELATED_OPTIONS}
+            placeholder="Search policies, quotes, submissions, customers"
             hint={atCreateHint}
-            onPick={(value) => applyEdit('policy', value)}
+            searchText={relatedSearchText}
+            onPick={(value) => applyEdit('related', value)}
             onDismiss={() => setEditing(null)}
           />
         )
@@ -630,10 +728,11 @@ export function AddTaskPanel({
         )
       case 'due':
         return (
-          <InlineOptions
-            options={dueOptions.map((d) => d.label)}
-            selected={previewDraft.due?.label ?? null}
-            onPick={(value) => applyEdit('due', value)}
+          <DueEditor
+            presets={dueOptions}
+            due={previewDraft.due}
+            onPickPreset={(value) => applyEdit('due', value)}
+            onPickDate={(date) => setDraft((current) => ({ ...current, due: { label: formatDueLabel(date), date } }))}
           />
         )
     }
@@ -652,7 +751,7 @@ export function AddTaskPanel({
     const finalDraft = buildFinalDraft()
     if (!finalDraft.title) return
     // Offer one lookup for a missing assignee / policy; a second Create commits as-is.
-    const missing: EditField | null = !finalDraft.assignee ? 'assignee' : !finalDraft.policy ? 'policy' : null
+    const missing: EditField | null = !finalDraft.assignee ? 'assignee' : !finalDraft.related ? 'related' : null
     if (missing && !promptedAtCreate) {
       setPromptedAtCreate(true)
       toggleEditing(missing, true)
@@ -723,8 +822,8 @@ export function AddTaskPanel({
                   What’s the task?
                 </Typography>
                 <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2, color: 'text.primary' }}>
-                  Describe it in the composer. Copilot will draft the title, assignee, and policy and suggest the
-                  next step.
+                  Describe it in the composer. Copilot will draft the title, assignee, and related record and
+                  suggest the next step.
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
                 <CopilotQuickActions

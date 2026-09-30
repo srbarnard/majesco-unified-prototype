@@ -1,4 +1,10 @@
+import { customersMock } from '@/pages/customers/data/mockCustomers'
+import { insuredsMock } from '@/pages/insureds/data/mockInsureds'
+import { insuredIdFromName } from '@/pages/shared/insuredId'
+import { policiesListMock } from '@/pages/policies/data/mockPoliciesList'
+import { quotesMock } from '@/pages/quotes/data/mockQuotes'
 import type { QuoteWizardUploadedFile } from '@/pages/quotes/data/quoteWizardTypes'
+import { submissionsMock } from '@/pages/submissions/data/mockSubmissions'
 import {
   tasksMock,
   teamMembersMock,
@@ -9,9 +15,32 @@ import {
 
 export type AddTaskAttachment = QuoteWizardUploadedFile
 
-export type AddTaskPolicyLink = {
-  policyNumber: string
-  insuredName: string
+export type AddTaskRelatedKind =
+  | 'Policy'
+  | 'Quote'
+  | 'Submission'
+  | 'Customer'
+  | 'Insured'
+  | 'Producer'
+  | 'Sub-producer'
+
+/** Records identified by name alone — the row shows "Kind · name" without a number. */
+const NAME_ONLY_KINDS = new Set<AddTaskRelatedKind>(['Customer', 'Insured', 'Producer', 'Sub-producer'])
+
+export type AddTaskRelated = {
+  kind: AddTaskRelatedKind
+  ref: string
+  /** Name shown on the row and in the title — whichever name the user referred to. */
+  name: string
+  /** Insured first, then producer / agency; any of them links this record. */
+  names: string[]
+}
+
+/** Where the New task drawer was opened — biases Related toward that record type. */
+export type AddTaskPageContext = {
+  kind: AddTaskRelatedKind | null
+  /** Set on a detail page; becomes Related when the sentence names nothing. */
+  record: AddTaskRelated | null
 }
 
 export type AddTaskDue = {
@@ -22,7 +51,7 @@ export type AddTaskDue = {
 export type AddTaskDraft = {
   title: string
   assignee: string | null
-  policy: AddTaskPolicyLink | null
+  related: AddTaskRelated | null
   priority: TaskPriority | null
   due: AddTaskDue | null
   blocker: string | null
@@ -34,7 +63,7 @@ export type AddTaskDraft = {
 export const emptyAddTaskDraft: AddTaskDraft = {
   title: '',
   assignee: null,
-  policy: null,
+  related: null,
   priority: null,
   due: null,
   blocker: null,
@@ -63,7 +92,7 @@ function attachmentToDocument(file: AddTaskAttachment): TaskDocument {
 export const ADD_TASK_ACTIONS = [
   'Set priority',
   'Assign to',
-  'Link policy',
+  'Link related',
   'Set due date',
   'Add blocker',
 ] as const
@@ -101,25 +130,93 @@ export const ADD_TASK_ASSIGNEES: string[] = [
   ]),
 ]
 
-export const ADD_TASK_POLICIES: AddTaskPolicyLink[] = (() => {
+function relatedRecord(kind: AddTaskRelatedKind, ref: string, names: (string | null | undefined)[]): AddTaskRelated {
+  const unique = [...new Set(names.filter((name): name is string => Boolean(name)))]
+  return { kind, ref, name: unique[0] ?? ref, names: unique }
+}
+
+/** Task-linked records first (the seeds reference them), then each workspace's list. */
+export const ADD_TASK_RELATED: AddTaskRelated[] = (() => {
   const seen = new Set<string>()
-  const links: AddTaskPolicyLink[] = []
-  for (const task of tasksMock) {
-    const { policyNumber, insuredName } = task.relatedEntities
-    if (!policyNumber || !insuredName || seen.has(policyNumber)) continue
-    seen.add(policyNumber)
-    links.push({ policyNumber, insuredName })
+  const records: AddTaskRelated[] = []
+  const add = (record: AddTaskRelated) => {
+    const key = `${record.kind}:${record.ref}`
+    if (seen.has(key)) return
+    seen.add(key)
+    records.push(record)
   }
-  return links
+  for (const task of tasksMock) {
+    const { policyNumber, quoteNumber, submissionId, insuredName, producer } = task.relatedEntities
+    if (!insuredName) continue
+    if (policyNumber) add(relatedRecord('Policy', policyNumber, [insuredName, producer]))
+    else if (quoteNumber) add(relatedRecord('Quote', quoteNumber, [insuredName, producer]))
+    else if (submissionId) add(relatedRecord('Submission', submissionId, [insuredName, producer]))
+    else add(relatedRecord(/^Q-/.test(task.refNumber) ? 'Quote' : 'Policy', task.refNumber, [insuredName, producer]))
+  }
+  for (const policy of policiesListMock) {
+    add(relatedRecord('Policy', policy.policyNumber, [policy.insuredName, policy.agency, policy.producer]))
+  }
+  for (const quote of quotesMock) {
+    add(relatedRecord('Quote', quote.quoteNumber, [quote.insured, quote.producer]))
+  }
+  for (const submission of submissionsMock) {
+    add(relatedRecord('Submission', submission.submissionNumber, [submission.insuredName]))
+  }
+  for (const customer of customersMock) {
+    add(relatedRecord('Customer', customer.customerNumber, [customer.name]))
+  }
+  for (const insured of insuredsMock) {
+    add(relatedRecord('Insured', insuredIdFromName(insured.name), [insured.name]))
+  }
+  return records
 })()
 
-/** Insureds with no policy yet (quotes, bind failures) can still be linked by name. */
-const INSURED_ONLY: AddTaskPolicyLink[] = tasksMock
-  .filter((task) => !task.relatedEntities.policyNumber && task.relatedEntities.insuredName)
-  .map((task) => ({
-    policyNumber: task.refNumber,
-    insuredName: task.relatedEntities.insuredName!,
-  }))
+export function relatedLabel(related: AddTaskRelated) {
+  return NAME_ONLY_KINDS.has(related.kind)
+    ? `${related.kind} · ${related.name}`
+    : `${related.kind} · ${related.ref} · ${related.name}`
+}
+
+/** Catalog record for a grid row, so the row menu and the typeahead link the same entry. */
+export function findRelated(
+  kind: AddTaskRelatedKind,
+  ref: string,
+  names: (string | null | undefined)[],
+): AddTaskRelated {
+  return ADD_TASK_RELATED.find((record) => record.kind === kind && record.ref === ref) ?? relatedRecord(kind, ref, names)
+}
+
+/** What a task is about — used to start a related task from a task row. */
+export function relatedForTask(task: TaskRecord): AddTaskRelated | null {
+  const { policyNumber, quoteNumber, submissionId, insuredName, producer } = task.relatedEntities
+  const names = [insuredName, producer]
+  if (policyNumber) return findRelated('Policy', policyNumber, names)
+  if (quoteNumber) return findRelated('Quote', quoteNumber, names)
+  if (submissionId) return findRelated('Submission', submissionId, names)
+  if (insuredName) return findRelated('Insured', insuredIdFromName(insuredName), names)
+  return null
+}
+
+const PAGE_KINDS: [RegExp, AddTaskRelatedKind][] = [
+  [/^\/policies(\/|$)/, 'Policy'],
+  [/^\/quotes(\/|$)/, 'Quote'],
+  [/^\/submissions(\/|$)/, 'Submission'],
+  [/^\/customers(\/|$)/, 'Customer'],
+  [/^\/insureds(\/|$)/, 'Insured'],
+  [/^\/producers(\/|$)/, 'Producer'],
+  [/^\/sub-producers(\/|$)/, 'Sub-producer'],
+]
+
+export function resolveTaskPageContext(pathname: string): AddTaskPageContext {
+  const kind = PAGE_KINDS.find(([pattern]) => pattern.test(pathname))?.[1] ?? null
+  const detailId = pathname.match(/^\/(?:policies|quotes|submissions|insureds)\/([^/]+)/)?.[1]
+  if (!kind || !detailId || detailId === 'new') return { kind, record: null }
+  const id = decodeURIComponent(detailId)
+  const quoteNumber = kind === 'Quote' ? quotesMock.find((quote) => quote.id === id)?.quoteNumber : null
+  const ref = quoteNumber ?? id
+  const record = ADD_TASK_RELATED.find((item) => item.kind === kind && item.ref === ref) ?? null
+  return { kind, record }
+}
 
 function startOfDay(date: Date) {
   const next = new Date(date)
@@ -168,9 +265,13 @@ function inferDue(text: string): AddTaskDue | null {
   return null
 }
 
+/** Explicit urgency only — a near due date on its own never raises priority. */
+const HIGH_PRIORITY =
+  /\b(urgent|asap|critical|high[- ]priority|top (?:task|priority)|most important|do (?:this|it) first|number one|past[- ]due)\b|#1\b/
+
 function inferPriority(text: string): TaskPriority | null {
   const lower = text.toLowerCase()
-  if (/\b(urgent|asap|critical|high priority|high-priority|past[- ]due)\b/.test(lower)) return 'High'
+  if (HIGH_PRIORITY.test(lower)) return 'High'
   if (/\b(low priority|low-priority|whenever|no rush)\b/.test(lower)) return 'Low'
   if (/\b(medium priority|normal priority)\b/.test(lower)) return 'Medium'
   return null
@@ -208,31 +309,49 @@ function inferAssignee(text: string, insuredWords: Set<string>): string | null {
   return null
 }
 
-const POLICY_CATALOG = [...ADD_TASK_POLICIES, ...INSURED_ONLY]
 const GENERIC_INSURED_WORDS = new Set(['multiple', 'the', 'group', 'services', 'partners', 'insurance'])
 
-function insuredLeadWord(link: AddTaskPolicyLink) {
-  const lead = link.insuredName.toLowerCase().split(/[\s&,]+/)[0] ?? ''
+function leadWord(name: string) {
+  const lead = name.toLowerCase().split(/[\s&,]+/)[0] ?? ''
   return lead.length >= 4 && !GENERIC_INSURED_WORDS.has(lead) ? lead : null
 }
 
-function inferPolicy(text: string): AddTaskPolicyLink | null {
+type RelatedMatch = { record: AddTaskRelated; name: string; strength: number }
+
+/**
+ * Best record the sentence refers to. Stronger evidence wins (ref number > full name > short name >
+ * lead word); ties go to the page's record type, then insured names over producer names.
+ */
+function inferRelated(text: string, context: AddTaskPageContext | undefined): AddTaskRelated | null {
   const lower = text.toLowerCase()
-  const byNumber = POLICY_CATALOG.find((link) => lower.includes(link.policyNumber.toLowerCase()))
-  if (byNumber) return byNumber
-  const byName = POLICY_CATALOG.find((link) => {
-    const insured = link.insuredName.toLowerCase()
-    const shortName = insured.split(/\s+/).slice(0, 2).join(' ')
-    return lower.includes(insured) || (shortName.length > 6 && lower.includes(shortName))
-  })
-  if (byName) return byName
-  // Single-word mentions like "sarah" or "midwest" link on the insured's lead word.
-  return (
-    POLICY_CATALOG.find((link) => {
-      const lead = insuredLeadWord(link)
-      return lead != null && new RegExp(`\\b${lead}\\b`).test(lower)
-    }) ?? null
+  const matches: RelatedMatch[] = []
+  for (const record of ADD_TASK_RELATED) {
+    if (lower.includes(record.ref.toLowerCase())) {
+      matches.push({ record, name: record.names[0] ?? record.name, strength: 4 })
+      continue
+    }
+    record.names.forEach((name, index) => {
+      const full = name.toLowerCase()
+      const short = full.split(/\s+/).slice(0, 2).join(' ')
+      const lead = index === 0 ? leadWord(name) : null
+      const strength = lower.includes(full)
+        ? 3
+        : short.length > 6 && short !== full && lower.includes(short)
+          ? 2
+          : lead && new RegExp(`\\b${lead}\\b`).test(lower)
+            ? 1
+            : 0
+      if (strength > 0) matches.push({ record, name, strength: strength - index * 0.01 })
+    })
+  }
+  if (matches.length === 0) return context?.record ?? null
+  const onPage = (match: RelatedMatch) => (context?.kind != null && match.record.kind === context.kind ? 1 : 0)
+  matches.sort(
+    (a, b) =>
+      Math.round(b.strength) - Math.round(a.strength) || onPage(b) - onPage(a) || b.strength - a.strength,
   )
+  const best = matches[0]!
+  return { ...best.record, name: best.name }
 }
 
 function inferBlocker(text: string): string | null {
@@ -242,6 +361,7 @@ function inferBlocker(text: string): string | null {
 
 /** Recognized work types → short grid-friendly labels. Checked in order; first match wins. */
 const TITLE_RULES: [RegExp, string][] = [
+  [/\bconvert\w*\b[^.]*\bquotes?\b|\bquotes?\b[^.]*\bconver(?:t|sion)\b/, 'Convert quote'],
   [/\brenewal\b.*\bsign|\bsign\w*\b.*\brenewal\b/, 'Renewal signature'],
   [/\b(ofac|sanction\w*|sdn)\b/, 'OFAC hit review'],
   [/\bbind (failure|failed)\b|\bpayment authori[sz]ation declined\b/, 'Bind failure follow-up'],
@@ -265,15 +385,18 @@ function capitalizeFirst(value: string) {
 }
 
 /** Verb + object from the lead clause when no rule matches ("Call producer about renewal questionnaire"). */
-function fallbackTitleLabel(text: string, policy: AddTaskPolicyLink | null): string {
-  let clause = text.split(/[.\n?!]/)[0] ?? text
+const PRIORITY_PHRASE =
+  /\b(?:this is\s+)?(?:your|my|our|the)?\s*(?:top (?:task|priority)|#1|number one|most important)(?:\s+(?:task|thing))?(?:\s+(?:for\s+)?(?:the day|today))?\b|\b(?:urgent|asap|critical)\b/gi
+
+function fallbackTitleLabel(text: string, related: AddTaskRelated | null): string {
+  let clause = text.replace(PRIORITY_PHRASE, ' ').split(/[.\n?!]/).find((part) => part.trim()) ?? text
   clause = clause
     .replace(/^\s*(please\s+)?(create|add|make|open)\s+(a\s+)?task\s*(to|for|:)?\s*/i, '')
     .replace(/^\s*(please\s+)?(ask|tell|have)\s+[a-z]+(\s+[a-z]+)?\s+to\s+/i, '')
     .replace(/^\s*(i|we)\s+(need|have)\s+to\s+/i, '')
     .replace(/^\s*please\s+/i, '')
-  const insuredPattern = policy
-    ? new RegExp(policy.insuredName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+  const insuredPattern = related
+    ? new RegExp(related.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
     : null
   const splitClause = (value: string) => {
     const head =
@@ -291,28 +414,28 @@ function fallbackTitleLabel(text: string, policy: AddTaskPolicyLink | null): str
   return capitalizeFirst(words.join(' '))
 }
 
-function inferTitle(text: string, policy: AddTaskPolicyLink | null): string {
+function inferTitle(text: string, related: AddTaskRelated | null): string {
   const lower = text.toLowerCase()
   const rule = TITLE_RULES.find(([pattern]) => pattern.test(lower))
-  let label = rule ? rule[1] : fallbackTitleLabel(text, policy)
+  let label = rule ? rule[1] : fallbackTitleLabel(text, related)
   if (!label) return ''
-  if (policy && !label.toLowerCase().includes(policy.insuredName.toLowerCase())) {
-    label = `${label} — ${policy.insuredName}`
+  if (related && !label.toLowerCase().includes(related.name.toLowerCase())) {
+    label = `${label} — ${related.name}`
   }
   return label.length > TITLE_MAX_CHARS ? `${label.slice(0, TITLE_MAX_CHARS - 1).trimEnd()}…` : label
 }
 
 /** Infer structured fields from free text. Fields not mentioned stay null. */
-export function inferFromText(text: string): Partial<AddTaskDraft> {
+export function inferFromText(text: string, context?: AddTaskPageContext): Partial<AddTaskDraft> {
   const trimmed = text.trim()
   if (!trimmed) return {}
-  const policy = inferPolicy(trimmed)
-  const insuredWords = new Set(policy ? policy.insuredName.toLowerCase().split(/[\s&,]+/) : [])
+  const related = inferRelated(trimmed, context)
+  const insuredWords = new Set(related ? related.names.join(' ').toLowerCase().split(/[\s&,]+/) : [])
   const assignee = inferAssignee(trimmed, insuredWords)
   return {
-    title: inferTitle(trimmed, policy),
+    title: inferTitle(trimmed, related),
     assignee,
-    policy,
+    related,
     priority: inferPriority(trimmed),
     due: inferDue(trimmed),
     blocker: inferBlocker(trimmed),
@@ -327,7 +450,7 @@ export function mergeDraft(base: AddTaskDraft, inferred: Partial<AddTaskDraft>):
   return {
     title: base.title || inferred.title || '',
     assignee: inferred.assignee ?? base.assignee,
-    policy: inferred.policy ?? base.policy,
+    related: inferred.related ?? base.related,
     priority: inferred.priority ?? base.priority,
     due: inferred.due ?? base.due,
     blocker: inferred.blocker ?? base.blocker,
@@ -342,7 +465,8 @@ export function buildTaskFromDraft(draft: AddTaskDraft, now = new Date()): TaskR
   createdCounter += 1
   const due = draft.due?.date ?? addDays(startOfDay(now), 3)
   const dueInDays = Math.round((startOfDay(due).getTime() - startOfDay(now).getTime()) / 86_400_000)
-  const isPolicy = Boolean(draft.policy && /^[A-Z]{2}-\d{4}-\d{3}$/.test(draft.policy.policyNumber))
+  const related = draft.related
+  const refOf = (kind: AddTaskRelatedKind) => (related?.kind === kind ? related.ref : null)
   const ref = `TSK-${String(90_000 + createdCounter).padStart(6, '0')}`
   const assignee = draft.assignee ?? 'Unassigned'
 
@@ -364,7 +488,7 @@ export function buildTaskFromDraft(draft: AddTaskDraft, now = new Date()): TaskR
     dueLabel: formatDueLabel(due),
     ageIndicator: dueInDays <= 0 ? 'Due today' : `Due in ${dueInDays} day${dueInDays === 1 ? '' : 's'}`,
     refNumber: ref,
-    referenceType: 'Policy',
+    referenceType: related?.kind === 'Quote' ? 'Quote' : 'Policy',
     agingDays: 0,
     isPastDue: false,
     hasAlert: false,
@@ -375,11 +499,11 @@ export function buildTaskFromDraft(draft: AddTaskDraft, now = new Date()): TaskR
     blockingIssues: draft.blocker,
     notes: null,
     relatedEntities: {
-      policyNumber: isPolicy ? draft.policy!.policyNumber : null,
-      quoteNumber: null,
-      insuredName: draft.policy?.insuredName ?? null,
-      producer: null,
-      submissionId: null,
+      policyNumber: refOf('Policy'),
+      quoteNumber: refOf('Quote'),
+      insuredName: related?.names[0] ?? null,
+      producer: related?.names[1] ?? null,
+      submissionId: refOf('Submission'),
       claimNumber: null,
     },
   }

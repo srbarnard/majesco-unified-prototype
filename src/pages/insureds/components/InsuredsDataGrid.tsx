@@ -38,6 +38,8 @@ import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { dataGridShellSx } from '@/design-system/theme/themeSurfaces'
 import { insuredIdFromName } from '@/pages/shared/insuredId'
 import type { InsuredListRecord } from '@/pages/insureds/data/mockInsureds'
+import { useNewTaskSelection, useTasksStore } from '@/app/contexts/TasksContext'
+import { findRelated } from '@/pages/tasks/data/addTaskDraft'
 
 type InsuredsDataGridProps = {
   apiRef: MutableRefObject<GridApi>
@@ -207,6 +209,10 @@ function InsuredContactCell({ row }: { row: InsuredListRecord }) {
   )
 }
 
+function insuredRelated(row: InsuredListRecord) {
+  return findRelated('Insured', insuredIdFromName(row.name), [row.name])
+}
+
 function RowActionsMenu({
   row,
   favorited,
@@ -221,6 +227,7 @@ function RowActionsMenu({
   isCopilotActive?: boolean
 }) {
   const navigate = useNavigate()
+  const { openNewTask } = useTasksStore()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const insuredPath = `/insureds/${encodeURIComponent(insuredIdFromName(row.name))}`
 
@@ -299,6 +306,14 @@ function RowActionsMenu({
         <MenuItem
           onClick={() => {
             setAnchorEl(null)
+            openNewTask(insuredRelated(row))
+          }}
+        >
+          Add task
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setAnchorEl(null)
             navigate(listSearchPath('/policies', row.name))
           }}
         >
@@ -323,6 +338,8 @@ export function InsuredsDataGrid({
   onInsuredCopilot,
   activeCopilotInsuredId,
 }: InsuredsDataGridProps) {
+  const selectedInsured = rows.find((row) => row.id === activeCopilotInsuredId)
+  useNewTaskSelection(selectedInsured ? insuredRelated(selectedInsured) : null)
   const [favorites, setFavorites] = useState<Record<string, boolean>>({})
 
   const handleToggleFavorite = (id: string) => {

@@ -38,6 +38,8 @@ import {
   getPolicyInsuredContact,
   type PolicyListRecord,
 } from '@/pages/policies/data/mockPoliciesList'
+import { useNewTaskSelection, useTasksStore } from '@/app/contexts/TasksContext'
+import { findRelated } from '@/pages/tasks/data/addTaskDraft'
 
 type PoliciesListDataGridProps = {
   apiRef: MutableRefObject<GridApi>
@@ -181,6 +183,10 @@ function InsuredNameCell({ row }: { row: PolicyListRecord }) {
   )
 }
 
+function policyRelated(row: PolicyListRecord) {
+  return findRelated('Policy', row.policyNumber, [row.insuredName, row.agency, row.producer])
+}
+
 function RowActionsMenu({
   row,
   onPolicyCopilot,
@@ -191,6 +197,7 @@ function RowActionsMenu({
   isCopilotActive?: boolean
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const { openNewTask } = useTasksStore()
 
   return (
     <>
@@ -219,6 +226,14 @@ function RowActionsMenu({
       </Stack>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={() => setAnchorEl(null)}>View policy</MenuItem>
+        <MenuItem
+          onClick={() => {
+            setAnchorEl(null)
+            openNewTask(policyRelated(row))
+          }}
+        >
+          Add task
+        </MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>Endorse policy</MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>Renew policy</MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>Cancel policy</MenuItem>
@@ -233,6 +248,9 @@ export function PoliciesListDataGrid({
   onPolicyCopilot,
   activeCopilotPolicyId,
 }: PoliciesListDataGridProps) {
+  const selectedPolicy = rows.find((row) => row.id === activeCopilotPolicyId)
+  useNewTaskSelection(selectedPolicy ? policyRelated(selectedPolicy) : null)
+
   const columns = useMemo<GridColDef<PolicyListRecord>[]>(
     () => [
       {
