@@ -21,6 +21,12 @@ type StepProps = {
   focusField?: string | null
 }
 
+const INDUSTRY_OPTIONS = [
+  '561730 - Landscaping Services',
+  '238220 - Plumbing, Heating, and Air-Conditioning Contractors',
+  '722511 - Full-Service Restaurants',
+]
+
 function isAiFilled(form: QuoteWizardFormData, field: string) {
   return form.aiFilledFields.includes(field)
 }
@@ -91,11 +97,15 @@ export function InsuredDetailsStep({
             }
           >
             <MenuItem value="">Search industry or describe the business</MenuItem>
-            <MenuItem value="561730 - Landscaping Services">561730 - Landscaping Services</MenuItem>
-            <MenuItem value="238220 - Plumbing, Heating, and Air-Conditioning Contractors">
-              238220 - Plumbing, Heating, and Air-Conditioning Contractors
-            </MenuItem>
-            <MenuItem value="722511 - Full-Service Restaurants">722511 - Full-Service Restaurants</MenuItem>
+            {INDUSTRY_OPTIONS.map((option) => (
+              <MenuItem key={option} value={option}>
+                {option}
+              </MenuItem>
+            ))}
+            {/* A prefilled insured can carry any NAICS code, not just the ones listed. */}
+            {form.industryNaics && !INDUSTRY_OPTIONS.includes(form.industryNaics) ? (
+              <MenuItem value={form.industryNaics}>{form.industryNaics}</MenuItem>
+            ) : null}
           </TextField>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
             Used to classify the insured&apos;s business

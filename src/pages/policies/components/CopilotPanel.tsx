@@ -317,7 +317,27 @@ function formatCustomerCurrency(value: number) {
   return value.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 }
 
+function isNewCustomerAccount(customer: CustomerRecord) {
+  return customer.activePolicies === 0 && customer.openQuotes === 0 && customer.twp === 0
+}
+
+function missingCustomerDetails(customer: CustomerRecord) {
+  return [
+    !customer.contactPhone.trim() && 'phone',
+    !customer.email.trim() && 'email',
+    (!customer.contactName.trim() || customer.contactName === '—') && 'primary contact',
+  ].filter((item): item is string => Boolean(item))
+}
+
 function customerInsights(customer: CustomerRecord): string[] {
+  if (isNewCustomerAccount(customer)) {
+    const missing = missingCustomerDetails(customer)
+    return [
+      'New account — no policies, quotes, or claims on file yet',
+      missing.length ? `Missing: ${missing.join(', ')}` : 'Contact details are complete',
+      'Next step: start a quote to begin underwriting',
+    ]
+  }
   return [
     `Attention: ${customer.attention} · Billing ${customer.billingStatus}`,
     `${customer.activePolicies} active policies · ${customer.openQuotes} open quotes · ${customer.openClaims} open claims`,
@@ -326,10 +346,15 @@ function customerInsights(customer: CustomerRecord): string[] {
 }
 
 function buildCustomerSummary(customer: CustomerRecord) {
+  if (isNewCustomerAccount(customer)) {
+    const missing = missingCustomerDetails(customer)
+    return `**${customer.name}** (${customer.customerNumber}) was just created and has **no coverage yet**. Start a quote to begin underwriting${missing.length ? ` — add **${missing.join(', ')}** before binding` : ''}.`
+  }
   return `**${customer.name}** (${customer.customerNumber}) — ${customer.attention === 'None' ? 'No active attention flags' : `**${customer.attention}**`}. Billing is **${customer.billingStatus.toLowerCase()}** with TWP **${formatCustomerCurrency(customer.twp)}** across **${customer.activePolicies}** active policies.`
 }
 
 const customerQuickActions = ['Billing summary', 'Open claims', 'Renewal outlook', 'Contact producer']
+const newCustomerQuickActions = ['Suggested coverages', 'Missing details', 'Similar accounts']
 const customersListQuickActions = ['Accounts needing attention', 'Past due billing', 'Renewal risk']
 
 export function CopilotPanel({
@@ -471,7 +496,9 @@ export function CopilotPanel({
     : focusedTask
     ? focusedTaskQuickActions
     : focusedCustomer
-      ? customerQuickActions
+      ? isNewCustomerAccount(focusedCustomer)
+        ? newCustomerQuickActions
+        : customerQuickActions
     : focusedPolicyList
       ? buildPolicyRecordBriefing(focusedPolicyList).quickActions
       : focusedQuoteDetail
@@ -519,7 +546,7 @@ export function CopilotPanel({
         : focusedTask
       ? 'Task summary'
       : focusedCustomer
-        ? 'Customer summary'
+        ? 'Summarize'
       : focusedPolicyList
         ? 'Policy summary'
         : focusedQuoteDetail

@@ -1,6 +1,9 @@
 import { customersMock, type CustomerRecord } from '@/pages/customers/data/mockCustomers'
+import type { QuoteWizardFormData } from '@/pages/quotes/data/quoteWizardTypes'
 import {
+  ADD_TASK_RELATED,
   inferRelated,
+  relatedLabel,
   type AddTaskPageContext,
   type AddTaskRelated,
 } from '@/pages/tasks/data/addTaskDraft'
@@ -8,10 +11,51 @@ import {
 export type CustomerType = 'Business' | 'Individual'
 export const CUSTOMER_TYPES: CustomerType[] = ['Business', 'Individual']
 
-export const CUSTOMER_ROLES = ['Insured', 'Prospect', 'Payor', 'Additional insured', 'Certificate holder'] as const
+export const CUSTOMER_ROLES = [
+  'Insured',
+  'Prospect',
+  'Payor',
+  'Additional insured',
+  'Certificate holder',
+  'Subsidiary',
+] as const
 export type CustomerRole = (typeof CUSTOMER_ROLES)[number]
 
-export type CustomerAddress = { street: string; city: string; state: string; zip: string }
+/** DBA, tax ID and NAICS describe a business; an individual customer never carries them. */
+export const BUSINESS_ONLY_FIELDS = ['dba', 'taxId', 'naics'] as const
+
+/** A customer's Related is its producer or, for a subsidiary, its parent customer. */
+export const CUSTOMER_RELATED_RECORDS: AddTaskRelated[] = (() => {
+  const insureds = new Set(ADD_TASK_RELATED.map((record) => record.names[0]))
+  const producers = new Set<string>()
+  for (const record of ADD_TASK_RELATED) {
+    if (record.kind !== 'Policy' && record.kind !== 'Quote') continue
+    record.names.slice(1).forEach((name) => {
+      if (!insureds.has(name)) producers.add(name)
+    })
+  }
+  return [
+    ...[...producers].sort().map((name): AddTaskRelated => ({ kind: 'Producer', ref: name, name, names: [name] })),
+    ...ADD_TASK_RELATED.filter((record) => record.kind === 'Customer'),
+  ]
+})()
+export const CUSTOMER_RELATED_BY_LABEL = new Map(CUSTOMER_RELATED_RECORDS.map((record) => [relatedLabel(record), record]))
+export const CUSTOMER_RELATED_OPTIONS = [...CUSTOMER_RELATED_BY_LABEL.keys()]
+export const PARENT_CUSTOMER_OPTIONS = CUSTOMER_RELATED_OPTIONS.filter(
+  (label) => CUSTOMER_RELATED_BY_LABEL.get(label)?.kind === 'Customer',
+)
+export const PRODUCER_OPTIONS = CUSTOMER_RELATED_OPTIONS.filter(
+  (label) => CUSTOMER_RELATED_BY_LABEL.get(label)?.kind === 'Producer',
+)
+
+export type CustomerAddress = {
+  street: string
+  city: string
+  state: string
+  zip: string
+  /** Apt / suite; optional second line. */
+  unit?: string
+}
 
 export type CustomerNaics = { code: string; title: string }
 
@@ -26,6 +70,8 @@ export type CreateCustomerDraft = {
   taxId: string | null
   naics: CustomerNaics | null
   related: AddTaskRelated | null
+  /** Locations beyond the mailing address. */
+  locations: CustomerAddress[]
   notes: string
 }
 
@@ -40,20 +86,13 @@ export const emptyCreateCustomerDraft: CreateCustomerDraft = {
   taxId: null,
   naics: null,
   related: null,
+  locations: [],
   notes: '',
 }
 
-export const CREATE_CUSTOMER_SEEDS: { label: string; prefill: string }[] = [
-  {
-    label: 'Business insured',
-    prefill:
-      'New business customer Coastal Brewing Co. LLC dba Coastal Taproom, insured, 415-555-0142, ops@coastalbrewing.com, 88 Harbor Way, San Francisco, CA 94107, EIN 94-3345120, referred by Harborview Agency',
-  },
-  {
-    label: 'Individual prospect',
-    prefill: 'Individual prospect named Priya Raman, priya.raman@example.com, (312) 555-0199',
-  },
-]
+/** Seed chips only pick the type; every other row comes from the user or a document. */
+export const CREATE_CUSTOMER_TYPE_SEEDS: CustomerType[] = ['Business', 'Individual']
+export const UNDER_EXISTING_CUSTOMER_SEED = 'Under an existing customer'
 
 /** Common commercial classes; keywords map plain-language industries to a code. */
 export const NAICS_CATALOG: (CustomerNaics & { keywords: RegExp })[] = [
@@ -90,7 +129,7 @@ export function naicsFromLabel(label: string): CustomerNaics | null {
 
 export function formatAddress(address: CustomerAddress) {
   const locality = [address.city, [address.state, address.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ')
-  return [address.street, locality].filter(Boolean).join(', ')
+  return [address.street, address.unit, locality].filter(Boolean).join(', ')
 }
 
 /** SSNs show only the last four; EINs are not sensitive on a business record. */
@@ -121,17 +160,30 @@ const ENTITY_NAME = new RegExp(
 )
 const LEAD_NOISE = new Set([
   'new', 'add', 'create', 'set', 'up', 'onboard', 'please', 'customer', 'business', 'company', 'a', 'an',
-  'for', 'insured', 'prospect', 'payor', 'named', 'called', 'legal', 'name', 'is',
+  'for', 'insured', 'prospect', 'payor', 'named', 'called', 'legal', 'name', 'is', 'applicant',
 ])
 const INTRODUCER = /\b(?:referred by|via|through|from|producer|agent|agency|broker)\s*$/i
 const PERSON_CUE =
-  /\b(?:individual|person|named|called|mr\.?|mrs\.?|ms\.?|dr\.?)\s+([A-Z][a-z'’-]+(?:\s+[A-Z]\.)?(?:\s+[A-Z][a-z'’-]+){1,2})\b/
+  /\b(?:[Ii]ndividual|[Pp]erson|named|called|[Mm]r\.?|[Mm]rs\.?|[Mm]s\.?|[Dd]r\.?)\s+([A-Z][a-z'’-]+(?:\s+[A-Z]\.)?(?:\s+[A-Z][a-z'’-]+){1,2})\b/
 const CUSTOMER_CUE = /\bcustomer\s+(?:named\s+|called\s+)?([A-Z][\w&'’.-]*(?:\s+[A-Z&][\w&'’.-]*){0,5})/
 
+/** Names can't span sentences ("…Application. Applicant Coastal Brewing Co. LLC"); abbreviations aren't breaks. */
+const SENTENCE_BREAK = /(?<!\b(?:Co|Inc|Corp|Ltd|St|Mr|Mrs|Ms|Dr|Jr|Sr|[A-Z]))\.\s+/
+const ABBREVIATION_END = /\b(?:Co|Inc|Corp|Ltd|Jr|Sr|[A-Z])\.$/
+
+function lastSentence(text: string) {
+  const sentence = text.split(SENTENCE_BREAK).pop()!
+  return sentence.endsWith('.') && !ABBREVIATION_END.test(sentence) ? sentence.slice(0, -1) : sentence
+}
+
 function stripLeadNoise(name: string) {
-  const words = name.trim().replace(/,$/, '').split(/\s+/)
+  const words = lastSentence(name.trim().replace(/,$/, '')).split(/\s+/)
   while (words.length > 1 && LEAD_NOISE.has(words[0]!.toLowerCase())) words.shift()
   return words.join(' ')
+}
+
+function removeAll(text: string, fragment: string) {
+  return text.split(fragment).join(' ')
 }
 
 function inferLegalName(text: string): { name: string; entity: boolean; person: boolean } | null {
@@ -221,11 +273,12 @@ export function inferCustomerFromText(
   if (!trimmed) return {}
 
   const email = trimmed.match(EMAIL)?.[0] ?? null
-  const dba = trimmed.match(DBA)?.[1]?.trim() ?? null
+  const dbaMatch = trimmed.match(DBA)
+  const dba = dbaMatch ? lastSentence(dbaMatch[1]!.trim().split(SENTENCE_BREAK)[0]!) : null
   // Contact details and the DBA are pulled out first so digits and trade names don't leak into other fields.
   let rest = trimmed
   if (email) rest = rest.replace(email, ' ')
-  if (dba) rest = rest.replace(DBA, ' ')
+  if (dbaMatch && dba) rest = rest.replace(dbaMatch[0].slice(0, dbaMatch[0].indexOf(dba) + dba.length), ' ')
   const tax = inferTaxId(rest)
   if (tax) rest = rest.replace(tax.ssn ? SSN : new RegExp(tax.taxId.replace('-', '-?')), ' ')
   const naicsCode = rest.match(NAICS_CODE)
@@ -233,37 +286,72 @@ export function inferCustomerFromText(
   const address = inferAddress(rest)
   if (address) rest = rest.replace(ADDRESS, ' ')
   const phoneMatch = rest.match(PHONE)
+  const parent = inferParentCustomer(rest)
+  if (parent) rest = removeAll(rest, parent.name)
 
   const legal = inferLegalName(rest)
-  const relatedText = [legal?.name, dba].reduce<string>((acc, name) => (name ? acc.replace(name, ' ') : acc), rest)
-  const related = asProducerWhenIntroducer(
-    inferRelated(relatedText, context ? { kind: context.kind, record: null } : undefined),
-    relatedText,
-  )
+  const relatedText = [legal?.name, dba].reduce<string>((acc, name) => (name ? removeAll(acc, name) : acc), rest)
+  const related =
+    parent ??
+    asCustomerRelated(
+      asProducerWhenIntroducer(
+        inferRelated(relatedText, context ? { kind: context.kind, record: null } : undefined),
+        relatedText,
+      ),
+    )
 
   const inferred: Partial<CreateCustomerDraft> = {}
   const type = inferType(trimmed, legal, tax?.ssn ?? false)
   if (type) inferred.type = type
   if (legal) inferred.legalName = legal.name
   if (dba) inferred.dba = dba
-  const role = inferRole(trimmed)
+  const role = parent ? 'Subsidiary' : inferRole(trimmed)
   if (role) inferred.role = role
   if (phoneMatch) inferred.phone = formatPhone(phoneMatch)
   if (email) inferred.email = email
   if (address) inferred.address = address
   if (tax) inferred.taxId = tax.taxId
-  const otherText = (related?.names ?? []).reduce((acc, name) => acc.replace(name, ' '), relatedText)
+  const otherText = (related?.names ?? []).reduce(removeAll, relatedText)
   const naics = inferNaics(trimmed, [legal?.name, dba].filter(Boolean).join(' '), otherText)
   if (naics) inferred.naics = naics
   if (related) inferred.related = related
-  return inferred
+  return inferred.type === 'Individual' ? withoutBusinessFields(inferred) : inferred
+}
+
+function withoutBusinessFields<T extends Partial<CreateCustomerDraft>>(draft: T): T {
+  const next: Partial<CreateCustomerDraft> = { ...draft }
+  for (const field of BUSINESS_ONLY_FIELDS) {
+    if (field in next) next[field] = null
+  }
+  return next as T
+}
+
+const PARENT_CUE = /\b(?:subsidiary of|division of|owned by|under|parent(?:\s+(?:company|customer))?(?:\s+is)?:?)\s+/gi
+
+/** "Subsidiary of Midwest Grain Cooperative" links the existing customer as the parent. */
+function inferParentCustomer(text: string): AddTaskRelated | null {
+  for (const cue of text.matchAll(PARENT_CUE)) {
+    const after = text.slice(cue.index + cue[0].length).toLowerCase()
+    const parent = CUSTOMER_RELATED_RECORDS.find(
+      (record) => record.kind === 'Customer' && after.startsWith(record.name.toLowerCase()),
+    )
+    if (parent) return parent
+  }
+  return null
+}
+
+/** Policies, quotes and submissions aren't a customer's Related — only producers and parent customers are. */
+function asCustomerRelated(related: AddTaskRelated | null): AddTaskRelated | null {
+  if (!related) return null
+  if (related.kind === 'Producer' || related.kind === 'Sub-producer' || related.kind === 'Customer') return related
+  return null
 }
 
 export function mergeCustomerDraft(
   base: CreateCustomerDraft,
   inferred: Partial<CreateCustomerDraft>,
 ): CreateCustomerDraft {
-  return {
+  return normalizeCustomerDraft({
     ...base,
     type: inferred.type ?? base.type,
     legalName: inferred.legalName || base.legalName,
@@ -273,10 +361,19 @@ export function mergeCustomerDraft(
     email: inferred.email ?? base.email,
     address: inferred.address ?? base.address,
     taxId: inferred.taxId ?? base.taxId,
-    // A keyword guess never replaces a code the user picked or typed.
-    naics: base.naics ?? inferred.naics ?? null,
+    naics: inferred.naics ?? base.naics,
     related: inferred.related ?? base.related,
-  }
+  })
+}
+
+export function normalizeCustomerDraft(draft: CreateCustomerDraft): CreateCustomerDraft {
+  return draft.type === 'Individual' ? withoutBusinessFields(draft) : draft
+}
+
+/** Fields that should be captured for this customer type, in card order. */
+export function customerFieldsFor(type: CustomerType | null) {
+  const fields = ['legalName', 'phone', 'email', 'address', 'taxId', 'naics', 'related'] as const
+  return fields.filter((field) => type !== 'Individual' || !(BUSINESS_ONLY_FIELDS as readonly string[]).includes(field))
 }
 
 /** Parse free-typed field edits the same way the composer does (e.g. "415 555 0142"). */
@@ -315,6 +412,26 @@ function nextCustomerNumber(created: CustomerRecord[]) {
   return `CUS-${Math.max(100000, ...numbers) + 1}`
 }
 
+/** Insured details for the New quote wizard, handed over by "Start quote". */
+export function buildQuotePrefillFromDraft(
+  draft: CreateCustomerDraft,
+  customerNumber: string,
+): Partial<QuoteWizardFormData> {
+  const address = draft.address ? formatAddress(draft.address) : ''
+  return {
+    name: draft.legalName,
+    email: draft.email ?? '',
+    address,
+    industryNaics: draft.naics ? `${draft.naics.code} - ${draft.naics.title}` : '',
+    phone: draft.phone ?? '',
+    taxId: draft.taxId ?? '',
+    customerNumber,
+    showAdditionalDetails: true,
+    primaryLocation: address,
+    additionalLocations: draft.locations.map(formatAddress),
+  }
+}
+
 export function buildCustomerFromDraft(
   draft: CreateCustomerDraft,
   created: CustomerRecord[],
@@ -339,7 +456,7 @@ export function buildCustomerFromDraft(
     twp: 0,
     contactName: draft.type === 'Individual' ? draft.legalName : '—',
     contactPhone: draft.phone ?? '',
-    address: draft.address?.street ?? '',
+    address: draft.address ? [draft.address.street, draft.address.unit].filter(Boolean).join(', ') : '',
     city: draft.address?.city ?? '',
     state: draft.address?.state ?? '',
     zip: draft.address?.zip ?? '',

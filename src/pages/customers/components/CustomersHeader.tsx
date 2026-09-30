@@ -7,7 +7,7 @@ import { listPageCreateButtonSx } from '@/design-system/tokens/listPageHeader'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 
-export function CustomersHeader() {
+export function CustomersHeader({ onAddCustomer }: { onAddCustomer: () => void }) {
   const contentPx = `${layoutTokens.contentPaddingX}px`
 
   return (
@@ -37,6 +37,7 @@ export function CustomersHeader() {
           color="primary"
           startIcon={<AddIcon />}
           aria-label="Add customer"
+          onClick={onAddCustomer}
           sx={listPageCreateButtonSx}
         >
           <span className="create-btn-label">Add customer</span>

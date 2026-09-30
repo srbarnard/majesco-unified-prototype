@@ -5,7 +5,7 @@ import type {
 } from '../data/quoteWizardTypes'
 import { markAiFilled } from '../data/quoteWizardDefaults'
 
-const ACCEPTED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv', '.png', '.jpg', '.jpeg', '.eml', '.msg']
+const ACCEPTED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv', '.png', '.jpg', '.jpeg', '.eml', '.msg', '.vcf', '.txt']
 
 /** Demo payload applied when files are dropped — simulates ACORD + schedule extraction. */
 const DEMO_DOCUMENT_EXTRACTION = {

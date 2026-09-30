@@ -1,6 +1,18 @@
+import CloseIcon from '@mui/icons-material/Close'
+import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined'
+import Box from '@mui/material/Box'
+import Chip from '@mui/material/Chip'
+import Collapse from '@mui/material/Collapse'
 import Divider from '@mui/material/Divider'
-import { useMemo, useState } from 'react'
-import { CopilotQuickActions } from '@/design-system/components'
+import Stack from '@mui/material/Stack'
+import Typography from '@mui/material/Typography'
+import Link from '@mui/material/Link'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link as RouterLink } from 'react-router'
+import { customerDetailsPath } from '@/pages/customers/data/customerRoutes'
+import type { SxProps, Theme } from '@mui/material/styles'
+import { CopilotQuickActions, InfoBanner } from '@/design-system/components'
+import { entranceMotion, fadeInSx, fadeSlideDownSx } from '@/design-system/tokens/motion'
 import type { CreatedCustomerEntry } from '@/app/contexts/CustomersContext'
 import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
 import {
@@ -12,6 +24,7 @@ import {
   DraftInlineTextEdit,
   DraftNeededList,
   DraftWelcome,
+  draftBodySx,
   draftUid,
   formatDraftCreatedTime,
   useDebouncedValue,
@@ -20,11 +33,22 @@ import {
   type DraftThreadMessage,
 } from '@/pages/shared/components/DraftDrawer'
 import {
-  CREATE_CUSTOMER_SEEDS,
+  customerDocumentTypeLabel,
+  extractCustomerFromFile,
+} from '@/pages/customers/data/customerDocumentExtraction'
+import {
+  CREATE_CUSTOMER_TYPE_SEEDS,
+  CUSTOMER_RELATED_BY_LABEL,
+  CUSTOMER_RELATED_OPTIONS,
   CUSTOMER_ROLES,
   CUSTOMER_TYPES,
   NAICS_OPTIONS,
+  PARENT_CUSTOMER_OPTIONS,
+  PRODUCER_OPTIONS,
+  UNDER_EXISTING_CUSTOMER_SEED,
   buildCustomerFromDraft,
+  buildQuotePrefillFromDraft,
+  customerFieldsFor,
   emptyCreateCustomerDraft,
   findDuplicateCustomer,
   formatAddress,
@@ -33,17 +57,25 @@ import {
   mergeCustomerDraft,
   naicsFromLabel,
   naicsLabel,
+  normalizeCustomerDraft,
   parseCustomerField,
   type CreateCustomerDraft,
 } from '@/pages/customers/data/createCustomerDraft'
 import type { CustomerRecord } from '@/pages/customers/data/mockCustomers'
+import type { QuoteWizardFormData } from '@/pages/quotes/data/quoteWizardTypes'
 import {
-  RELATED_BY_LABEL,
-  RELATED_OPTIONS,
+  findRelated,
   relatedLabel,
-  relatedSearchText,
   type AddTaskPageContext,
+  type AddTaskRelated,
 } from '@/pages/tasks/data/addTaskDraft'
+import { CustomerAddressEditor } from './CustomerAddressEditor'
+
+type StagedFile = { id: string; file: File; label: string; inferred?: Partial<CreateCustomerDraft> }
+
+function stagedFileLabel(fileName: string) {
+  return [fileName, customerDocumentTypeLabel(fileName)].filter(Boolean).join(' · ')
+}
 
 type EditField =
   | 'type'
@@ -56,46 +88,174 @@ type EditField =
   | 'taxId'
   | 'naics'
   | 'related'
+  | 'producer'
+  | 'newLocation'
+  | `location:${number}`
 
-const CANCEL_ACTION = 'Cancel customer'
+type CapturedField = ReturnType<typeof customerFieldsFor>[number]
+type WorkField = 'type' | CapturedField
+
+const FIELD_LABELS: Record<CapturedField, string> = {
+  legalName: 'Legal name',
+  phone: 'Phone',
+  email: 'Email',
+  address: 'Address',
+  taxId: 'Tax ID',
+  naics: 'NAICS',
+  related: 'Related',
+}
+
+const REQUEST_FROM_PRODUCER = 'Request from producer'
+const CREATE_TASK = 'Create task'
+const REVIEW_ALL = 'Review all'
+const WORK_VIEW = 'Work view'
+const START_QUOTE = 'Start quote'
+const ADD_LOCATION = 'Add location'
+const ADD_TASK = 'Add task'
+const CREATED_BANNER_MS = 6000
+const START_QUOTE_REQUEST = /\b(?:start|begin|new|create)\s+(?:a\s+)?quote\b/i
 
 export type CreateCustomerSavedState = {
   draft: CreateCustomerDraft
   messages: DraftThreadMessage[]
 }
 
+type ProducerRequest = { producer: string; fields: string[]; at: Date }
+
 type CreateCustomerPanelProps = {
   initialState?: CreateCustomerSavedState | null
-  initialTab?: DraftTab
   history: CreatedCustomerEntry[]
   createdCustomers: CustomerRecord[]
   pageContext?: AddTaskPageContext
   onClose: () => void
   onSaveDraft: (state: CreateCustomerSavedState) => void
   onCreate: (customer: CustomerRecord) => void
+  /** Details added from the record view after Create. */
+  onUpdate: (customer: CustomerRecord) => void
+  onStartQuote: (prefill: Partial<QuoteWizardFormData>) => void
+  /** Leaves the drawer for New task; a draft is saved first so it's waiting on return. */
+  onOpenTask: (related: AddTaskRelated, draftToKeep: CreateCustomerSavedState | null) => void
   onOpenCustomer: (customerId: string) => void
+}
+
+type RecordFact = { term: string; value: string | null; field?: EditField }
+
+/** Zebra label | value list for a saved customer; a fact with a `field` being edited shows its editor. */
+function RecordFactList({
+  facts,
+  editing,
+  renderEditor,
+  rowSx,
+}: {
+  facts: RecordFact[]
+  editing: EditField | null
+  renderEditor: (field: EditField) => ReactNode
+  rowSx?: (index: number) => SxProps<Theme> | undefined
+}) {
+  if (facts.length === 0) return null
+  const textSx = { ...draftBodySx, fontSize: '0.8125rem', lineHeight: 1.5, m: 0 } as const
+  return (
+    <Box component="dl" sx={{ m: 0, mb: 2, borderRadius: 1, overflow: 'hidden' }}>
+      {facts.map((fact, index) => (
+        <Box
+          key={fact.term}
+          sx={[
+            {
+              display: 'grid',
+              gridTemplateColumns: '120px minmax(0, 1fr)',
+              columnGap: 1.5,
+              alignItems: 'baseline',
+              px: 1.5,
+              py: 1,
+              borderRadius: '5px',
+              bgcolor: index % 2 === 0 ? 'action.hover' : 'background.paper',
+            },
+            ...[rowSx?.(index)].flat(),
+          ]}
+        >
+          <Box component="dt" sx={{ ...textSx, color: 'text.secondary' }}>
+            {fact.term}
+          </Box>
+          <Box component="dd" sx={{ ...textSx, color: 'text.primary', overflowWrap: 'anywhere' }}>
+            {fact.field && editing === fact.field ? renderEditor(fact.field) : fact.value}
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+function locationIndex(field: EditField) {
+  return field.startsWith('location:') ? Number(field.slice('location:'.length)) : null
+}
+
+/** Required to create; missing ones show as pink blockers. Keep in sync with `canCreate`. */
+const BLOCKING_FIELDS: readonly EditField[] = ['type', 'legalName', 'address']
+
+function capturedValue(draft: CreateCustomerDraft, field: CapturedField): string | null {
+  switch (field) {
+    case 'legalName':
+      return draft.legalName || null
+    case 'phone':
+      return draft.phone
+    case 'email':
+      return draft.email
+    case 'address':
+      return draft.address ? formatAddress(draft.address) : null
+    case 'taxId':
+      return draft.taxId ? formatTaxId(draft.taxId) : null
+    case 'naics':
+      return draft.naics ? naicsLabel(draft.naics) : null
+    case 'related':
+      return draft.related ? relatedLabel(draft.related) : null
+  }
 }
 
 export function CreateCustomerPanel({
   initialState,
-  initialTab = 'new',
   history,
   createdCustomers,
   pageContext,
   onClose,
   onSaveDraft,
   onCreate,
+  onUpdate,
+  onStartQuote,
+  onOpenTask,
   onOpenCustomer,
 }: CreateCustomerPanelProps) {
-  const [tab, setTab] = useState<DraftTab>(initialTab)
+  const [tab, setTab] = useState<DraftTab>('new')
+  const [view, setView] = useState<'work' | 'review'>('work')
   const [draft, setDraft] = useState<CreateCustomerDraft>(initialState?.draft ?? emptyCreateCustomerDraft)
   const [messages, setMessages] = useState<DraftThreadMessage[]>(initialState?.messages ?? [])
   const [composerValue, setComposerValue] = useState('')
   const [composerKey, setComposerKey] = useState(0)
   const [editing, setEditing] = useState<EditField | null>(null)
-  const [parsedComposerValue, setParsedComposerValue] = useDebouncedValue(composerValue)
+  const [pickingParent, setPickingParent] = useState(false)
+  const [readingFiles, setReadingFiles] = useState<string[]>([])
+  const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([])
+  const [sentFiles, setSentFiles] = useState<StagedFile[]>([])
+  const [producerRequest, setProducerRequest] = useState<ProducerRequest | null>(null)
+  const [record, setRecord] = useState<CustomerRecord | null>(null)
+  const [createdBannerOpen, setCreatedBannerOpen] = useState(false)
+  // True only right after Create, so the entrance plays once — not on every revisit of the record.
+  const [recordIntro, setRecordIntro] = useState(false)
 
-  const infer = (text: string) => inferCustomerFromText(text, pageContext)
+  useEffect(() => {
+    if (!createdBannerOpen) return
+    const timer = window.setTimeout(() => setCreatedBannerOpen(false), CREATED_BANNER_MS)
+    return () => window.clearTimeout(timer)
+  }, [createdBannerOpen])
+
+  useEffect(() => {
+    if (!recordIntro) return
+    const timer = window.setTimeout(() => setRecordIntro(false), 1500)
+    return () => window.clearTimeout(timer)
+  }, [recordIntro])
+  const [parsedComposerValue, setParsedComposerValue] = useDebouncedValue(composerValue)
+  // Bumped on reset so a file that finishes reading after Cancel doesn't repopulate the draft.
+  const draftGeneration = useRef(0)
+
   const liveComposerText = parsedComposerValue.trim()
   const previewDraft = useMemo(
     () => mergeCustomerDraft(draft, inferCustomerFromText(liveComposerText, pageContext)),
@@ -106,44 +266,180 @@ export function CreateCustomerPanel({
     () => mergeCustomerDraft(draft, inferCustomerFromText(composerValue, pageContext)),
     [composerValue, draft, pageContext],
   )
-  const draftHasContent = Object.entries(draft).some(([key, value]) => key !== 'notes' && value != null && value !== '')
-  const showNeeded = messages.length > 0 || draftHasContent || Boolean(liveComposerText)
-  const originalRequest = messages.find((message) => message.text)?.text ?? ''
+  const started =
+    messages.length > 0 ||
+    Boolean(liveComposerText) ||
+    Object.entries(draft).some(
+      ([key, value]) => key !== 'notes' && key !== 'locations' && value != null && value !== '',
+    )
+  const lastMessage = messages[messages.length - 1]
+  // File names live only on the chips, so the grey line is the typed sentence (if any).
+  const headerLine = lastMessage?.text || (readingFiles.length > 0 ? 'Reading…' : undefined)
   const duplicate = previewDraft.legalName ? findDuplicateCustomer(previewDraft.legalName, createdCustomers) : null
-  const canCreate = Boolean(commitDraft.type && commitDraft.legalName)
+  const canCreate = Boolean(commitDraft.type && commitDraft.legalName && commitDraft.address)
+  const capturedFields = customerFieldsFor(previewDraft.type)
+  const missingFields = capturedFields.filter((field) => capturedValue(previewDraft, field) == null)
+  const missingWorkFields: WorkField[] = [...(previewDraft.type ? [] : ['type' as const]), ...missingFields]
+  const missingWorkKey = missingWorkFields.join(',')
+
+  // Rows resolved since the last send stay in Work (checked) until the next submission clears them.
+  const [pinnedWorkFields, setPinnedWorkFields] = useState<WorkField[]>([])
+  useEffect(() => {
+    if (!started || !missingWorkKey) return
+    const missing = missingWorkKey.split(',') as WorkField[]
+    setPinnedWorkFields((current) => {
+      const added = missing.filter((field) => !current.includes(field))
+      return added.length > 0 ? [...current, ...added] : current
+    })
+  }, [started, missingWorkKey])
+  const clearResolvedRows = () => setPinnedWorkFields([])
+
+  // Details added on the record view flow back to the created customer (and the grid).
+  useEffect(() => {
+    if (!record) return
+    const rebuilt = buildCustomerFromDraft(draft, [])
+    const next: CustomerRecord = {
+      ...record,
+      email: rebuilt.email,
+      contactPhone: rebuilt.contactPhone,
+      address: rebuilt.address,
+      city: rebuilt.city,
+      state: rebuilt.state,
+      zip: rebuilt.zip,
+    }
+    if (JSON.stringify(next) === JSON.stringify(record)) return
+    setRecord(next)
+    onUpdate(next)
+  }, [draft, record, onUpdate])
+
+  const buildFinalDraft = (): CreateCustomerDraft => commitDraft
+  const savedState = (): CreateCustomerSavedState => ({ draft: buildFinalDraft(), messages })
 
   const addMessage = (text: string) => {
     setMessages((current) => [...current, { id: draftUid('user'), text }])
-    setDraft((current) => ({
-      ...mergeCustomerDraft(current, infer(text)),
-      notes: current.notes ? `${current.notes}\n${text}` : text,
-    }))
+    setDraft((current) => mergeCustomerDraft(current, inferCustomerFromText(text, pageContext)))
+  }
+
+  const handleFilesAdded = (files: File[]) => {
+    setStagedFiles((current) => {
+      const seen = new Set(current.map((staged) => staged.file.name.toLowerCase()))
+      const incoming = files
+        .filter((file) => !seen.has(file.name.toLowerCase()))
+        .map((file) => ({ id: draftUid('file'), file, label: stagedFileLabel(file.name) }))
+      return [...current, ...incoming]
+    })
   }
 
   const resetDraft = () => {
+    draftGeneration.current += 1
     setDraft(emptyCreateCustomerDraft)
     setMessages([])
+    setReadingFiles([])
+    setStagedFiles([])
+    setSentFiles([])
+    setProducerRequest(null)
     setComposerValue('')
     setParsedComposerValue('')
     setComposerKey((key) => key + 1)
     setEditing(null)
+    setPickingParent(false)
+    setView('work')
+    clearResolvedRows()
   }
 
   const handleSend = (raw: string) => {
     const text = raw.trim()
-    if (!text) return
+    const files = stagedFiles
+    if (!text && files.length === 0) return
     setComposerValue('')
     setParsedComposerValue('')
     setEditing(null)
-    addMessage(text)
+    setPickingParent(false)
+    clearResolvedRows()
+    if (files.length === 0) {
+      addMessage(text)
+      return
+    }
+    const names = files.map((staged) => staged.file.name)
+    const generation = draftGeneration.current
+    setStagedFiles([])
+    setSentFiles((current) => [
+      ...current.filter((sent) => !names.includes(sent.file.name)),
+      ...files,
+    ])
+    setMessages((current) => [...current, { id: draftUid('user'), text, files: names }])
+    setReadingFiles(names)
+    void Promise.all(files.map((staged) => extractCustomerFromFile(staged.file, pageContext))).then((results) => {
+      if (generation !== draftGeneration.current) return
+      setReadingFiles([])
+      setSentFiles((current) =>
+        current.map((sent) => {
+          const index = files.findIndex((staged) => staged.id === sent.id)
+          return index < 0 ? sent : { ...sent, inferred: results[index]!.inferred }
+        }),
+      )
+      // Typed text in the same send is merged last so it wins over the documents.
+      const inferred = [...results.map((result) => result.inferred), inferCustomerFromText(text, pageContext)]
+      setDraft((current) => inferred.reduce<CreateCustomerDraft>(mergeCustomerDraft, current))
+      clearResolvedRows()
+    })
+  }
+
+  /** Drops a sent file and clears what it supplied, falling back to other files and typed text. */
+  const removeSentFile = (id: string) => {
+    const removed = sentFiles.find((sent) => sent.id === id)
+    const remaining = sentFiles.filter((sent) => sent.id !== id)
+    setSentFiles(remaining)
+    const contributed = removed?.inferred
+    if (!contributed) return
+    const sources = [
+      ...remaining.map((sent) => sent.inferred ?? {}),
+      ...messages.filter((message) => message.text).map((message) => inferCustomerFromText(message.text, pageContext)),
+    ]
+    setDraft((current) => {
+      const next: Record<string, unknown> = { ...current }
+      for (const key of Object.keys(contributed) as (keyof CreateCustomerDraft)[]) {
+        if (JSON.stringify(current[key]) !== JSON.stringify(contributed[key])) continue
+        const fallback = sources.map((source) => source[key]).filter((value) => value != null && value !== '')
+        next[key] = fallback.length > 0 ? fallback[fallback.length - 1] : key === 'legalName' ? '' : null
+      }
+      return normalizeCustomerDraft(next as CreateCustomerDraft)
+    })
+  }
+
+  const requestFromProducer = (producer: string) => {
+    setProducerRequest({ producer, fields: missingFields.map((field) => FIELD_LABELS[field]), at: new Date() })
   }
 
   const applyEdit = (field: EditField, value: string) => {
     setEditing(null)
+    if (field === 'producer') {
+      const producer = CUSTOMER_RELATED_BY_LABEL.get(value)
+      if (!producer) return
+      setDraft((current) => (current.related ? current : { ...current, related: producer }))
+      requestFromProducer(producer.name)
+      return
+    }
+    const index = locationIndex(field)
     setDraft((current) => {
+      if (field === 'newLocation' || index != null) {
+        const address = value.trim() ? parseCustomerField('address', value) : null
+        const locations = [...current.locations]
+        if (index == null) {
+          if (address) locations.push(address)
+        } else if (address) {
+          locations[index] = address
+        } else {
+          locations.splice(index, 1)
+        }
+        return { ...current, locations }
+      }
       switch (field) {
         case 'type':
-          return { ...current, type: CUSTOMER_TYPES.find((type) => type === value) ?? current.type }
+          return normalizeCustomerDraft({
+            ...current,
+            type: CUSTOMER_TYPES.find((type) => type === value) ?? current.type,
+          })
         case 'role':
           return { ...current, role: CUSTOMER_ROLES.find((role) => role === value) ?? current.role }
         case 'legalName':
@@ -157,42 +453,105 @@ export function CreateCustomerPanel({
           return { ...current, [field]: parseCustomerField(field, value) }
         case 'naics':
           return { ...current, naics: naicsFromLabel(value) ?? current.naics }
-        case 'related':
-          return { ...current, related: RELATED_BY_LABEL.get(value) ?? current.related }
+        case 'related': {
+          const related = CUSTOMER_RELATED_BY_LABEL.get(value)
+          if (!related) return current
+          return { ...current, related, role: related.kind === 'Customer' ? 'Subsidiary' : current.role }
+        }
       }
+      return current
     })
   }
 
-  const rows: DraftNeededRow<EditField>[] = [
-    { term: 'Type', value: previewDraft.type, field: 'type' },
-    { term: 'Legal name', value: previewDraft.legalName || null, field: 'legalName' },
-    { term: 'DBA', value: previewDraft.dba, field: 'dba' },
-    { term: 'Role', value: previewDraft.role, field: 'role' },
-    { term: 'Phone', value: previewDraft.phone, field: 'phone' },
-    { term: 'Email', value: previewDraft.email, field: 'email' },
-    { term: 'Address', value: previewDraft.address ? formatAddress(previewDraft.address) : null, field: 'address' },
-    { term: 'Tax ID', value: previewDraft.taxId ? formatTaxId(previewDraft.taxId) : null, field: 'taxId' },
-    { term: 'NAICS', value: previewDraft.naics ? naicsLabel(previewDraft.naics) : null, field: 'naics' },
-    { term: 'Related', value: previewDraft.related ? relatedLabel(previewDraft.related) : null, field: 'related' },
+  const pickParent = (label: string) => {
+    const parent = CUSTOMER_RELATED_BY_LABEL.get(label)
+    setPickingParent(false)
+    if (parent) setDraft((current) => ({ ...current, related: parent, role: 'Subsidiary' }))
+  }
+
+  const capturedRow = (field: CapturedField): DraftNeededRow<EditField> => ({
+    term: FIELD_LABELS[field],
+    value: capturedValue(previewDraft, field),
+    field,
+  })
+
+  const pendingRows: DraftNeededRow<EditField>[] = [
+    ...(editing === 'newLocation'
+      ? [{ term: `Location ${previewDraft.locations.length + 2}`, value: null, field: 'newLocation' as const }]
+      : []),
+    ...(editing === 'producer' ? [{ term: 'Producer', value: null, field: 'producer' as const }] : []),
   ]
-  if (duplicate) {
-    rows.push({
-      term: 'Possible duplicate',
-      value: `${duplicate.customerNumber} · ${duplicate.name} already exists`,
-      tone: 'error',
-    })
-  }
+  const duplicateRow: DraftNeededRow<EditField>[] = duplicate
+    ? [{ term: 'Possible duplicate', value: `${duplicate.customerNumber} · ${duplicate.name} already exists`, tone: 'warning' }]
+    : []
+  const withIssueTone = (row: DraftNeededRow<EditField>): DraftNeededRow<EditField> =>
+    row.tone || row.value != null
+      ? row
+      : { ...row, tone: row.field && BLOCKING_FIELDS.includes(row.field) ? 'error' : 'warning' }
+  const isIndividual = previewDraft.type === 'Individual'
+  const locationRows: DraftNeededRow<EditField>[] = previewDraft.locations.map((location, index) => ({
+    term: `Location ${index + 2}`,
+    value: formatAddress(location),
+    field: `location:${index}` as const,
+  }))
 
-  const textEditor = (field: EditField, initialValue: string, label: string) => (
+  const workRows: DraftNeededRow<EditField>[] = [
+    ...(!previewDraft.type || pinnedWorkFields.includes('type')
+      ? [{ term: 'Type', value: previewDraft.type, field: 'type' as const }]
+      : []),
+    ...capturedFields
+      .filter((field) => missingFields.includes(field) || pinnedWorkFields.includes(field))
+      .map(capturedRow),
+    ...pendingRows,
+    ...duplicateRow,
+  ].map(withIssueTone)
+
+  const reviewRows: DraftNeededRow<EditField>[] = [
+    { term: 'Type', value: previewDraft.type, field: 'type' },
+    capturedRow('legalName'),
+    ...(isIndividual ? [] : [{ term: 'DBA', value: previewDraft.dba, field: 'dba' as const }]),
+    { term: 'Role', value: previewDraft.role, field: 'role' },
+    capturedRow('phone'),
+    capturedRow('email'),
+    capturedRow('address'),
+    ...locationRows,
+    ...(isIndividual ? [] : [capturedRow('taxId'), capturedRow('naics')]),
+    capturedRow('related'),
+    ...(previewDraft.notes ? [{ term: 'Notes', value: previewDraft.notes }] : []),
+    ...pendingRows,
+    ...duplicateRow,
+  ].map(withIssueTone)
+
+  const textEditor = (
+    field: EditField,
+    initialValue: string,
+    label: string,
+    type: 'text' | 'tel' | 'email' = 'text',
+  ) => (
     <DraftInlineTextEdit
       initialValue={initialValue}
       label={label}
+      type={type}
       onCommit={(value) => applyEdit(field, value)}
       onDismiss={() => setEditing(null)}
     />
   )
 
+  const lookup = (field: EditField, options: string[], placeholder: string) => (
+    <DraftInlineLookup
+      options={options}
+      placeholder={placeholder}
+      onPick={(value) => applyEdit(field, value)}
+      onDismiss={() => setEditing(null)}
+    />
+  )
+
   const renderEditor = (field: EditField) => {
+    const index = locationIndex(field)
+    if (index != null) {
+      const location = previewDraft.locations[index]
+      return textEditor(field, location ? formatAddress(location) : '', 'Location address')
+    }
     switch (field) {
       case 'type':
         return (
@@ -215,44 +574,226 @@ export function CreateCustomerPanel({
       case 'dba':
         return textEditor('dba', previewDraft.dba ?? '', 'Doing business as')
       case 'phone':
-        return textEditor('phone', previewDraft.phone ?? '', 'Phone')
+        return textEditor('phone', previewDraft.phone ?? '', 'Phone', 'tel')
       case 'email':
-        return textEditor('email', previewDraft.email ?? '', 'Email')
+        return textEditor('email', previewDraft.email ?? '', 'Email', 'email')
       case 'address':
-        return textEditor('address', previewDraft.address ? formatAddress(previewDraft.address) : '', 'Address')
+        return (
+          <CustomerAddressEditor
+            value={previewDraft.address}
+            onSelect={(address) => setDraft((current) => ({ ...current, address }))}
+            onDone={() => setEditing(null)}
+            onDismiss={() => setEditing(null)}
+          />
+        )
+      case 'newLocation':
+        return textEditor('newLocation', '', 'Location address')
       case 'taxId':
-        return textEditor('taxId', previewDraft.taxId ?? '', 'Tax ID (EIN or SSN)')
+        return textEditor('taxId', previewDraft.taxId ?? '', 'EIN')
       case 'naics':
-        return (
-          <DraftInlineLookup
-            options={NAICS_OPTIONS}
-            placeholder="Search NAICS code or industry"
-            onPick={(value) => applyEdit('naics', value)}
-            onDismiss={() => setEditing(null)}
-          />
-        )
+        return lookup('naics', NAICS_OPTIONS, 'Search NAICS code or industry')
       case 'related':
-        return (
-          <DraftInlineLookup
-            options={RELATED_OPTIONS}
-            placeholder="Search policies, quotes, submissions, customers"
-            searchText={relatedSearchText}
-            onPick={(value) => applyEdit('related', value)}
-            onDismiss={() => setEditing(null)}
-          />
-        )
+        return lookup('related', CUSTOMER_RELATED_OPTIONS, 'Search producers or parent customers')
+      case 'producer':
+        return lookup('producer', PRODUCER_OPTIONS, 'Which producer should supply the missing details?')
     }
+    return null
   }
-
-  const buildFinalDraft = (): CreateCustomerDraft => ({
-    ...commitDraft,
-    notes: [commitDraft.notes, composerValue.trim()].filter(Boolean).join('\n'),
-  })
 
   const handleCreate = () => {
     const finalDraft = buildFinalDraft()
-    if (!finalDraft.type || !finalDraft.legalName) return
-    onCreate(buildCustomerFromDraft(finalDraft, createdCustomers))
+    if (!finalDraft.type || !finalDraft.legalName || !finalDraft.address) return null
+    const customer = buildCustomerFromDraft(finalDraft, createdCustomers)
+    onCreate(customer)
+    setDraft(finalDraft)
+    setComposerValue('')
+    setParsedComposerValue('')
+    setEditing(null)
+    setRecord(customer)
+    setCreatedBannerOpen(true)
+    setRecordIntro(true)
+    return { customer, finalDraft }
+  }
+
+  const handleWorkAction = (action: string) => {
+    switch (action) {
+      case REQUEST_FROM_PRODUCER:
+        if (previewDraft.related?.kind === 'Producer') requestFromProducer(previewDraft.related.name)
+        else setEditing('producer')
+        return
+      case CREATE_TASK: {
+        const name = previewDraft.legalName || 'New customer'
+        onOpenTask(findRelated('Customer', name, [name]), savedState())
+        return
+      }
+      case REVIEW_ALL:
+        setView('review')
+        clearResolvedRows()
+        return
+      case WORK_VIEW:
+        setView('work')
+        clearResolvedRows()
+        return
+      case START_QUOTE: {
+        const created = handleCreate()
+        if (created) onStartQuote(buildQuotePrefillFromDraft(created.finalDraft, created.customer.customerNumber))
+      }
+    }
+  }
+
+  const hasHoles = workRows.some((row) => row.value == null || row.tone)
+  const producerCanFill =
+    previewDraft.related?.kind === 'Producer' ||
+    missingFields.some((field) => field === 'address' || field === 'taxId' || field === 'naics')
+  const workActions =
+    view === 'review'
+      ? [WORK_VIEW]
+      : hasHoles
+        ? [...(producerCanFill ? [REQUEST_FROM_PRODUCER] : []), CREATE_TASK, REVIEW_ALL]
+        : [REVIEW_ALL, ...(canCreate ? [START_QUOTE] : [])]
+
+  const handleRecordAction = (action: string, recordDraft = draft) => {
+    if (!record) return
+    setCreatedBannerOpen(false)
+    if (action === START_QUOTE) onStartQuote(buildQuotePrefillFromDraft(recordDraft, record.customerNumber))
+    else if (action === ADD_LOCATION) setEditing('newLocation')
+    else if (action === ADD_TASK) onOpenTask(findRelated('Customer', record.customerNumber, [record.name]), null)
+  }
+
+  /** Record composer: same field parse as the draft, but the saved name and type don't change. */
+  const handleRecordSend = (raw: string) => {
+    const text = raw.trim()
+    if (!text) return
+    setComposerValue('')
+    setParsedComposerValue('')
+    setEditing(null)
+    setCreatedBannerOpen(false)
+    const next = {
+      ...mergeCustomerDraft(draft, inferCustomerFromText(text, pageContext)),
+      type: draft.type,
+      legalName: draft.legalName,
+    }
+    setDraft(next)
+    if (START_QUOTE_REQUEST.test(text)) handleRecordAction(START_QUOTE, next)
+  }
+
+  const toggleEditing = (field: EditField) => {
+    if (record) setCreatedBannerOpen(false)
+    setEditing((current) => (current === field ? null : field))
+  }
+
+  const startAnotherCustomer = () => {
+    setRecord(null)
+    setCreatedBannerOpen(false)
+    resetDraft()
+    setTab('new')
+  }
+
+  const historyList = (
+    <DraftHistoryList
+      entries={history.map(({ customer, createdAt }) => ({
+        id: customer.id,
+        title: customer.name,
+        subtitle: [customer.customerNumber, formatDraftCreatedTime(createdAt)].join(' · '),
+      }))}
+      emptyText="Customers you create this session show up here."
+      onOpen={onOpenCustomer}
+    />
+  )
+
+  if (record) {
+    const recordFacts: RecordFact[] = [
+      { term: 'Type', value: draft.type },
+      { term: 'Legal name', value: draft.legalName || null },
+      { term: 'DBA', value: draft.dba },
+      { term: 'Role', value: draft.role },
+      { term: 'Phone', value: draft.phone },
+      { term: 'Email', value: draft.email },
+      { term: 'Address', value: draft.address ? formatAddress(draft.address) : null },
+      ...draft.locations.map((location, index) => ({ term: `Location ${index + 2}`, value: formatAddress(location) })),
+      ...(editing === 'newLocation'
+        ? [{ term: `Location ${draft.locations.length + 2}`, value: null, field: 'newLocation' as const }]
+        : []),
+      { term: 'Tax ID', value: draft.taxId ? formatTaxId(draft.taxId) : null },
+      { term: 'NAICS', value: draft.naics ? naicsLabel(draft.naics) : null },
+      { term: 'Related', value: draft.related ? relatedLabel(draft.related) : null },
+      { term: 'Notes', value: draft.notes || null },
+    ].filter((fact) => fact.value != null || fact.field)
+    // After the banner lands, the facts then the holes fade in one after another.
+    const introRowSx = (index: number) =>
+      recordIntro ? fadeInSx(entranceMotion.enterMs + index * entranceMotion.staggerMs) : undefined
+    const recordOptionalFields: ('phone' | 'email' | 'taxId')[] =
+      draft.type === 'Individual' ? ['phone', 'email'] : ['phone', 'email', 'taxId']
+    const recordMissingRows: DraftNeededRow<EditField>[] = recordOptionalFields
+      .filter((field) => capturedValue(draft, field) == null)
+      .map((field) => ({ term: FIELD_LABELS[field], value: null, field, tone: 'warning' }))
+    return (
+      <DraftDrawerShell
+        variant="record"
+        heading="Create customer"
+        closeLabel="Close create customer drawer"
+        tab={tab}
+        onTabChange={setTab}
+        onNewTabClick={startAnotherCustomer}
+        onClose={onClose}
+        history={historyList}
+        composer={
+          <CopilotComposer
+            key={composerKey}
+            placeholder="Add details or start a quote…"
+            value={composerValue}
+            onChange={setComposerValue}
+            minRows={1}
+            showModeSelector={false}
+            showDisclaimer={false}
+            enableAttachments={false}
+            onSubmit={handleRecordSend}
+          />
+        }
+        createLabel=""
+        createDisabled
+        onCreate={() => undefined}
+        onSaveDraft={() => undefined}
+      >
+        <DraftHeader
+          title={record.name}
+          request={
+            <Link
+              component={RouterLink}
+              to={customerDetailsPath(record.customerNumber)}
+              underline="hover"
+              color="primary"
+            >
+              {record.customerNumber}
+            </Link>
+          }
+          backLabel="Start another customer"
+          onBack={startAnotherCustomer}
+        />
+        <Collapse in={createdBannerOpen} timeout={entranceMotion.enterMs} unmountOnExit>
+          <InfoBanner
+            onDismiss={() => setCreatedBannerOpen(false)}
+            sx={[{ mb: 1.5 }, recordIntro ? fadeSlideDownSx() : {}]}
+          >
+            Customer created.
+          </InfoBanner>
+        </Collapse>
+        <RecordFactList facts={recordFacts} editing={editing} renderEditor={renderEditor} rowSx={introRowSx} />
+        <DraftNeededList
+          rows={recordMissingRows}
+          editingField={editing}
+          openRowStyle="none"
+          onToggle={toggleEditing}
+          renderEditor={renderEditor}
+          rowSx={(index) => introRowSx(recordFacts.length + index)}
+        />
+        <CopilotQuickActions
+          label="Suggested actions"
+          actions={[START_QUOTE, ADD_LOCATION, ADD_TASK]}
+          onAction={(action) => handleRecordAction(action)}
+        />
+      </DraftDrawerShell>
+    )
   }
 
   return (
@@ -265,18 +806,8 @@ export function CreateCustomerPanel({
       createLabel="Create customer"
       createDisabled={!canCreate}
       onCreate={handleCreate}
-      onSaveDraft={() => onSaveDraft({ draft: buildFinalDraft(), messages })}
-      history={
-        <DraftHistoryList
-          entries={history.map(({ customer, createdAt }) => ({
-            id: customer.id,
-            title: customer.name,
-            subtitle: [customer.customerNumber, formatDraftCreatedTime(createdAt)].join(' · '),
-          }))}
-          emptyText="Customers you create this session show up here."
-          onOpen={onOpenCustomer}
-        />
-      }
+      onSaveDraft={() => onSaveDraft(savedState())}
+      history={historyList}
       composer={
         <CopilotComposer
           key={composerKey}
@@ -287,45 +818,84 @@ export function CreateCustomerPanel({
           showModeSelector={false}
           showDisclaimer={false}
           onSubmit={(text) => handleSend(text)}
+          onFilesAdded={handleFilesAdded}
+          stagedChips={stagedFiles}
+          onRemoveStagedChip={(id) => setStagedFiles((current) => current.filter((staged) => staged.id !== id))}
         />
       }
     >
-      {!showNeeded ? (
+      {!started ? (
         <>
           <DraftWelcome
             title="Who’s the customer?"
-            body="Describe them in the composer — name, contact details, tax ID, industry. Copilot fills in the fields; Create unlocks once type and legal name are set."
+            body="Describe them, or drop an ACORD / broker email / PDF / vCard."
           />
           <Divider sx={{ mb: 2 }} />
           <CopilotQuickActions
             label="Suggested actions"
-            actions={CREATE_CUSTOMER_SEEDS.map((seed) => seed.label)}
-            onAction={(label) => {
-              const seed = CREATE_CUSTOMER_SEEDS.find((item) => item.label === label)
-              if (seed) addMessage(seed.prefill)
+            actions={[...CREATE_CUSTOMER_TYPE_SEEDS, UNDER_EXISTING_CUSTOMER_SEED]}
+            onAction={(action) => {
+              if (action === UNDER_EXISTING_CUSTOMER_SEED) {
+                setPickingParent(true)
+                return
+              }
+              const type = CREATE_CUSTOMER_TYPE_SEEDS.find((seed) => seed === action)
+              if (type) setDraft((current) => normalizeCustomerDraft({ ...current, type }))
             }}
           />
+          {pickingParent ? (
+            <DraftInlineLookup
+              options={PARENT_CUSTOMER_OPTIONS}
+              placeholder="Search the parent customer"
+              onPick={pickParent}
+              onDismiss={() => setPickingParent(false)}
+            />
+          ) : null}
         </>
       ) : (
         <>
           <DraftHeader
-            title={previewDraft.legalName || 'Unnamed customer'}
-            request={originalRequest}
+            title={previewDraft.legalName || 'New customer'}
+            request={headerLine}
             backLabel="Cancel customer"
             onBack={resetDraft}
           />
+          {sentFiles.length > 0 ? (
+            <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ pl: 4.25, mb: 1.5 }}>
+              {sentFiles.map((sent) => (
+                <Chip
+                  key={sent.id}
+                  size="small"
+                  variant="outlined"
+                  icon={<InsertDriveFileOutlinedIcon />}
+                  label={sent.label}
+                  onDelete={() => removeSentFile(sent.id)}
+                  deleteIcon={<CloseIcon sx={{ fontSize: '14px !important' }} />}
+                  sx={{ maxWidth: '100%', fontSize: '0.75rem', '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' } }}
+                />
+              ))}
+            </Stack>
+          ) : null}
           <DraftNeededList
-            rows={rows}
+            rows={view === 'review' ? reviewRows : workRows}
             editingField={editing}
-            onToggle={(field) => setEditing((current) => (current === field ? null : field))}
+            openRowStyle="none"
+            onToggle={toggleEditing}
             renderEditor={renderEditor}
           />
+          {view === 'work' && workRows.length === 0 ? <Box sx={{ height: 12 }} /> : null}
+          {producerRequest ? (
+            <Typography variant="body2" color="text.secondary" sx={{ ...draftBodySx, mb: 2 }}>
+              {producerRequest.fields.length > 0
+                ? `Requested ${producerRequest.fields.join(', ')} from ${producerRequest.producer}`
+                : `Asked ${producerRequest.producer} to confirm the details`}
+              {` · ${formatDraftCreatedTime(producerRequest.at)}`}
+            </Typography>
+          ) : null}
           <CopilotQuickActions
             label="Suggested actions"
-            actions={[CANCEL_ACTION]}
-            onAction={(action) => {
-              if (action === CANCEL_ACTION) resetDraft()
-            }}
+            actions={workActions}
+            onAction={handleWorkAction}
           />
         </>
       )}

@@ -52,7 +52,7 @@ export function CustomersPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<CustomersListFilters>(emptyCustomersListFilters)
 
-  const { createdCustomers } = useCustomersStore()
+  const { createdCustomers, justCreatedCustomerId } = useCustomersStore()
 
   const filteredRows = useMemo(() => {
     const withFilters = applyCustomersListFilters([...createdCustomers, ...customersMock], appliedFilters)
@@ -92,6 +92,11 @@ export function CustomersPage() {
     [openTool],
   )
 
+  const handleOpenAddCustomer = useCallback(() => {
+    setCopilotCustomerFocus(null)
+    openTool('newCustomer')
+  }, [openTool])
+
   const contentPx = `${layoutTokens.contentPaddingX}px`
   const activeCopilotCustomerId =
     activeTool === 'copilot' && copilotCustomerFocus ? copilotCustomerFocus.id : null
@@ -120,7 +125,7 @@ export function CustomersPage() {
         }}
       >
         <Box sx={{ flexShrink: 0 }}>
-          <CustomersHeader />
+          <CustomersHeader onAddCustomer={handleOpenAddCustomer} />
         </Box>
 
         <Box
@@ -171,6 +176,7 @@ export function CustomersPage() {
                 rows={filteredRows}
                 onCustomerCopilot={handleCustomerCopilot}
                 activeCopilotCustomerId={activeCopilotCustomerId}
+                flashRowId={justCreatedCustomerId}
               />
             </Box>
           </Box>

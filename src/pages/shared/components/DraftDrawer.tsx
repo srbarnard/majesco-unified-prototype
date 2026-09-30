@@ -3,6 +3,7 @@ import BlockIcon from '@mui/icons-material/Block'
 import CheckIcon from '@mui/icons-material/Check'
 import CloseIcon from '@mui/icons-material/Close'
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
+import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
 import ButtonBase from '@mui/material/ButtonBase'
@@ -13,6 +14,7 @@ import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+import type { SxProps, Theme } from '@mui/material/styles'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Button } from '@/design-system/components'
 import { filterFooterButtonSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
@@ -163,12 +165,15 @@ export function DraftInlineTextEdit({
   initialValue,
   multiline = false,
   label,
+  type = 'text',
   onCommit,
   onDismiss,
 }: {
   initialValue: string
   multiline?: boolean
   label: string
+  /** Native input type; `tel` / `email` also set autocomplete and the mobile keyboard. */
+  type?: 'text' | 'tel' | 'email'
   onCommit: (value: string) => void
   onDismiss: () => void
 }) {
@@ -195,7 +200,12 @@ export function DraftInlineTextEdit({
           commit()
         }
       }}
-      inputProps={{ 'aria-label': label }}
+      type={multiline ? undefined : type}
+      inputProps={{
+        'aria-label': label,
+        ...(type === 'tel' ? { autoComplete: 'tel', inputMode: 'tel' } : {}),
+        ...(type === 'email' ? { autoComplete: 'email', inputMode: 'email' } : {}),
+      }}
       sx={draftInputSx}
     />
   )
@@ -266,22 +276,34 @@ export type DraftNeededRow<F extends string> = {
   /** Plain text for the row; null = still needed. */
   value: string | null
   field?: F
-  tone?: 'error'
+  /** Issue severity, matching Submission issues: error = blocker (pink), warning = amber. */
+  tone?: 'error' | 'warning'
   extra?: ReactNode
 }
 
-function NeededStatusBadge({ tone }: { tone: 'success' | 'error' | 'empty' }) {
+type NeededBadgeTone = 'success' | 'error' | 'warning' | 'empty'
+
+const BADGE_LABELS: Record<NeededBadgeTone, string> = {
+  success: 'Filled',
+  error: 'Blocker',
+  warning: 'Warning',
+  empty: 'Still needed',
+}
+
+function NeededStatusBadge({ tone }: { tone: NeededBadgeTone }) {
   return (
     <Box
-      aria-label={tone === 'empty' ? 'Still needed' : tone === 'error' ? 'Blocker' : 'Filled'}
+      aria-label={BADGE_LABELS[tone]}
       sx={(theme) => {
         const isLight = theme.palette.mode === 'light'
         const palette =
           tone === 'error'
             ? theme.figmaPalette.red
-            : tone === 'success'
-              ? theme.figmaPalette.green
-              : null
+            : tone === 'warning'
+              ? theme.figmaPalette.amber
+              : tone === 'success'
+                ? theme.figmaPalette.green
+                : null
         return {
           width: 32,
           height: 32,
@@ -297,6 +319,8 @@ function NeededStatusBadge({ tone }: { tone: 'success' | 'error' | 'empty' }) {
     >
       {tone === 'error' ? (
         <BlockIcon sx={{ fontSize: 18 }} />
+      ) : tone === 'warning' ? (
+        <WarningAmberOutlinedIcon sx={{ fontSize: 18 }} />
       ) : tone === 'success' ? (
         <CheckIcon sx={{ fontSize: 18 }} />
       ) : (
@@ -306,21 +330,28 @@ function NeededStatusBadge({ tone }: { tone: 'success' | 'error' | 'empty' }) {
   )
 }
 
+/** How an expanded row is marked; `none` leaves only the editor's own focus ring. */
+export type DraftOpenRowStyle = 'bar' | 'outline' | 'none'
+
 function NeededItem<F extends string>({
   row,
   expanded,
+  openRowStyle,
   onToggle,
+  sx,
   children,
 }: {
   row: DraftNeededRow<F>
   expanded: boolean
+  openRowStyle: DraftOpenRowStyle
   onToggle?: () => void
+  sx?: SxProps<Theme>
   children?: ReactNode
 }) {
   const missing = row.value == null
   const line = (
     <>
-      <NeededStatusBadge tone={row.tone === 'error' ? 'error' : missing ? 'empty' : 'success'} />
+      <NeededStatusBadge tone={row.tone ?? (missing ? 'empty' : 'success')} />
       <Box sx={{ minWidth: 0, flex: 1 }}>
         <Typography
           variant="body2"
@@ -351,13 +382,21 @@ function NeededItem<F extends string>({
   return (
     <Box
       component="li"
-      sx={{
-        listStyle: 'none',
-        borderBottom: 1,
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
-        boxShadow: (theme) => (expanded ? `inset 3px 0 0 ${theme.palette.primary.main}` : 'none'),
-      }}
+      sx={[
+        {
+          listStyle: 'none',
+          borderBottom: 1,
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+          boxShadow: (theme) =>
+            !expanded || openRowStyle === 'none'
+              ? 'none'
+              : openRowStyle === 'outline'
+                ? `inset 0 0 0 1px ${theme.palette.primary.main}`
+                : `inset 3px 0 0 ${theme.palette.primary.main}`,
+        },
+        ...(Array.isArray(sx) ? sx : [sx]),
+      ]}
     >
       {onToggle ? (
         <ButtonBase
@@ -390,17 +429,23 @@ function NeededItem<F extends string>({
 export function DraftNeededList<F extends string>({
   rows,
   editingField,
+  openRowStyle = 'bar',
   onToggle,
   renderEditor,
+  rowSx,
 }: {
   rows: DraftNeededRow<F>[]
   editingField: F | null
+  openRowStyle?: DraftOpenRowStyle
   onToggle: (field: F) => void
   renderEditor: (field: F) => ReactNode
+  /** Per-row extra styles (e.g. staggered entrance). */
+  rowSx?: (index: number) => SxProps<Theme> | undefined
 }) {
+  if (rows.length === 0) return null
   return (
     <Box component="ul" sx={{ m: 0, p: 0, mx: -draftPanelPx, mb: 2 }}>
-      {rows.map((row) => {
+      {rows.map((row, index) => {
         const field = row.field
         const expanded = field != null && editingField === field
         return (
@@ -408,7 +453,9 @@ export function DraftNeededList<F extends string>({
             key={row.term}
             row={row}
             expanded={expanded}
+            openRowStyle={openRowStyle}
             onToggle={field ? () => onToggle(field) : undefined}
+            sx={rowSx?.(index)}
           >
             {expanded && field ? renderEditor(field) : null}
           </NeededItem>
@@ -426,7 +473,7 @@ export function DraftHeader({
   onBack,
 }: {
   title: string
-  request?: string
+  request?: ReactNode
   backLabel: string
   onBack: () => void
 }) {
@@ -485,9 +532,15 @@ export function DraftDrawerShell({
   createDisabled,
   onCreate,
   onSaveDraft,
+  onNewTabClick,
+  variant = 'draft',
   children,
 }: {
   heading: string
+  /** `record`: the saved record — same heading, tabs and composer, but no Save / Create footer. */
+  variant?: 'draft' | 'record'
+  /** Fires on every New tab click, including when New is already selected. */
+  onNewTabClick?: () => void
   closeLabel: string
   tab: DraftTab
   onTabChange: (tab: DraftTab) => void
@@ -500,6 +553,7 @@ export function DraftDrawerShell({
   onSaveDraft: () => void
   children: ReactNode
 }) {
+  const isRecord = variant === 'record'
   return (
     <Box
       sx={{
@@ -524,7 +578,11 @@ export function DraftDrawerShell({
         }}
       >
         <Stack direction="row" alignItems="center" spacing={0.5}>
-          <Typography variant="subtitle1" component="h2" sx={{ ...copilotDrawerHeadingSx, flex: 1 }}>
+          <Typography
+            variant="subtitle1"
+            component="h2"
+            sx={{ ...copilotDrawerHeadingSx, flex: 1 }}
+          >
             {heading}
           </Typography>
           <IconButton size="small" onClick={onClose} aria-label={closeLabel}>
@@ -532,7 +590,7 @@ export function DraftDrawerShell({
           </IconButton>
         </Stack>
         <Tabs value={tab} onChange={(_, next: DraftTab) => onTabChange(next)} sx={copilotDrawerTabsSx}>
-          <Tab label="New" value="new" />
+          <Tab label="New" value="new" onClick={onNewTabClick} />
           <Tab label="History" value="history" />
         </Tabs>
       </Box>
@@ -552,9 +610,9 @@ export function DraftDrawerShell({
       </Box>
 
       <Box sx={{ display: tab === 'new' ? 'contents' : 'none' }}>
-        <Box sx={{ flexShrink: 0 }}>{composer}</Box>
+        <Box sx={{ flexShrink: 0, pb: isRecord ? 1.5 : 0 }}>{composer}</Box>
 
-        <Box sx={{ px: draftPanelPx, pb: 2, pt: 0.5, flexShrink: 0 }}>
+        <Box sx={{ px: draftPanelPx, pb: 2, pt: 0.5, flexShrink: 0, display: isRecord ? 'none' : undefined }}>
           <Stack direction="row" spacing={1.5}>
             <Button variant="outlined" color="primary" fullWidth onClick={onSaveDraft} sx={filterFooterButtonSx}>
               Save draft

@@ -306,6 +306,53 @@ export function bottomSheetMotionSx(options: {
   }
 }
 
+/** One-shot entrance motion for in-panel confirmations — ease-out, no bounce, never loops. */
+export const entranceMotion = {
+  enterMs: 220,
+  staggerMs: 40,
+  offsetPx: 6,
+  easing: 'cubic-bezier(0, 0, 0.2, 1)',
+  flashMs: 1200,
+} as const
+
+/** Fade + short slide down (e.g. a banner appearing under a subtitle). */
+export function fadeSlideDownSx(delayMs = 0): CSSObject {
+  const { enterMs, easing, offsetPx } = entranceMotion
+  return {
+    [motionSafe]: {
+      animation: `entranceFadeSlideDown ${enterMs}ms ${easing} ${delayMs}ms both`,
+      '@keyframes entranceFadeSlideDown': {
+        from: { opacity: 0, transform: `translateY(-${offsetPx}px)` },
+        to: { opacity: 1, transform: 'none' },
+      },
+    },
+  }
+}
+
+export function fadeInSx(delayMs = 0): CSSObject {
+  const { enterMs, easing } = entranceMotion
+  return {
+    [motionSafe]: {
+      animation: `entranceFadeIn ${enterMs}ms ${easing} ${delayMs}ms both`,
+      '@keyframes entranceFadeIn': { from: { opacity: 0 }, to: { opacity: 1 } },
+    },
+  }
+}
+
+/** Tint overlay that fades out; an inset shadow so opaque backgrounds (e.g. pinned grid cells) are untouched. */
+export function highlightFlashSx(color: string): CSSObject {
+  const { flashMs, easing } = entranceMotion
+  return {
+    [motionSafe]: {
+      animation: `entranceHighlightFlash ${flashMs}ms ${easing}`,
+      '@keyframes entranceHighlightFlash': {
+        from: { boxShadow: `inset 0 0 0 100vmax ${color}` },
+        to: { boxShadow: 'inset 0 0 0 100vmax transparent' },
+      },
+    },
+  }
+}
+
 /** Backdrop fade paired with bottom sheet presence. */
 export function bottomSheetBackdropMotionSx(options: {
   entered: boolean

@@ -55,7 +55,7 @@ const bodySx = {
   fontWeight: 400,
 } as const
 
-const FILE_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.eml,.msg'
+const FILE_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.eml,.msg,.vcf,.txt'
 
 const modeOptions = [
   {
@@ -276,6 +276,14 @@ export type CopilotComposerProps = {
   onSubmit?: (message: string, files?: CopilotAttachedFile[]) => void
   /** Staged (not yet sent) attachments — lets a parent act on files without a send. */
   onFilesChange?: (files: CopilotAttachedFile[]) => void
+  /**
+   * Receives dropped/picked files (with their contents) as soon as they arrive. When set, files are
+   * handed to the parent instead of being staged internally; pair with `stagedChips` to show them.
+   */
+  onFilesAdded?: (files: File[]) => void
+  /** Parent-owned staged attachments, rendered as removable chips and sendable without text. */
+  stagedChips?: { id: string; label: string }[]
+  onRemoveStagedChip?: (id: string) => void
   /** Focus the multiline field when the composer mounts (e.g. Notes New tab). */
   autoFocus?: boolean
 }
@@ -300,6 +308,9 @@ export function CopilotComposer({
   attachmentResetKey = null,
   onSubmit,
   onFilesChange,
+  onFilesAdded,
+  stagedChips,
+  onRemoveStagedChip,
   autoFocus = false,
 }: CopilotComposerProps) {
   const [mode, setMode] = useState<CopilotMode>('fast')
@@ -351,12 +362,14 @@ export function CopilotComposer({
 
   const ingestFileList = useCallback((fileList: FileList | File[]) => {
     if (!enableAttachments) return
-    const incoming = Array.from(fileList)
-      .filter(isAcceptedWizardFile)
-      .map(createUploadedFile)
-    if (incoming.length === 0) return
-    setFiles((current) => mergeUploadedFiles(current, incoming))
-  }, [enableAttachments])
+    const accepted = Array.from(fileList).filter(isAcceptedWizardFile)
+    if (accepted.length === 0) return
+    if (onFilesAdded) {
+      onFilesAdded(accepted)
+      return
+    }
+    setFiles((current) => mergeUploadedFiles(current, accepted.map(createUploadedFile)))
+  }, [enableAttachments, onFilesAdded])
 
   const handleDrop = (event: React.DragEvent) => {
     if (!enableAttachments) return
@@ -367,11 +380,19 @@ export function CopilotComposer({
     }
   }
 
-  const canSubmit = message.trim().length > 0 || files.length > 0
+  const chips = [
+    ...files.map((file) => ({
+      id: file.id,
+      label: `${kindLabel(file.kind)} · ${file.name}`,
+      onDelete: () => setFiles((current) => current.filter((item) => item.id !== file.id)),
+    })),
+    ...(stagedChips ?? []).map((chip) => ({ ...chip, onDelete: () => onRemoveStagedChip?.(chip.id) })),
+  ]
+  const canSubmit = message.trim().length > 0 || chips.length > 0
 
   const handleSubmit = () => {
     const trimmed = message.trim()
-    if (!trimmed && files.length === 0) return
+    if (!trimmed && chips.length === 0) return
     onSubmit?.(trimmed, files)
     if (clearOnSubmit) {
       setMessage('')
@@ -458,7 +479,7 @@ export function CopilotComposer({
                 fontSize: '0.875rem',
                 px: 1.75,
                 pt: 1.25,
-                pb: files.length > 0 ? 0.75 : 1,
+                pb: chips.length > 0 ? 0.75 : 1,
                 // Outer composer shell owns focus — suppress InputBase ring / underline.
                 '&.Mui-focused': {
                   outline: 'none',
@@ -471,14 +492,14 @@ export function CopilotComposer({
           }}
         />
 
-        {files.length > 0 && (
+        {chips.length > 0 && (
           <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ px: 1.75, pb: 1 }}>
-            {files.map((file) => (
+            {chips.map((chip) => (
               <Chip
-                key={file.id}
+                key={chip.id}
                 size="small"
-                label={`${kindLabel(file.kind)} · ${file.name}`}
-                onDelete={() => setFiles((current) => current.filter((item) => item.id !== file.id))}
+                label={chip.label}
+                onDelete={chip.onDelete}
                 deleteIcon={<CloseIcon sx={{ fontSize: '14px !important' }} />}
                 sx={{
                   maxWidth: '100%',
@@ -517,7 +538,7 @@ export function CopilotComposer({
                   color="text.secondary"
                   sx={{ fontFamily: figmaFontFamilyStack.body, mr: 0.5 }}
                 >
-                  {files.length > 0 ? `${files.length} attached` : 'Drop files here'}
+                  {chips.length > 0 ? `${chips.length} attached` : 'Drop files here'}
                 </Typography>
               </>
             )}

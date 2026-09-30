@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolCopilotCustom } from '@/app/hooks/useRightToolRegistration'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -59,7 +59,11 @@ export function NewQuoteWizardPage() {
   const isDesktop = useIsDesktopLayout()
   const { openTool, closeTool, activeTool } = useRightTool()
   const [activeStep, setActiveStep] = useState(0)
-  const [form, setForm] = useState<QuoteWizardFormData>(emptyQuoteWizardForm)
+  const location = useLocation()
+  const [form, setForm] = useState<QuoteWizardFormData>(() => {
+    const prefill = (location.state as { quotePrefill?: Partial<QuoteWizardFormData> } | null)?.quotePrefill
+    return prefill ? { ...emptyQuoteWizardForm, ...prefill } : emptyQuoteWizardForm
+  })
   const [focusField, setFocusField] = useState<string | null>(null)
   const [isParsingDocuments, setIsParsingDocuments] = useState(false)
   const parseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)

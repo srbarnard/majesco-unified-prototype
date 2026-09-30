@@ -13,7 +13,9 @@ import {
 } from '@mui/x-data-grid-premium'
 import { useMemo, useState } from 'react'
 import type { MutableRefObject } from 'react'
-import type { SxProps, Theme } from '@mui/material/styles'
+import { useNavigate } from 'react-router'
+import { alpha, type SxProps, type Theme } from '@mui/material/styles'
+import { highlightFlashSx } from '@/design-system/tokens/motion'
 import { useResponsivePinnedColumns } from '@/design-system/hooks/useResponsivePinnedColumns'
 import {
   CopilotIcon,
@@ -30,7 +32,7 @@ import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { dataGridShellSx } from '@/design-system/theme/themeSurfaces'
 import { CustomerBillingStatusChip } from '@/pages/customers/components/CustomerBillingStatusChip'
 import type { CustomerRecord } from '@/pages/customers/data/mockCustomers'
-import { insuredIdFromName } from '@/pages/shared/insuredId'
+import { customerDetailsPath } from '@/pages/customers/data/customerRoutes'
 import { useNewTaskSelection, useTasksStore } from '@/app/contexts/TasksContext'
 import { findRelated } from '@/pages/tasks/data/addTaskDraft'
 
@@ -39,7 +41,11 @@ type CustomersDataGridProps = {
   rows: CustomerRecord[]
   onCustomerCopilot?: (customer: CustomerRecord) => void
   activeCopilotCustomerId?: string | null
+  /** Row to highlight once (e.g. a customer just created). */
+  flashRowId?: string | null
 }
+
+const FLASH_ROW_CLASS = 'customers-row-flash'
 
 const bodySx = {
   fontFamily: figmaFontFamilyStack.body,
@@ -73,6 +79,7 @@ function RowActionsMenu({
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const { openNewTask } = useTasksStore()
+  const navigate = useNavigate()
 
   return (
     <>
@@ -100,7 +107,14 @@ function RowActionsMenu({
         </Tooltip>
       </Stack>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-        <MenuItem onClick={() => setAnchorEl(null)}>View customer</MenuItem>
+        <MenuItem
+          onClick={() => {
+            setAnchorEl(null)
+            navigate(customerDetailsPath(row.customerNumber))
+          }}
+        >
+          View customer
+        </MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>Edit customer</MenuItem>
         <MenuItem
           onClick={() => {
@@ -122,6 +136,7 @@ export function CustomersDataGrid({
   rows,
   onCustomerCopilot,
   activeCopilotCustomerId,
+  flashRowId,
 }: CustomersDataGridProps) {
   const selectedCustomer = rows.find((row) => row.id === activeCopilotCustomerId)
   useNewTaskSelection(selectedCustomer ? customerRelated(selectedCustomer) : null)
@@ -135,7 +150,7 @@ export function CustomersDataGrid({
         minWidth: 120,
         sortable: true,
         renderCell: ({ row }) => (
-          <ListDataGridLink to={`/insureds/${encodeURIComponent(insuredIdFromName(row.name))}`}>
+          <ListDataGridLink to={customerDetailsPath(row.customerNumber)}>
             {row.customerNumber}
           </ListDataGridLink>
         ),
@@ -149,7 +164,7 @@ export function CustomersDataGrid({
         renderCell: ({ row }) => (
           <Box sx={{ py: 0.25, minWidth: 0 }}>
             <ListDataGridLink
-              to={`/insureds/${encodeURIComponent(insuredIdFromName(row.name))}`}
+              to={customerDetailsPath(row.customerNumber)}
               fontWeight={500}
             >
               {row.name}
@@ -334,6 +349,7 @@ export function CustomersDataGrid({
         disableColumnReorder
         columnHeaderHeight={40}
         getRowHeight={() => 'auto'}
+        getRowClassName={({ id }) => (flashRowId && id === flashRowId ? FLASH_ROW_CLASS : '')}
         slotProps={getListDataGridSlotProps()}
         {...listDataGridFilterProps}
         sx={[
@@ -346,6 +362,9 @@ export function CustomersDataGrid({
             },
           }, { headerFilters: true, footer: true }),
           dataGridInteractionSx,
+          (theme: Theme) => ({
+            [`& .${FLASH_ROW_CLASS} .MuiDataGrid-cell`]: highlightFlashSx(alpha(theme.palette.primary.main, 0.14)),
+          }),
         ] as SxProps<Theme>}
       />
     </Box>
