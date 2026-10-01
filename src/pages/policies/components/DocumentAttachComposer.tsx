@@ -39,8 +39,15 @@ export type DocumentAttachMode = {
   }
   /** When true, fields are locked and footer shows Close only (sent email review). */
   readOnly?: boolean
-  onSave?: () => void
+  onSave?: (sent?: DocumentAttachSentFields) => void
   onCancel?: () => void
+}
+
+/** What the user actually sent — fields may differ from the draft they were given. */
+export type DocumentAttachSentFields = {
+  to: string
+  subject: string
+  body: string
 }
 
 export const targetLabels: Record<DocumentAttachTarget, string> = {
@@ -205,7 +212,7 @@ type DocumentAttachPanelContentProps = {
   saveLabel?: string
   readOnly?: boolean
   onCancel?: () => void
-  onSave?: (attachMode: DocumentAttachMode) => void
+  onSave?: (attachMode: DocumentAttachMode, sent: DocumentAttachSentFields) => void
 }
 
 export function DocumentAttachPanelContent({
@@ -356,7 +363,7 @@ export function DocumentAttachPanelContent({
               variant="contained"
               color="primary"
               fullWidth
-              onClick={() => onSave?.(attachMode)}
+              onClick={() => onSave?.(attachMode, { to, subject, body })}
               sx={{ ...filterFooterButtonSx, fontWeight: 600 }}
             >
               {saveLabel}

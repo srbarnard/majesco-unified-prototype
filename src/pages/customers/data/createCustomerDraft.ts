@@ -3,7 +3,6 @@ import type { QuoteWizardFormData } from '@/pages/quotes/data/quoteWizardTypes'
 import {
   ADD_TASK_RELATED,
   inferRelated,
-  relatedLabel,
   type AddTaskPageContext,
   type AddTaskRelated,
 } from '@/pages/tasks/data/addTaskDraft'
@@ -39,14 +38,36 @@ export const CUSTOMER_RELATED_RECORDS: AddTaskRelated[] = (() => {
     ...ADD_TASK_RELATED.filter((record) => record.kind === 'Customer'),
   ]
 })()
-export const CUSTOMER_RELATED_BY_LABEL = new Map(CUSTOMER_RELATED_RECORDS.map((record) => [relatedLabel(record), record]))
-export const CUSTOMER_RELATED_OPTIONS = [...CUSTOMER_RELATED_BY_LABEL.keys()]
+/** Related options are bare names — no "Producer ·" / "Customer ·" prefix; the subtitle carries the code. */
+export const CUSTOMER_RELATED_BY_NAME = new Map<string, AddTaskRelated>()
+for (const record of CUSTOMER_RELATED_RECORDS) {
+  if (!CUSTOMER_RELATED_BY_NAME.has(record.name)) CUSTOMER_RELATED_BY_NAME.set(record.name, record)
+}
+export const CUSTOMER_RELATED_OPTIONS = [...CUSTOMER_RELATED_BY_NAME.keys()]
 export const PARENT_CUSTOMER_OPTIONS = CUSTOMER_RELATED_OPTIONS.filter(
-  (label) => CUSTOMER_RELATED_BY_LABEL.get(label)?.kind === 'Customer',
+  (name) => CUSTOMER_RELATED_BY_NAME.get(name)?.kind === 'Customer',
 )
 export const PRODUCER_OPTIONS = CUSTOMER_RELATED_OPTIONS.filter(
-  (label) => CUSTOMER_RELATED_BY_LABEL.get(label)?.kind === 'Producer',
+  (name) => CUSTOMER_RELATED_BY_NAME.get(name)?.kind === 'Producer',
 )
+
+/** Mock producer code, stable per name (the demo data carries no real codes). */
+function producerCode(name: string) {
+  let hash = 0
+  for (const char of name) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
+  return `PRD-${10000 + (hash % 90000)}`
+}
+
+/** Second line under a Related option: producer code or customer number. */
+export function customerRelatedSubtitle(name: string) {
+  const record = CUSTOMER_RELATED_BY_NAME.get(name)
+  if (!record) return undefined
+  return record.kind === 'Producer' ? producerCode(record.name) : record.ref
+}
+
+export function customerRelatedValue(related: AddTaskRelated) {
+  return related.name
+}
 
 export type CustomerAddress = {
   street: string
@@ -116,14 +137,19 @@ export const NAICS_CATALOG: (CustomerNaics & { keywords: RegExp })[] = [
   { code: '532120', title: 'Truck and trailer leasing', keywords: /\bfleet\b/ },
 ]
 
-export const NAICS_OPTIONS = NAICS_CATALOG.map(naicsLabel)
+/** Typeahead options are industry titles; the code sits on the subtitle line. */
+export const NAICS_OPTIONS = NAICS_CATALOG.map((naics) => naics.title)
+
+export function naicsSubtitle(title: string) {
+  return NAICS_CATALOG.find((naics) => naics.title === title)?.code
+}
 
 export function naicsLabel(naics: CustomerNaics) {
   return `${naics.code} · ${naics.title}`
 }
 
 export function naicsFromLabel(label: string): CustomerNaics | null {
-  const entry = NAICS_CATALOG.find((naics) => naicsLabel(naics) === label)
+  const entry = NAICS_CATALOG.find((naics) => naics.title === label || naicsLabel(naics) === label)
   return entry ? { code: entry.code, title: entry.title } : null
 }
 

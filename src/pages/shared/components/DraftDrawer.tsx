@@ -71,6 +71,28 @@ export function useDebouncedValue<T>(value: T, delayMs = DRAFT_LIVE_PARSE_DEBOUN
   return [debounced, setDebounced] as const
 }
 
+/**
+ * Work-list order: filled fields first, in the order they were filled (later edits don't reshuffle them),
+ * then empty fields in their given order.
+ */
+export function useFilledFirstOrder<F extends string>(fields: F[], isFilled: (field: F) => boolean): F[] {
+  const filled = fields.filter(isFilled)
+  const filledKey = filled.join(',')
+  const [filledOrder, setFilledOrder] = useState<F[]>([])
+  useEffect(() => {
+    const next = (filledKey ? filledKey.split(',') : []) as F[]
+    setFilledOrder((current) => {
+      const ordered = [...current.filter((field) => next.includes(field)), ...next.filter((field) => !current.includes(field))]
+      return ordered.join(',') === current.join(',') ? current : ordered
+    })
+  }, [filledKey])
+  return [
+    ...filledOrder.filter((field) => filled.includes(field)),
+    ...filled.filter((field) => !filledOrder.includes(field)),
+    ...fields.filter((field) => !filled.includes(field)),
+  ]
+}
+
 const prefersFinePointer = () =>
   typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches === true
 
@@ -108,6 +130,8 @@ export function DraftInlineLookup({
   placeholder,
   hint,
   searchText,
+  optionSubtitle,
+  optionLabel,
   onPick,
   onDismiss,
 }: {
@@ -116,13 +140,20 @@ export function DraftInlineLookup({
   hint?: string
   /** Extra text an option matches on beyond its label (e.g. producer names). */
   searchText?: (option: string) => string
+  /** Quiet second line under an option (e.g. a record number); also searchable. */
+  optionSubtitle?: (option: string) => string | undefined
+  /** Display text for an option when its key isn't what the user should read (e.g. a unique catalog label). */
+  optionLabel?: (option: string) => string
   onPick: (option: string) => void
   onDismiss: () => void
 }) {
-  const filterOptions = useMemo(
-    () => (searchText ? createFilterOptions<string>({ stringify: searchText }) : undefined),
-    [searchText],
-  )
+  const filterOptions = useMemo(() => {
+    if (searchText) return createFilterOptions<string>({ stringify: searchText })
+    if (optionSubtitle) {
+      return createFilterOptions<string>({ stringify: (option) => `${option} ${optionSubtitle(option) ?? ''}` })
+    }
+    return undefined
+  }, [optionSubtitle, searchText])
   return (
     <Box>
       <Autocomplete
@@ -137,6 +168,29 @@ export function DraftInlineLookup({
         onClose={(_, reason) => {
           if (reason === 'escape') onDismiss()
         }}
+        renderOption={
+          optionSubtitle || optionLabel
+            ? ({ key, ...props }, option) => {
+                const subtitle = optionSubtitle?.(option)
+                return (
+                  <Box component="li" key={key} {...props}>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Box>{optionLabel ? optionLabel(option) : option}</Box>
+                      {subtitle ? (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', lineHeight: 1.35 }}
+                        >
+                          {subtitle}
+                        </Typography>
+                      ) : null}
+                    </Box>
+                  </Box>
+                )
+              }
+            : undefined
+        }
         renderInput={(params) => (
           <TextField
             {...params}
@@ -165,6 +219,7 @@ export function DraftInlineTextEdit({
   initialValue,
   multiline = false,
   label,
+  placeholder,
   type = 'text',
   onCommit,
   onDismiss,
@@ -172,6 +227,7 @@ export function DraftInlineTextEdit({
   initialValue: string
   multiline?: boolean
   label: string
+  placeholder?: string
   /** Native input type; `tel` / `email` also set autocomplete and the mobile keyboard. */
   type?: 'text' | 'tel' | 'email'
   onCommit: (value: string) => void
@@ -190,6 +246,7 @@ export function DraftInlineTextEdit({
       multiline={multiline}
       minRows={multiline ? 3 : undefined}
       value={value}
+      placeholder={placeholder}
       autoFocus={prefersFinePointer()}
       onChange={(event) => setValue(event.target.value)}
       onBlur={commit}
@@ -275,9 +332,13 @@ export type DraftNeededRow<F extends string> = {
   term: string
   /** Plain text for the row; null = still needed. */
   value: string | null
+  /** Helper text shown while the value is empty, in place of "still needed"; the badge carries the state. */
+  hint?: string
   field?: F
   /** Issue severity, matching Submission issues: error = blocker (pink), warning = amber. */
   tone?: 'error' | 'warning'
+  /** Quiet status line under the value (e.g. "Emailed to …"). */
+  meta?: ReactNode
   extra?: ReactNode
 }
 
@@ -364,8 +425,9 @@ function NeededItem<F extends string>({
           color="text.secondary"
           sx={{ ...draftBodySx, fontSize: '0.8125rem', lineHeight: 1.4, mt: 0.25, overflowWrap: 'anywhere' }}
         >
-          {missing ? 'still needed' : row.value}
+          {missing ? (row.hint ?? 'still needed') : row.value}
         </Typography>
+        {row.meta ? <Box sx={{ mt: 0.5 }}>{row.meta}</Box> : null}
       </Box>
     </>
   )
@@ -490,7 +552,7 @@ export function DraftHeader({
       <IconButton size="small" onClick={onBack} aria-label={backLabel} sx={{ ml: -0.75 }}>
         <ArrowBackIcon fontSize="small" />
       </IconButton>
-      <Typography variant="subtitle1" sx={{ ...copilotSubtitleSx, lineHeight: 1.35 }}>
+      <Typography variant="subtitle1" noWrap title={title} sx={{ ...copilotSubtitleSx, lineHeight: 1.35 }}>
         {title}
       </Typography>
       {request ? (

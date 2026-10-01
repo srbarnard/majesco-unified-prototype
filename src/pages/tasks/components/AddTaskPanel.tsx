@@ -1,8 +1,10 @@
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined'
+import MailOutlineIcon from '@mui/icons-material/MailOutline'
 import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
 import { useMemo, useState } from 'react'
 import { CopilotQuickActions } from '@/design-system/components'
 import { CopilotComposer, type CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
@@ -15,11 +17,13 @@ import {
   DraftInlineTextEdit,
   DraftNeededList,
   DraftWelcome,
+  draftBodySx,
   draftChipSx,
   draftInputSx,
   draftUid,
   formatDraftCreatedTime,
   useDebouncedValue,
+  useFilledFirstOrder,
   type DraftNeededRow,
   type DraftTab,
   type DraftThreadMessage,
@@ -36,7 +40,6 @@ import {
   formatDueLabel,
   inferFromText,
   mergeDraft,
-  relatedLabel,
   type AddTaskDraft,
   type AddTaskDue,
   type AddTaskPageContext,
@@ -47,9 +50,41 @@ import type { TaskPriority, TaskRecord } from '@/pages/tasks/data/mockTasks'
 const PRIORITY_OPTIONS: TaskPriority[] = ['Low', 'Medium', 'High']
 
 const ADD_BLOCKER_ACTION = 'Add blocker'
-const CANCEL_TASK_ACTION = 'Cancel task'
+const EMAIL_BLOCKER_ACTION = 'Email blocker'
+const REVIEW_ALL_ACTION = 'Review all'
+const MAX_SUGGESTED_ACTIONS = 3
+const BLOCKER_HINT = 'What’s in the way'
 
-type EditField = 'title' | 'assignee' | 'related' | 'priority' | 'due' | 'description'
+type EditField = 'title' | 'assignee' | 'related' | 'priority' | 'due' | 'description' | 'blocker'
+type WorkField = Exclude<EditField, 'description' | 'blocker'>
+
+const WORK_FIELDS: WorkField[] = ['title', 'assignee', 'priority', 'due', 'related']
+
+const WORK_TERMS: Record<WorkField, string> = {
+  title: 'Title',
+  assignee: 'Assignee',
+  priority: 'Priority',
+  due: 'Due',
+  related: 'Related',
+}
+
+const WORK_HINTS: Record<WorkField, string> = {
+  title: 'Short label',
+  assignee: 'Person or queue',
+  priority: 'Low, medium, or high',
+  due: 'Date',
+  related: 'Quote, policy, submission, or customer',
+}
+
+function relatedOptionName(label: string) {
+  return RELATED_BY_LABEL.get(label)?.name ?? label
+}
+
+function relatedOptionSubtitle(label: string) {
+  const record = RELATED_BY_LABEL.get(label)
+  if (!record) return undefined
+  return record.ref === record.name ? record.kind : `${record.kind} · ${record.ref}`
+}
 
 export type AddTaskSavedState = {
   draft: AddTaskDraft
@@ -59,6 +94,12 @@ export type AddTaskSavedState = {
 export type AddTaskHistoryEntry = {
   task: TaskRecord
   createdAt: Date
+}
+
+export type AddTaskBlockerEmail = {
+  subject: string
+  body: string
+  related: AddTaskRelated | null
 }
 
 type AddTaskPanelProps = {
@@ -72,6 +113,8 @@ type AddTaskPanelProps = {
   pageContext?: AddTaskPageContext
   /** Record from a row menu or the selected grid row; starts a fresh draft with only Related set. */
   initialRelated?: AddTaskRelated | null
+  /** Hands the blocker to the mail rail; the draft is saved so the drawer can resume afterwards. */
+  onEmailBlocker?: (email: AddTaskBlockerEmail, state: AddTaskSavedState) => void
 }
 
 function FileChip({ name }: { name: string }) {
@@ -83,6 +126,18 @@ function FileChip({ name }: { name: string }) {
       label={name}
       sx={{ ...draftChipSx, height: 24, borderColor: 'divider', bgcolor: 'background.paper' }}
     />
+  )
+}
+
+function BlockerEmailedTag({ to, sentAt }: { to: string; sentAt: Date }) {
+  const label = `Emailed${to ? ` to ${to}` : ''} · ${formatDraftCreatedTime(sentAt)}`
+  return (
+    <Stack direction="row" alignItems="center" spacing={0.5} sx={{ color: 'text.secondary', minWidth: 0 }}>
+      <MailOutlineIcon sx={{ fontSize: 14, flexShrink: 0 }} />
+      <Typography variant="caption" noWrap title={label} sx={{ ...draftBodySx, lineHeight: 1.35 }}>
+        {label}
+      </Typography>
+    </Stack>
   )
 }
 
@@ -155,6 +210,7 @@ export function AddTaskPanel({
   onOpenTask,
   pageContext,
   initialRelated,
+  onEmailBlocker,
 }: AddTaskPanelProps) {
   const [tab, setTab] = useState<DraftTab>(initialTab)
   const [draft, setDraft] = useState<AddTaskDraft>(() =>
@@ -170,7 +226,7 @@ export function AddTaskPanel({
   const [stagedFiles, setStagedFiles] = useState<CopilotAttachedFile[]>([])
   const [editing, setEditing] = useState<{ field: EditField; atCreate: boolean } | null>(null)
   const [promptedAtCreate, setPromptedAtCreate] = useState(false)
-  const [blockerMode, setBlockerMode] = useState(false)
+  const blockerMode = editing?.field === 'blocker'
   const dueOptions = useMemo(() => buildDueOptions(), [])
   const [parsedComposerValue, setParsedComposerValue] = useDebouncedValue(composerValue)
 
@@ -203,7 +259,6 @@ export function AddTaskPanel({
 
   const applySeed = (label: string, prefill: string) => {
     setEditing(null)
-    setBlockerMode(false)
     setMessages((current) => [...current, { id: draftUid('user'), text: label }])
     setDraft((current) => ({ ...mergeDraft(current, infer(prefill)), notes: prefill }))
   }
@@ -215,7 +270,6 @@ export function AddTaskPanel({
     setParsedComposerValue('')
     setStagedFiles([])
     setComposerKey((key) => key + 1)
-    setBlockerMode(false)
     setPromptedAtCreate(false)
     setEditing(null)
   }
@@ -237,15 +291,16 @@ export function AddTaskPanel({
         ...files.filter((file) => !current.attachments.some((existing) => existing.id === file.id)),
       ]
       if (!text) return { ...current, attachments }
-      if (blockerMode) return { ...current, blocker: text, attachments }
+      if (blockerMode) {
+        const blockerEmail = text === current.blocker ? current.blockerEmail : null
+        return { ...current, blocker: text, blockerEmail, attachments }
+      }
       const notes = current.notes ? `${current.notes}\n${text}` : text
       return { ...mergeDraft(current, infer(text)), notes, attachments }
     })
-    setBlockerMode(false)
   }
 
   const toggleEditing = (field: EditField, atCreate = false) => {
-    setBlockerMode(false)
     setEditing((current) => (current?.field === field && !atCreate ? null : { field, atCreate }))
   }
 
@@ -265,38 +320,83 @@ export function AddTaskPanel({
           return { ...current, priority: PRIORITY_OPTIONS.find((p) => p === value) ?? current.priority }
         case 'due':
           return { ...current, due: dueOptions.find((d) => d.label === value) ?? current.due }
+        case 'blocker':
+          return { ...current, blocker: value, blockerEmail: value === current.blocker ? current.blockerEmail : null }
       }
     })
   }
 
-  const handleAction = (action: string) => {
-    if (action === CANCEL_TASK_ACTION) {
-      resetDraft()
-      return
-    }
-    if (action !== ADD_BLOCKER_ACTION) return
-    setEditing(null)
-    setBlockerMode(true)
-  }
-
-  const suggestedActions = [
-    ...(!blockerMode && !previewDraft.blocker ? [ADD_BLOCKER_ACTION] : []),
-    CANCEL_TASK_ACTION,
-  ]
-
   const description = [previewDraft.notes, liveComposerText].filter(Boolean).join('\n')
 
-  const rows: DraftNeededRow<EditField>[] = [
-    { term: 'Title', value: previewDraft.title || null, field: 'title' },
-    { term: 'Assignee', value: previewDraft.assignee, field: 'assignee' },
-    { term: 'Related', value: previewDraft.related ? relatedLabel(previewDraft.related) : null, field: 'related' },
-    { term: 'Priority', value: previewDraft.priority, field: 'priority' },
-    { term: 'Due', value: previewDraft.due?.label ?? null, field: 'due' },
-  ]
-  if (previewDraft.blocker) {
-    rows.push({ term: 'Blocker', value: previewDraft.blocker, tone: 'error' })
-  } else if (blockerMode) {
-    rows.push({ term: 'Blocker', value: null })
+  const workValue = (field: WorkField): string | null => {
+    switch (field) {
+      case 'title':
+        return previewDraft.title || null
+      case 'assignee':
+        return previewDraft.assignee
+      case 'priority':
+        return previewDraft.priority
+      case 'due':
+        return previewDraft.due?.label ?? null
+      case 'related':
+        return previewDraft.related?.name ?? null
+    }
+  }
+  const orderedWorkFields = useFilledFirstOrder(WORK_FIELDS, (field) => workValue(field) != null)
+  const rows: DraftNeededRow<EditField>[] = orderedWorkFields.map((field) => {
+    const value = workValue(field)
+    return {
+      term: WORK_TERMS[field],
+      value,
+      field,
+      hint: WORK_HINTS[field],
+      ...(value == null ? { tone: field === 'title' ? ('error' as const) : ('warning' as const) } : {}),
+    }
+  })
+  const blockerText = previewDraft.blocker ?? (blockerMode ? parsedComposerValue.trim() || null : null)
+  if (blockerText || blockerMode) {
+    const firstLine = blockerText?.split('\n').find((line) => line.trim())?.trim() ?? null
+    const emailed = previewDraft.blocker ? previewDraft.blockerEmail : null
+    rows.push({
+      term: 'Blocker',
+      value: firstLine,
+      field: 'blocker',
+      hint: BLOCKER_HINT,
+      tone: 'error',
+      meta: emailed ? <BlockerEmailedTag to={emailed.to} sentAt={emailed.sentAt} /> : undefined,
+    })
+  }
+
+  const holes = orderedWorkFields.filter((field) => workValue(field) == null)
+  const hasDraft = hasThread || Boolean(previewDraft.title)
+  const suggestedActions = (
+    previewDraft.blocker
+      ? [...(onEmailBlocker ? [EMAIL_BLOCKER_ACTION] : []), ...(holes.length > 0 ? [REVIEW_ALL_ACTION] : [])]
+      : hasDraft && !blockerMode
+        ? [ADD_BLOCKER_ACTION]
+        : []
+  ).slice(0, MAX_SUGGESTED_ACTIONS)
+
+  const handleAction = (action: string) => {
+    switch (action) {
+      case ADD_BLOCKER_ACTION:
+        setEditing({ field: 'blocker', atCreate: false })
+        return
+      case EMAIL_BLOCKER_ACTION:
+        if (!previewDraft.blocker) return
+        onEmailBlocker?.(
+          {
+            subject: previewDraft.title || 'Untitled task',
+            body: previewDraft.blocker,
+            related: previewDraft.related,
+          },
+          { draft: buildFinalDraft(), messages },
+        )
+        return
+      case REVIEW_ALL_ACTION:
+        if (holes[0]) setEditing({ field: holes[0], atCreate: false })
+        return
+    }
   }
   if (previewDraft.attachments.length > 0) {
     rows.push({
@@ -334,6 +434,17 @@ export function AddTaskPanel({
             onDismiss={() => setEditing(null)}
           />
         )
+      case 'blocker':
+        return (
+          <DraftInlineTextEdit
+            multiline
+            initialValue={previewDraft.blocker ?? ''}
+            label="Blocker"
+            placeholder={BLOCKER_HINT}
+            onCommit={(value) => applyEdit('blocker', value)}
+            onDismiss={() => setEditing(null)}
+          />
+        )
       case 'assignee':
         return (
           <DraftInlineLookup
@@ -353,6 +464,8 @@ export function AddTaskPanel({
             placeholder="Search policies, quotes, submissions, customers"
             hint={atCreateHint}
             searchText={relatedSearchText}
+            optionLabel={relatedOptionName}
+            optionSubtitle={relatedOptionSubtitle}
             onPick={(value) => applyEdit('related', value)}
             onDismiss={() => setEditing(null)}
           />
@@ -465,7 +578,9 @@ export function AddTaskPanel({
             onToggle={(field) => toggleEditing(field)}
             renderEditor={renderEditor}
           />
-          <CopilotQuickActions label="Suggested actions" actions={suggestedActions} onAction={handleAction} />
+          {suggestedActions.length > 0 ? (
+            <CopilotQuickActions label="Suggested actions" actions={suggestedActions} onAction={handleAction} />
+          ) : null}
         </>
       )}
     </DraftDrawerShell>

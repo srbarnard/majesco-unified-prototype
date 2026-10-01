@@ -28,6 +28,10 @@ type TasksContextValue = {
   createdTaskHistory: AddTaskHistoryEntry[]
   savedAddTask: AddTaskSavedState | null
   setSavedAddTask: (state: AddTaskSavedState | null) => void
+  /** Reopen New task on the saved draft (e.g. after Email blocker), ignoring any grid prefill. */
+  resumeAddTask: () => void
+  resumeAddTaskPending: boolean
+  clearResumeAddTask: () => void
   createTask: (task: TaskRecord) => void
   /** Task the Tasks page should open in its detail drawer on next render. */
   pendingOpenTaskId: string | null
@@ -78,6 +82,13 @@ export function TasksProvider({ children }: { children: ReactNode }) {
   )
   const clearNewTaskRequest = useCallback(() => setNewTaskRequest(null), [])
 
+  const [resumeAddTaskPending, setResumeAddTaskPending] = useState(false)
+  const resumeAddTask = useCallback(() => {
+    setResumeAddTaskPending(true)
+    openTool('newTask')
+  }, [openTool])
+  const clearResumeAddTask = useCallback(() => setResumeAddTaskPending(false), [])
+
   const setSelectedRecord = useCallback((record: AddTaskRelated | null) => {
     setSelectedRecordState((current) => (relatedKey(current) === relatedKey(record) ? current : record))
   }, [])
@@ -89,6 +100,9 @@ export function TasksProvider({ children }: { children: ReactNode }) {
       createdTaskHistory,
       savedAddTask,
       setSavedAddTask,
+      resumeAddTask,
+      resumeAddTaskPending,
+      clearResumeAddTask,
       createTask,
       pendingOpenTaskId,
       requestOpenTask,
@@ -104,6 +118,9 @@ export function TasksProvider({ children }: { children: ReactNode }) {
       setTaskRows,
       createdTaskHistory,
       savedAddTask,
+      resumeAddTask,
+      resumeAddTaskPending,
+      clearResumeAddTask,
       createTask,
       pendingOpenTaskId,
       requestOpenTask,

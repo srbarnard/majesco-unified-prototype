@@ -28,6 +28,7 @@ import {
   draftUid,
   formatDraftCreatedTime,
   useDebouncedValue,
+  useFilledFirstOrder,
   type DraftNeededRow,
   type DraftTab,
   type DraftThreadMessage,
@@ -38,7 +39,7 @@ import {
 } from '@/pages/customers/data/customerDocumentExtraction'
 import {
   CREATE_CUSTOMER_TYPE_SEEDS,
-  CUSTOMER_RELATED_BY_LABEL,
+  CUSTOMER_RELATED_BY_NAME,
   CUSTOMER_RELATED_OPTIONS,
   CUSTOMER_ROLES,
   CUSTOMER_TYPES,
@@ -49,6 +50,8 @@ import {
   buildCustomerFromDraft,
   buildQuotePrefillFromDraft,
   customerFieldsFor,
+  customerRelatedSubtitle,
+  customerRelatedValue,
   emptyCreateCustomerDraft,
   findDuplicateCustomer,
   formatAddress,
@@ -57,6 +60,7 @@ import {
   mergeCustomerDraft,
   naicsFromLabel,
   naicsLabel,
+  naicsSubtitle,
   normalizeCustomerDraft,
   parseCustomerField,
   type CreateCustomerDraft,
@@ -65,7 +69,6 @@ import type { CustomerRecord } from '@/pages/customers/data/mockCustomers'
 import type { QuoteWizardFormData } from '@/pages/quotes/data/quoteWizardTypes'
 import {
   findRelated,
-  relatedLabel,
   type AddTaskPageContext,
   type AddTaskRelated,
 } from '@/pages/tasks/data/addTaskDraft'
@@ -103,6 +106,19 @@ const FIELD_LABELS: Record<CapturedField, string> = {
   taxId: 'Tax ID',
   naics: 'NAICS',
   related: 'Related',
+}
+
+/** Shown under an empty row instead of "still needed" — the badge already carries required vs optional. */
+const FIELD_HINTS: Record<CapturedField | 'type' | 'role', string> = {
+  type: 'Business or individual',
+  role: 'Insured, payor, or subsidiary',
+  legalName: 'Legal or DBA name',
+  phone: 'Primary number',
+  email: 'Contact email',
+  address: 'Mailing address',
+  taxId: 'EIN or SSN last 4',
+  naics: 'Industry code',
+  related: 'Producer or parent',
 }
 
 const REQUEST_FROM_PRODUCER = 'Request from producer'
@@ -207,7 +223,7 @@ function capturedValue(draft: CreateCustomerDraft, field: CapturedField): string
     case 'naics':
       return draft.naics ? naicsLabel(draft.naics) : null
     case 'related':
-      return draft.related ? relatedLabel(draft.related) : null
+      return draft.related ? customerRelatedValue(draft.related) : null
   }
 }
 
@@ -279,20 +295,10 @@ export function CreateCustomerPanel({
   const canCreate = Boolean(commitDraft.type && commitDraft.legalName && commitDraft.address)
   const capturedFields = customerFieldsFor(previewDraft.type)
   const missingFields = capturedFields.filter((field) => capturedValue(previewDraft, field) == null)
-  const missingWorkFields: WorkField[] = [...(previewDraft.type ? [] : ['type' as const]), ...missingFields]
-  const missingWorkKey = missingWorkFields.join(',')
-
-  // Rows resolved since the last send stay in Work (checked) until the next submission clears them.
-  const [pinnedWorkFields, setPinnedWorkFields] = useState<WorkField[]>([])
-  useEffect(() => {
-    if (!started || !missingWorkKey) return
-    const missing = missingWorkKey.split(',') as WorkField[]
-    setPinnedWorkFields((current) => {
-      const added = missing.filter((field) => !current.includes(field))
-      return added.length > 0 ? [...current, ...added] : current
-    })
-  }, [started, missingWorkKey])
-  const clearResolvedRows = () => setPinnedWorkFields([])
+  const workFields: WorkField[] = ['type', ...capturedFields]
+  const workValue = (field: WorkField) =>
+    field === 'type' ? previewDraft.type : capturedValue(previewDraft, field)
+  const orderedWorkFields = useFilledFirstOrder(workFields, (field) => workValue(field) != null)
 
   // Details added on the record view flow back to the created customer (and the grid).
   useEffect(() => {
@@ -344,7 +350,6 @@ export function CreateCustomerPanel({
     setEditing(null)
     setPickingParent(false)
     setView('work')
-    clearResolvedRows()
   }
 
   const handleSend = (raw: string) => {
@@ -355,7 +360,6 @@ export function CreateCustomerPanel({
     setParsedComposerValue('')
     setEditing(null)
     setPickingParent(false)
-    clearResolvedRows()
     if (files.length === 0) {
       addMessage(text)
       return
@@ -381,7 +385,6 @@ export function CreateCustomerPanel({
       // Typed text in the same send is merged last so it wins over the documents.
       const inferred = [...results.map((result) => result.inferred), inferCustomerFromText(text, pageContext)]
       setDraft((current) => inferred.reduce<CreateCustomerDraft>(mergeCustomerDraft, current))
-      clearResolvedRows()
     })
   }
 
@@ -414,7 +417,7 @@ export function CreateCustomerPanel({
   const applyEdit = (field: EditField, value: string) => {
     setEditing(null)
     if (field === 'producer') {
-      const producer = CUSTOMER_RELATED_BY_LABEL.get(value)
+      const producer = CUSTOMER_RELATED_BY_NAME.get(value)
       if (!producer) return
       setDraft((current) => (current.related ? current : { ...current, related: producer }))
       requestFromProducer(producer.name)
@@ -454,7 +457,7 @@ export function CreateCustomerPanel({
         case 'naics':
           return { ...current, naics: naicsFromLabel(value) ?? current.naics }
         case 'related': {
-          const related = CUSTOMER_RELATED_BY_LABEL.get(value)
+          const related = CUSTOMER_RELATED_BY_NAME.get(value)
           if (!related) return current
           return { ...current, related, role: related.kind === 'Customer' ? 'Subsidiary' : current.role }
         }
@@ -463,8 +466,8 @@ export function CreateCustomerPanel({
     })
   }
 
-  const pickParent = (label: string) => {
-    const parent = CUSTOMER_RELATED_BY_LABEL.get(label)
+  const pickParent = (name: string) => {
+    const parent = CUSTOMER_RELATED_BY_NAME.get(name)
     setPickingParent(false)
     if (parent) setDraft((current) => ({ ...current, related: parent, role: 'Subsidiary' }))
   }
@@ -472,6 +475,7 @@ export function CreateCustomerPanel({
   const capturedRow = (field: CapturedField): DraftNeededRow<EditField> => ({
     term: FIELD_LABELS[field],
     value: capturedValue(previewDraft, field),
+    hint: FIELD_HINTS[field],
     field,
   })
 
@@ -495,22 +499,22 @@ export function CreateCustomerPanel({
     field: `location:${index}` as const,
   }))
 
+  const workRow = (field: WorkField): DraftNeededRow<EditField> =>
+    field === 'type'
+      ? { term: 'Type', value: previewDraft.type, hint: FIELD_HINTS.type, field: 'type' }
+      : capturedRow(field)
+
   const workRows: DraftNeededRow<EditField>[] = [
-    ...(!previewDraft.type || pinnedWorkFields.includes('type')
-      ? [{ term: 'Type', value: previewDraft.type, field: 'type' as const }]
-      : []),
-    ...capturedFields
-      .filter((field) => missingFields.includes(field) || pinnedWorkFields.includes(field))
-      .map(capturedRow),
+    ...orderedWorkFields.map(workRow),
     ...pendingRows,
     ...duplicateRow,
   ].map(withIssueTone)
 
   const reviewRows: DraftNeededRow<EditField>[] = [
-    { term: 'Type', value: previewDraft.type, field: 'type' },
+    { term: 'Type', value: previewDraft.type, hint: FIELD_HINTS.type, field: 'type' },
     capturedRow('legalName'),
     ...(isIndividual ? [] : [{ term: 'DBA', value: previewDraft.dba, field: 'dba' as const }]),
-    { term: 'Role', value: previewDraft.role, field: 'role' },
+    { term: 'Role', value: previewDraft.role, hint: FIELD_HINTS.role, field: 'role' },
     capturedRow('phone'),
     capturedRow('email'),
     capturedRow('address'),
@@ -537,9 +541,15 @@ export function CreateCustomerPanel({
     />
   )
 
-  const lookup = (field: EditField, options: string[], placeholder: string) => (
+  const lookup = (
+    field: EditField,
+    options: string[],
+    placeholder: string,
+    optionSubtitle?: (option: string) => string | undefined,
+  ) => (
     <DraftInlineLookup
       options={options}
+      optionSubtitle={optionSubtitle}
       placeholder={placeholder}
       onPick={(value) => applyEdit(field, value)}
       onDismiss={() => setEditing(null)}
@@ -591,11 +601,16 @@ export function CreateCustomerPanel({
       case 'taxId':
         return textEditor('taxId', previewDraft.taxId ?? '', 'EIN')
       case 'naics':
-        return lookup('naics', NAICS_OPTIONS, 'Search NAICS code or industry')
+        return lookup('naics', NAICS_OPTIONS, 'Search NAICS code or industry', naicsSubtitle)
       case 'related':
-        return lookup('related', CUSTOMER_RELATED_OPTIONS, 'Search producers or parent customers')
+        return lookup('related', CUSTOMER_RELATED_OPTIONS, 'Search producers or parent customers', customerRelatedSubtitle)
       case 'producer':
-        return lookup('producer', PRODUCER_OPTIONS, 'Which producer should supply the missing details?')
+        return lookup(
+          'producer',
+          PRODUCER_OPTIONS,
+          'Which producer should supply the missing details?',
+          customerRelatedSubtitle,
+        )
     }
     return null
   }
@@ -628,11 +643,9 @@ export function CreateCustomerPanel({
       }
       case REVIEW_ALL:
         setView('review')
-        clearResolvedRows()
         return
       case WORK_VIEW:
         setView('work')
-        clearResolvedRows()
         return
       case START_QUOTE: {
         const created = handleCreate()
@@ -716,7 +729,7 @@ export function CreateCustomerPanel({
         : []),
       { term: 'Tax ID', value: draft.taxId ? formatTaxId(draft.taxId) : null },
       { term: 'NAICS', value: draft.naics ? naicsLabel(draft.naics) : null },
-      { term: 'Related', value: draft.related ? relatedLabel(draft.related) : null },
+      { term: 'Related', value: draft.related ? customerRelatedValue(draft.related) : null },
       { term: 'Notes', value: draft.notes || null },
     ].filter((fact) => fact.value != null || fact.field)
     // After the banner lands, the facts then the holes fade in one after another.
@@ -726,7 +739,7 @@ export function CreateCustomerPanel({
       draft.type === 'Individual' ? ['phone', 'email'] : ['phone', 'email', 'taxId']
     const recordMissingRows: DraftNeededRow<EditField>[] = recordOptionalFields
       .filter((field) => capturedValue(draft, field) == null)
-      .map((field) => ({ term: FIELD_LABELS[field], value: null, field, tone: 'warning' }))
+      .map((field) => ({ term: FIELD_LABELS[field], value: null, hint: FIELD_HINTS[field], field, tone: 'warning' }))
     return (
       <DraftDrawerShell
         variant="record"
@@ -846,6 +859,7 @@ export function CreateCustomerPanel({
           {pickingParent ? (
             <DraftInlineLookup
               options={PARENT_CUSTOMER_OPTIONS}
+              optionSubtitle={customerRelatedSubtitle}
               placeholder="Search the parent customer"
               onPick={pickParent}
               onDismiss={() => setPickingParent(false)}

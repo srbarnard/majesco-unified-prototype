@@ -12,6 +12,7 @@ import {
   getAttachPanelSubtitle,
   targetLabels,
   type DocumentAttachMode,
+  type DocumentAttachSentFields,
 } from '@/pages/policies/components/DocumentAttachComposer'
 import { copilotDrawerHeadingSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 
@@ -54,10 +55,10 @@ export function EmailToolPanel() {
     }
   }
 
-  const handleSave = () => {
+  const handleSave = (_: DocumentAttachMode, sent: DocumentAttachSentFields) => {
     const onSave = attachMode.onSave
     setEmailAttachMode(null)
-    onSave?.()
+    onSave?.(sent)
   }
 
   return (

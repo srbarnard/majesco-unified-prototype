@@ -55,9 +55,16 @@ export type AddTaskDraft = {
   priority: TaskPriority | null
   due: AddTaskDue | null
   blocker: string | null
+  /** Set when the blocker was sent from the mail rail; cleared if the blocker text changes. */
+  blockerEmail: AddTaskBlockerEmailSent | null
   /** Everything the user typed, joined — becomes the task description. */
   notes: string
   attachments: AddTaskAttachment[]
+}
+
+export type AddTaskBlockerEmailSent = {
+  to: string
+  sentAt: Date
 }
 
 export const emptyAddTaskDraft: AddTaskDraft = {
@@ -67,6 +74,7 @@ export const emptyAddTaskDraft: AddTaskDraft = {
   priority: null,
   due: null,
   blocker: null,
+  blockerEmail: null,
   notes: '',
   attachments: [],
 }
@@ -463,6 +471,7 @@ export function mergeDraft(base: AddTaskDraft, inferred: Partial<AddTaskDraft>):
     priority: inferred.priority ?? base.priority,
     due: inferred.due ?? base.due,
     blocker: inferred.blocker ?? base.blocker,
+    blockerEmail: inferred.blocker && inferred.blocker !== base.blocker ? null : base.blockerEmail,
     notes: base.notes,
     attachments: base.attachments,
   }

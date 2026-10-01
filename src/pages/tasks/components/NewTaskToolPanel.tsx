@@ -2,17 +2,20 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useTasksStore } from '@/app/contexts/TasksContext'
-import { AddTaskPanel } from '@/pages/tasks/components/AddTaskPanel'
-import { resolveTaskPageContext, type AddTaskRelated } from '@/pages/tasks/data/addTaskDraft'
+import { AddTaskPanel, type AddTaskBlockerEmail, type AddTaskSavedState } from '@/pages/tasks/components/AddTaskPanel'
+import { relatedLabel, resolveTaskPageContext, type AddTaskRelated } from '@/pages/tasks/data/addTaskDraft'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
 
 /** Global New task drawer — opens over whatever page is active. */
 export function NewTaskToolPanel() {
-  const { closeTool } = useRightTool()
+  const { closeTool, openTool, setEmailAttachMode } = useRightTool()
   const {
     createdTaskHistory,
     savedAddTask,
     setSavedAddTask,
+    resumeAddTask,
+    resumeAddTaskPending,
+    clearResumeAddTask,
     createTask,
     requestOpenTask,
     newTaskRequest,
@@ -26,11 +29,15 @@ export function NewTaskToolPanel() {
     tab: 'new',
   })
   // Captured when the drawer opens; a later row-menu click replaces it and restarts the draft.
-  const [prefill, setPrefill] = useState<AddTaskRelated | null>(
-    () => newTaskRequest?.related ?? selectedRecord,
+  const [prefill, setPrefill] = useState<AddTaskRelated | null>(() =>
+    resumeAddTaskPending ? null : (newTaskRequest?.related ?? selectedRecord),
   )
   const onTasksPage = location.pathname === '/tasks'
   const pageContext = useMemo(() => resolveTaskPageContext(location.pathname), [location.pathname])
+
+  useEffect(() => {
+    if (resumeAddTaskPending) clearResumeAddTask()
+  }, [clearResumeAddTask, resumeAddTaskPending])
 
   useEffect(() => {
     if (!newTaskRequest) return
@@ -56,6 +63,29 @@ export function NewTaskToolPanel() {
     setSession((current) => ({ key: current.key + 1, tab: 'history' }))
   }
 
+  const handleEmailBlocker = ({ subject, body, related }: AddTaskBlockerEmail, state: AddTaskSavedState) => {
+    setSavedAddTask(state)
+    setEmailAttachMode({
+      target: 'email',
+      documents: [],
+      draft: {
+        subject,
+        body,
+        title: 'Email blocker',
+        subtitle: related ? `Related · ${relatedLabel(related)}` : undefined,
+      },
+      onCancel: resumeAddTask,
+      onSave: (sent) => {
+        setSavedAddTask({
+          ...state,
+          draft: { ...state.draft, blockerEmail: { to: sent?.to.trim() ?? '', sentAt: new Date() } },
+        })
+        resumeAddTask()
+      },
+    })
+    openTool('email')
+  }
+
   return (
     <AddTaskPanel
       key={session.key}
@@ -71,6 +101,7 @@ export function NewTaskToolPanel() {
       onCreate={handleCreate}
       onOpenTask={openTask}
       pageContext={pageContext}
+      onEmailBlocker={handleEmailBlocker}
     />
   )
 }
