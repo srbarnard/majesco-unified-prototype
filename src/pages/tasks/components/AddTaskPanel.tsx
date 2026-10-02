@@ -552,7 +552,7 @@ export function AddTaskPanel({
         <>
           <DraftWelcome
             title="What’s the task?"
-            body="Describe it in the composer. Chat will draft the title, assignee, and related record and suggest the next step."
+            body="Describe it in the composer. The assistant will draft the title, assignee, and related record and suggest the next step."
           />
           <Divider sx={{ mb: 2 }} />
           <CopilotQuickActions

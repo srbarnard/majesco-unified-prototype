@@ -114,8 +114,8 @@ function ActivityRailRow({
         aria-label={
           onAskCopilot
             ? isCopilotActive
-              ? `Clear Chat focus on ${item.label}`
-              : `Ask Chat about ${item.label}`
+              ? `Clear assistant focus on ${item.label}`
+              : `Ask assistant about ${item.label}`
             : undefined
         }
         onClick={() => {

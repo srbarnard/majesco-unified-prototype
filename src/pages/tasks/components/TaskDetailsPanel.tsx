@@ -252,7 +252,7 @@ export function TaskDetailsPanel({
               <IconButton
                 size="small"
                 onClick={onBack}
-                aria-label="Back to Chat"
+                aria-label="Back to Assistant"
                 sx={{ ml: -0.75, gridRow: 1, gridColumn: 1 }}
               >
                 <ArrowBackIcon fontSize="small" />

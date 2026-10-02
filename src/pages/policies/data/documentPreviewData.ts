@@ -169,7 +169,7 @@ Ref: 01-CA-000100005-0`,
     keyInsights: [
       'Fleet growth is primary driver of renewal premium change.',
       'New units predominantly light commercial vans.',
-      'Schedule sourced from AI extraction — verify VINs before bind.',
+      'Schedule sourced from assistant extraction — verify VINs before bind.',
     ],
   },
   'doc-6': {

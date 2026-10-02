@@ -87,7 +87,7 @@ export function getSubmissionActivity(submission: SubmissionActivitySource): Rec
       ],
       insights: [
         'Overview shows the sent package summary — structures are no longer choosable.',
-        'Producer follow-up can be scheduled from Chat Quote sent.',
+        'Producer follow-up can be scheduled from the assistant after Quote sent.',
       ],
       primaryLink: { label: 'View submission', to: href },
       secondaryLink: { label: 'View documents', to: docsHref },
@@ -146,7 +146,7 @@ export function getSubmissionActivity(submission: SubmissionActivitySource): Rec
         { label: 'Outcome', value: 'Logged to file' },
       ],
       insights: note
-        ? ['Note is visible on Overview and in Chat briefing context.']
+        ? ['Note is visible on Overview and in the assistant briefing context.']
         : ['Intake checklist progressed without a producer follow-up.'],
       primaryLink: { label: 'View submission', to: href },
       secondaryLink: { label: 'View documents', to: docsHref },
@@ -206,7 +206,7 @@ export function getSubmissionActivity(submission: SubmissionActivitySource): Rec
         { label: 'Reported', value: topBlocker.reportedAt },
       ],
       insights: [
-        'Blocking clearance items hold premium estimation until resolved in Chat.',
+        'Blocking clearance items hold premium estimation until resolved in the assistant.',
         topBlocker.whyItMatters,
       ],
       primaryLink: { label: 'View submission', to: href },
@@ -270,7 +270,7 @@ export function getSubmissionActivity(submission: SubmissionActivitySource): Rec
       },
     ],
     insights: [
-      'Intake documents are available on the Documents tab for Chat review.',
+      'Intake documents are available on the Documents tab for assistant review.',
       'Producer portal submission started the clearance checklist.',
     ],
     primaryLink: { label: 'View documents', to: docsHref },

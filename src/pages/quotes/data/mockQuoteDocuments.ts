@@ -135,7 +135,7 @@ export function getQuoteDocumentStory(quoteNumber: string) {
   }
 
   return {
-    story: `Documents for quote **${quoteNumber}** include applications, rating inputs, and underwriting correspondence. Select a document to summarize with Chat.`,
+    story: `Documents for quote **${quoteNumber}** include applications, rating inputs, and underwriting correspondence. Select a document to summarize with the assistant.`,
     syncedAt: 'Recently',
     highlights: [] as { label: string; date: string }[],
   }

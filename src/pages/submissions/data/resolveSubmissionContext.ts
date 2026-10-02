@@ -82,7 +82,7 @@ function buildFromListRecord(row: SubmissionListRecord): SubmissionDetailsRecord
     effectiveTarget: 'TBD — pending clearance',
     copilotSummary:
       row.status === 'Blocked'
-        ? `Submission **${row.submissionNumber}** for **${row.insuredName}** is **Blocked** with **${blocking}** blocking issue${blocking === 1 ? '' : 's'}. Resolve gaps in Chat without leaving the intake flow.`
+        ? `Submission **${row.submissionNumber}** for **${row.insuredName}** is **Blocked** with **${blocking}** blocking issue${blocking === 1 ? '' : 's'}. Resolve gaps in the assistant without leaving the intake flow.`
         : row.status === 'Quoted'
           ? `Submission **${row.submissionNumber}** for **${row.insuredName}** is **Quoted** — package sent to the producer.`
           : row.status === 'Declined'

@@ -39,7 +39,7 @@ export function SubmissionStatusChip({ status, onClick, selected = false }: Subm
     clickable: interactive,
     'aria-pressed': interactive ? selected : undefined,
     'aria-label': interactive
-      ? `${status} — ${selected ? 'Chat open' : 'Open Chat'}`
+      ? `${status} — ${selected ? 'Assistant open' : 'Open Assistant'}`
       : undefined,
     sx: {
       cursor: interactive ? 'pointer' : undefined,

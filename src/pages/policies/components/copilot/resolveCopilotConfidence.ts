@@ -94,7 +94,7 @@ export function resolveCopilotConfidence(input: ResolveCopilotConfidenceInput): 
       statusLabel: getCopilotConfidenceStatusLabel(confidence),
       popoverTitle: 'Extraction confidence',
       popoverDescription:
-        'How reliably Chat extracted structured data from this document for use in the submission or policy record.',
+        'How reliably the assistant extracted structured data from this document for use in the submission or policy record.',
       tiers: DEFAULT_COPILOT_CONFIDENCE_TIERS,
     }
   }
@@ -106,7 +106,7 @@ export function resolveCopilotConfidence(input: ResolveCopilotConfidenceInput): 
       statusLabel: 'Analyzing impact',
       popoverTitle: 'Refinement confidence',
       popoverDescription:
-        'Confidence that Chat has enough context to assess how document changes affect the policy.',
+        'Confidence that the assistant has enough context to assess how document changes affect the policy.',
       tiers: DEFAULT_COPILOT_CONFIDENCE_TIERS,
     }
   }
@@ -151,7 +151,7 @@ export function resolveCopilotConfidence(input: ResolveCopilotConfidenceInput): 
       statusLabel: getCopilotConfidenceStatusLabel(confidence),
       popoverTitle: 'Refinement confidence',
       popoverDescription:
-        'How complete the policy context is for Chat-assisted refinement, endorsements, and renewal work.',
+        'How complete the policy context is for assisted refinement, endorsements, and renewal work.',
       tiers: DEFAULT_COPILOT_CONFIDENCE_TIERS,
     }
   }

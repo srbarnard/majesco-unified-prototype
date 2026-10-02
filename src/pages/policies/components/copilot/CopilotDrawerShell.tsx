@@ -462,14 +462,14 @@ export function CopilotDrawerShell({
         }}
       >
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" alignItems="center" sx={{ minWidth: 0 }}>
+          <Stack direction="row" alignItems="center" gap={1} sx={{ minWidth: 0 }}>
             <Typography variant="subtitle1" component="h2" sx={copilotDrawerHeadingSx}>
-              Chat
+              Assistant
             </Typography>
             {headerTrailing}
           </Stack>
           {onClose && (
-            <IconButton size="small" onClick={onClose} aria-label="Close Chat">
+            <IconButton size="small" onClick={onClose} aria-label="Close Assistant">
               <CloseIcon fontSize="small" />
             </IconButton>
           )}

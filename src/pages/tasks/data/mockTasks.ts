@@ -11,7 +11,7 @@ export type TaskStatus =
 export type TaskReferenceType = 'Quote' | 'Policy' | 'Claim'
 
 export type TaskTheme =
-  | 'AI-assisted renewal queue'
+  | 'Assisted renewal queue'
   | 'Exception handling'
   | 'Compliance watch'
   | 'Producer support'
@@ -127,7 +127,7 @@ export function getTaskDocumentHref(task: TaskRecord, document: TaskDocument): s
 const baseTasks: TaskRecord[] = [
   {
     id: 'task-001',
-    theme: 'AI-assisted renewal queue',
+    theme: 'Assisted renewal queue',
     taskName: 'Renewal UW review — loss ratio spike',
     refNumber: 'RNW-284719',
     priority: 'High',
@@ -157,7 +157,7 @@ const baseTasks: TaskRecord[] = [
       claimNumber: null,
     },
     description:
-      'Commercial property renewal flagged by Chat after updated loss runs showed elevated CAT and water damage frequency. Account is strategic producer book; prior term had no rate change. Underwriting referral required before renewal terms can release to producer. The account spans 12 locations across Nebraska and Iowa with total insured values exceeding $48M. Recent water intrusion claims at the Omaha grain elevator and secondary cold storage facility drove the loss ratio above the 62% referral threshold. Producer Hartwell Insurance Group has requested to maintain the current rate pending completion of roof mitigation at two flagged locations. Chat pre-filled referral worksheet sections 1–4; sections 5–7 require underwriter narrative on catastrophe exposure and business income limits.',
+      'Commercial property renewal flagged by the assistant after updated loss runs showed elevated CAT and water damage frequency. Account is strategic producer book; prior term had no rate change. Underwriting referral required before renewal terms can release to producer. The account spans 12 locations across Nebraska and Iowa with total insured values exceeding $48M. Recent water intrusion claims at the Omaha grain elevator and secondary cold storage facility drove the loss ratio above the 62% referral threshold. Producer Hartwell Insurance Group has requested to maintain the current rate pending completion of roof mitigation at two flagged locations. The assistant pre-filled referral worksheet sections 1–4; sections 5–7 require underwriter narrative on catastrophe exposure and business income limits.',
     copilotInsights: [
       'Recommend +8–12% rate adjustment on property line; liability remains within appetite at current limits.',
       'Similar accounts in ZIP cluster 68102 renewed at avg +10.4% when loss ratio exceeded 62%.',
@@ -296,7 +296,7 @@ const baseTasks: TaskRecord[] = [
       claimNumber: null,
     },
     description:
-      'Sanctions screening returned potential match on principal owner name during new business quote bind prep. Preliminary Chat match score 0.71 — likely false positive due to common name + different DOB/state. Bind is blocked pending compliance clearance.',
+      'Sanctions screening returned potential match on principal owner name during new business quote bind prep. Preliminary assistant match score 0.71 — likely false positive due to common name + different DOB/state. Bind is blocked pending compliance clearance.',
     copilotInsights: [
       'Screening hit entity DOB differs by 12 years from application owner DOB — strong false-positive signal.',
       'Recommend clearance with note; no prior compliance flags on producer or insured.',
@@ -393,7 +393,7 @@ const baseTasks: TaskRecord[] = [
     copilotInsights: [
       'Policy includes ordinance/law coverage — confirm limits apply to partial rebuild scenario.',
       'Similar fire claims in book avg 78 days to settlement; reserve may stabilize after engineer final.',
-      'Suggest Chat-drafted reserve memo template for claims file.',
+      'Suggest assistant-drafted reserve memo template for claims file.',
     ],
     documents: [
       { id: 'task-att-engineer-report', name: 'Engineer report (final draft)', status: 'Received', required: true, type: 'pdf' },
@@ -406,7 +406,7 @@ const baseTasks: TaskRecord[] = [
   },
   {
     id: 'task-007',
-    theme: 'AI-assisted renewal queue',
+    theme: 'Assisted renewal queue',
     taskName: 'Submission intake — BML missing SOV lines',
     refNumber: 'SUB-52877',
     priority: 'Medium',
@@ -436,7 +436,7 @@ const baseTasks: TaskRecord[] = [
       claimNumber: null,
     },
     description:
-      'New business BML submission received via portal. Chat parsed SOV but 14 locations missing TIV, construction type, or year built. Cannot release to UW until minimum data completeness threshold met (85%).',
+      'New business BML submission received via portal. The assistant parsed SOV but 14 locations missing TIV, construction type, or year built. Cannot release to UW until minimum data completeness threshold met (85%).',
     copilotInsights: [
       '14 of 62 locations incomplete — all missing fields are construction/year built.',
       'Auto-email template ready with location-level gap table for producer.',
@@ -484,7 +484,7 @@ const baseTasks: TaskRecord[] = [
       claimNumber: null,
     },
     description:
-      'Scheduled premium audit for multi-state WC policy. Chat flagged possible misclassification: clerical staff payroll may be assigned to restaurant class. Audit outcome may generate endorsement and additional premium invoice.',
+      'Scheduled premium audit for multi-state WC policy. The assistant flagged possible misclassification: clerical staff payroll may be assigned to restaurant class. Audit outcome may generate endorsement and additional premium invoice.',
     copilotInsights: [
       'Payroll split shows 22% in class 8742 — peer restaurants avg 8% for similar headcount.',
       'Recommend requesting detailed job descriptions before final audit close.',
@@ -578,7 +578,7 @@ const baseTasks: TaskRecord[] = [
       claimNumber: null,
     },
     description:
-      'Quote on internal watchlist due to expiration proximity and stalled status. Insured is new business commercial package (CP + GL + Umb). Chat detected producer last viewed quote 12 days ago; no bind or revision requests logged.',
+      'Quote on internal watchlist due to expiration proximity and stalled status. Insured is new business commercial package (CP + GL + Umb). The assistant detected producer last viewed quote 12 days ago; no bind or revision requests logged.',
     copilotInsights: [
       'Recommend 7-day extension — within AM authority; competitor indication likely per producer notes.',
       'Similar stalled quotes converted 34% after single outreach call within 5 days of expiry.',
@@ -694,26 +694,26 @@ const CLIENT = 'Client Relations'
 const OPS = 'Distribution Operations'
 
 const taskSeeds: TaskSeed[] = [
-  { name: 'Renewal pricing review — property schedule update', theme: 'AI-assisted renewal queue', priority: 'High', status: 'Started', displayStatus: 'In review', nextAction: 'Confirm updated TIV and release renewal terms', assignedTo: 'Chris Reynolds', assigner: 'Pamela Hollingsworth', team: UW, dueIn: 2, agingDays: 3, refPrefix: 'RNW', referenceType: 'Policy', insured: 'Riverbend Foods Inc.', producer: 'Hartwell Insurance Group', policy: 'CP-7710-204' },
+  { name: 'Renewal pricing review — property schedule update', theme: 'Assisted renewal queue', priority: 'High', status: 'Started', displayStatus: 'In review', nextAction: 'Confirm updated TIV and release renewal terms', assignedTo: 'Chris Reynolds', assigner: 'Pamela Hollingsworth', team: UW, dueIn: 2, agingDays: 3, refPrefix: 'RNW', referenceType: 'Policy', insured: 'Riverbend Foods Inc.', producer: 'Hartwell Insurance Group', policy: 'CP-7710-204' },
   { name: 'Referral — umbrella limit above authority', theme: 'Exception handling', priority: 'High', status: 'Pending', displayStatus: 'Pending documents', nextAction: 'Obtain underlying auto schedule before approving $10M excess', assignedTo: 'Brenda Holmes', assigner: 'Chris Reynolds', team: UW, dueIn: -2, agingDays: 6, refPrefix: 'REF', referenceType: 'Policy', insured: 'Keystone Freight Co.', producer: 'NorthBridge Commercial', policy: 'UM-3321-088', blocker: 'Underlying auto schedule not received from producer.' },
   { name: 'Loss control recommendations follow-up', theme: 'Compliance watch', priority: 'Medium', status: 'Started', displayStatus: 'In progress', nextAction: 'Confirm sprinkler remediation at Building 3', assignedTo: 'Brenda Holmes', assigner: 'Chris Reynolds', team: UW, dueIn: 5, agingDays: 9, refPrefix: 'LCR', referenceType: 'Policy', insured: 'Lakeshore Plastics LLC', producer: 'Summit Risk Partners', policy: 'CP-6604-512' },
   { name: 'New business quote — contractor GL', theme: 'Automated quote issues', priority: 'Medium', status: 'Started', displayStatus: 'In review', nextAction: 'Validate subcontractor cost exposure and rate', assignedTo: 'Landon Wilson', assigner: 'Chris Reynolds', team: UW, dueIn: 3, agingDays: 2, refPrefix: 'NBQ', referenceType: 'Quote', insured: 'Prairie Build Group', producer: 'Hartwell Insurance Group', quote: 'Q-GL-884120' },
   { name: 'Cancellation — non-payment notice review', theme: 'Exception handling', priority: 'High', status: 'Pending', displayStatus: 'Open', nextAction: 'Verify reinstatement eligibility before notice issues', assignedTo: 'Landon Wilson', assigner: 'Dana Patel', team: 'Policy Services', dueIn: 0, agingDays: 4, refPrefix: 'CXL', referenceType: 'Policy', insured: 'Bluewater Marina Group', producer: 'Coastal Brokerage', policy: 'IM-2209-731' },
   { name: 'Mid-term endorsement — add location', theme: 'Producer support', priority: 'Low', status: 'Pending', displayStatus: 'Pending insured', nextAction: 'Collect COPE details for new warehouse', assignedTo: 'Jordan Ellis', assigner: 'Chris Reynolds', team: UW, dueIn: 8, agingDays: 1, refPrefix: 'END', referenceType: 'Policy', insured: 'Summit Logistics LLC', producer: 'NorthBridge Commercial', policy: 'GL-5521-447' },
-  { name: 'Inspection report review — roof condition', theme: 'AI-assisted renewal queue', priority: 'Medium', status: 'Started', displayStatus: 'In progress', nextAction: 'Decide on roof surfacing exclusion', assignedTo: 'Maria Santos', assigner: 'Chris Reynolds', team: UW, dueIn: 4, agingDays: 5, refPrefix: 'INS', referenceType: 'Policy', insured: 'Heartland Cold Storage', producer: 'Summit Risk Partners', policy: 'CP-9012-330' },
+  { name: 'Inspection report review — roof condition', theme: 'Assisted renewal queue', priority: 'Medium', status: 'Started', displayStatus: 'In progress', nextAction: 'Decide on roof surfacing exclusion', assignedTo: 'Maria Santos', assigner: 'Chris Reynolds', team: UW, dueIn: 4, agingDays: 5, refPrefix: 'INS', referenceType: 'Policy', insured: 'Heartland Cold Storage', producer: 'Summit Risk Partners', policy: 'CP-9012-330' },
   { name: 'Producer onboarding — appointment paperwork', theme: 'Producer support', priority: 'Low', status: 'Pending', displayStatus: 'Waiting on internal', nextAction: 'Route E&O certificate to licensing', assignedTo: 'Leslie Neuman', assigner: 'Pamela Hollingsworth', team: CLIENT, dueIn: 10, agingDays: 3, refPrefix: 'PRD', referenceType: 'Policy', insured: 'Granite Peak Agency', producer: 'Granite Peak Agency' },
-  { name: 'Key account stewardship review', theme: 'AI-assisted renewal queue', priority: 'Medium', status: 'Started', displayStatus: 'In review', nextAction: 'Prepare stewardship deck for Q3 meeting', assignedTo: 'Leslie Neuman', assigner: 'Pamela Hollingsworth', team: CLIENT, dueIn: 6, agingDays: 8, refPrefix: 'STW', referenceType: 'Policy', insured: 'Midwest Grain Cooperative', producer: 'Hartwell Insurance Group', policy: 'CP-8842-019' },
+  { name: 'Key account stewardship review', theme: 'Assisted renewal queue', priority: 'Medium', status: 'Started', displayStatus: 'In review', nextAction: 'Prepare stewardship deck for Q3 meeting', assignedTo: 'Leslie Neuman', assigner: 'Pamela Hollingsworth', team: CLIENT, dueIn: 6, agingDays: 8, refPrefix: 'STW', referenceType: 'Policy', insured: 'Midwest Grain Cooperative', producer: 'Hartwell Insurance Group', policy: 'CP-8842-019' },
   { name: 'Billing dispute — audit premium adjustment', theme: 'Producer support', priority: 'High', status: 'Started', displayStatus: 'In progress', nextAction: 'Reconcile payroll classes with insured controller', assignedTo: 'Alex Carter', assigner: 'Leslie Neuman', team: CLIENT, dueIn: -1, agingDays: 12, refPrefix: 'BIL', referenceType: 'Policy', insured: 'Crescent Staffing Solutions', producer: 'Summit Risk Partners', policy: 'WC-4471-902' },
   { name: 'Certificate request — owner/GC requirements', theme: 'Producer support', priority: 'Low', status: 'Completed', displayStatus: 'Completed', nextAction: 'Certificate issued; confirm receipt with producer', assignedTo: 'Alex Carter', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 1, agingDays: 2, refPrefix: 'COI', referenceType: 'Policy', insured: 'Prairie Build Group', producer: 'Hartwell Insurance Group', policy: 'GL-6120-515' },
-  { name: 'Renewal outreach — expiring in 45 days', theme: 'AI-assisted renewal queue', priority: 'Medium', status: 'Pending', displayStatus: 'Open', nextAction: 'Send renewal questionnaire to producer', assignedTo: 'Alex Carter', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 0, agingDays: 1, refPrefix: 'RNW', referenceType: 'Policy', insured: 'Oakridge Dental Group', producer: 'Coastal Brokerage', policy: 'BOP-1180-266' },
+  { name: 'Renewal outreach — expiring in 45 days', theme: 'Assisted renewal queue', priority: 'Medium', status: 'Pending', displayStatus: 'Open', nextAction: 'Send renewal questionnaire to producer', assignedTo: 'Alex Carter', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 0, agingDays: 1, refPrefix: 'RNW', referenceType: 'Policy', insured: 'Oakridge Dental Group', producer: 'Coastal Brokerage', policy: 'BOP-1180-266' },
   { name: 'Coverage question — cyber sublimit', theme: 'Producer support', priority: 'Low', status: 'Started', displayStatus: 'In progress', nextAction: 'Draft response on social engineering sublimit', assignedTo: 'Brianna Lopez', assigner: 'Alex Carter', team: CLIENT, dueIn: 3, agingDays: 2, refPrefix: 'CVQ', referenceType: 'Policy', insured: 'Oakridge Dental Group', producer: 'Coastal Brokerage', policy: 'CY-3390-120' },
   { name: 'Payment plan change request', theme: 'Producer support', priority: 'Low', status: 'Pending', displayStatus: 'Pending insured', nextAction: 'Confirm EFT authorization for quarterly plan', assignedTo: 'Brianna Lopez', assigner: 'Alex Carter', team: CLIENT, dueIn: 7, agingDays: 1, refPrefix: 'PAY', referenceType: 'Policy', insured: 'Lakeview Medical Partners', producer: 'Summit Risk Partners', policy: 'PL-7702-441' },
   { name: 'OFAC potential match — named insured', theme: 'Compliance watch', priority: 'High', status: 'Pending', displayStatus: 'Open', nextAction: 'Clear or escalate potential SDN match', assignedTo: 'Jasmine Nguyen', assigner: 'System', team: 'Enterprise Compliance', dueIn: 0, agingDays: 0, refPrefix: 'OFC', referenceType: 'Policy', insured: 'Atlas Import Traders', producer: 'Coastal Brokerage', policy: 'IM-5530-018', alert: true },
-  { name: 'Account review — multi-line cross-sell', theme: 'AI-assisted renewal queue', priority: 'Low', status: 'Started', displayStatus: 'In review', nextAction: 'Review Chat umbrella and cyber recommendations', assignedTo: 'Jasmine Nguyen', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 12, agingDays: 4, refPrefix: 'XSL', referenceType: 'Policy', insured: 'Riverbend Foods Inc.', producer: 'Hartwell Insurance Group', policy: 'CP-7710-204' },
+  { name: 'Account review — multi-line cross-sell', theme: 'Assisted renewal queue', priority: 'Low', status: 'Started', displayStatus: 'In review', nextAction: 'Review assistant umbrella and cyber recommendations', assignedTo: 'Jasmine Nguyen', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 12, agingDays: 4, refPrefix: 'XSL', referenceType: 'Policy', insured: 'Riverbend Foods Inc.', producer: 'Hartwell Insurance Group', policy: 'CP-7710-204' },
   { name: 'Claim notice — water damage FNOL', theme: 'Exception handling', priority: 'High', status: 'Started', displayStatus: 'In progress', nextAction: 'Confirm coverage and assign field adjuster', assignedTo: 'Jasmine Nguyen', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 1, agingDays: 1, refPrefix: 'CLM', referenceType: 'Claim', insured: 'Heartland Cold Storage', producer: 'Summit Risk Partners', policy: 'CP-9012-330', claim: 'CLM-2026-04418' },
   { name: 'Quote follow-up — producer decision pending', theme: 'Automated quote issues', priority: 'Medium', status: 'Pending', displayStatus: 'Pending insured', nextAction: 'Follow up on bind decision before quote expires', assignedTo: 'Ethan Brooks', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 2, agingDays: 7, refPrefix: 'QFU', referenceType: 'Quote', insured: 'Granite Ridge Hospitality', producer: 'Granite Peak Agency', quote: 'Q-BOP-771034' },
   { name: 'Bind failure — payment gateway timeout', theme: 'Automated quote issues', priority: 'High', status: 'Started', displayStatus: 'Failed', nextAction: 'Retry bind and confirm premium collected', assignedTo: 'Ethan Brooks', assigner: 'System', team: 'Personal Lines Processing', dueIn: -1, agingDays: 2, refPrefix: 'BND', referenceType: 'Quote', insured: 'Sarah & Tom Whitfield', producer: 'Direct', quote: 'Q-HO-552190', blocker: 'Payment gateway returned timeout on 3 retries.' },
-  { name: 'Renewal — declined coverage restoration', theme: 'AI-assisted renewal queue', priority: 'Medium', status: 'Suspended', displayStatus: 'Waiting on internal', nextAction: 'Await actuarial sign-off on restored EPL', assignedTo: 'Ethan Brooks', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 9, agingDays: 5, refPrefix: 'RNW', referenceType: 'Policy', insured: 'Crescent Staffing Solutions', producer: 'Summit Risk Partners', policy: 'EPL-2280-615' },
+  { name: 'Renewal — declined coverage restoration', theme: 'Assisted renewal queue', priority: 'Medium', status: 'Suspended', displayStatus: 'Waiting on internal', nextAction: 'Await actuarial sign-off on restored EPL', assignedTo: 'Ethan Brooks', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 9, agingDays: 5, refPrefix: 'RNW', referenceType: 'Policy', insured: 'Crescent Staffing Solutions', producer: 'Summit Risk Partners', policy: 'EPL-2280-615' },
   { name: 'Producer commission reconciliation', theme: 'Producer support', priority: 'Medium', status: 'Started', displayStatus: 'In progress', nextAction: 'Match June statement to booked premium', assignedTo: 'Dana Patel', assigner: 'Pamela Hollingsworth', team: OPS, dueIn: 4, agingDays: 6, refPrefix: 'COM', referenceType: 'Policy', insured: 'Hartwell Insurance Group', producer: 'Hartwell Insurance Group' },
   { name: 'Workflow exception — document indexing backlog', theme: 'Exception handling', priority: 'High', status: 'Started', displayStatus: 'Exception', nextAction: 'Reassign 42 unindexed documents to overflow queue', assignedTo: 'Dana Patel', assigner: 'System', team: OPS, dueIn: 0, agingDays: 3, refPrefix: 'WFX', referenceType: 'Policy', insured: 'Multiple insureds', producer: 'Internal' },
   { name: 'Premium audit — scheduled field visit', theme: 'Compliance watch', priority: 'Low', status: 'Pending', displayStatus: 'Scheduled', nextAction: 'Confirm audit date with insured', assignedTo: 'Kevin Ortiz', assigner: 'Dana Patel', team: OPS, dueIn: 11, agingDays: 2, refPrefix: 'AUD', referenceType: 'Policy', insured: 'Keystone Freight Co.', producer: 'NorthBridge Commercial', policy: 'CA-1109-874' },
@@ -725,7 +725,7 @@ const taskSeeds: TaskSeed[] = [
   { name: 'Sanctions rescreen — renewal batch', theme: 'Compliance watch', priority: 'Medium', status: 'Started', displayStatus: 'In progress', nextAction: 'Review 6 flagged records from nightly rescreen', assignedTo: 'Compliance Ops', assigner: 'System', team: 'Enterprise Compliance', dueIn: 2, agingDays: 1, refPrefix: 'SAN', referenceType: 'Policy', insured: 'Multiple insureds', producer: 'Internal' },
   { name: 'Rating error — territory code missing', theme: 'Automated quote issues', priority: 'High', status: 'Started', displayStatus: 'Exception', nextAction: 'Correct territory mapping and re-rate', assignedTo: 'Auto Installer Queue', assigner: 'System', team: 'Personal Lines Processing', dueIn: 0, agingDays: 0, refPrefix: 'AQE', referenceType: 'Quote', insured: 'Daniel Okafor', producer: 'Direct', quote: 'Q-PA-661408' },
   { name: 'Producer portal access issue', theme: 'Producer support', priority: 'Low', status: 'Discarded', displayStatus: 'Discarded', nextAction: 'Duplicate of existing ticket; no action required', assignedTo: 'Account Support — Producer Desk', assigner: 'Leslie Neuman', team: OPS, dueIn: 5, agingDays: 3, refPrefix: 'PPA', referenceType: 'Policy', insured: 'Coastal Brokerage', producer: 'Coastal Brokerage' },
-  { name: 'Excess placement — layered program quote', theme: 'AI-assisted renewal queue', priority: 'Medium', status: 'Started', displayStatus: 'In review', nextAction: 'Compare reinsurer indications for $25M xs $10M layer', assignedTo: 'Chris Reynolds', assigner: 'Pamela Hollingsworth', team: UW, dueIn: 7, agingDays: 5, refPrefix: 'XSP', referenceType: 'Quote', insured: 'Keystone Freight Co.', producer: 'NorthBridge Commercial', quote: 'Q-XS-440921' },
+  { name: 'Excess placement — layered program quote', theme: 'Assisted renewal queue', priority: 'Medium', status: 'Started', displayStatus: 'In review', nextAction: 'Compare reinsurer indications for $25M xs $10M layer', assignedTo: 'Chris Reynolds', assigner: 'Pamela Hollingsworth', team: UW, dueIn: 7, agingDays: 5, refPrefix: 'XSP', referenceType: 'Quote', insured: 'Keystone Freight Co.', producer: 'NorthBridge Commercial', quote: 'Q-XS-440921' },
 ]
 
 export const tasksMock: TaskRecord[] = [...baseTasks, ...taskSeeds.map(buildSeedTask)]

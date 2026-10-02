@@ -1,6 +1,6 @@
-import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined'
 import { useColorScheme } from '@mui/material/styles'
 import type { SxProps, Theme } from '@mui/material/styles'
+import { AssistantNavigationOutlinedIcon } from '@/design-system/icons/AssistantNavigationOutlined'
 
 export type CopilotIconProps = {
   size?: number
@@ -28,7 +28,7 @@ export function CopilotIcon({ size = 18, active = false, inverted = false, sx }:
   const mutedInDarkMode = isDarkMode && !active && !inverted
 
   return (
-    <ChatOutlinedIcon
+    <AssistantNavigationOutlinedIcon
       aria-hidden
       sx={{
         fontSize: size,

@@ -161,11 +161,11 @@ export function buildDocumentPulledLine(documents: Array<{ id: string; fileName:
 }
 
 export const HOME_NOTE_EMPTY_BODY =
-  'Add it to the file — a flag, a follow-up, or a read. Chat will classify it and suggest the next step.'
+  'Add it to the file — a flag, a follow-up, or a read. The assistant will classify it and suggest the next step.'
 
 export function buildRecordEmptyBody(record: NoteBoundRecord) {
   const short = record.label.replace(/, LLC$/, '').replace(/ Inc\.$/, '')
-  return `Add it to ${record.reference} · ${short} — a flag, a follow-up, or a read. Chat will classify it and suggest the next step.`
+  return `Add it to ${record.reference} · ${short} — a flag, a follow-up, or a read. The assistant will classify it and suggest the next step.`
 }
 
 export function resolveStarterBind(starter: NoteEmptyStarter): NoteBoundRecord | null {

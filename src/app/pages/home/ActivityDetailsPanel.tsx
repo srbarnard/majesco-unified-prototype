@@ -122,7 +122,7 @@ export function ActivityDetailsPanel({
               <IconButton
                 size="small"
                 onClick={onBack}
-                aria-label="Back to Chat"
+                aria-label="Back to Assistant"
                 sx={{ ml: -0.75, flexShrink: 0 }}
               >
                 <ArrowBackIcon fontSize="small" />

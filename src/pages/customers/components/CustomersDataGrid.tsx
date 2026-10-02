@@ -84,15 +84,15 @@ function RowActionsMenu({
   return (
     <>
       <Stack direction="row" spacing={0.25} justifyContent="flex-end" alignItems="center" sx={{ width: '100%' }}>
-        <Tooltip title="Ask Chat about this customer">
+        <Tooltip title="Ask assistant.">
           <IconButton
             size="small"
-            aria-label={`Ask Chat about ${row.name}`}
+            aria-label={`Ask assistant about ${row.name}`}
             aria-pressed={isCopilotActive}
             onClick={() => onCustomerCopilot?.(row)}
             sx={copilotActiveIconSx(isCopilotActive)}
           >
-            <CopilotIcon size={18} active={isCopilotActive} />
+            <CopilotIcon size={22} active={isCopilotActive} />
           </IconButton>
         </Tooltip>
         <Tooltip title="More actions">

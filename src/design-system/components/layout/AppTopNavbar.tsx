@@ -3,7 +3,6 @@ import AddIcon from '@mui/icons-material/Add'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
 import SearchIcon from '@mui/icons-material/Search'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
@@ -16,7 +15,6 @@ import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
-import Select from '@mui/material/Select'
 import Stack from '@mui/material/Stack'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
@@ -181,22 +179,18 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
               ...theme.applyStyles('dark', { filter: 'invert(1)' }),
             })}
           />
-          <Select
-            value="pc-policy"
-            variant="standard"
-            disableUnderline
-            IconComponent={KeyboardArrowDownIcon}
+          <Typography
+            component="span"
             sx={{
               fontWeight: 600,
               fontSize: '0.9375rem',
-              display: { xs: 'none', sm: 'flex' },
-              '& .MuiSelect-select': { py: 0.5, pr: '28px !important' },
+              display: { xs: 'none', sm: 'block' },
+              py: 0.5,
+              userSelect: 'none',
             }}
           >
-            <MenuItem value="pc-policy">P&amp;C Policy</MenuItem>
-            <MenuItem value="claims">Claims</MenuItem>
-            <MenuItem value="billing">Billing</MenuItem>
-          </Select>
+            P&amp;C Policy
+          </Typography>
         </Stack>
 
         <Stack

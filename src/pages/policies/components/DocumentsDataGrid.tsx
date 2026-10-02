@@ -170,10 +170,10 @@ function RowActionsMenu({
             <DownloadOutlinedIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Summarize with Chat">
+        <Tooltip title="Ask assistant.">
           <IconButton
             size="small"
-            aria-label={`Summarize ${row.fileName} with Chat`}
+            aria-label={`Ask assistant about ${row.fileName}`}
             aria-pressed={isPreviewActive || isCopilotActive}
             onClick={(event) => {
               stopGridNavigation(event)
@@ -181,7 +181,7 @@ function RowActionsMenu({
             }}
             sx={tableActionIconButtonSx}
           >
-            <CopilotIcon size={18} active={Boolean(isPreviewActive || isCopilotActive)} />
+            <CopilotIcon size={22} active={Boolean(isPreviewActive || isCopilotActive)} />
           </IconButton>
         </Tooltip>
         <Tooltip title="More actions">
@@ -228,7 +228,7 @@ export function DocumentsDataGrid({
     () => [
       {
         field: 'fileName',
-        headerName: 'Document/Form/Package • AI Summary',
+        headerName: 'Document/Form/Package • Summary',
         flex: 1.6,
         minWidth: 280,
         sortable: true,

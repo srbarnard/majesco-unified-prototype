@@ -34,7 +34,7 @@ export const DEFAULT_COPILOT_CONFIDENCE_TIERS: CopilotConfidenceTier[] = [
     min: 45,
     rangeLabel: '45–84%',
     label: 'In progress',
-    detail: 'Chat is assembling or refining details from inputs and documents.',
+    detail: 'The assistant is assembling or refining details from inputs and documents.',
   },
   {
     min: 25,

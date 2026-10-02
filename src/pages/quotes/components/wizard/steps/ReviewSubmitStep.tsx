@@ -54,7 +54,7 @@ export function ReviewSubmitStep({ form, onNaturalLanguageSubmit, onFilesAdd, on
       />
 
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Confirm the submission details below. Chat has pre-filled fields where confidence was high — you can go back
+        Confirm the submission details below. The assistant has pre-filled fields where confidence was high — you can go back
         to any step to override.
       </Typography>
 

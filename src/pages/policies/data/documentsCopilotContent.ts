@@ -23,7 +23,7 @@ export const quoteDocumentsCopilotInsights = [
 ]
 
 export const submissionDocumentsCopilotSummary =
-  'This Commercial Auto submission includes **5 intake documents** from the producer — applications, vehicle schedule, drivers, and loss runs. Chat extracted fleet and exposure details with high confidence. Review the **vehicle schedule** and **driver list** before clearing for rating.'
+  'This Commercial Auto submission includes **5 intake documents** from the producer — applications, vehicle schedule, drivers, and loss runs. The assistant extracted fleet and exposure details with high confidence. Review the **vehicle schedule** and **driver list** before clearing for rating.'
 
 export const submissionDocumentsCopilotInsights = [
   'ACORD 125 & 127 received from producer — 06/22',

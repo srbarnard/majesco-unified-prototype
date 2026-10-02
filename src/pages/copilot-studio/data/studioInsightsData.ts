@@ -100,7 +100,7 @@ export const studioAssistantsKpis: AnalyticsKpiMetric[] = [
   },
   {
     id: 'assistant-messages',
-    title: 'Chat messages sent',
+    title: 'Assistant messages sent',
     value: '1,358',
     trend: { direction: 'neutral', label: 'in the selected time period' },
     tone: 'neutral',

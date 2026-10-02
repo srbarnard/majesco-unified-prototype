@@ -19,7 +19,7 @@ export function resolveTaskRecommendationResponse(
   if (normalized.includes('rate adjustment') || normalized.includes('+')) {
     return {
       heading: 'Rate adjustment draft',
-      intro: `For ${insured}, Chat modeled the property line using updated loss runs and peer renewals in the same ZIP cluster.`,
+      intro: `For ${insured}, the assistant modeled the property line using updated loss runs and peer renewals in the same ZIP cluster.`,
       items: [
         'Recommend +8–12% on property; liability can remain at current limits.',
         'Cite the three largest water losses and mitigation status in the referral memo.',
@@ -85,7 +85,7 @@ export function resolveTaskRecommendationResponse(
         'Draft reserve memo citing authority threshold and open litigation.',
         'Update task status after reserve approval is logged.',
       ],
-      summary: 'Chat can pre-fill the reserve memo template with current file values.',
+      summary: 'The assistant can pre-fill the reserve memo template with current file values.',
       actions: ['Generate reserve memo', 'Schedule sync'],
       elapsedSeconds: 4.11,
     }

@@ -1,7 +1,6 @@
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { CopilotIcon } from '@/design-system/components'
 import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
 import { StudioChatMessages } from '@/pages/copilot-studio/components/StudioChatMessages'
 import type { StudioChatMessage } from '@/pages/copilot-studio/data/mockCopilotStudio'
@@ -95,7 +94,6 @@ export function ChatTab({ messages, onSend }: ChatTabProps) {
             alignItems="center"
             sx={{ position: 'relative', maxWidth: 640, textAlign: 'center', mb: 4 }}
           >
-            <CopilotIcon size={32} />
             <Typography
               variant="h5"
               sx={{

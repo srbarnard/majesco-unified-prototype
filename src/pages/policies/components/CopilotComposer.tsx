@@ -594,7 +594,7 @@ export function CopilotComposer({
           color="text.disabled"
           sx={{ ...bodySx, mt: footerAction || isListening ? 0.75 : 1, display: 'block', textAlign: 'center' }}
         >
-          Chat uses AI. Check for mistakes. Terms &amp; conditions.
+          The assistant can make mistakes. Check important details. Terms &amp; conditions.
         </Typography>
       )}
     </Box>

@@ -104,7 +104,7 @@ export function defaultAttachBody(target: DocumentAttachTarget, documents: Polic
   if (target === 'email') {
     return `Hi,
 
-Chat converted ${primary.fileName} into the message below. Please review and send to your client.
+The assistant converted ${primary.fileName} into the message below. Please review and send to your client.
 
 ---
 ${excerpt}
@@ -120,7 +120,7 @@ Best regards`
   if (target === 'note') {
     return `Document: ${primary.fileName}
 
-Chat extracted summary:
+Assistant summary:
 ${preview.keyInsights.map((insight) => `• ${insight}`).join('\n')}
 
 Extracted text:

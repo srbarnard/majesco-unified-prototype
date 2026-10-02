@@ -322,7 +322,7 @@ function AssistantsView() {
 
       <Stack spacing={1.5}>
         <AnalyticsSectionTitle
-          title="How are users interacting with Majesco Chat?"
+          title="How are users interacting with Majesco Assistant?"
           subtitle="Interaction volume and messaging patterns in the selected time period."
         />
         <KpiGrid metrics={studioAssistantsKpis} />

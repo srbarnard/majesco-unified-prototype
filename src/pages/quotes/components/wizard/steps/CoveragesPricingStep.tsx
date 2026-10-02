@@ -53,7 +53,7 @@ export function CoveragesPricingStep({
       />
 
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Chat recommends lines based on the risk profile. Select coverages to generate an indicative premium.
+        The assistant recommends lines based on the risk profile. Select coverages to generate an indicative premium.
       </Typography>
 
       <Stack spacing={1.25}>

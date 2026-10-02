@@ -89,7 +89,7 @@ export const submissionDocumentsMock: PolicyDocument[] = [
 ]
 
 export const submissionDocumentStoryMock =
-  'This Commercial Auto submission includes **5 intake documents** from the producer — applications, vehicle schedule, drivers, and loss runs. Chat extracted fleet and exposure details with high confidence. Review the **vehicle schedule** and **driver list** before clearing for rating.'
+  'This Commercial Auto submission includes **5 intake documents** from the producer — applications, vehicle schedule, drivers, and loss runs. The assistant extracted fleet and exposure details with high confidence. Review the **vehicle schedule** and **driver list** before clearing for rating.'
 
 export const submissionDocumentStorySyncedAtMock = '8 min ago'
 
@@ -114,7 +114,7 @@ export function getSubmissionDocumentStory(submissionNumber: string) {
   }
 
   return {
-    story: `Intake documents for submission **${submissionNumber}** include applications, schedules, and loss history needed to quote Commercial Auto. Select a document to summarize with Chat.`,
+    story: `Intake documents for submission **${submissionNumber}** include applications, schedules, and loss history needed to quote Commercial Auto. Select a document to summarize with the assistant.`,
     syncedAt: 'Recently',
     highlights: [] as { label: string; date: string }[],
   }

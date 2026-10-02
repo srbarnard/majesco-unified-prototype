@@ -110,7 +110,7 @@ const basePolicyDocuments: PolicyDocument[] = [
     aiSummary: 'Fleet count increased from 48 to 60 units.',
     tags: ['2026 Renewal'],
     author: 'Underwriting Bot',
-    authorDetail: 'AI extraction',
+    authorDetail: 'Assistant extraction',
     date: '2026-05-01',
     relativeTime: '1w ago',
     activityLabel: 'Endorsement',

@@ -53,7 +53,7 @@ export function QuoteWizardFormField({
           {label}
         </Typography>
         {aiFilled && value && (
-          <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} aria-label="AI pre-filled" />
+          <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} aria-label="Pre-filled" />
         )}
       </Stack>
       <TextField

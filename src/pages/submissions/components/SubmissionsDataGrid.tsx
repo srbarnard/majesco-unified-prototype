@@ -60,7 +60,7 @@ type SubmissionsDataGridProps = {
   rows: SubmissionListRecord[]
   rowSelectionModel: GridRowSelectionModel
   onRowSelectionModelChange: (model: GridRowSelectionModel) => void
-  /** Row Chat icon / Ask Chat — insight briefing. */
+  /** Row assistant icon — insight briefing. */
   onAskCopilot?: (submission: SubmissionListRecord) => void
   /** Status chip — status workflow (issues / structure options). */
   onOpenStatusCopilot?: (submission: SubmissionListRecord) => void
@@ -183,10 +183,10 @@ function RowActionsMenu({
             )}
           </IconButton>
         </Tooltip>
-        <Tooltip title="Ask Chat about this submission">
+        <Tooltip title="Ask assistant.">
           <IconButton
             size="small"
-            aria-label={`Ask Chat about ${row.submissionNumber}`}
+            aria-label={`Ask assistant about ${row.submissionNumber}`}
             aria-pressed={isCopilotActive}
             onClick={(event) => {
               event.stopPropagation()
@@ -195,7 +195,7 @@ function RowActionsMenu({
             onMouseDown={(event) => event.stopPropagation()}
             sx={tableActionIconButtonSx}
           >
-            <CopilotIcon size={18} />
+            <CopilotIcon size={22} />
           </IconButton>
         </Tooltip>
         <Tooltip title="More actions">
