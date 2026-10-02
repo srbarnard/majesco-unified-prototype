@@ -66,7 +66,7 @@ export type SubmissionListRecord = {
   premiumEstimates?: PremiumEstimate[]
   readyInsights?: SubmissionReadyInsight[]
   notes: string[]
-  /** Copilot-approved structure label, when the UW confirms an option. */
+  /** Chat-approved structure label, when the UW confirms an option. */
   approvedPremiumLabel?: PremiumEstimate['label']
   /** Populated when status is Quoted — what was emailed. */
   quotePackageSent?: QuotePackageSent
@@ -96,7 +96,7 @@ export function resolvePremiumStructureOptions(
     }))
   }
 
-  // Authored Copilot decisions already carry rationales — do not force-prune to fewer.
+  // Authored Chat decisions already carry rationales — do not force-prune to fewer.
   if (estimates.length <= 3 && estimates.every((option) => Boolean(option.rationale?.trim()))) {
     const uniqueAuthored = estimates.filter((option, index, all) => {
       const normalized = option.range.replace(/\s/g, '').toLowerCase()
@@ -156,7 +156,7 @@ export function buildQuotePackageSent(
   }
 }
 
-/** Hand-crafted demo rows (rich Copilot issue detail). Extra volume is generated below. */
+/** Hand-crafted demo rows (rich Chat issue detail). Extra volume is generated below. */
 const curatedSubmissions: SubmissionListRecord[] = [
   {
     id: 'sub-00123',
@@ -977,7 +977,7 @@ function pickGeneratedPremiumOptions(index: number, linesOfBusiness: string[]): 
   })
 }
 
-/** Target volume for the list demo — Copilot still works off the same row model. */
+/** Target volume for the list demo — Chat still works off the same row model. */
 export const SUBMISSIONS_TOTAL_ROWS = 120
 
 function padSubmissionNumber(n: number) {

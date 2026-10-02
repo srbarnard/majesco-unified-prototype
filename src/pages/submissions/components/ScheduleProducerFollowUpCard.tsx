@@ -121,7 +121,7 @@ export type ScheduleProducerFollowUpCardProps = {
   }) => void
 }
 
-/** In-thread create-task mini-form (Copilot / Notes follow-up). */
+/** In-thread create-task mini-form (Chat / Notes follow-up). */
 export function ScheduleProducerFollowUpCard({
   submission = null,
   defaultTaskName,

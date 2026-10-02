@@ -39,7 +39,7 @@ export type AssignBlockedComposeCardProps = {
   onAssign: (submissions: SubmissionListRecord[], assignee: string, note: string) => void
 }
 
-/** Compact Copilot-reply form — thread chrome lives outside this card. */
+/** Compact Chat-reply form — thread chrome lives outside this card. */
 export function AssignBlockedComposeCard({
   blockedOptions,
   initialSelected,

@@ -82,7 +82,7 @@ export function CustomerDetails() {
     [customer?.id, customer?.contactPhone, customer?.email, customer?.contactName],
   )
 
-  // Arriving from the Create customer drawer (or any link) swaps the right panel to Copilot for this customer.
+  // Arriving from the Create customer drawer (or any link) swaps the right panel to Chat for this customer.
   useEffect(() => {
     if (isDesktop) openTool('copilot')
     else closeTool()

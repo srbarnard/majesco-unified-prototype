@@ -170,10 +170,10 @@ function RowActionsMenu({
             <DownloadOutlinedIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Summarize with Copilot">
+        <Tooltip title="Summarize with Chat">
           <IconButton
             size="small"
-            aria-label={`Summarize ${row.fileName} with Copilot`}
+            aria-label={`Summarize ${row.fileName} with Chat`}
             aria-pressed={isPreviewActive || isCopilotActive}
             onClick={(event) => {
               stopGridNavigation(event)

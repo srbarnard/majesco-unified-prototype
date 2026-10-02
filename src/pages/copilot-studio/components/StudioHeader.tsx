@@ -33,7 +33,7 @@ export function StudioHeader({ activeTab, onTabChange }: StudioHeaderProps) {
             lineHeight: 1.3,
           }}
         >
-          Copilot Studio
+          Studio
         </Typography>
       </Stack>
 

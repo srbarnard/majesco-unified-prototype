@@ -23,7 +23,7 @@ type StudioChatDrawerProps = {
   onNewChat?: () => void
 }
 
-/** Left-side Copilot Studio history drawer (toggled from the right tool rail). */
+/** Left-side Studio history drawer (toggled from the right tool rail). */
 export function StudioChatDrawer({
   open,
   onClose,

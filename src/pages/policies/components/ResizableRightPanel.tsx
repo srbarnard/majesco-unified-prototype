@@ -22,7 +22,7 @@ type ResizableRightPanelProps = {
   variant?: RightPanelVariant
   onClose?: () => void
   /**
-   * Skip the exit slide when handing off to the shell tool drawer (Copilot/Notes/Email).
+   * Skip the exit slide when handing off to the shell tool drawer (Chat/Notes/Email).
    * Avoids a flash of this panel sitting beside the newly opened tool.
    */
   skipExitAnimation?: boolean

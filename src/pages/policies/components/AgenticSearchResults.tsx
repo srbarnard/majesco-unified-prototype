@@ -282,7 +282,7 @@ export function DailySummaryContent({
 
   const handleRecordLink = (to: string) => {
     navigate(to)
-    // Keep the Copilot drawer open after navigating to the matched record/list.
+    // Keep the Chat drawer open after navigating to the matched record/list.
     openTool('copilot')
   }
 

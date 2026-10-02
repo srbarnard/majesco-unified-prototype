@@ -40,7 +40,7 @@ type TasksContextValue = {
   newTaskRequest: NewTaskRequest | null
   openNewTask: (related: AddTaskRelated) => void
   clearNewTaskRequest: () => void
-  /** The single row selected (or Copilot-focused) on the current grid; prefills the rail's New task. */
+  /** The single row selected (or Chat-focused) on the current grid; prefills the rail's New task. */
   selectedRecord: AddTaskRelated | null
   setSelectedRecord: (record: AddTaskRelated | null) => void
 }

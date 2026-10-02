@@ -7,7 +7,7 @@ import { StatusChip } from '@/design-system/components'
 import { FormatQuoteOffIcon } from '@/design-system/icons/FormatQuoteOff'
 import type { SubmissionStatus } from '@/pages/submissions/data/mockSubmissions'
 
-/** Soft elastic hover — lighter than Copilot confidence ring. */
+/** Soft elastic hover — lighter than Chat confidence ring. */
 const statusChipHoverBounce = keyframes`
   0% { transform: scale(1); }
   55% { transform: scale(1.07); }
@@ -39,7 +39,7 @@ export function SubmissionStatusChip({ status, onClick, selected = false }: Subm
     clickable: interactive,
     'aria-pressed': interactive ? selected : undefined,
     'aria-label': interactive
-      ? `${status} — ${selected ? 'Copilot open' : 'Open Copilot'}`
+      ? `${status} — ${selected ? 'Chat open' : 'Open Chat'}`
       : undefined,
     sx: {
       cursor: interactive ? 'pointer' : undefined,

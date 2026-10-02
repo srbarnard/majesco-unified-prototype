@@ -51,7 +51,7 @@ function ActivityRailRow({
 }: ActivityRailRowProps) {
   const theme = useTheme()
   const isDarkMode = theme.palette.mode === 'dark'
-  // Only explicit Copilot/activity focus selects the row — never auto-select on load.
+  // Only explicit Chat/activity focus selects the row — never auto-select on load.
   const rowSelected = isCopilotActive
   const railColor = alpha(theme.palette.primary.main, isDarkMode ? 0.55 : 0.35)
 
@@ -114,12 +114,12 @@ function ActivityRailRow({
         aria-label={
           onAskCopilot
             ? isCopilotActive
-              ? `Clear Copilot focus on ${item.label}`
-              : `Ask Copilot about ${item.label}`
+              ? `Clear Chat focus on ${item.label}`
+              : `Ask Chat about ${item.label}`
             : undefined
         }
         onClick={() => {
-          // Whole row is the Copilot toggle when available.
+          // Whole row is the Chat toggle when available.
           if (onAskCopilot) {
             onAskCopilot(item)
             return
@@ -148,7 +148,7 @@ function ActivityRailRow({
           py: '12px',
           px: '16px',
           borderRadius: '8px',
-          // Match chart pill selected state when Copilot is focused on this row.
+          // Match chart pill selected state when Chat is focused on this row.
           bgcolor: rowSelected ? 'primary.main' : (t) => surfaceMuted(t),
           color: rowSelected ? 'primary.contrastText' : 'text.primary',
           mb: 1.5,

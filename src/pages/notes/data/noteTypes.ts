@@ -51,7 +51,7 @@ export type NoteThreadMessage = {
   text: string
   createdAt: string
   author?: NoteAuthor
-  /** Copilot Chat–style suggested action labels under an assistant turn */
+  /** Chat-style suggested action labels under an assistant turn */
   suggestedActions?: string[]
   /** Missing-field prompts listed under a draft */
   missingFields?: string[]

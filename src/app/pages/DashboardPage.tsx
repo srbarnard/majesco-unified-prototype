@@ -35,7 +35,7 @@ export function DashboardPage() {
   const [selectedActivity, setSelectedActivity] = useState<RecentActivityItem | null>(null)
   const [activityDetailOpen, setActivityDetailOpen] = useState(false)
   const [focusedActivity, setFocusedActivity] = useState<RecentActivityItem | null>(null)
-  /** Instant-unmount page panel when opening shell Copilot to avoid side-by-side flash. */
+  /** Instant-unmount page panel when opening shell Chat to avoid side-by-side flash. */
   const [skipDetailExitAnimation, setSkipDetailExitAnimation] = useState(false)
 
   const detailPanelOpen = taskDetailOpen || activityDetailOpen

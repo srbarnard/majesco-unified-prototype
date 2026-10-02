@@ -1,6 +1,7 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import BlockIcon from '@mui/icons-material/Block'
 import CheckIcon from '@mui/icons-material/Check'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import CloseIcon from '@mui/icons-material/Close'
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
@@ -220,6 +221,9 @@ export function DraftInlineTextEdit({
   multiline = false,
   label,
   placeholder,
+  helperText,
+  confirmable = false,
+  inputMode,
   type = 'text',
   onCommit,
   onDismiss,
@@ -228,6 +232,11 @@ export function DraftInlineTextEdit({
   multiline?: boolean
   label: string
   placeholder?: string
+  /** Caption under the open input (the row itself carries no helper text). */
+  helperText?: string
+  /** Trailing ✓ button that commits, alongside Enter / blur. */
+  confirmable?: boolean
+  inputMode?: 'text' | 'numeric' | 'decimal'
   /** Native input type; `tel` / `email` also set autocomplete and the mobile keyboard. */
   type?: 'text' | 'tel' | 'email'
   onCommit: (value: string) => void
@@ -247,6 +256,7 @@ export function DraftInlineTextEdit({
       minRows={multiline ? 3 : undefined}
       value={value}
       placeholder={placeholder}
+      helperText={helperText}
       autoFocus={prefersFinePointer()}
       onChange={(event) => setValue(event.target.value)}
       onBlur={commit}
@@ -260,9 +270,30 @@ export function DraftInlineTextEdit({
       type={multiline ? undefined : type}
       inputProps={{
         'aria-label': label,
+        ...(inputMode ? { inputMode } : {}),
         ...(type === 'tel' ? { autoComplete: 'tel', inputMode: 'tel' } : {}),
         ...(type === 'email' ? { autoComplete: 'email', inputMode: 'email' } : {}),
       }}
+      InputProps={
+        confirmable
+          ? {
+              endAdornment: (
+                <IconButton
+                  size="small"
+                  edge="end"
+                  aria-label={`Save ${label.toLowerCase()}`}
+                  disabled={!value.trim()}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={commit}
+                  sx={{ color: 'primary.main' }}
+                >
+                  <CheckIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              ),
+            }
+          : undefined
+      }
+      FormHelperTextProps={{ sx: { fontFamily: figmaFontFamilyStack.body, mx: 0 } }}
       sx={draftInputSx}
     />
   )
@@ -340,9 +371,41 @@ export type DraftNeededRow<F extends string> = {
   /** Quiet status line under the value (e.g. "Emailed to …"). */
   meta?: ReactNode
   extra?: ReactNode
+  /** Collection row: trailing chevron; the parent navigates instead of opening an inline editor. */
+  chevron?: boolean
+  /** Replaces the status badge with a category icon (e.g. location type); wins over `tone`. */
+  badge?: DraftRowBadge
 }
 
+export type DraftRowBadge = { icon: ReactNode; label: string; color: 'teal' | 'green' }
+
 type NeededBadgeTone = 'success' | 'error' | 'warning' | 'empty'
+
+function CategoryBadge({ badge }: { badge: DraftRowBadge }) {
+  return (
+    <Box
+      aria-label={badge.label}
+      sx={(theme) => {
+        const isLight = theme.palette.mode === 'light'
+        const palette = theme.figmaPalette[badge.color]
+        return {
+          width: 32,
+          height: 32,
+          borderRadius: '10px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          bgcolor: isLight ? palette[100] : palette[900],
+          color: isLight ? palette[800] : palette[200],
+          '& .MuiSvgIcon-root': { fontSize: 18 },
+        }
+      }}
+    >
+      {badge.icon}
+    </Box>
+  )
+}
 
 const BADGE_LABELS: Record<NeededBadgeTone, string> = {
   success: 'Filled',
@@ -410,9 +473,15 @@ function NeededItem<F extends string>({
   children?: ReactNode
 }) {
   const missing = row.value == null
+  // An empty hint ('') means the row shows its title only.
+  const subtitle = missing ? (row.hint ?? 'still needed') : row.value
   const line = (
     <>
-      <NeededStatusBadge tone={row.tone ?? (missing ? 'empty' : 'success')} />
+      {row.badge ? (
+        <CategoryBadge badge={row.badge} />
+      ) : (
+        <NeededStatusBadge tone={row.tone ?? (missing ? 'empty' : 'success')} />
+      )}
       <Box sx={{ minWidth: 0, flex: 1 }}>
         <Typography
           variant="body2"
@@ -420,21 +489,26 @@ function NeededItem<F extends string>({
         >
           {row.term}
         </Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ ...draftBodySx, fontSize: '0.8125rem', lineHeight: 1.4, mt: 0.25, overflowWrap: 'anywhere' }}
-        >
-          {missing ? (row.hint ?? 'still needed') : row.value}
-        </Typography>
+        {subtitle ? (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ ...draftBodySx, fontSize: '0.8125rem', lineHeight: 1.4, mt: 0.25, overflowWrap: 'anywhere' }}
+          >
+            {subtitle}
+          </Typography>
+        ) : null}
         {row.meta ? <Box sx={{ mt: 0.5 }}>{row.meta}</Box> : null}
       </Box>
+      {row.chevron ? (
+        <ChevronRightIcon sx={{ fontSize: 20, color: 'text.secondary', alignSelf: 'center', flexShrink: 0 }} />
+      ) : null}
     </>
   )
   const lineSx = {
     width: '100%',
     display: 'flex',
-    alignItems: 'flex-start',
+    alignItems: subtitle || row.meta ? 'flex-start' : 'center',
     gap: 1.25,
     px: 2,
     py: 1.5,
@@ -465,7 +539,7 @@ function NeededItem<F extends string>({
           disableRipple
           onClick={onToggle}
           aria-expanded={expanded}
-          aria-label={`${missing ? 'Set' : 'Edit'} ${row.term.toLowerCase()}`}
+          aria-label={row.chevron ? `Open ${row.term.toLowerCase()}` : `${missing ? 'Set' : 'Edit'} ${row.term.toLowerCase()}`}
           sx={{
             ...lineSx,
             color: 'text.primary',
@@ -512,7 +586,7 @@ export function DraftNeededList<F extends string>({
         const expanded = field != null && editingField === field
         return (
           <NeededItem
-            key={row.term}
+            key={row.field ?? row.term}
             row={row}
             expanded={expanded}
             openRowStyle={openRowStyle}
@@ -536,22 +610,27 @@ export function DraftHeader({
 }: {
   title: string
   request?: ReactNode
-  backLabel: string
-  onBack: () => void
+  /** Omit both to drop the ← (e.g. a drawer's top level). */
+  backLabel?: string
+  onBack?: () => void
 }) {
+  const hasBack = Boolean(onBack)
   return (
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: 'auto minmax(0, 1fr)',
+        gridTemplateColumns: hasBack ? 'auto minmax(0, 1fr)' : 'minmax(0, 1fr)',
         columnGap: 0.5,
         alignItems: 'center',
+        minHeight: 34,
         mb: 1,
       }}
     >
-      <IconButton size="small" onClick={onBack} aria-label={backLabel} sx={{ ml: -0.75 }}>
-        <ArrowBackIcon fontSize="small" />
-      </IconButton>
+      {hasBack ? (
+        <IconButton size="small" onClick={onBack} aria-label={backLabel} sx={{ ml: -0.75 }}>
+          <ArrowBackIcon fontSize="small" />
+        </IconButton>
+      ) : null}
       <Typography variant="subtitle1" noWrap title={title} sx={{ ...copilotSubtitleSx, lineHeight: 1.35 }}>
         {title}
       </Typography>
@@ -559,7 +638,7 @@ export function DraftHeader({
         <Typography
           variant="body2"
           color="text.secondary"
-          sx={{ ...draftBodySx, gridColumn: 2, lineHeight: 1.5, overflowWrap: 'anywhere' }}
+          sx={{ ...draftBodySx, gridColumn: hasBack ? 2 : 1, lineHeight: 1.5, overflowWrap: 'anywhere' }}
         >
           {request}
         </Typography>

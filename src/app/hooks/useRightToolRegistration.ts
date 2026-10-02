@@ -7,7 +7,7 @@ import {
   type RightToolRecordContext,
 } from '@/app/contexts/RightToolContext'
 
-/** Register page-specific Copilot props while this route is mounted. */
+/** Register page-specific Chat props while this route is mounted. */
 export function useRegisterRightToolCopilot(
   session: RightToolCopilotSession | null,
   deps: ReadonlyArray<unknown>,
@@ -26,7 +26,7 @@ export function useRegisterRightToolCopilot(
 }
 
 /**
- * Register a specialty Copilot UI (e.g. SubmissionsCopilotPanel, QuoteWizardCopilotPanel)
+ * Register a specialty Chat UI (e.g. SubmissionsCopilotPanel, QuoteWizardCopilotPanel)
  * that replaces CopilotPanel in the shell drawer while this route is mounted.
  *
  * Content is kept in a ref and a revision bump triggers the drawer to re-read it,
@@ -41,7 +41,7 @@ export function useRegisterRightToolCopilotCustom(
   contentRef.current = content
 
   // Layout effect so flushSync'd confirmation state is registered before switching
-  // from Email back to Copilot (avoids a one-frame Structure review flash).
+  // from Email back to Chat (avoids a one-frame Structure review flash).
   useLayoutEffect(() => {
     setCopilotCustomContent(contentRef.current)
     return () => setCopilotCustomContent(null)
@@ -155,7 +155,7 @@ export function useRegisterRightToolParties(content: ReactNode | null, deps: Rea
 }
 
 /**
- * Register History as a right-rail tool (Copilot Studio).
+ * Register History as a right-rail tool (Studio).
  * Opens the left history drawer — does not fill the right tool panel.
  */
 export function useRegisterRightToolHistory(available: boolean) {

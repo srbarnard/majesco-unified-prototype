@@ -30,7 +30,7 @@ const contentPaddingX = `${layoutTokens.contentPaddingX}px`
 type ActivityDetailsPanelProps = {
   activity: RecentActivityItem
   onClose?: () => void
-  /** Return to the Copilot summary without closing the right panel. */
+  /** Return to the Chat summary without closing the right panel. */
   onBack?: () => void
   onRecommendationClick?: (insight: string) => void
 }
@@ -122,7 +122,7 @@ export function ActivityDetailsPanel({
               <IconButton
                 size="small"
                 onClick={onBack}
-                aria-label="Back to Copilot"
+                aria-label="Back to Chat"
                 sx={{ ml: -0.75, flexShrink: 0 }}
               >
                 <ArrowBackIcon fontSize="small" />

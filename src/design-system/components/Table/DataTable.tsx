@@ -29,7 +29,7 @@ export const tableActionIconButtonSx = {
   },
 } as const
 
-/** Copilot icon in data grid action columns — subtle fill when active. */
+/** Chat icon in data grid action columns — subtle fill when active. */
 export function copilotActiveIconSx(active?: boolean) {
   return {
     ...tableActionIconButtonSx,

@@ -35,11 +35,24 @@ type PhotonResponse = { features?: { properties?: PhotonProperties }[] }
 
 type TypedQuery = { number: string | null; rest: string }
 
+const STREET_PREFIXES = new Set(['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw', 'north', 'south', 'east', 'west'])
+
+/** Photon fuzzes aggressively ("500 market" → "500 Grove St"); keep hits whose street contains the typed street name. */
+function streetMatchesTyped(streetName: string, rest: string) {
+  const typedWord = rest.split(' ').find((word) => word && !STREET_PREFIXES.has(word))
+  if (!typedWord) return true
+  return streetName
+    .toLowerCase()
+    .split(/[\s-]+/)
+    .some((word) => word.startsWith(typedWord) || (word.length >= 3 && typedWord.startsWith(word)))
+}
+
 function toAddress(props: PhotonProperties, typed: TypedQuery | null): CustomerAddress | null {
   if (props.countrycode !== 'US') return null
   const streetName = props.street ?? (props.type === 'street' ? props.name : undefined)
   const city = props.city ?? props.town ?? props.village ?? props.locality ?? props.district
   if (!streetName || !city) return null
+  if (typed?.number && !streetMatchesTyped(streetName, typed.rest)) return null
   let number = props.housenumber ?? null
   if (!number && typed?.number) {
     // Street-level hits have no house number; borrow the typed one only when the street is what they typed.

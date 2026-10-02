@@ -157,7 +157,7 @@ const baseTasks: TaskRecord[] = [
       claimNumber: null,
     },
     description:
-      'Commercial property renewal flagged by Copilot after updated loss runs showed elevated CAT and water damage frequency. Account is strategic producer book; prior term had no rate change. Underwriting referral required before renewal terms can release to producer. The account spans 12 locations across Nebraska and Iowa with total insured values exceeding $48M. Recent water intrusion claims at the Omaha grain elevator and secondary cold storage facility drove the loss ratio above the 62% referral threshold. Producer Hartwell Insurance Group has requested to maintain the current rate pending completion of roof mitigation at two flagged locations. Copilot pre-filled referral worksheet sections 1–4; sections 5–7 require underwriter narrative on catastrophe exposure and business income limits.',
+      'Commercial property renewal flagged by Chat after updated loss runs showed elevated CAT and water damage frequency. Account is strategic producer book; prior term had no rate change. Underwriting referral required before renewal terms can release to producer. The account spans 12 locations across Nebraska and Iowa with total insured values exceeding $48M. Recent water intrusion claims at the Omaha grain elevator and secondary cold storage facility drove the loss ratio above the 62% referral threshold. Producer Hartwell Insurance Group has requested to maintain the current rate pending completion of roof mitigation at two flagged locations. Chat pre-filled referral worksheet sections 1–4; sections 5–7 require underwriter narrative on catastrophe exposure and business income limits.',
     copilotInsights: [
       'Recommend +8–12% rate adjustment on property line; liability remains within appetite at current limits.',
       'Similar accounts in ZIP cluster 68102 renewed at avg +10.4% when loss ratio exceeded 62%.',
@@ -296,7 +296,7 @@ const baseTasks: TaskRecord[] = [
       claimNumber: null,
     },
     description:
-      'Sanctions screening returned potential match on principal owner name during new business quote bind prep. Preliminary Copilot match score 0.71 — likely false positive due to common name + different DOB/state. Bind is blocked pending compliance clearance.',
+      'Sanctions screening returned potential match on principal owner name during new business quote bind prep. Preliminary Chat match score 0.71 — likely false positive due to common name + different DOB/state. Bind is blocked pending compliance clearance.',
     copilotInsights: [
       'Screening hit entity DOB differs by 12 years from application owner DOB — strong false-positive signal.',
       'Recommend clearance with note; no prior compliance flags on producer or insured.',
@@ -393,7 +393,7 @@ const baseTasks: TaskRecord[] = [
     copilotInsights: [
       'Policy includes ordinance/law coverage — confirm limits apply to partial rebuild scenario.',
       'Similar fire claims in book avg 78 days to settlement; reserve may stabilize after engineer final.',
-      'Suggest Copilot-drafted reserve memo template for claims file.',
+      'Suggest Chat-drafted reserve memo template for claims file.',
     ],
     documents: [
       { id: 'task-att-engineer-report', name: 'Engineer report (final draft)', status: 'Received', required: true, type: 'pdf' },
@@ -436,7 +436,7 @@ const baseTasks: TaskRecord[] = [
       claimNumber: null,
     },
     description:
-      'New business BML submission received via portal. Copilot parsed SOV but 14 locations missing TIV, construction type, or year built. Cannot release to UW until minimum data completeness threshold met (85%).',
+      'New business BML submission received via portal. Chat parsed SOV but 14 locations missing TIV, construction type, or year built. Cannot release to UW until minimum data completeness threshold met (85%).',
     copilotInsights: [
       '14 of 62 locations incomplete — all missing fields are construction/year built.',
       'Auto-email template ready with location-level gap table for producer.',
@@ -484,7 +484,7 @@ const baseTasks: TaskRecord[] = [
       claimNumber: null,
     },
     description:
-      'Scheduled premium audit for multi-state WC policy. Copilot flagged possible misclassification: clerical staff payroll may be assigned to restaurant class. Audit outcome may generate endorsement and additional premium invoice.',
+      'Scheduled premium audit for multi-state WC policy. Chat flagged possible misclassification: clerical staff payroll may be assigned to restaurant class. Audit outcome may generate endorsement and additional premium invoice.',
     copilotInsights: [
       'Payroll split shows 22% in class 8742 — peer restaurants avg 8% for similar headcount.',
       'Recommend requesting detailed job descriptions before final audit close.',
@@ -578,7 +578,7 @@ const baseTasks: TaskRecord[] = [
       claimNumber: null,
     },
     description:
-      'Quote on internal watchlist due to expiration proximity and stalled status. Insured is new business commercial package (CP + GL + Umb). Copilot detected producer last viewed quote 12 days ago; no bind or revision requests logged.',
+      'Quote on internal watchlist due to expiration proximity and stalled status. Insured is new business commercial package (CP + GL + Umb). Chat detected producer last viewed quote 12 days ago; no bind or revision requests logged.',
     copilotInsights: [
       'Recommend 7-day extension — within AM authority; competitor indication likely per producer notes.',
       'Similar stalled quotes converted 34% after single outreach call within 5 days of expiry.',
@@ -709,7 +709,7 @@ const taskSeeds: TaskSeed[] = [
   { name: 'Coverage question — cyber sublimit', theme: 'Producer support', priority: 'Low', status: 'Started', displayStatus: 'In progress', nextAction: 'Draft response on social engineering sublimit', assignedTo: 'Brianna Lopez', assigner: 'Alex Carter', team: CLIENT, dueIn: 3, agingDays: 2, refPrefix: 'CVQ', referenceType: 'Policy', insured: 'Oakridge Dental Group', producer: 'Coastal Brokerage', policy: 'CY-3390-120' },
   { name: 'Payment plan change request', theme: 'Producer support', priority: 'Low', status: 'Pending', displayStatus: 'Pending insured', nextAction: 'Confirm EFT authorization for quarterly plan', assignedTo: 'Brianna Lopez', assigner: 'Alex Carter', team: CLIENT, dueIn: 7, agingDays: 1, refPrefix: 'PAY', referenceType: 'Policy', insured: 'Lakeview Medical Partners', producer: 'Summit Risk Partners', policy: 'PL-7702-441' },
   { name: 'OFAC potential match — named insured', theme: 'Compliance watch', priority: 'High', status: 'Pending', displayStatus: 'Open', nextAction: 'Clear or escalate potential SDN match', assignedTo: 'Jasmine Nguyen', assigner: 'System', team: 'Enterprise Compliance', dueIn: 0, agingDays: 0, refPrefix: 'OFC', referenceType: 'Policy', insured: 'Atlas Import Traders', producer: 'Coastal Brokerage', policy: 'IM-5530-018', alert: true },
-  { name: 'Account review — multi-line cross-sell', theme: 'AI-assisted renewal queue', priority: 'Low', status: 'Started', displayStatus: 'In review', nextAction: 'Review Copilot umbrella and cyber recommendations', assignedTo: 'Jasmine Nguyen', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 12, agingDays: 4, refPrefix: 'XSL', referenceType: 'Policy', insured: 'Riverbend Foods Inc.', producer: 'Hartwell Insurance Group', policy: 'CP-7710-204' },
+  { name: 'Account review — multi-line cross-sell', theme: 'AI-assisted renewal queue', priority: 'Low', status: 'Started', displayStatus: 'In review', nextAction: 'Review Chat umbrella and cyber recommendations', assignedTo: 'Jasmine Nguyen', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 12, agingDays: 4, refPrefix: 'XSL', referenceType: 'Policy', insured: 'Riverbend Foods Inc.', producer: 'Hartwell Insurance Group', policy: 'CP-7710-204' },
   { name: 'Claim notice — water damage FNOL', theme: 'Exception handling', priority: 'High', status: 'Started', displayStatus: 'In progress', nextAction: 'Confirm coverage and assign field adjuster', assignedTo: 'Jasmine Nguyen', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 1, agingDays: 1, refPrefix: 'CLM', referenceType: 'Claim', insured: 'Heartland Cold Storage', producer: 'Summit Risk Partners', policy: 'CP-9012-330', claim: 'CLM-2026-04418' },
   { name: 'Quote follow-up — producer decision pending', theme: 'Automated quote issues', priority: 'Medium', status: 'Pending', displayStatus: 'Pending insured', nextAction: 'Follow up on bind decision before quote expires', assignedTo: 'Ethan Brooks', assigner: 'Leslie Neuman', team: CLIENT, dueIn: 2, agingDays: 7, refPrefix: 'QFU', referenceType: 'Quote', insured: 'Granite Ridge Hospitality', producer: 'Granite Peak Agency', quote: 'Q-BOP-771034' },
   { name: 'Bind failure — payment gateway timeout', theme: 'Automated quote issues', priority: 'High', status: 'Started', displayStatus: 'Failed', nextAction: 'Retry bind and confirm premium collected', assignedTo: 'Ethan Brooks', assigner: 'System', team: 'Personal Lines Processing', dueIn: -1, agingDays: 2, refPrefix: 'BND', referenceType: 'Quote', insured: 'Sarah & Tom Whitfield', producer: 'Direct', quote: 'Q-HO-552190', blocker: 'Payment gateway returned timeout on 3 retries.' },

@@ -26,7 +26,7 @@ type StudioHistoryPanelProps = {
   onNewChat?: () => void
 }
 
-/** Chat history list for Copilot Studio — shown in the left history drawer. */
+/** Chat history list for Studio — shown in the left history drawer. */
 export function StudioHistoryPanel({
   onClose,
   activeThreadId,

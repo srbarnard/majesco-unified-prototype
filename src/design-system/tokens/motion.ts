@@ -11,7 +11,7 @@ export const motionTokens = {
   cardHoverScale: 1.02,
 } as const
 
-/** Copilot / drawer body content swap — short fade + slight vertical move. */
+/** Chat / drawer body content swap — short fade + slight vertical move. */
 export const copilotContentMotion = {
   exitMs: 160,
   enterMs: 220,

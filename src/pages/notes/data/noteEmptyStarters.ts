@@ -12,7 +12,7 @@ export type NoteEmptyStarter = {
 }
 
 /**
- * Home Notes empty starters — derived from Copilot Daily summary beats
+ * Home Notes empty starters — derived from Chat Daily summary beats
  * (`homeDailySummaryBeats`), not a parallel list.
  */
 export function buildHomeNoteStarters(): NoteEmptyStarter[] {
@@ -86,7 +86,7 @@ export function buildRecordNoteStarters(record: NoteBoundRecord): NoteEmptyStart
 
 /**
  * Document-context starters (e.g. renewal_proposal_2026.pdf on a policy).
- * Extract is Copilot context — these chips surface the insights, not a summary wall.
+ * Extract is Chat context — these chips surface the insights, not a summary wall.
  */
 export function buildDocumentNoteStarters(
   record: NoteBoundRecord,
@@ -151,7 +151,7 @@ export function buildDocumentEmptyBody(
   return `This document is on ${record.reference} · ${short}. Add a flag, follow-up, or UW read.`
 }
 
-/** Short Copilot line after the user starts from a document-backed note. */
+/** Short Chat line after the user starts from a document-backed note. */
 export function buildDocumentPulledLine(documents: Array<{ id: string; fileName: string }>) {
   const fileName = documents[0]?.fileName ?? 'document'
   if (/renewal_proposal/i.test(fileName)) {
@@ -161,11 +161,11 @@ export function buildDocumentPulledLine(documents: Array<{ id: string; fileName:
 }
 
 export const HOME_NOTE_EMPTY_BODY =
-  'Add it to the file — a flag, a follow-up, or a read. Copilot will classify it and suggest the next step.'
+  'Add it to the file — a flag, a follow-up, or a read. Chat will classify it and suggest the next step.'
 
 export function buildRecordEmptyBody(record: NoteBoundRecord) {
   const short = record.label.replace(/, LLC$/, '').replace(/ Inc\.$/, '')
-  return `Add it to ${record.reference} · ${short} — a flag, a follow-up, or a read. Copilot will classify it and suggest the next step.`
+  return `Add it to ${record.reference} · ${short} — a flag, a follow-up, or a read. Chat will classify it and suggest the next step.`
 }
 
 export function resolveStarterBind(starter: NoteEmptyStarter): NoteBoundRecord | null {

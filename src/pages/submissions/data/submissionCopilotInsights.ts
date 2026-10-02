@@ -9,7 +9,7 @@ export type SubmissionCopilotEntryMode = 'insight' | 'status'
 export type SubmissionDetailLocationState = {
   openCopilot?: boolean
   entryMode?: SubmissionCopilotEntryMode
-  /** Opaque Copilot confirmation payload — typed at the page boundary. */
+  /** Opaque Chat confirmation payload — typed at the page boundary. */
   sendConfirmation?: {
     submissionId: string
     message: string
@@ -59,7 +59,7 @@ function blockerQuickActions(blockerTitle: string): string[] {
   ]
 }
 
-/** Insight-first briefing when opening Copilot from the row icon (not the status chip). */
+/** Insight-first briefing when opening Chat from the row icon (not the status chip). */
 export function buildSubmissionInsightBriefing(
   submission: SubmissionListRecord,
 ): SubmissionInsightBriefing {

@@ -16,7 +16,10 @@ import { formatAddress, parseCustomerField, type CustomerAddress } from '../data
 
 const PLACEHOLDER = 'Start typing address…'
 
-type AddressOption = { kind: 'address'; address: CustomerAddress } | { kind: 'typed'; text: string }
+type AddressOption =
+  | { kind: 'address'; address: CustomerAddress }
+  | { kind: 'typed'; text: string }
+  | { kind: 'searching' }
 
 const captionSx = { fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.5 } as const
 
@@ -38,7 +41,7 @@ export function CustomerAddressEditor({
   const [phase, setPhase] = useState<'search' | 'unit'>(value ? 'unit' : 'search')
   const [input, setInput] = useState('')
   const [query] = useDebouncedValue(input, 250)
-  const [results, setResults] = useState<CustomerAddress[]>([])
+  const [lookup, setLookup] = useState<{ query: string; results: CustomerAddress[] }>({ query: '', results: [] })
   const [searching, setSearching] = useState(false)
   const [lookupFailed, setLookupFailed] = useState(false)
   const [locating, setLocating] = useState(false)
@@ -47,7 +50,7 @@ export function CustomerAddressEditor({
 
   useEffect(() => {
     if (phase !== 'search' || query.trim().length < 3) {
-      setResults([])
+      setLookup({ query: '', results: [] })
       setSearching(false)
       return
     }
@@ -55,13 +58,14 @@ export function CustomerAddressEditor({
     setSearching(true)
     searchUsAddresses(query, controller.signal)
       .then((next) => {
-        setResults(next)
+        if (controller.signal.aborted) return
+        setLookup({ query: query.trim().toLowerCase(), results: next })
         setLookupFailed(false)
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return
         console.warn(error)
-        setResults([])
+        setLookup({ query: '', results: [] })
         setLookupFailed(true)
       })
       .finally(() => {
@@ -146,8 +150,13 @@ export function CustomerAddressEditor({
   }
 
   const trimmed = input.trim()
+  // Keep earlier suggestions only while the user is still extending the query that produced them.
+  const results = lookup.query && trimmed.toLowerCase().startsWith(lookup.query) ? lookup.results : []
   const options: AddressOption[] = [
     ...results.map((address) => ({ kind: 'address' as const, address })),
+    ...((searching || (trimmed !== query.trim() && trimmed.length >= 3)) && results.length === 0
+      ? [{ kind: 'searching' as const }]
+      : []),
     ...(trimmed ? [{ kind: 'typed' as const, text: trimmed }] : []),
   ]
 
@@ -168,13 +177,20 @@ export function CustomerAddressEditor({
           setLocateFailed(false)
         }}
         getOptionLabel={(option) =>
-          typeof option === 'string' ? option : option.kind === 'address' ? formatAddress(option.address) : option.text
+          typeof option === 'string'
+            ? option
+            : option.kind === 'address'
+              ? formatAddress(option.address)
+              : option.kind === 'typed'
+                ? option.text
+                : ''
         }
+        getOptionDisabled={(option) => option.kind === 'searching'}
         isOptionEqualToValue={() => false}
         onChange={(_, next) => {
           if (typeof next === 'string') confirmTyped(next)
           else if (next.kind === 'typed') confirmTyped(next.text)
-          else select(next.address)
+          else if (next.kind === 'address') select(next.address)
         }}
         onClose={(_, reason) => {
           if (reason === 'escape') onDismiss()
@@ -192,6 +208,13 @@ export function CustomerAddressEditor({
                     .join(', ')}
                 </Typography>
               </>
+            ) : option.kind === 'searching' ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={14} />
+                <Typography color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem' }}>
+                  Searching addresses…
+                </Typography>
+              </Box>
             ) : (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <KeyboardReturnIcon sx={{ fontSize: 16, color: 'text.secondary' }} />

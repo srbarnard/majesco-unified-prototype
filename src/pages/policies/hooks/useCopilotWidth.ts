@@ -4,8 +4,8 @@ import { layoutTokens } from '@/design-system/tokens/layout'
 export type RightPanelVariant = 'standard' | 'wide'
 
 /**
- * Shared storage for Copilot + detail drawers so open/close swaps keep one width.
- * v3: Copilot defaults aligned to the ~1/3 detail-panel width (was fixed ~380px).
+ * Shared storage for Chat + detail drawers so open/close swaps keep one width.
+ * v3: Chat defaults aligned to the ~1/3 detail-panel width (was fixed ~380px).
  */
 const STORAGE_KEY = 'majesco-right-panel-width-v3'
 
@@ -42,7 +42,7 @@ function readStoredWidth() {
 
 /**
  * Resizable right-panel width. `variant` is retained for call-site compatibility;
- * Copilot and detail panels share one default and storage key.
+ * Chat and detail panels share one default and storage key.
  */
 export function useRightPanelWidth(_variant: RightPanelVariant = 'standard') {
   const [width, setWidth] = useState(() => readStoredWidth())

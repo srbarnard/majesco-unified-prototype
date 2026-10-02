@@ -253,10 +253,10 @@ function RowActionsMenu({
             )}
           </IconButton>
         </Tooltip>
-        <Tooltip title="Ask Copilot about this insured">
+        <Tooltip title="Ask Chat about this insured">
           <IconButton
             size="small"
-            aria-label={`Ask Copilot about ${row.name}`}
+            aria-label={`Ask Chat about ${row.name}`}
             aria-pressed={isCopilotActive}
             onClick={(event) => {
               event.stopPropagation()

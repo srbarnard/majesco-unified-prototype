@@ -335,7 +335,7 @@ export const studioPromptsMock: StudioPrompt[] = copilotDrawerPromptGroups.flatM
   return group.prompts.map((prompt) => ({
     id: prompt.id,
     title: prompt.title,
-    description: `${group.label} prompt shared with the Copilot drawer.`,
+    description: `${group.label} prompt shared with the Chat drawer.`,
     category,
     type,
     favorite: prompt.favorite,

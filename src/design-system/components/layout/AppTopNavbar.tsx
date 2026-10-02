@@ -23,6 +23,7 @@ import Typography from '@mui/material/Typography'
 import { type Theme } from '@mui/material/styles'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
+import { useRightToolDispatch, type RightToolId } from '@/app/contexts/RightToolContext'
 import { GlobalSearchField } from '@/design-system/components/GlobalSearch/GlobalSearchField'
 import { useBrowserHistoryNavigation } from '@/hooks/useBrowserHistoryNavigation'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -49,11 +50,12 @@ type CreateMenuItem = {
   label: string
   disabled: boolean
   path?: string
+  tool?: RightToolId
 }
 
 const CREATE_MENU_ITEMS: CreateMenuItem[] = [
   { label: 'Customer', disabled: true },
-  { label: 'Quote', disabled: false, path: '/quotes/new' },
+  { label: 'Quote', disabled: false, tool: 'newQuote' },
   { label: 'Policy', disabled: true },
   { label: 'Claim', disabled: true },
 ]
@@ -99,6 +101,7 @@ const navMenuPaperSx = {
 
 export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopNavbarProps) {
   const navigate = useNavigate()
+  const { openTool } = useRightToolDispatch()
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [createMenuAnchor, setCreateMenuAnchor] = useState<null | HTMLElement>(null)
   const [settingsMenuAnchor, setSettingsMenuAnchor] = useState<null | HTMLElement>(null)
@@ -109,7 +112,8 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
 
   const handleCreateMenuSelect = (item: CreateMenuItem) => {
     handleCreateMenuClose()
-    if (item.path) navigate(item.path)
+    if (item.tool) openTool(item.tool)
+    else if (item.path) navigate(item.path)
   }
 
   const handleSettingsMenuClose = () => setSettingsMenuAnchor(null)

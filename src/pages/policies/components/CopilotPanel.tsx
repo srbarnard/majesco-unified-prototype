@@ -67,7 +67,7 @@ export type CopilotPanelProps = {
   seedComposerMessage?: string | null
   onBackToTaskDetails?: () => void
   taskDetailsBackLabel?: string
-  /** Clears entity focus and returns to the page/workspace default Copilot summary. */
+  /** Clears entity focus and returns to the page/workspace default Chat summary. */
   onBackToSummary?: () => void
   summaryBackLabel?: string
   documentsWorkspaceSummary?: string
@@ -200,7 +200,7 @@ const insuredQuickActions = ['Portfolio summary', 'Open claims', 'Renewal outloo
 const quoteDetailQuickActions = ['Summarize quote', 'Compare versions', 'Send to producer', 'Check rating factors']
 
 const quotesWorkspaceSummary =
-  `You are viewing **${QUOTES_TOTAL_ROWS} quotes** in your pipeline. Select a quote from the list or ask Copilot about rating, underwriting, or submission status.`
+  `You are viewing **${QUOTES_TOTAL_ROWS} quotes** in your pipeline. Select a quote from the list or ask Chat about rating, underwriting, or submission status.`
 
 const quotesWorkspaceInsights = [
   '12 quotes pending issuance or booking',
@@ -251,7 +251,7 @@ function buildPolicyRecordBriefing(policy: PolicyListRecord): ListRecordBriefing
 }
 
 const policiesListWorkspaceSummary =
-  `You are viewing **${POLICIES_TOTAL_ROWS} policies** in your book. Select a policy from the list or ask Copilot about renewals, billing, or endorsements.`
+  `You are viewing **${POLICIES_TOTAL_ROWS} policies** in your book. Select a policy from the list or ask Chat about renewals, billing, or endorsements.`
 
 const policiesListWorkspaceInsights = [
   '18 policies renewing in the next 90 days',
@@ -454,7 +454,7 @@ export function CopilotPanel({
     const documents = activeAttachMode?.documents ?? (focusedDocument ? [focusedDocument] : [])
 
     if (attachTarget && documents.length > 0) {
-      // Notes / Email open their own rail tools (active icon + draft) — never nest note UI in Copilot.
+      // Notes / Email open their own rail tools (active icon + draft) — never nest note UI in Chat.
       if ((attachTarget === 'email' || attachTarget === 'note') && onQuickAction) {
         onQuickAction(action)
         return

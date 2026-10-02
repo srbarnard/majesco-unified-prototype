@@ -103,7 +103,7 @@ function TaskAttachmentChip({ task, doc }: { task: TaskRecord; doc: TaskDocument
 type TaskDetailsPanelProps = {
   task: TaskRecord
   onClose?: () => void
-  /** Return to the Copilot summary without closing the right panel. */
+  /** Return to the Chat summary without closing the right panel. */
   onBack?: () => void
   onMarkComplete?: (task: TaskRecord) => void
 }
@@ -252,7 +252,7 @@ export function TaskDetailsPanel({
               <IconButton
                 size="small"
                 onClick={onBack}
-                aria-label="Back to Copilot"
+                aria-label="Back to Chat"
                 sx={{ ml: -0.75, gridRow: 1, gridColumn: 1 }}
               >
                 <ArrowBackIcon fontSize="small" />

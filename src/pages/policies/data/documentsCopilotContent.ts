@@ -1,4 +1,4 @@
-/** Document workspace Copilot briefings — same summary + insights pattern as overview tabs. */
+/** Document workspace Chat briefings — same summary + insights pattern as overview tabs. */
 
 export const policyDocumentsCopilotSummary =
   'The most recent transaction on this policy was a **renewal quote on 05/13/2026**. Since the prior transaction, **7 documents** were added or updated across renewal, endorsement, claims, and billing.'
@@ -23,7 +23,7 @@ export const quoteDocumentsCopilotInsights = [
 ]
 
 export const submissionDocumentsCopilotSummary =
-  'This Commercial Auto submission includes **5 intake documents** from the producer — applications, vehicle schedule, drivers, and loss runs. Copilot extracted fleet and exposure details with high confidence. Review the **vehicle schedule** and **driver list** before clearing for rating.'
+  'This Commercial Auto submission includes **5 intake documents** from the producer — applications, vehicle schedule, drivers, and loss runs. Chat extracted fleet and exposure details with high confidence. Review the **vehicle schedule** and **driver list** before clearing for rating.'
 
 export const submissionDocumentsCopilotInsights = [
   'ACORD 125 & 127 received from producer — 06/22',

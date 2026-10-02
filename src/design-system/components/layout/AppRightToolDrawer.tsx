@@ -17,6 +17,7 @@ import { CopilotPanel } from '@/pages/policies/components/CopilotPanel'
 import { useRightPanelWidth } from '@/pages/policies/hooks/useCopilotWidth'
 import { NewTaskToolPanel } from '@/pages/tasks/components/NewTaskToolPanel'
 import { CreateCustomerToolPanel } from '@/pages/customers/components/CreateCustomerToolPanel'
+import { CreateQuoteToolPanel } from '@/pages/quotes/components/CreateQuoteToolPanel'
 
 function ToolPanelBody() {
   const {
@@ -58,6 +59,7 @@ function ToolPanelBody() {
       {activeTool === 'parties' ? partiesContent : null}
       {activeTool === 'newTask' ? <NewTaskToolPanel /> : null}
       {activeTool === 'newCustomer' ? <CreateCustomerToolPanel /> : null}
+      {activeTool === 'newQuote' ? <CreateQuoteToolPanel /> : null}
     </Box>
   )
 }
@@ -72,7 +74,7 @@ export function AppRightToolDrawer() {
   const { activeTool, closeTool } = useRightTool()
   const { width, startResize } = useRightPanelWidth()
 
-  // History is a rail toggle for Copilot Studio's left drawer — not a right panel.
+  // History is a rail toggle for Studio's left drawer — not a right panel.
   const open = activeTool != null && activeTool !== 'history'
   const bottomOffset = `calc(${layoutTokens.toolRailBottomHeight}px + env(safe-area-inset-bottom, 0px))`
 

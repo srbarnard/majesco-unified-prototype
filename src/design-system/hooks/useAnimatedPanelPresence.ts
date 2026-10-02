@@ -9,7 +9,7 @@ import { drawerMotion } from '@/design-system/tokens/motion'
  * committed "hidden" paint before `entered` flips (needed for CSS transitions).
  *
  * Pass `skipExitAnimation` when handing off to another drawer (e.g. page Task
- * panel → shell Copilot) so both panels are never visible side-by-side.
+ * panel → shell Chat) so both panels are never visible side-by-side.
  */
 export function useAnimatedPanelPresence(
   open: boolean,

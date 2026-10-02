@@ -2,7 +2,7 @@ export const layoutTokens = {
   drawerWidth: 260,
   drawerCollapsedWidth: 72,
   navRailWidth: 88,
-  /** Persistent right tool rail (Copilot / Notes / Email). */
+  /** Persistent right tool rail (Chat / Notes / Email). */
   toolRailWidth: 48,
   /** Fixed bottom tool bar height on mobile/tablet (below `lg`). */
   toolRailBottomHeight: 56,
@@ -10,11 +10,11 @@ export const layoutTokens = {
   toolDrawerWidth: 380,
   secondaryPanelWidth: 280,
   headerHeight: 56,
-  /** @deprecated Prefer detailPanel* — Copilot now shares the detail-panel width. */
+  /** @deprecated Prefer detailPanel* — Chat now shares the detail-panel width. */
   copilotMinWidth: 360,
   copilotMaxWidth: 720,
   copilotDefaultWidth: 420,
-  /** Right drawer (Copilot + task/activity): ~2/3 content · 1/3 drawer; user can drag. */
+  /** Right drawer (Chat + task/activity): ~2/3 content · 1/3 drawer; user can drag. */
   detailPanelMinWidth: 360,
   detailPanelMinRatio: 0.28,
   detailPanelMaxRatio: 0.55,

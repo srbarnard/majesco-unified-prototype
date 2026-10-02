@@ -123,9 +123,10 @@ export const NAICS_CATALOG: (CustomerNaics & { keywords: RegExp })[] = [
   { code: '721110', title: 'Hotels and motels', keywords: /\b(hotel|motel|resort|hospitality|inn)\b/ },
   { code: '484121', title: 'General freight trucking, long-distance', keywords: /\b(trucking|freight|logistics|carrier|courier)\b/ },
   { code: '493110', title: 'General warehousing and storage', keywords: /\b(warehous\w*|storage|distribution center)\b/ },
-  { code: '236220', title: 'Commercial building construction', keywords: /\b(construction|contractor|builder)s?\b/ },
+  // Specific trades before the generic "contractor" match.
   { code: '238220', title: 'Plumbing and HVAC contractors', keywords: /\b(plumbing|hvac|mechanical contractor)s?\b/ },
   { code: '238210', title: 'Electrical contractors', keywords: /\belectrical\b/ },
+  { code: '236220', title: 'Commercial building construction', keywords: /\b(construction|contractor|builder)s?\b/ },
   { code: '531120', title: 'Lessors of nonresidential buildings', keywords: /\b(realty|real estate|property management|properties)\b/ },
   { code: '621210', title: 'Offices of dentists', keywords: /\b(dental|dentist)\b/ },
   { code: '621111', title: 'Offices of physicians', keywords: /\b(medical|clinic|physician)s?\b/ },

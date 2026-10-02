@@ -253,10 +253,10 @@ function RowActionsMenu({
             )}
           </IconButton>
         </Tooltip>
-        <Tooltip title="Ask Copilot about this task">
+        <Tooltip title="Ask Chat about this task">
           <IconButton
             size="small"
-            aria-label={`Ask Copilot about ${row.taskName}`}
+            aria-label={`Ask Chat about ${row.taskName}`}
             aria-pressed={isCopilotActive}
             onClick={() => onTaskCopilot?.(row)}
             sx={copilotActiveIconSx(isCopilotActive)}

@@ -23,7 +23,7 @@ const STEP_ARRIVE_AT_MS = Math.round(STEP_LINE_MS * 0.78)
 const ELASTIC_EASE = 'cubic-bezier(0.34, 1.56, 0.64, 1)'
 const motionSafe = '@media (prefers-reduced-motion: no-preference)'
 
-/** Elastic settle after the progress line connects — mirrors Copilot confidence hover feel. */
+/** Elastic settle after the progress line connects — mirrors Chat confidence hover feel. */
 const stepArrivePop = keyframes`
   0% { transform: scale(1); }
   18% { transform: scale(1.48); }

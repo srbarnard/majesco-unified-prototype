@@ -126,7 +126,7 @@ export function TaskDescriptionCard({
                 letterSpacing: '0.01em',
               }}
             >
-              Copilot recommends
+              Chat recommends
             </Typography>
           </Stack>
           <Stack component="ul" spacing={0.75} sx={{ listStyle: 'none', m: 0, p: 0 }}>

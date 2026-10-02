@@ -2,7 +2,7 @@ import AddIcon from '@mui/icons-material/Add'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { useNavigate } from 'react-router'
+import { useRightToolDispatch } from '@/app/contexts/RightToolContext'
 import { Button } from '@/design-system/components'
 import { sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { listPageCreateButtonSx } from '@/design-system/tokens/listPageHeader'
@@ -16,7 +16,7 @@ type QuotesHeaderProps = {
 }
 
 export function QuotesHeader({ activeTab, onTabChange }: QuotesHeaderProps) {
-  const navigate = useNavigate()
+  const { openTool } = useRightToolDispatch()
   const contentPx = `${layoutTokens.contentPaddingX}px`
 
   return (
@@ -47,7 +47,7 @@ export function QuotesHeader({ activeTab, onTabChange }: QuotesHeaderProps) {
           startIcon={<AddIcon />}
           aria-label="Create quote"
           sx={listPageCreateButtonSx}
-          onClick={() => navigate('/quotes/new')}
+          onClick={() => openTool('newQuote')}
         >
           <span className="create-btn-label">Create quote</span>
         </Button>

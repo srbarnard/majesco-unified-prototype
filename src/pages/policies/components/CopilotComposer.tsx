@@ -271,7 +271,7 @@ export type CopilotComposerProps = {
   showModeSelector?: boolean
   /** Increment / change to programmatically open the file picker (e.g. guided “Upload…”). */
   attachRequestKey?: number | string | null
-  /** When this changes, clear staged attachments (e.g. switching Copilot focus). */
+  /** When this changes, clear staged attachments (e.g. switching Chat focus). */
   attachmentResetKey?: string | number | null
   onSubmit?: (message: string, files?: CopilotAttachedFile[]) => void
   /** Staged (not yet sent) attachments — lets a parent act on files without a send. */
@@ -594,7 +594,7 @@ export function CopilotComposer({
           color="text.disabled"
           sx={{ ...bodySx, mt: footerAction || isListening ? 0.75 : 1, display: 'block', textAlign: 'center' }}
         >
-          Copilot uses AI. Check for mistakes. Terms &amp; conditions.
+          Chat uses AI. Check for mistakes. Terms &amp; conditions.
         </Typography>
       )}
     </Box>

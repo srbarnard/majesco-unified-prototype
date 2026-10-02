@@ -61,7 +61,7 @@ export function CopilotConfidenceIndicator({
   animatedValue,
   displayedValue,
   statusLabel,
-  popoverTitle = 'Copilot confidence',
+  popoverTitle = 'Chat confidence',
   popoverDescription = 'Reflects how complete and consistent the current flow is based on captured fields, documents, and cross-checks.',
   tiers = DEFAULT_COPILOT_CONFIDENCE_TIERS,
 }: CopilotConfidenceIndicatorProps) {

@@ -143,7 +143,7 @@ type SubmissionsCopilotPanelProps = {
   onAssignBlockedPromptChange?: (prompt: AssignBlockedPromptSession | null) => void
   /** Optional “Updated {time}” on the pinned summary. */
   assignSummaryUpdatedAt?: number | null
-  /** Focus a submission in Copilot (e.g. Open first blocked). */
+  /** Focus a submission in Chat (e.g. Open first blocked). */
   onFocusSubmission?: (submission: SubmissionListRecord) => void
   /** Grid / list rows for Assign blocked dropdown and workspace summary. */
   assignPoolSubmissions?: SubmissionListRecord[]
@@ -348,7 +348,7 @@ function IssueDetailCard({
   const insights = isResolved
     ? details.map((detail) => `Resolved · ${detail}`)
     : [
-        `${severityLabel} · ${isGuided ? 'Guided actions or document upload' : 'Conversational — ask Copilot or attach docs'}`,
+        `${severityLabel} · ${isGuided ? 'Guided actions or document upload' : 'Conversational — ask Chat or attach docs'}`,
         ...details.map((detail) => `Missing · ${detail}`),
         'Composer · Drop files here or paste details to resolve',
       ]
@@ -595,7 +595,7 @@ function ReadyStructureOptionsView({
   if (options.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary" sx={{ ...bodySx, mb: 2 }}>
-        Copilot has not proposed a premium structure yet.
+        Chat has not proposed a premium structure yet.
       </Typography>
     )
   }
@@ -603,8 +603,8 @@ function ReadyStructureOptionsView({
   const optionWord = options.length === 1 ? 'option' : 'options'
   const summaryText =
     options.length === 1
-      ? `**${submission.insuredName}** — Submission **${submission.submissionNumber}** is **Ready** with **${submission.confidence}%** confidence. Copilot is presenting **1** structure option — alternatives were not meaningfully different.`
-      : `**${submission.insuredName}** — Submission **${submission.submissionNumber}** is **Ready** with **${submission.confidence}%** confidence. Copilot is presenting **${options.length}** distinct structure ${optionWord}${recommended ? ` · recommending **${recommended.label}**` : ''}.`
+      ? `**${submission.insuredName}** — Submission **${submission.submissionNumber}** is **Ready** with **${submission.confidence}%** confidence. Chat is presenting **1** structure option — alternatives were not meaningfully different.`
+      : `**${submission.insuredName}** — Submission **${submission.submissionNumber}** is **Ready** with **${submission.confidence}%** confidence. Chat is presenting **${options.length}** distinct structure ${optionWord}${recommended ? ` · recommending **${recommended.label}**` : ''}.`
 
   const packageCountLabel = `${includedCount} option${includedCount === 1 ? '' : 's'} in package`
   const helperText = recommended
@@ -1122,7 +1122,7 @@ function ThreadTurns({
 }: {
   turns: AssignThreadTurn[]
   assignSlot?: ReactNode
-  /** Suggested actions after the latest Copilot turn / above composer (not under summary). */
+  /** Suggested actions after the latest Chat turn / above composer (not under summary). */
   suggestedActions?: ReactNode
   showEmptyActions?: boolean
   emptyActions?: ReactNode
@@ -1183,7 +1183,7 @@ function SummarizeView({
   const ready = submissions.filter((row) => row.status === 'Ready')
   const queueBlocked = blocked.filter((row) => row.assignedTo === 'Underwriting Queue')
 
-  const summaryText = `Copilot is monitoring **${submissions.length}** selected submissions. **${blocked.length}** ${blocked.length === 1 ? 'is' : 'are'} blocked and **${ready.length}** ${ready.length === 1 ? 'is' : 'are'} ready for underwriting review.`
+  const summaryText = `Chat is monitoring **${submissions.length}** selected submissions. **${blocked.length}** ${blocked.length === 1 ? 'is' : 'are'} blocked and **${ready.length}** ${ready.length === 1 ? 'is' : 'are'} ready for underwriting review.`
 
   const insights = [
     `${blocked.length} submission${blocked.length === 1 ? '' : 's'} blocked and require action`,
@@ -1191,7 +1191,7 @@ function SummarizeView({
     queueBlocked.length > 0
       ? `Most blocked submissions are in the Underwriting Queue (${queueBlocked.length})`
       : 'Blocked submissions are assigned across underwriters',
-    'Resolve blockers in Copilot without leaving the list — payroll, loss history, and exposure gaps are the top causes',
+    'Resolve blockers in Chat without leaving the list — payroll, loss history, and exposure gaps are the top causes',
   ]
 
   const actions = (
@@ -1265,7 +1265,7 @@ function WorkspaceView({
     (row) => row.status === 'Blocked' && row.assignedTo === 'Underwriting Queue',
   ).length
 
-  const summaryText = `Copilot is monitoring **${poolSubmissions.length}** incoming submissions to identify items that require attention. Select a blocked submission — or multi-select rows — to resolve issues in place.`
+  const summaryText = `Chat is monitoring **${poolSubmissions.length}** incoming submissions to identify items that require attention. Select a blocked submission — or multi-select rows — to resolve issues in place.`
 
   const insights = [
     `${blocked} submissions are blocked and require action`,
@@ -2182,7 +2182,7 @@ export function SubmissionsCopilotPanel({
             </Typography>
             <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 1.5 }}>
               {renderSummaryText(
-                `**${focusedSubmission.insuredName}** — Submission **${focusedSubmission.submissionNumber}** is **Blocked**. Select an issue below to resolve it in Copilot.`,
+                `**${focusedSubmission.insuredName}** — Submission **${focusedSubmission.submissionNumber}** is **Blocked**. Select an issue below to resolve it in Chat.`,
               )}
             </Typography>
             <Box sx={{ mx: -2 }}>

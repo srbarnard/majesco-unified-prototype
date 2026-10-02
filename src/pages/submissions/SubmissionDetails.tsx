@@ -129,7 +129,7 @@ export function SubmissionDetails() {
   }, [submissionId])
 
   useEffect(() => {
-    // Keep detail Copilot in structure / confirmation mode for Ready, Quoted, Declined.
+    // Keep detail Chat in structure / confirmation mode for Ready, Quoted, Declined.
     if (
       submission.status === 'Ready' ||
       submission.status === 'Quoted' ||

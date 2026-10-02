@@ -22,6 +22,7 @@ export type RightToolId =
   | 'history'
   | 'newTask'
   | 'newCustomer'
+  | 'newQuote'
 
 export type RightToolRecordContext = {
   title: string
@@ -37,9 +38,9 @@ type RightToolState = {
   activeTool: RightToolId | null
   recordContext: RightToolRecordContext
   copilotSession: RightToolCopilotSession | null
-  /** Specialty Copilot UIs (submissions, quote wizard) rendered instead of CopilotPanel. */
+  /** Specialty Chat UIs (submissions, quote wizard) rendered instead of CopilotPanel. */
   copilotCustomContent: ReactNode | null
-  /** Bumps when specialty Copilot content is re-registered so the drawer re-reads it. */
+  /** Bumps when specialty Chat content is re-registered so the drawer re-reads it. */
   copilotCustomRevision: number
   /** Specialty Notes UIs (submission note thread) rendered instead of NotesToolPanel. */
   notesCustomContent: ReactNode | null
@@ -51,7 +52,7 @@ type RightToolState = {
   filterContent: ReactNode | null
   /** Page-registered Parties/Contacts panel; non-null means Parties is available on the rail. */
   partiesContent: ReactNode | null
-  /** When true, History is available on the rail (Copilot Studio left drawer). */
+  /** When true, History is available on the rail (Studio left drawer). */
   historyAvailable: boolean
 }
 
@@ -111,20 +112,20 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
   const openTool = useCallback(
     (tool: RightToolId) => {
       if (tool === 'copilot') {
-        // Copilot Studio owns chat — keep the shell panel collapsed there.
+        // Studio owns chat — keep the shell panel collapsed there.
         if (isCopilotStudio) {
           closeCopilot()
           setActiveTool(null)
           return
         }
         setActiveTool((current) => (current === 'copilot' ? current : 'copilot'))
-        // Preserve agentic / existing Copilot view when already open.
+        // Preserve agentic / existing Chat view when already open.
         if (!copilotOpenRef.current) {
           openHomeCopilotDefault()
         }
         return
       }
-      // Close Copilot flags first so the sync effect cannot snap activeTool back to Copilot.
+      // Close Chat flags first so the sync effect cannot snap activeTool back to Chat.
       closeCopilot()
       setActiveTool(tool)
     },
@@ -142,15 +143,15 @@ export function RightToolProvider({ children }: { children: ReactNode }) {
     [closeTool, openTool],
   )
 
-  // Collapse the right panel when entering Copilot Studio.
+  // Collapse the right panel when entering Studio.
   useEffect(() => {
     if (!isCopilotStudio) return
     closeTool()
   }, [closeTool, isCopilotStudio])
 
-  // Keep rail Copilot in sync with GlobalSearch open flags (agentic search, Home default, etc.).
-  // Do not clear Notes/Email/Filter/Parties when Copilot flags turn off.
-  // Copilot Studio hides the shell Copilot control — never reopen it there.
+  // Keep rail Chat in sync with GlobalSearch open flags (agentic search, Home default, etc.).
+  // Do not clear Notes/Email/Filter/Parties when Chat flags turn off.
+  // Studio hides the shell Chat control — never reopen it there.
   useEffect(() => {
     if (isCopilotStudio) {
       if (copilotOpen) {
@@ -251,7 +252,7 @@ export function useRightTool(): RightToolContextValue {
   return useMemo(() => ({ ...state, ...dispatch }), [state, dispatch])
 }
 
-/** Actions/setters only — safe for route pages that register Copilot/filter content. */
+/** Actions/setters only — safe for route pages that register Chat/filter content. */
 export function useRightToolDispatch(): RightToolDispatch {
   const dispatch = useContext(RightToolDispatchContext)
   if (!dispatch) {

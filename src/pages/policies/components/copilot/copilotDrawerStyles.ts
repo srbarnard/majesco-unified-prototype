@@ -5,7 +5,7 @@ export const copilotDrawerHeadingSx = {
   fontWeight: 600,
 } as const
 
-/** Toolbar / context titles in Copilot drawers (e.g. Assist with Submission). */
+/** Toolbar / context titles in Chat drawers (e.g. Assist with Submission). */
 export const copilotSubtitleSx = {
   fontFamily: figmaFontFamilyStack.heading,
   fontWeight: 600,

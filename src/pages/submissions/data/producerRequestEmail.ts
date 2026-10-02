@@ -5,7 +5,7 @@ import type {
   SubmissionListRecord,
 } from '@/pages/submissions/data/mockSubmissions'
 
-/** Default producer contact used across submission Copilot follow-ups. */
+/** Default producer contact used across submission Chat follow-ups. */
 export const SUBMISSION_PRODUCER_EMAIL = 'commercial@libertygroup.com'
 export const SUBMISSION_PRODUCER_NAME = 'Liberty Specialty Group'
 

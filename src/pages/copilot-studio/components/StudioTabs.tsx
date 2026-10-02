@@ -1,5 +1,5 @@
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
-import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined'
+import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined'
 import PostAddOutlinedIcon from '@mui/icons-material/PostAddOutlined'
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined'
 import Tab from '@mui/material/Tab'
@@ -17,7 +17,7 @@ export function StudioTabs({ value, onChange }: StudioTabsProps) {
     <Tabs
       value={value}
       onChange={(_, next: StudioTab) => onChange(next)}
-      aria-label="Copilot Studio sections"
+      aria-label="Studio sections"
       variant="scrollable"
       scrollButtons="auto"
       allowScrollButtonsMobile
@@ -53,7 +53,7 @@ export function StudioTabs({ value, onChange }: StudioTabsProps) {
         },
       }}
     >
-      <Tab icon={<ChatBubbleOutlineOutlinedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Chat" value="chat" />
+      <Tab icon={<ChatOutlinedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Chat" value="chat" />
       <Tab icon={<PostAddOutlinedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Prompts" value="prompts" />
       <Tab icon={<SmartToyOutlinedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Agents" value="agents" />
       <Tab icon={<BarChartOutlinedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Insights" value="insights" />

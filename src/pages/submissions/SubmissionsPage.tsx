@@ -380,7 +380,7 @@ export function SubmissionsPage() {
 
   const handleAfterQuotePackageSent = useCallback(
     (_submission: SubmissionListRecord, _confirmation: SubmissionsCopilotSendConfirmation) => {
-      // Stay on the list — Quoted chip + Quote sent Copilot confirmation update in place.
+      // Stay on the list — Quoted chip + Quote sent Chat confirmation update in place.
       setCopilotEntryMode('status')
       setCopilotIssueFocusId(null)
     },
@@ -389,7 +389,7 @@ export function SubmissionsPage() {
 
   const handleAfterDeclineSent = useCallback(
     (_submission: SubmissionListRecord, _confirmation: SubmissionsCopilotSendConfirmation) => {
-      // Stay on the list — Declined chip + Decline sent Copilot confirmation update in place.
+      // Stay on the list — Declined chip + Decline sent Chat confirmation update in place.
       setCopilotEntryMode('status')
       setCopilotIssueFocusId(null)
     },

@@ -112,7 +112,7 @@ export type AddTaskSeed = {
   prefill: string
 }
 
-/** Seeds mirror the Tasks Copilot summary — the items a UW is most likely to spin a task off. */
+/** Seeds mirror the Tasks Chat summary — the items a UW is most likely to spin a task off. */
 export const ADD_TASK_SEEDS: AddTaskSeed[] = [
   {
     label: 'Create task for past-due reserve review',

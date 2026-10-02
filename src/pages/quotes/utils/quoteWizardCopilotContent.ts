@@ -105,7 +105,7 @@ export function buildWizardCopilotState(
         statusLabel,
         headline: 'Parsing uploaded documents…',
         message: `Reviewing ${form.uploadedFiles.length} attachment${form.uploadedFiles.length === 1 ? '' : 's'} (${docNames}). Extracting insured details, locations, and exposure data from ACORDs and schedules.`,
-        proTip: 'Fields with a green check were auto-filled from your documents. Manual edits always override Copilot.',
+        proTip: 'Fields with a green check were auto-filled from your documents. Manual edits always override Chat.',
         fieldStatuses,
         actions: [],
         showContinue: false,
@@ -119,7 +119,7 @@ export function buildWizardCopilotState(
         headline: 'Assist with Submission',
         message:
           "Start by describing the insured or business — or drop ACORDs, schedules, and broker emails into the input area. I'll extract details and pre-fill the form.",
-        proTip: 'Drop multiple files at once (ACORD 125, fleet schedule, loss runs). Copilot reconciles them into one submission.',
+        proTip: 'Drop multiple files at once (ACORD 125, fleet schedule, loss runs). Chat reconciles them into one submission.',
         fieldStatuses,
         actions: [
           {
@@ -148,7 +148,7 @@ export function buildWizardCopilotState(
           extractedCount > 0
             ? `Extracted ${extractedCount} fields from ${form.uploadedFiles.length} file${form.uploadedFiles.length === 1 ? '' : 's'} (${docNames}). Review the highlighted fields below — edit anything that needs correction.`
             : `I found ${form.uploadedFiles.length} file${form.uploadedFiles.length === 1 ? '' : 's'} (${docNames}). Review the extracted fields below — edit anything that needs correction.`,
-        proTip: 'Fields with a green check were auto-filled from your documents. Manual edits always override Copilot.',
+        proTip: 'Fields with a green check were auto-filled from your documents. Manual edits always override Chat.',
         fieldStatuses,
         actions: extractedCount > 0
           ? []
@@ -254,7 +254,7 @@ export function buildWizardCopilotState(
         confidence,
         statusLabel,
         headline: 'Risk profile is ready. Choose coverage.',
-        message: `Landscaping business in Princeton, NJ with about ${form.annualRevenue ? `$${Number(form.annualRevenue).toLocaleString()}` : '$1M'} in revenue, ${form.employeeCount || '10'} employees, and ${form.payroll ? `$${Number(form.payroll).toLocaleString()}` : '$600,000'} payroll. Copilot recommends a coverage bundle based on operational exposures.`,
+        message: `Landscaping business in Princeton, NJ with about ${form.annualRevenue ? `$${Number(form.annualRevenue).toLocaleString()}` : '$1M'} in revenue, ${form.employeeCount || '10'} employees, and ${form.payroll ? `$${Number(form.payroll).toLocaleString()}` : '$600,000'} payroll. Chat recommends a coverage bundle based on operational exposures.`,
         actions: [{ label: 'Continue', field: 'continue' }, { label: 'Clear all', field: 'clear' }],
         showContinue: true,
         showCoverageBundle: true,
@@ -312,7 +312,7 @@ export function buildWizardCopilotState(
       confidence,
       statusLabel,
       headline: 'Almost there. Confirm payroll and revenue.',
-      message: 'Approximate revenue and payroll help Copilot recommend accurate limits and pricing.',
+      message: 'Approximate revenue and payroll help Chat recommend accurate limits and pricing.',
       actions: [
         { label: 'Add revenue', field: 'annualRevenue' },
         { label: 'Add payroll', field: 'payroll' },
@@ -330,7 +330,7 @@ export function buildWizardCopilotState(
         confidence,
         statusLabel,
         headline: 'Choose your coverage bundle.',
-        message: `Based on the risk profile, Copilot recommends ${recommended.length} lines. Select coverages to generate an indicative premium.`,
+        message: `Based on the risk profile, Chat recommends ${recommended.length} lines. Select coverages to generate an indicative premium.`,
         actions: recommended.map((id) => ({
           label: `Add ${COVERAGE_OPTIONS.find((option) => option.id === id)?.label ?? id}`,
           field: 'selectedCoverages' as const,

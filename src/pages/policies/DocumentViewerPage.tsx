@@ -169,7 +169,7 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
       }
       if (action === 'email') {
         // Open the Email tool (active rail icon) with the registered document draft —
-        // do not route through Copilot attach, which left Email inactive / generic.
+        // do not route through Chat attach, which left Email inactive / generic.
         openTool('email')
       }
     },

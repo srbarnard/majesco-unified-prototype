@@ -14,7 +14,7 @@ export function PoliciesPage() {
       <Card title="Policy Management" subtitle="Search, view, and manage policy records">
         <Stack spacing={2}>
           <Typography variant="body2" color="text.secondary">
-            Open a policy to view documents, analytics, and Copilot assistance.
+            Open a policy to view documents, analytics, and Chat assistance.
           </Typography>
           <Button
             variant="contained"

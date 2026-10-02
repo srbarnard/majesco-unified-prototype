@@ -66,7 +66,7 @@ export function TasksPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<TasksFilters>(emptyTasksFilters)
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
-  // Arriving with a drawer already open (New task, History → open task) skips the default Copilot.
+  // Arriving with a drawer already open (New task, History → open task) skips the default Chat.
   const didInitCopilot = useRef(activeTool != null || pendingOpenTaskId != null)
   const wasDesktop = useRef(isDesktop)
 
@@ -113,7 +113,12 @@ export function TasksPage() {
   }, [activeTool, closeTool, isDesktop])
 
   useEffect(() => {
-    if (activeTool === 'filter' || activeTool === 'newTask' || activeTool === 'newCustomer') {
+    if (
+      activeTool === 'filter' ||
+      activeTool === 'newTask' ||
+      activeTool === 'newCustomer' ||
+      activeTool === 'newQuote'
+    ) {
       setTaskDetailOpen(false)
     }
   }, [activeTool])

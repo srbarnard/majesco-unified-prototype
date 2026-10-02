@@ -40,7 +40,7 @@ export const appShellNavItems: NavItem[] = [
   { label: 'Submissions', path: '/submissions', icon: MoveToInboxOutlinedIcon },
   { label: 'Quotes', path: '/quotes', icon: FormatQuoteOutlinedIcon },
   { label: 'Policies', path: '/policies', icon: PolicyOutlinedIcon, matchPaths: ['/policies'] },
-  { label: 'Copilot Studio', path: '/copilot-studio', copilotIcon: true },
+  { label: 'Studio', path: '/copilot-studio', copilotIcon: true },
 ]
 
 export const moreMenuItems: MoreMenuItem[] = [

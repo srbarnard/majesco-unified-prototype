@@ -3,6 +3,7 @@ import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined'
 import MailOutlineIcon from '@mui/icons-material/MailOutline'
 import PersonAddAltOutlinedIcon from '@mui/icons-material/PersonAddAltOutlined'
+import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined'
 import StickyNote2OutlinedIcon from '@mui/icons-material/StickyNote2Outlined'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
@@ -20,15 +21,16 @@ import { surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 type ToolDef = {
   id: RightToolId
   label: string
-  icon: 'copilot' | 'notes' | 'email' | 'newTask' | 'newCustomer' | 'filter' | 'parties' | 'history'
+  icon: 'copilot' | 'notes' | 'email' | 'newTask' | 'newCustomer' | 'newQuote' | 'filter' | 'parties' | 'history'
 }
 
 const GLOBAL_TOOLS: ToolDef[] = [
-  { id: 'copilot', label: 'Copilot', icon: 'copilot' },
+  { id: 'copilot', label: 'Chat', icon: 'copilot' },
   { id: 'notes', label: 'Notes', icon: 'notes' },
   { id: 'email', label: 'Email', icon: 'email' },
   { id: 'newTask', label: 'New task', icon: 'newTask' },
   { id: 'newCustomer', label: 'Create customer', icon: 'newCustomer' },
+  { id: 'newQuote', label: 'Create quote', icon: 'newQuote' },
 ]
 
 /** Material Symbols `list_alt_check` (outlined) — not shipped in @mui/icons-material. */
@@ -65,6 +67,9 @@ function ToolIcon({
   }
   if (kind === 'newCustomer') {
     return <PersonAddAltOutlinedIcon sx={{ fontSize: 20 }} />
+  }
+  if (kind === 'newQuote') {
+    return <RequestQuoteOutlinedIcon sx={{ fontSize: 20 }} />
   }
   if (kind === 'filter') {
     return <FilterListOutlinedIcon sx={{ fontSize: 20 }} />

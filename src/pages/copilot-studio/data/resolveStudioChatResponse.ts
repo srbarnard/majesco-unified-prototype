@@ -27,7 +27,7 @@ export function resolveStudioChatResponse(prompt: string): { content: string; el
 
   return {
     content:
-      'I received your request. In a connected environment, Copilot would retrieve the relevant policy, billing, and account data to complete this for you.',
+      'I received your request. In a connected environment, Chat would retrieve the relevant policy, billing, and account data to complete this for you.',
     elapsedSeconds: 2.6 + Math.round(Math.random() * 20) / 10,
   }
 }

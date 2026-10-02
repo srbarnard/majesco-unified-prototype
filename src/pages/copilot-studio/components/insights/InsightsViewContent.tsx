@@ -287,7 +287,7 @@ function OverviewView() {
     <Stack spacing={ANALYTICS_GUTTER}>
       <InsightsPageHeader
         title="Overview"
-        subtitle="High-level assistant and agent activity across Copilot Studio."
+        subtitle="High-level assistant and agent activity across Studio."
       />
 
       <Stack spacing={1.5}>
@@ -322,7 +322,7 @@ function AssistantsView() {
 
       <Stack spacing={1.5}>
         <AnalyticsSectionTitle
-          title="How are users interacting with Majesco Copilot?"
+          title="How are users interacting with Majesco Chat?"
           subtitle="Interaction volume and messaging patterns in the selected time period."
         />
         <KpiGrid metrics={studioAssistantsKpis} />

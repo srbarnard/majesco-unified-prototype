@@ -103,7 +103,7 @@ function VariantIcon({ variant }: { variant: InsightCalloutVariant }) {
   return <ErrorOutlineIcon sx={iconSx} />
 }
 
-/** Quote-flow insight / callout box — Copilot (light blue), info, success, warning, or error. */
+/** Quote-flow insight / callout box — Chat (light blue), info, success, warning, or error. */
 export function InsightCallout({ variant = 'copilot', title, children }: InsightCalloutProps) {
   return (
     <Box
@@ -150,7 +150,7 @@ export function InsightCallout({ variant = 'copilot', title, children }: Insight
   )
 }
 
-/** Light-blue Copilot insight box with sparkle mark — matches quote flow callouts. */
+/** Light-blue Chat insight box with sparkle mark — matches quote flow callouts. */
 export function CopilotInsightBox({ title, children }: { title: string; children: ReactNode }) {
   return (
     <InsightCallout variant="copilot" title={title}>

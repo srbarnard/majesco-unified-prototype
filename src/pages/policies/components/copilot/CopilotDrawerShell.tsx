@@ -167,7 +167,7 @@ type CopilotDrawerShellProps = {
   launchConversationKey?: number | string | null
   /** Rendered inside scrollable chat content when on the default chat view. */
   banner?: ReactNode
-  /** Optional slot beside the Copilot title in the drawer header. */
+  /** Optional slot beside the Chat title in the drawer header. */
   headerTrailing?: ReactNode
   /** Optional leading slot in the prompts/agents toolbar row above chat content. */
   toolbarLeading?: ReactNode
@@ -464,19 +464,19 @@ export function CopilotDrawerShell({
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Stack direction="row" alignItems="center" sx={{ minWidth: 0 }}>
             <Typography variant="subtitle1" component="h2" sx={copilotDrawerHeadingSx}>
-              Copilot
+              Chat
             </Typography>
             {headerTrailing}
           </Stack>
           {onClose && (
-            <IconButton size="small" onClick={onClose} aria-label="Close Copilot">
+            <IconButton size="small" onClick={onClose} aria-label="Close Chat">
               <CloseIcon fontSize="small" />
             </IconButton>
           )}
         </Stack>
 
         <Tabs value={copilotTab} onChange={handleTabChange} sx={copilotDrawerTabsSx}>
-          <Tab label="Chat" value="chat" />
+          <Tab label="New" value="chat" />
           <Tab label="History" value="history" />
         </Tabs>
       </Box>

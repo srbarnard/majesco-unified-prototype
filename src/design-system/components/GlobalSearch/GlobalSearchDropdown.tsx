@@ -1,4 +1,4 @@
-import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined'
+import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined'
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined'
@@ -148,7 +148,7 @@ export function GlobalSearchDropdown({ query, onSelect }: GlobalSearchDropdownPr
       <Divider />
 
       <Typography component="div" sx={sectionLabelSx}>
-        Ask Copilot
+        Ask Chat
       </Typography>
       <List dense disablePadding sx={{ pb: 0.5 }}>
         {filteredAgentic.map((item) => (
@@ -159,7 +159,7 @@ export function GlobalSearchDropdown({ query, onSelect }: GlobalSearchDropdownPr
             sx={{ py: 0.75, px: 2 }}
           >
             <ListItemIcon sx={{ minWidth: 32 }}>
-              <AutoAwesomeOutlinedIcon fontSize="small" sx={{ color: 'primary.main' }} />
+              <ChatOutlinedIcon fontSize="small" sx={{ color: 'primary.main' }} />
             </ListItemIcon>
             <ListItemText
               primary={item.label}
@@ -176,7 +176,7 @@ export function GlobalSearchDropdown({ query, onSelect }: GlobalSearchDropdownPr
       {normalizedQuery && filteredLookups.length === 0 && filteredAgentic.length === 0 && (
         <Box sx={{ px: 2, py: 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
-            No matching suggestions. Press Enter to ask Copilot.
+            No matching suggestions. Press Enter to ask Chat.
           </Typography>
         </Box>
       )}

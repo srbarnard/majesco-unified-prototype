@@ -20,7 +20,7 @@ export type StudioUserMessageProps = {
   timeLabel?: string
 }
 
-/** Right-aligned user turn — avatar + You + teal bubble (Copilot Studio). */
+/** Right-aligned user turn — avatar + You + teal bubble (Studio). */
 export function StudioUserMessage({ children, timeLabel }: StudioUserMessageProps) {
   return (
     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2.5 }}>
@@ -70,7 +70,7 @@ export type StudioAssistantMessageProps = {
   showCopy?: boolean
 }
 
-/** Left-aligned Copilot turn — plain content, optional copy + meta caption. */
+/** Left-aligned Chat turn — plain content, optional copy + meta caption. */
 export function StudioAssistantMessage({
   children,
   timeLabel,
