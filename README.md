@@ -1,4 +1,4 @@
-# Majesco Unified Prototype
+# Unified Prototype
 
 A modern React application scaffold built with TypeScript, Vite, Material UI v6, Emotion, and React Router v7.
 

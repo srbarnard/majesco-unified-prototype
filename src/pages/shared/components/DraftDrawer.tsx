@@ -1,8 +1,10 @@
+import AddIcon from '@mui/icons-material/Add'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import BlockIcon from '@mui/icons-material/Block'
 import CheckIcon from '@mui/icons-material/Check'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import CloseIcon from '@mui/icons-material/Close'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
@@ -366,20 +368,22 @@ export type DraftNeededRow<F extends string> = {
   /** Helper text shown while the value is empty, in place of "still needed"; the badge carries the state. */
   hint?: string
   field?: F
-  /** Issue severity, matching Submission issues: error = blocker (pink), warning = amber. */
-  tone?: 'error' | 'warning'
+  /** Issue severity, matching Submission issues: error = blocker (pink), warning = amber; new = unsaved new item (blue plus). */
+  tone?: 'error' | 'warning' | 'new'
   /** Quiet status line under the value (e.g. "Emailed to …"). */
   meta?: ReactNode
   extra?: ReactNode
   /** Collection row: trailing chevron; the parent navigates instead of opening an inline editor. */
   chevron?: boolean
+  /** Disclosure row: expands in place; the chevron points down and flips when open. */
+  expandable?: boolean
   /** Replaces the status badge with a category icon (e.g. location type); wins over `tone`. */
   badge?: DraftRowBadge
 }
 
 export type DraftRowBadge = { icon: ReactNode; label: string; color: 'teal' | 'green' }
 
-type NeededBadgeTone = 'success' | 'error' | 'warning' | 'empty'
+type NeededBadgeTone = 'success' | 'error' | 'warning' | 'new' | 'empty'
 
 function CategoryBadge({ badge }: { badge: DraftRowBadge }) {
   return (
@@ -411,6 +415,7 @@ const BADGE_LABELS: Record<NeededBadgeTone, string> = {
   success: 'Filled',
   error: 'Blocker',
   warning: 'Warning',
+  new: 'New',
   empty: 'Still needed',
 }
 
@@ -427,7 +432,9 @@ function NeededStatusBadge({ tone }: { tone: NeededBadgeTone }) {
               ? theme.figmaPalette.amber
               : tone === 'success'
                 ? theme.figmaPalette.green
-                : null
+                : tone === 'new'
+                  ? theme.figmaPalette.blue
+                  : null
         return {
           width: 32,
           height: 32,
@@ -447,6 +454,8 @@ function NeededStatusBadge({ tone }: { tone: NeededBadgeTone }) {
         <WarningAmberOutlinedIcon sx={{ fontSize: 18 }} />
       ) : tone === 'success' ? (
         <CheckIcon sx={{ fontSize: 18 }} />
+      ) : tone === 'new' ? (
+        <AddIcon sx={{ fontSize: 18 }} />
       ) : (
         <RadioButtonUncheckedIcon sx={{ fontSize: 18 }} />
       )}
@@ -502,6 +511,17 @@ function NeededItem<F extends string>({
       </Box>
       {row.chevron ? (
         <ChevronRightIcon sx={{ fontSize: 20, color: 'text.secondary', alignSelf: 'center', flexShrink: 0 }} />
+      ) : row.expandable ? (
+        <ExpandMoreIcon
+          sx={{
+            fontSize: 20,
+            color: 'text.secondary',
+            alignSelf: 'center',
+            flexShrink: 0,
+            transform: expanded ? 'rotate(180deg)' : 'none',
+            transition: 'transform 0.15s ease',
+          }}
+        />
       ) : null}
     </>
   )
@@ -539,7 +559,13 @@ function NeededItem<F extends string>({
           disableRipple
           onClick={onToggle}
           aria-expanded={expanded}
-          aria-label={row.chevron ? `Open ${row.term.toLowerCase()}` : `${missing ? 'Set' : 'Edit'} ${row.term.toLowerCase()}`}
+          aria-label={
+            row.chevron
+              ? `Open ${row.term.toLowerCase()}`
+              : row.expandable
+                ? `${expanded ? 'Hide' : 'Show'} ${row.term.toLowerCase()}`
+                : `${missing ? 'Set' : 'Edit'} ${row.term.toLowerCase()}`
+          }
           sx={{
             ...lineSx,
             color: 'text.primary',
@@ -688,13 +714,15 @@ export function DraftDrawerShell({
   onClose: () => void
   history: ReactNode
   composer: ReactNode
-  createLabel: string
-  createDisabled: boolean
-  onCreate: () => void
-  onSaveDraft: () => void
+  /** Omit `onCreate` to drop the Save / Create footer; the composer is then the last thing in the drawer. */
+  createLabel?: string
+  createDisabled?: boolean
+  onCreate?: () => void
+  onSaveDraft?: () => void
   children: ReactNode
 }) {
   const isRecord = variant === 'record'
+  const showFooter = !isRecord && onCreate != null
   return (
     <Box
       sx={{
@@ -751,9 +779,10 @@ export function DraftDrawerShell({
       </Box>
 
       <Box sx={{ display: tab === 'new' ? 'contents' : 'none' }}>
-        <Box sx={{ flexShrink: 0, pb: isRecord ? 1.5 : 0 }}>{composer}</Box>
+        <Box sx={{ flexShrink: 0, pb: showFooter ? 0 : 1.5 }}>{composer}</Box>
 
-        <Box sx={{ px: draftPanelPx, pb: 2, pt: 0.5, flexShrink: 0, display: isRecord ? 'none' : undefined }}>
+        {showFooter ? (
+        <Box sx={{ px: draftPanelPx, pb: 2, pt: 0.5, flexShrink: 0 }}>
           <Stack direction="row" spacing={1.5}>
             <Button variant="outlined" color="primary" fullWidth onClick={onSaveDraft} sx={filterFooterButtonSx}>
               Save draft
@@ -770,6 +799,7 @@ export function DraftDrawerShell({
             </Button>
           </Stack>
         </Box>
+        ) : null}
       </Box>
     </Box>
   )

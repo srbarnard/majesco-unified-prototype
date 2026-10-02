@@ -34,6 +34,40 @@ export type QuoteLocation = {
   type: QuoteLocationType | null
 }
 
+export type QuoteVehicle = {
+  id: string
+  vin: string
+  year: string
+  make: string
+  model: string
+  /** A location id from the draft. */
+  garagingId: string | null
+}
+
+export const VEHICLE_FIELD_LABELS = {
+  vin: 'VIN',
+  year: 'Year',
+  make: 'Make',
+  model: 'Model',
+  garagingId: 'Garaging location',
+} as const
+
+export type QuoteVehicleField = keyof typeof VEHICLE_FIELD_LABELS
+
+export function missingVehicleFields(vehicle: QuoteVehicle): QuoteVehicleField[] {
+  return (Object.keys(VEHICLE_FIELD_LABELS) as QuoteVehicleField[]).filter((field) => !vehicle[field]?.trim())
+}
+
+export function isVehicleComplete(vehicle: QuoteVehicle) {
+  return missingVehicleFields(vehicle).length === 0
+}
+
+let vehicleCounter = 0
+export function quoteVehicleId() {
+  vehicleCounter += 1
+  return `veh-${Date.now()}-${vehicleCounter}`
+}
+
 export type CreateQuoteDraft = {
   type: CustomerType | null
   name: string
@@ -44,8 +78,9 @@ export type CreateQuoteDraft = {
   employees: number | null
   payroll: number | null
   locations: QuoteLocation[]
+  vehicles: QuoteVehicle[]
   vehicleCount: number
-  /** The description mentioned vehicles; Commercial Auto starts checked. */
+  /** The description mentioned vehicles; Commercial Auto is suggested with high confidence. */
   mentionsVehicles: boolean
   /** Explicit check / uncheck by the user; wins over inferred defaults. */
   coverageChoices: Partial<Record<QuoteCoverage, boolean>>
@@ -61,6 +96,7 @@ export const emptyCreateQuoteDraft: CreateQuoteDraft = {
   employees: null,
   payroll: null,
   locations: [],
+  vehicles: [],
   vehicleCount: 0,
   mentionsVehicles: false,
   coverageChoices: {},
@@ -132,11 +168,27 @@ export function applyPayrollSchedule(draft: CreateQuoteDraft): CreateQuoteDraft 
   }
 }
 
-/** Representative values for a dropped vehicle schedule; only fills holes. */
+const VEHICLE_SCHEDULE_ROWS: [string, string, string, string][] = [
+  ['1FTBR1C82MKA12345', '2021', 'Ford', 'Transit 250'],
+  ['3C6UR5CL4KG512345', '2019', 'Ram', '2500'],
+  ['1HTMMAAL5JH512345', '2018', 'International', 'MV607'],
+  ['', '2022', 'Chevrolet', 'Silverado 1500'],
+]
+
+/** A dropped vehicle schedule stands in with a representative list, one row missing its VIN; garaged at the first location. */
 export function applyVehicleSchedule(draft: CreateQuoteDraft): CreateQuoteDraft {
+  const garagingId = withPrimaryLocation(draft).locations[0]?.id ?? null
+  const scheduled = VEHICLE_SCHEDULE_ROWS.map(([vin, year, make, model]) => ({
+    id: quoteVehicleId(),
+    vin,
+    year,
+    make,
+    model,
+    garagingId,
+  }))
   return {
     ...draft,
-    vehicleCount: draft.vehicleCount || 8,
+    vehicles: [...draft.vehicles, ...scheduled],
     mentionsVehicles: true,
   }
 }
@@ -226,10 +278,51 @@ export function mergeQuoteDraft(base: CreateQuoteDraft, inferred: Partial<Create
   }
 }
 
+/** Coverages are only ever added by the user; vehicle mentions raise the Commercial Auto suggestion instead. */
 export function coverageChecked(draft: CreateQuoteDraft, coverage: QuoteCoverage) {
-  const choice = draft.coverageChoices[coverage]
-  if (choice != null) return choice
-  return coverage === 'Commercial Auto' && (draft.mentionsVehicles || draft.vehicleCount > 0)
+  return draft.coverageChoices[coverage] === true
+}
+
+export type CoverageSuggestion = { coverage: QuoteCoverage; reason: string }
+
+const MAX_COVERAGE_SUGGESTIONS = 3
+
+/** NAICS sectors (by prefix) where a fleet is part of the operation. */
+const AUTO_SECTORS = ['23', '42', '48', '49', '561730']
+const PROPERTY_SECTORS = ['31', '32', '33', '44', '45', '722']
+const INLAND_MARINE_SECTORS = ['23']
+
+function inSector(code: string, sectors: string[]) {
+  return sectors.some((prefix) => code.startsWith(prefix))
+}
+
+/** Profile-driven picks, strongest first. */
+export function suggestCoverages(draft: CreateQuoteDraft): CoverageSuggestion[] {
+  const code = draft.naics?.code ?? ''
+  const healthcare = code.startsWith('62')
+  const suggestions: CoverageSuggestion[] = []
+  if (draft.type === 'Business') {
+    suggestions.push({
+      coverage: 'General Liability',
+      reason: healthcare ? 'Patients and visitors on premises.' : 'Customers and visitors on premises.',
+    })
+    suggestions.push({
+      coverage: "Workers' Compensation",
+      reason: draft.payroll != null ? 'Staff on payroll.' : 'Staff on payroll, payroll not provided yet.',
+    })
+  }
+  if (draft.mentionsVehicles || draft.vehicleCount > 0 || draft.vehicles.length > 0) {
+    suggestions.push({ coverage: 'Commercial Auto', reason: 'Vehicles are in the submission.' })
+  } else if (!healthcare && inSector(code, AUTO_SECTORS)) {
+    suggestions.push({ coverage: 'Commercial Auto', reason: 'A fleet is common for this industry.' })
+  }
+  if (inSector(code, PROPERTY_SECTORS)) {
+    suggestions.push({ coverage: 'Commercial Property', reason: 'Owned building, contents, or stock on site.' })
+  }
+  if (inSector(code, INLAND_MARINE_SECTORS)) {
+    suggestions.push({ coverage: 'Inland Marine', reason: 'Tools and equipment move between job sites.' })
+  }
+  return suggestions.slice(0, MAX_COVERAGE_SUGGESTIONS)
 }
 
 export function parseQuoteAddress(text: string) {

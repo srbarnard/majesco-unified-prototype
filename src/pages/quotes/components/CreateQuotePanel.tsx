@@ -1,17 +1,18 @@
-import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import CheckIcon from '@mui/icons-material/Check'
 import CloseIcon from '@mui/icons-material/Close'
-import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
+import Checkbox from '@mui/material/Checkbox'
 import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
+import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { CopilotQuickActions } from '@/design-system/components'
+import { accentSubtle, accentSubtleHover } from '@/design-system/theme/themeSurfaces'
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { CustomerAddressEditor } from '@/pages/customers/components/CustomerAddressEditor'
@@ -39,8 +40,8 @@ import {
   draftUid,
   useDebouncedValue,
   useFilledFirstOrder,
+  type DraftHistoryItem,
   type DraftNeededRow,
-  type DraftRowBadge,
   type DraftTab,
   type DraftThreadMessage,
 } from '@/pages/shared/components/DraftDrawer'
@@ -54,34 +55,43 @@ import {
   applyVehicleSchedule,
   inferQuoteFromText,
   isAddressComplete,
+  isVehicleComplete,
   mergeQuoteDraft,
+  missingVehicleFields,
+  quoteVehicleId,
+  VEHICLE_FIELD_LABELS,
   parseCount,
   parseMoney,
   parseQuoteAddress,
   quoteFileKind,
   quoteLocationId,
   scheduleLocations,
+  suggestCoverages,
   withPrimaryLocation,
   type CreateQuoteDraft,
   type QuoteCoverage,
   type QuoteFileKind,
   type QuoteLocation,
   type QuoteLocationType,
+  type QuoteVehicle,
 } from '@/pages/quotes/data/createQuoteDraft'
+import { insuredsMock } from '@/pages/insureds/data/mockInsureds'
 
 type InlineField = 'name' | 'email' | 'address' | 'naics' | 'revenue' | 'employees' | 'payroll'
-type CollectionField = 'locations' | 'vehicles'
+type CollectionField = 'locations' | 'vehicles' | 'documents'
 type InsuredRowField = InlineField | CollectionField
 type CoverageRowField = `coverage:${string}`
-type InsuredListField = InsuredRowField | CoverageRowField
+type InsuredListField = InsuredRowField
+type CoverageListField = CoverageRowField | 'vehicles' | 'payroll'
 type LocationRowField = 'newLocation' | `location:${string}`
-type DrawerLevel = 'insured' | 'locations' | 'coverages'
+type VehicleRowField = 'newVehicle' | `vehicle:${string}`
+type DrawerLevel = 'insured' | 'locations' | 'vehicles' | 'coverages'
 
 const BUSINESS_FIELDS: InlineField[] = ['name', 'email', 'address', 'naics', 'revenue', 'employees', 'payroll']
 const INDIVIDUAL_FIELDS: InlineField[] = ['name', 'email', 'address']
 /** Continue needs these; empty ones show as pink blockers. */
-const BUSINESS_REQUIRED: readonly InlineField[] = ['name', 'email', 'address', 'naics']
-const INDIVIDUAL_REQUIRED: readonly InlineField[] = ['name', 'email', 'address']
+const BUSINESS_REQUIRED: readonly InlineField[] = ['name', 'address', 'naics']
+const INDIVIDUAL_REQUIRED: readonly InlineField[] = ['name', 'address']
 
 const FIELD_LABELS: Record<InlineField, string> = {
   name: 'Name',
@@ -106,13 +116,16 @@ const FIELD_HELPERS: Record<InlineField, string> = {
 
 const BUSINESS_SEED = 'Business'
 const INDIVIDUAL_SEED = 'Individual'
-const UPLOAD_SCHEDULE = 'Upload schedule'
-const MORE_COVERAGES = 'More coverages'
+const UNDER_EXISTING_INSURED = 'Under an existing insured'
+const INSUREDS_BY_NAME = new Map(insuredsMock.map((insured) => [insured.name, insured]))
+const INSURED_OPTIONS = [...INSUREDS_BY_NAME.keys()]
+const ADD_NOTE = 'Add note'
+const EMAIL_MISSING_INFO = 'Email for missing info'
 const ADD_LOCATION = 'Add location'
-const MAX_SUGGESTED_ACTIONS = 3
-/** Level 1 suggests only these; the rest of QUOTE_COVERAGES live behind "More coverages". */
-const PRIMARY_COVERAGES: readonly QuoteCoverage[] = ['General Liability', "Workers' Compensation", 'Commercial Auto']
-const MORE_COVERAGE_OPTIONS = QUOTE_COVERAGES.filter((coverage) => !PRIMARY_COVERAGES.includes(coverage))
+const ADD_VEHICLE = 'Add vehicle'
+const SAVE_DRAFT = 'Save draft'
+const SELECT_COVERAGES = 'Select coverages'
+const VIN_PATTERN = /\b[A-HJ-NPR-Z0-9]{17}\b/i
 
 function coverageField(coverage: QuoteCoverage): CoverageRowField {
   return `coverage:${coverage}`
@@ -127,17 +140,14 @@ export type CreateQuoteSavedState = {
   messages: DraftThreadMessage[]
 }
 
+export type CreateQuoteMissingInfoEmail = { subject: string; body: string }
+
 type StagedFile = { id: string; file: File; label: string }
 
 const FILE_KIND_LABELS: Partial<Record<QuoteFileKind, string>> = {
   locations: 'Location schedule',
   payroll: 'Payroll',
   vehicles: 'Vehicle schedule',
-}
-
-const LOCATION_TYPE_BADGES: Partial<Record<QuoteLocationType, DraftRowBadge>> = {
-  Office: { icon: <BusinessOutlinedIcon />, label: 'Office', color: 'teal' },
-  Warehouse: { icon: <WarehouseOutlinedIcon />, label: 'Warehouse', color: 'green' },
 }
 
 function plural(count: number, noun: string) {
@@ -185,7 +195,112 @@ function locationsCountSummary(locations: QuoteLocation[]) {
     .join(' · ')
 }
 
+function vehiclesToResolve(vehicles: QuoteVehicle[]) {
+  return vehicles.filter((vehicle) => !isVehicleComplete(vehicle)).length
+}
+
+function vehiclesCountSummary(vehicles: QuoteVehicle[]) {
+  const toResolve = vehiclesToResolve(vehicles)
+  return [plural(vehicles.length, 'vehicle'), toResolve > 0 ? `${toResolve} to resolve` : null]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+function vehicleTitle(vehicle: QuoteVehicle) {
+  return [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ') || 'Vehicle'
+}
+
 const captionSx = { fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.5 } as const
+
+type VehicleInput = Omit<QuoteVehicle, 'id'>
+
+/** VIN, year, make, model, and garaging location, with explicit ✓ save and ✕ cancel. */
+function VehicleEditor({
+  initial,
+  locations,
+  onSave,
+  onCancel,
+}: {
+  initial: QuoteVehicle | null
+  locations: QuoteLocation[]
+  onSave: (vehicle: VehicleInput) => void
+  onCancel: () => void
+}) {
+  const [vehicle, setVehicle] = useState<VehicleInput>({
+    vin: initial?.vin ?? '',
+    year: initial?.year ?? '',
+    make: initial?.make ?? '',
+    model: initial?.model ?? '',
+    garagingId: initial?.garagingId ?? (locations.length === 1 ? locations[0].id : null),
+  })
+  const textField = (field: 'vin' | 'year' | 'make' | 'model', autoFocus = false) => (
+    <TextField
+      size="small"
+      fullWidth
+      autoFocus={autoFocus}
+      label={VEHICLE_FIELD_LABELS[field]}
+      value={vehicle[field]}
+      onChange={(event) =>
+        setVehicle((current) => ({
+          ...current,
+          [field]: field === 'vin' ? event.target.value.toUpperCase() : event.target.value,
+        }))
+      }
+      inputProps={field === 'year' ? { inputMode: 'numeric', maxLength: 4 } : field === 'vin' ? { maxLength: 17 } : undefined}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') onCancel()
+      }}
+    />
+  )
+  const locationLabel = (location: QuoteLocation) => location.address.street || 'Location'
+  const garaging = locations.find((location) => location.id === vehicle.garagingId)
+  const hasAny = Boolean(vehicle.vin || vehicle.year || vehicle.make || vehicle.model)
+  return (
+    <Stack spacing={1.25}>
+      {textField('vin', true)}
+      <Stack direction="row" spacing={1}>
+        <Box sx={{ width: 96, flexShrink: 0 }}>{textField('year')}</Box>
+        {textField('make')}
+      </Stack>
+      {textField('model')}
+      <Box>
+        <Typography variant="caption" color="text.secondary" sx={{ ...captionSx, mt: 0, mb: 0.75 }}>
+          {VEHICLE_FIELD_LABELS.garagingId}
+        </Typography>
+        {locations.length > 0 ? (
+          <DraftInlineOptions
+            options={locations.map(locationLabel)}
+            selected={garaging ? locationLabel(garaging) : null}
+            onPick={(label) =>
+              setVehicle((current) => ({
+                ...current,
+                garagingId: locations.find((location) => locationLabel(location) === label)?.id ?? null,
+              }))
+            }
+          />
+        ) : (
+          <Typography variant="body2" color="text.secondary" sx={{ ...draftBodySx, fontSize: '0.8125rem' }}>
+            Add a location first.
+          </Typography>
+        )}
+      </Box>
+      <Stack direction="row" justifyContent="flex-end" spacing={0.5}>
+        <IconButton size="small" aria-label="Cancel vehicle" onClick={onCancel}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          size="small"
+          color="primary"
+          aria-label="Save vehicle"
+          disabled={!hasAny}
+          onClick={() => hasAny && onSave(vehicle)}
+        >
+          <CheckIcon fontSize="small" />
+        </IconButton>
+      </Stack>
+    </Stack>
+  )
+}
 
 /** Address lookup + type, with explicit ✓ save and ✕ cancel. */
 function LocationEditor({
@@ -239,14 +354,25 @@ export function CreateQuotePanel({
   initialState,
   onClose,
   onSaveDraft,
+  onAddNote,
+  onEmailMissingInfo,
+  history,
+  onOpenHistory,
+  onStartOver,
 }: {
   initialState?: CreateQuoteSavedState | null
+  history: DraftHistoryItem[]
+  onOpenHistory: (id: string) => void
+  /** Back to "Who is being insured?"; the next Save draft writes a new History row. */
+  onStartOver: () => void
   onClose: () => void
   onSaveDraft: (state: CreateQuoteSavedState) => void
+  onAddNote: (state: CreateQuoteSavedState) => void
+  onEmailMissingInfo: (email: CreateQuoteMissingInfoEmail, state: CreateQuoteSavedState) => void
 }) {
   const [tab, setTab] = useState<DraftTab>('new')
   const [level, setLevel] = useState<DrawerLevel>('insured')
-  const [draft, setDraft] = useState<CreateQuoteDraft>(initialState?.draft ?? emptyCreateQuoteDraft)
+  const [draft, setDraft] = useState<CreateQuoteDraft>(() => ({ ...emptyCreateQuoteDraft, ...initialState?.draft }))
   const [messages, setMessages] = useState<DraftThreadMessage[]>(initialState?.messages ?? [])
   const [composerValue, setComposerValue] = useState('')
   const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([])
@@ -254,9 +380,11 @@ export function CreateQuotePanel({
   const [readingFiles, setReadingFiles] = useState(false)
   const [editing, setEditing] = useState<InsuredListField | null>(null)
   const [editingLocation, setEditingLocation] = useState<LocationRowField | null>(null)
+  const [editingVehicle, setEditingVehicle] = useState<VehicleRowField | null>(null)
+  const [editingCoverage, setEditingCoverage] = useState<CoverageListField | null>(null)
+  const [vehiclesParent, setVehiclesParent] = useState<'insured' | 'coverages'>('insured')
   const [toast, setToast] = useState<string | null>(null)
-  const composerBoxRef = useRef<HTMLDivElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [pickingInsured, setPickingInsured] = useState(false)
   const [parsedComposerValue, setParsedComposerValue] = useDebouncedValue(composerValue)
 
   const onInsured = level === 'insured'
@@ -279,19 +407,12 @@ export function CreateQuotePanel({
   const isIndividual = previewDraft.type === 'Individual'
   const inlineFields = isIndividual ? INDIVIDUAL_FIELDS : BUSINESS_FIELDS
   const requiredFields = isIndividual ? INDIVIDUAL_REQUIRED : BUSINESS_REQUIRED
-  const canContinue = requiredFields.every((field) => inlineValue(commitDraft, field) != null)
   const orderedFields = useFilledFirstOrder(inlineFields, (field) => inlineValue(previewDraft, field) != null)
   const composerPlaceholder =
     draft.type === 'Individual' ? 'Describe the person, or drop a file…' : 'Describe the business, or drop a file…'
   const resetComposer = () => {
     setComposerValue('')
     setParsedComposerValue('')
-  }
-
-  const focusComposer = () => {
-    window.requestAnimationFrame(() => {
-      composerBoxRef.current?.querySelector<HTMLTextAreaElement>('textarea:not([aria-hidden="true"])')?.focus()
-    })
   }
 
   const readDocuments = (files: File[], text: string) => {
@@ -365,6 +486,19 @@ export function CreateQuotePanel({
       }
       return
     }
+    if (level === 'vehicles') {
+      const vin = text.match(VIN_PATTERN)?.[0]
+      if (vin) {
+        setDraft((current) => ({
+          ...current,
+          vehicles: [
+            ...current.vehicles,
+            { id: quoteVehicleId(), vin: vin.toUpperCase(), year: '', make: '', model: '', garagingId: null },
+          ],
+        }))
+      }
+      return
+    }
     if (staged.length === 0) setMessages((current) => [...current, { id: draftUid('user'), text }])
     setDraft((current) => mergeQuoteDraft(current, inferQuoteFromText(text)))
   }
@@ -375,15 +509,30 @@ export function CreateQuotePanel({
     setLevel('locations')
   }
 
+  const pushVehicles = (from: 'insured' | 'coverages') => {
+    setEditing(null)
+    setEditingCoverage(null)
+    setEditingVehicle(null)
+    setVehiclesParent(from)
+    setLevel('vehicles')
+  }
+
   const pushCoverages = () => {
     setEditing(null)
-    setEditingLocation(null)
+    setEditingCoverage(null)
     setLevel('coverages')
   }
 
   const popToInsured = () => {
     setEditingLocation(null)
+    setEditingVehicle(null)
+    setEditingCoverage(null)
     setLevel('insured')
+  }
+
+  const popFromVehicles = () => {
+    setEditingVehicle(null)
+    setLevel(vehiclesParent)
   }
 
   const setCoverage = (coverage: QuoteCoverage, checked: boolean) =>
@@ -411,8 +560,33 @@ export function CreateQuotePanel({
     })
   }
 
+  const backToStart = () => {
+    resetComposer()
+    setEditing(null)
+    setEditingLocation(null)
+    setEditingVehicle(null)
+    setStagedFiles([])
+    setSentFiles([])
+    setMessages([])
+    setDraft(emptyCreateQuoteDraft)
+    onStartOver()
+  }
+
   const startWithType = (type: CustomerType) => {
     setDraft((current) => ({ ...current, type }))
+  }
+
+  const pickInsured = (name: string) => {
+    const insured = INSUREDS_BY_NAME.get(name)
+    setPickingInsured(false)
+    if (!insured) return
+    setDraft((current) => ({
+      ...current,
+      type: insured.insuredType === 'Commercial' ? 'Business' : 'Individual',
+      name: insured.name,
+      email: insured.contactEmail,
+      address: parseQuoteAddress(`${insured.addressLine1}, ${insured.cityStateZip}`),
+    }))
   }
 
   const handleInsuredAction = (action: string) => {
@@ -423,17 +597,22 @@ export function CreateQuotePanel({
       case INDIVIDUAL_SEED:
         startWithType('Individual')
         return
-      case UPLOAD_SCHEDULE:
-        focusComposer()
-        fileInputRef.current?.click()
+      case UNDER_EXISTING_INSURED:
+        setPickingInsured(true)
+        return
+      case ADD_NOTE:
+        onAddNote(savedState())
+        return
+      case EMAIL_MISSING_INFO:
+        onEmailMissingInfo(missingInfoEmail(), savedState())
+        return
+      case SELECT_COVERAGES:
+        pushCoverages()
+        return
+      case SAVE_DRAFT:
+        onSaveDraft(savedState())
         return
     }
-    if (action.startsWith(MORE_COVERAGES)) {
-      pushCoverages()
-      return
-    }
-    const coverage = PRIMARY_COVERAGES.find((option) => option === action)
-    if (coverage) setCoverage(coverage, true)
   }
 
   const saveLocation = (field: LocationRowField, next: { address: CustomerAddress; type: QuoteLocationType | null }) => {
@@ -451,8 +630,31 @@ export function CreateQuotePanel({
     })
   }
 
+  const saveVehicle = (field: VehicleRowField, next: VehicleInput) => {
+    setEditingVehicle(null)
+    setDraft((current) => {
+      if (field === 'newVehicle') return { ...current, vehicles: [...current.vehicles, { id: quoteVehicleId(), ...next }] }
+      const id = field.slice('vehicle:'.length)
+      return {
+        ...current,
+        vehicles: current.vehicles.map((vehicle) => (vehicle.id === id ? { ...vehicle, ...next } : vehicle)),
+      }
+    })
+  }
+
   const savedState = (): CreateQuoteSavedState => ({ draft: commitDraft, messages })
 
+  const profileComplete = requiredFields.every((field) => inlineValue(previewDraft, field) != null)
+  const autoChosen = coverageChecked(previewDraft, 'Commercial Auto')
+  const vehiclesBlocked = previewDraft.vehicles.length === 0 || vehiclesToResolve(previewDraft.vehicles) > 0
+  const vehiclesRow: DraftNeededRow<'vehicles'> = {
+    term: 'Vehicles',
+    value: previewDraft.vehicles.length > 0 ? vehiclesCountSummary(previewDraft.vehicles) : null,
+    hint: 'None added',
+    field: 'vehicles',
+    chevron: true,
+    ...(vehiclesBlocked ? { tone: 'error' as const } : {}),
+  }
   const insuredRows: DraftNeededRow<InsuredListField>[] = [
     ...orderedFields.map((field): DraftNeededRow<InsuredListField> => {
       const value = inlineValue(previewDraft, field)
@@ -476,42 +678,96 @@ export function CreateQuotePanel({
           ? { tone: 'error' as const }
           : {}),
     },
-    {
-      term: 'Vehicles',
-      value: previewDraft.vehicleCount > 0 ? plural(previewDraft.vehicleCount, 'vehicle') : null,
-      hint: 'None added',
-      field: 'vehicles',
-      chevron: true,
-      ...(previewDraft.vehicleCount > 0 ? {} : { tone: 'warning' as const }),
-    },
-    ...PRIMARY_COVERAGES.filter((coverage) => coverageChecked(previewDraft, coverage)).map(
-      (coverage): DraftNeededRow<InsuredListField> => ({ term: coverage, value: 'Added', field: coverageField(coverage) }),
-    ),
+    ...(sentFiles.length > 0
+      ? [
+          {
+            term: 'Documents',
+            value: readingFiles ? `${plural(sentFiles.length, 'document')} · Reading…` : plural(sentFiles.length, 'document'),
+            hint: '',
+            field: 'documents' as const,
+            expandable: true,
+          },
+        ]
+      : []),
+    // A dropped vehicle schedule surfaces here until Commercial Auto is chosen; then it lives under Coverages.
+    ...(previewDraft.vehicles.length > 0 && !autoChosen ? [vehiclesRow] : []),
   ]
 
-  const moreCoveragesAdded = MORE_COVERAGE_OPTIONS.filter((coverage) => coverageChecked(previewDraft, coverage)).length
-  const insuredActions = [
-    ...PRIMARY_COVERAGES.filter((coverage) => !coverageChecked(previewDraft, coverage)).slice(0, MAX_SUGGESTED_ACTIONS),
-    moreCoveragesAdded > 0 ? `${MORE_COVERAGES} (${moreCoveragesAdded} added)` : MORE_COVERAGES,
-  ]
+  const insuredActions = profileComplete
+    ? [SELECT_COVERAGES, SAVE_DRAFT, ADD_NOTE]
+    : [ADD_NOTE, EMAIL_MISSING_INFO, SAVE_DRAFT]
 
-  const renderInlineEditor = (field: InsuredListField) => {
-    const coverage = coverageFromField(field)
-    if (coverage) {
+  const addedCoverages = QUOTE_COVERAGES.filter((coverage) => coverageChecked(previewDraft, coverage))
+  const coverageSuggestions = suggestCoverages(previewDraft)
+  const suggestedCoverages = new Set(coverageSuggestions.map(({ coverage }) => coverage))
+  const payrollValue = inlineValue(previewDraft, 'payroll')
+  const payrollRow: DraftNeededRow<'payroll'> = {
+    term: FIELD_LABELS.payroll,
+    value: payrollValue,
+    hint: "Needed for Workers' Compensation",
+    field: 'payroll',
+    ...(payrollValue == null ? { tone: 'error' as const } : {}),
+  }
+  // Each selected coverage asks only for what it rates on; General Liability needs nothing beyond the profile.
+  const coverageRows: DraftNeededRow<CoverageListField>[] = [
+    ...addedCoverages
+      .filter((coverage) => !suggestedCoverages.has(coverage))
+      .map((coverage) => ({ term: coverage, value: 'Added', field: coverageField(coverage) })),
+    ...(coverageChecked(previewDraft, "Workers' Compensation") ? [payrollRow] : []),
+    ...(autoChosen ? [vehiclesRow] : []),
+  ]
+  const missingInfoEmail = (): CreateQuoteMissingInfoEmail => {
+    const missing = requiredFields.filter((field) => inlineValue(commitDraft, field) == null).map((field) => FIELD_LABELS[field])
+    const name = commitDraft.name || 'your business'
+    return {
+      subject: `Quote for ${name}: a few details needed`,
+      body: [
+        'Hi,',
+        '',
+        `To start the quote for ${name}, please send:`,
+        ...missing.map((label) => `• ${label}`),
+        '',
+        'Thanks,',
+      ].join('\n'),
+    }
+  }
+
+  const renderCoverageEditor = (field: CoverageListField) => {
+    if (field === 'payroll') {
       return (
-        <Button
-          size="small"
-          color="inherit"
-          onClick={() => {
-            setEditing(null)
-            setCoverage(coverage, false)
+        <DraftInlineTextEdit
+          initialValue={payrollValue ?? ''}
+          label={FIELD_LABELS.payroll}
+          type="text"
+          inputMode="decimal"
+          helperText={FIELD_HELPERS.payroll}
+          confirmable
+          onCommit={(value) => {
+            setEditingCoverage(null)
+            applyInlineEdit('payroll', value)
           }}
-          sx={{ ...draftBodySx, textTransform: 'none', ml: -1 }}
-        >
-          Remove coverage
-        </Button>
+          onDismiss={() => setEditingCoverage(null)}
+        />
       )
     }
+    const coverage = coverageFromField(field)
+    if (!coverage) return null
+    return (
+      <Button
+        size="small"
+        color="inherit"
+        onClick={() => {
+          setEditingCoverage(null)
+          setCoverage(coverage, false)
+        }}
+        sx={{ ...draftBodySx, textTransform: 'none', ml: -1 }}
+      >
+        Remove coverage
+      </Button>
+    )
+  }
+
+  const renderInlineEditor = (field: InsuredListField) => {
     switch (field) {
       case 'address':
         return (
@@ -538,6 +794,8 @@ export function CreateQuotePanel({
             onDismiss={() => setEditing(null)}
           />
         )
+      case 'documents':
+        return documentChips
       case 'locations':
       case 'vehicles':
         return null
@@ -574,23 +832,16 @@ export function CreateQuotePanel({
   const locationRows: DraftNeededRow<LocationRowField>[] = [
     ...previewDraft.locations.map((location) => {
       const complete = isAddressComplete(location.address)
-      const badge = complete && location.type ? LOCATION_TYPE_BADGES[location.type] : undefined
       return {
         term: location.address.street || 'Location',
-        value: complete && location.type ? locationSummary(location) : null,
-        hint: complete ? locationSummary(location) : `Address incomplete · ${locationSummary(location)}`,
+        value: complete ? locationSummary(location) : null,
+        hint: `Address incomplete · ${locationSummary(location)}`,
         field: `location:${location.id}` as const,
-        ...(!complete
-          ? { tone: 'error' as const }
-          : badge
-            ? { badge }
-            : location.type
-              ? {}
-              : { tone: 'warning' as const }),
+        ...(complete ? {} : { tone: 'error' as const }),
       }
     }),
     ...(editingLocation === 'newLocation'
-      ? [{ term: 'New location', value: null, hint: '', tone: 'warning' as const, field: 'newLocation' as const }]
+      ? [{ term: 'New location', value: null, hint: '', tone: 'new' as const, field: 'newLocation' as const }]
       : []),
   ]
 
@@ -606,35 +857,51 @@ export function CreateQuotePanel({
     />
   )
 
-  const fileChips =
-    sentFiles.length > 0 ? (
-      <Stack
-        direction="row"
-        flexWrap="wrap"
-        alignItems="center"
-        gap={0.75}
-        sx={{ px: 2, pt: 1.5, mb: 1, borderTop: 1, borderColor: 'divider' }}
-      >
-        {sentFiles.map((sent) => (
-          <Chip
-            key={sent.id}
-            size="small"
-            label={sent.label}
-            sx={{
-              maxWidth: '100%',
-              fontFamily: figmaFontFamilyStack.body,
-              fontSize: '0.75rem',
-              '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
-            }}
-          />
-        ))}
-        {readingFiles ? (
-          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
-            Reading…
-          </Typography>
-        ) : null}
-      </Stack>
-    ) : null
+  const vehicleRows: DraftNeededRow<VehicleRowField>[] = [
+    ...previewDraft.vehicles.map((vehicle) => {
+      const missing = missingVehicleFields(vehicle)
+      const garaging = previewDraft.locations.find((location) => location.id === vehicle.garagingId)
+      return {
+        term: vehicleTitle(vehicle),
+        value: missing.length === 0 ? `VIN ${vehicle.vin} · ${garaging?.address.street ?? 'Garaging set'}` : null,
+        hint: `Missing ${missing.map((field) => (field === 'vin' ? 'VIN' : VEHICLE_FIELD_LABELS[field].toLowerCase())).join(', ')}`,
+        field: `vehicle:${vehicle.id}` as const,
+        ...(missing.length === 0 ? {} : { tone: 'error' as const }),
+      }
+    }),
+    ...(editingVehicle === 'newVehicle'
+      ? [{ term: 'New vehicle', value: null, hint: '', tone: 'new' as const, field: 'newVehicle' as const }]
+      : []),
+  ]
+
+  const renderVehicleEditor = (field: VehicleRowField) => (
+    <VehicleEditor
+      initial={
+        field === 'newVehicle' ? null : (previewDraft.vehicles.find((vehicle) => `vehicle:${vehicle.id}` === field) ?? null)
+      }
+      locations={previewDraft.locations}
+      onSave={(next) => saveVehicle(field, next)}
+      onCancel={() => setEditingVehicle(null)}
+    />
+  )
+
+  const documentChips = (
+    <Stack direction="row" flexWrap="wrap" alignItems="center" gap={0.75}>
+      {sentFiles.map((sent) => (
+        <Chip
+          key={sent.id}
+          size="small"
+          label={sent.label}
+          sx={{
+            maxWidth: '100%',
+            fontFamily: figmaFontFamilyStack.body,
+            fontSize: '0.75rem',
+            '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+          }}
+        />
+      ))}
+    </Stack>
+  )
 
   const insuredLevel = !started ? (
     <>
@@ -645,20 +912,34 @@ export function CreateQuotePanel({
       <Divider sx={{ mb: 2 }} />
       <CopilotQuickActions
         label="Suggested actions"
-        actions={[BUSINESS_SEED, INDIVIDUAL_SEED, UPLOAD_SCHEDULE]}
+        actions={[BUSINESS_SEED, INDIVIDUAL_SEED, UNDER_EXISTING_INSURED]}
         onAction={handleInsuredAction}
       />
+      {pickingInsured ? (
+        <DraftInlineLookup
+          options={INSURED_OPTIONS}
+          optionSubtitle={(name) => INSUREDS_BY_NAME.get(name)?.cityStateZip}
+          placeholder="Search insureds"
+          onPick={pickInsured}
+          onDismiss={() => setPickingInsured(false)}
+        />
+      ) : null}
     </>
   ) : (
     <>
-      <DraftHeader title={previewDraft.name || 'New quote'} request={previewDraft.type ?? undefined} />
+      <DraftHeader
+        title="New quote"
+        request={previewDraft.type ?? undefined}
+        backLabel="Back to who is being insured"
+        onBack={backToStart}
+      />
       <DraftNeededList
         rows={insuredRows}
         editingField={editing}
         openRowStyle="none"
         onToggle={(field) => {
           if (field === 'locations') pushLocations()
-          else if (field === 'vehicles') setToast('Vehicles next.')
+          else if (field === 'vehicles') pushVehicles('insured')
           else setEditing((current) => (current === field ? null : field))
         }}
         renderEditor={renderInlineEditor}
@@ -667,29 +948,77 @@ export function CreateQuotePanel({
     </>
   )
 
-  const coverageRows: DraftNeededRow<CoverageRowField>[] = MORE_COVERAGE_OPTIONS.map((coverage) => {
-    const added = coverageChecked(previewDraft, coverage)
-    return { term: coverage, value: added ? 'Added' : null, hint: added ? undefined : 'Tap to add', field: coverageField(coverage) }
-  })
-
   const coveragesLevel = (
     <>
       <DraftHeader
-        title="More coverages"
-        request={plural(moreCoveragesAdded, 'coverage') + ' added'}
+        title="Coverages"
+        request={addedCoverages.length > 0 ? `${plural(addedCoverages.length, 'coverage')} added` : previewDraft.name || undefined}
         backLabel="Back to quote"
         onBack={popToInsured}
       />
-      <DraftNeededList
-        rows={coverageRows}
-        editingField={null}
-        openRowStyle="none"
-        onToggle={(field) => {
-          const coverage = coverageFromField(field)
-          if (coverage) setCoverage(coverage, !coverageChecked(previewDraft, coverage))
-        }}
-        renderEditor={() => null}
-      />
+      {coverageSuggestions.length > 0 ? (
+        <Box sx={{ mb: 2 }}>
+          {coverageSuggestions.map(({ coverage, reason }, index) => {
+            const selected = coverageChecked(previewDraft, coverage)
+            return (
+              <Box
+                key={coverage}
+                component="label"
+                sx={(theme) => ({
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 1,
+                  px: 1.5,
+                  py: 1.25,
+                  cursor: 'pointer',
+                  borderBottom: index === coverageSuggestions.length - 1 ? 'none' : '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: selected ? accentSubtle(theme) : 'transparent',
+                  transition: 'background-color 0.15s ease',
+                  '&:hover': { bgcolor: selected ? accentSubtle(theme) : accentSubtleHover(theme) },
+                })}
+              >
+                <Checkbox
+                  size="small"
+                  checked={selected}
+                  onChange={(event) => setCoverage(coverage, event.target.checked)}
+                  inputProps={{ 'aria-label': `Select ${coverage}` }}
+                  sx={{ p: 0.25, mt: 0.125, flexShrink: 0 }}
+                />
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontFamily: figmaFontFamilyStack.body, fontWeight: 600, fontSize: '0.875rem' }}
+                  >
+                    {coverage}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.75rem', lineHeight: 1.45, mt: 0.5 }}
+                  >
+                    {reason}
+                  </Typography>
+                </Box>
+              </Box>
+            )
+          })}
+        </Box>
+      ) : null}
+      {coverageRows.length > 0 ? (
+        <DraftNeededList
+          rows={coverageRows}
+          editingField={editingCoverage}
+          openRowStyle="none"
+          onToggle={(field) => {
+            if (field === 'vehicles') pushVehicles('coverages')
+            else if (field === 'payroll') setEditingCoverage((current) => (current === 'payroll' ? null : 'payroll'))
+            else setEditingCoverage((current) => (current === field ? null : field))
+          }}
+          renderEditor={renderCoverageEditor}
+        />
+      ) : null}
+      <CopilotQuickActions label="Suggested actions" actions={[SAVE_DRAFT]} onAction={() => onSaveDraft(savedState())} />
     </>
   )
 
@@ -711,12 +1040,51 @@ export function CreateQuotePanel({
       {editingLocation !== 'newLocation' ? (
         <CopilotQuickActions
           label="Suggested actions"
-          actions={[ADD_LOCATION]}
-          onAction={() => setEditingLocation('newLocation')}
+          actions={[ADD_LOCATION, SAVE_DRAFT]}
+          onAction={(action) => (action === SAVE_DRAFT ? onSaveDraft(savedState()) : setEditingLocation('newLocation'))}
         />
       ) : null}
     </>
   )
+
+  const vehiclesLevel = (
+    <>
+      <DraftHeader
+        title="Vehicles"
+        request={vehiclesCountSummary(previewDraft.vehicles)}
+        backLabel={vehiclesParent === 'coverages' ? 'Back to coverages' : 'Back to quote'}
+        onBack={popFromVehicles}
+      />
+      <DraftNeededList
+        rows={vehicleRows}
+        editingField={editingVehicle}
+        openRowStyle="none"
+        onToggle={(field) => setEditingVehicle((current) => (current === field ? null : field))}
+        renderEditor={renderVehicleEditor}
+      />
+      {editingVehicle !== 'newVehicle' ? (
+        <CopilotQuickActions
+          label="Suggested actions"
+          actions={[ADD_VEHICLE, SAVE_DRAFT]}
+          onAction={(action) => (action === SAVE_DRAFT ? onSaveDraft(savedState()) : setEditingVehicle('newVehicle'))}
+        />
+      ) : null}
+    </>
+  )
+
+  const levelContent = {
+    insured: insuredLevel,
+    locations: locationsLevel,
+    vehicles: vehiclesLevel,
+    coverages: coveragesLevel,
+  }[level]
+
+  const levelPlaceholder = {
+    insured: composerPlaceholder,
+    locations: 'Type an address, or drop a schedule…',
+    vehicles: 'Type a VIN, or drop a vehicle schedule…',
+    coverages: 'Name a coverage to add…',
+  }[level]
 
   return (
     <>
@@ -726,25 +1094,18 @@ export function CreateQuotePanel({
         tab={tab}
         onTabChange={setTab}
         onClose={onClose}
-        createLabel={onInsured ? 'Continue' : 'Done'}
-        createDisabled={onInsured ? !canContinue : false}
-        onCreate={() => (onInsured ? setToast('Coverage details next.') : popToInsured())}
-        onSaveDraft={() => onSaveDraft(savedState())}
         history={
-          <DraftHistoryList entries={[]} emptyText="Quotes you start this session show up here." onOpen={() => undefined} />
+          <DraftHistoryList
+            entries={history}
+            emptyText="Quotes you start this session show up here."
+            onOpen={onOpenHistory}
+          />
         }
         composer={
-          <Box ref={composerBoxRef}>
-            {fileChips}
+          <Box>
             <CopilotComposer
               key={level}
-              placeholder={
-                onInsured
-                  ? composerPlaceholder
-                  : level === 'coverages'
-                    ? 'Name a coverage to add…'
-                    : 'Type an address, or drop a schedule…'
-              }
+              placeholder={levelPlaceholder}
               value={composerValue}
               onChange={setComposerValue}
               minRows={1}
@@ -758,20 +1119,8 @@ export function CreateQuotePanel({
           </Box>
         }
       >
-        {onInsured ? insuredLevel : level === 'coverages' ? coveragesLevel : locationsLevel}
+        {levelContent}
       </DraftDrawerShell>
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        hidden
-        accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.eml,.msg,.vcf,.txt"
-        onChange={(event) => {
-          const files = Array.from(event.target.files ?? [])
-          event.target.value = ''
-          stageFiles(files)
-        }}
-      />
       <Snackbar
         open={Boolean(toast)}
         autoHideDuration={3000}
