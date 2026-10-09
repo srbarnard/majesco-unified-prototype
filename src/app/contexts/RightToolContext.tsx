@@ -23,6 +23,8 @@ export type RightToolId =
   | 'newTask'
   | 'newCustomer'
   | 'newQuote'
+  | 'newClaim'
+  | 'newSubmission'
 
 export type RightToolRecordContext = {
   title: string

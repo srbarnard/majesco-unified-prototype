@@ -2,7 +2,7 @@ import Box from '@mui/material/Box'
 import Snackbar from '@mui/material/Snackbar'
 import { useGridApiRef, type GridRowSelectionModel } from '@mui/x-data-grid-premium'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { useSearchParams } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import {
   useRegisterRightToolCopilotCustom,
@@ -31,6 +31,7 @@ import type { SubmissionsTab } from '@/pages/submissions/components/SubmissionsT
 import { SubmissionsToolbar } from '@/pages/submissions/components/SubmissionsToolbar'
 import {
   buildQuotePackageSent,
+  onSubmissionUpserted,
   submissionsMock,
   syncSubmissionListRecord,
   type PremiumEstimate,
@@ -70,7 +71,6 @@ function formatResolvedTimestamp(date = new Date()) {
 }
 
 export function SubmissionsPage() {
-  const navigate = useNavigate()
   const apiRef = useGridApiRef()
   const [searchParams, setSearchParams] = useSearchParams()
   const isDesktop = useIsDesktopLayout()
@@ -87,6 +87,18 @@ export function SubmissionsPage() {
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
   const didInitCopilot = useRef(false)
   const wasDesktop = useRef(isDesktop)
+
+  useEffect(
+    () =>
+      onSubmissionUpserted((row) =>
+        setRows((current) =>
+          current.some((entry) => entry.id === row.id)
+            ? current.map((entry) => (entry.id === row.id ? row : entry))
+            : [row, ...current],
+        ),
+      ),
+    [],
+  )
 
   useSearchQueryFromUrl(useCallback((query) => {
     setSearchQuery(query)
@@ -653,7 +665,7 @@ export function SubmissionsPage() {
           <SubmissionsHeader
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            onCreateSubmission={() => navigate('/quotes/new')}
+            onCreateSubmission={() => openTool('newSubmission')}
           />
         </Box>
 

@@ -5,12 +5,14 @@ import CheckIcon from '@mui/icons-material/Check'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import CloseIcon from '@mui/icons-material/Close'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
 import ButtonBase from '@mui/material/ButtonBase'
 import Chip from '@mui/material/Chip'
+import Collapse from '@mui/material/Collapse'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
@@ -19,8 +21,7 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Button } from '@/design-system/components'
-import { filterFooterButtonSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
+import { StatusChip } from '@/design-system/components'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import {
@@ -31,7 +32,7 @@ import {
 
 /**
  * Shared chrome for conversational "create record" drawers (New task, Create customer):
- * New/History tabs, teal subtitle, issue-style checklist rows, composer slot, Save draft / Create footer.
+ * New/History tabs, teal subtitle, Known facts / Needs attention accordions, document chips, composer slot.
  */
 
 export const draftPanelPx = 2
@@ -227,6 +228,7 @@ export function DraftInlineTextEdit({
   confirmable = false,
   inputMode,
   type = 'text',
+  autoFocus = true,
   onCommit,
   onDismiss,
 }: {
@@ -241,6 +243,8 @@ export function DraftInlineTextEdit({
   inputMode?: 'text' | 'numeric' | 'decimal'
   /** Native input type; `tel` / `email` also set autocomplete and the mobile keyboard. */
   type?: 'text' | 'tel' | 'email'
+  /** Off for every field but the first when several open together. */
+  autoFocus?: boolean
   onCommit: (value: string) => void
   onDismiss: () => void
 }) {
@@ -259,7 +263,7 @@ export function DraftInlineTextEdit({
       value={value}
       placeholder={placeholder}
       helperText={helperText}
-      autoFocus={prefersFinePointer()}
+      autoFocus={autoFocus && prefersFinePointer()}
       onChange={(event) => setValue(event.target.value)}
       onBlur={commit}
       onKeyDown={(event) => {
@@ -627,6 +631,204 @@ export function DraftNeededList<F extends string>({
   )
 }
 
+/** Unresolved: empty, or flagged as a blocker / warning / new item. Everything else is a known fact. */
+export function isDraftRowOpen(row: DraftNeededRow<string>) {
+  return row.value == null || row.tone != null
+}
+
+/**
+ * Known facts: filled and unflagged. Considerations: warnings (optional or worth a look, never blocking).
+ * Needs attention: everything else that's open — blockers and rows being added.
+ */
+export function splitDraftRows<F extends string>(rows: DraftNeededRow<F>[]) {
+  return {
+    known: rows.filter((row) => !isDraftRowOpen(row)),
+    attention: rows.filter((row) => isDraftRowOpen(row) && row.tone !== 'warning'),
+    considerations: rows.filter((row) => row.tone === 'warning'),
+  }
+}
+
+/** Accordion header padding + chevron + gap: where the label (and the group's content) starts. */
+const ACCORDION_INSET = 5
+
+function DraftAccordion({
+  label,
+  count,
+  open,
+  onToggle,
+  children,
+}: {
+  label: string
+  count: number
+  open: boolean
+  onToggle: () => void
+  children: ReactNode
+}) {
+  if (count === 0) return null
+  return (
+    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+      <Box
+        component="button"
+        type="button"
+        aria-expanded={open}
+        onClick={onToggle}
+        sx={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5,
+          px: 2,
+          py: 1.25,
+          border: 'none',
+          bgcolor: 'transparent',
+          color: 'text.primary',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        {open ? (
+          <ExpandMoreIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+        ) : (
+          <KeyboardArrowRightIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+        )}
+        <Typography variant="body2" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600 }}>
+          {label}
+        </Typography>
+        <StatusChip status="default" label={count} sx={{ ml: 0.75, height: 20, minWidth: 24 }} />
+      </Box>
+      <Collapse in={open} unmountOnExit>
+        {children}
+      </Collapse>
+    </Box>
+  )
+}
+
+/**
+ * Known facts (collapsed), Needs attention (open, blockers only), Considerations (collapsed, warnings):
+ * the groups every create drawer shows. Rows keep their status icons and open their editor in place.
+ * A collapsed group opens while one of its rows is being edited.
+ */
+export function DraftAccordions<F extends string>({
+  known,
+  attention,
+  considerations = [],
+  editingField,
+  onToggle,
+  renderEditor,
+  knownOpen: knownOpenProp,
+  onKnownOpenChange,
+  onGroupToggle,
+  hideKnown = false,
+}: {
+  known: DraftNeededRow<F>[]
+  attention: DraftNeededRow<F>[]
+  considerations?: DraftNeededRow<F>[]
+  editingField: F | null
+  onToggle: (field: F) => void
+  renderEditor: (field: F) => ReactNode
+  /** Control Known facts from outside (e.g. a "Review all" action). */
+  knownOpen?: boolean
+  onKnownOpenChange?: (open: boolean) => void
+  /** Fires when any header is clicked (e.g. to close an open editor). */
+  onGroupToggle?: () => void
+  /** Leave out Known facts (e.g. once the record is filed). */
+  hideKnown?: boolean
+}) {
+  const [knownOpenState, setKnownOpenState] = useState(false)
+  const [attentionOpen, setAttentionOpen] = useState(true)
+  const [considerationsOpen, setConsiderationsOpen] = useState(false)
+  const editingIn = (rows: DraftNeededRow<F>[]) => editingField != null && rows.some((row) => row.field === editingField)
+  const knownOpen = (knownOpenProp ?? knownOpenState) || editingIn(known)
+  const showAttention = attentionOpen || editingIn(attention)
+  const showConsiderations = considerationsOpen || editingIn(considerations)
+  if (known.length === 0 && attention.length === 0 && considerations.length === 0) return null
+
+  const rowList = (rows: DraftNeededRow<F>[]) => (
+    <Box
+      sx={{
+        // Rows pad their content by draftPanelPx; shift them so it lands on the label's left edge.
+        pl: ACCORDION_INSET - draftPanelPx,
+        '& > ul': { mb: 0, mx: 0 },
+        '& > ul > li:last-of-type': { borderBottom: 0 },
+      }}
+    >
+      <DraftNeededList
+        rows={rows}
+        editingField={editingField}
+        openRowStyle="none"
+        onToggle={onToggle}
+        renderEditor={renderEditor}
+      />
+    </Box>
+  )
+
+  return (
+    <Stack sx={{ mx: -draftPanelPx, mb: 2 }}>
+      {hideKnown ? null : (
+        <DraftAccordion
+          label="Known facts"
+          count={known.length}
+          open={knownOpen}
+          onToggle={() => {
+            const next = !knownOpen
+            setKnownOpenState(next)
+            onKnownOpenChange?.(next)
+            onGroupToggle?.()
+          }}
+        >
+          {rowList(known)}
+        </DraftAccordion>
+      )}
+      <DraftAccordion
+        label="Needs attention"
+        count={attention.length}
+        open={showAttention}
+        onToggle={() => {
+          setAttentionOpen(!showAttention)
+          onGroupToggle?.()
+        }}
+      >
+        {rowList(attention)}
+      </DraftAccordion>
+      <DraftAccordion
+        label="Considerations"
+        count={considerations.length}
+        open={showConsiderations}
+        onToggle={() => {
+          setConsiderationsOpen(!showConsiderations)
+          onGroupToggle?.()
+        }}
+      >
+        {rowList(considerations)}
+      </DraftAccordion>
+    </Stack>
+  )
+}
+
+/** Files on the draft, same chips as Notes; each opens its document. Sits under Suggested actions. */
+export function DraftDocumentChips({
+  files,
+  onOpen,
+}: {
+  files: { id: string; label: string }[]
+  onOpen: (id: string) => void
+}) {
+  if (files.length === 0) return null
+  return (
+    <Stack direction="row" flexWrap="wrap" useFlexGap spacing={0.75} sx={{ mt: 1.5, mb: 1.5 }}>
+      {files.map((file) => (
+        <Chip
+          key={file.id}
+          size="small"
+          label={file.label}
+          onClick={() => onOpen(file.id)}
+          sx={{ fontFamily: figmaFontFamilyStack.body, fontSize: '0.75rem' }}
+        />
+      ))}
+    </Stack>
+  )
+}
+
 /** ← Title header over the checklist, with the original request beneath. */
 export function DraftHeader({
   title,
@@ -695,16 +897,11 @@ export function DraftDrawerShell({
   onClose,
   history,
   composer,
-  createLabel,
-  createDisabled,
-  onCreate,
-  onSaveDraft,
   onNewTabClick,
-  variant = 'draft',
   children,
 }: {
   heading: string
-  /** `record`: the saved record — same heading, tabs and composer, but no Save / Create footer. */
+  /** `record`: the saved record. Kept for callers; the chrome is the same. */
   variant?: 'draft' | 'record'
   /** Fires on every New tab click, including when New is already selected. */
   onNewTabClick?: () => void
@@ -713,16 +910,10 @@ export function DraftDrawerShell({
   onTabChange: (tab: DraftTab) => void
   onClose: () => void
   history: ReactNode
+  /** Save draft / Create live in Suggested actions; the composer is the last thing in the drawer. */
   composer: ReactNode
-  /** Omit `onCreate` to drop the Save / Create footer; the composer is then the last thing in the drawer. */
-  createLabel?: string
-  createDisabled?: boolean
-  onCreate?: () => void
-  onSaveDraft?: () => void
   children: ReactNode
 }) {
-  const isRecord = variant === 'record'
-  const showFooter = !isRecord && onCreate != null
   return (
     <Box
       sx={{
@@ -779,27 +970,7 @@ export function DraftDrawerShell({
       </Box>
 
       <Box sx={{ display: tab === 'new' ? 'contents' : 'none' }}>
-        <Box sx={{ flexShrink: 0, pb: showFooter ? 0 : 1.5 }}>{composer}</Box>
-
-        {showFooter ? (
-        <Box sx={{ px: draftPanelPx, pb: 2, pt: 0.5, flexShrink: 0 }}>
-          <Stack direction="row" spacing={1.5}>
-            <Button variant="outlined" color="primary" fullWidth onClick={onSaveDraft} sx={filterFooterButtonSx}>
-              Save draft
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              disabled={createDisabled}
-              onClick={onCreate}
-              sx={filterFooterButtonSx}
-            >
-              {createLabel}
-            </Button>
-          </Stack>
-        </Box>
-        ) : null}
+        <Box sx={{ flexShrink: 0, pb: 1.5 }}>{composer}</Box>
       </Box>
     </Box>
   )

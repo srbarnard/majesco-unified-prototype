@@ -1092,3 +1092,28 @@ export function syncSubmissionListRecord(next: SubmissionListRecord) {
   if (index < 0) return
   submissionsMock[index] = { ...submissionsMock[index], ...next }
 }
+
+const upsertListeners = new Set<(row: SubmissionListRecord) => void>()
+
+/** Add or replace a submission from outside the page (the Create submission drawer). */
+export function upsertSubmissionRecord(row: SubmissionListRecord) {
+  const index = submissionsMock.findIndex((entry) => entry.id === row.id)
+  if (index < 0) submissionsMock.unshift(row)
+  else submissionsMock[index] = row
+  upsertListeners.forEach((listener) => listener(row))
+}
+
+export function onSubmissionUpserted(listener: (row: SubmissionListRecord) => void) {
+  upsertListeners.add(listener)
+  return () => {
+    upsertListeners.delete(listener)
+  }
+}
+
+export function nextSubmissionNumber() {
+  const highest = submissionsMock.reduce((max, row) => {
+    const value = Number(row.submissionNumber.replace(/\D/g, ''))
+    return Number.isFinite(value) ? Math.max(max, value) : max
+  }, 0)
+  return `SUB-${String(highest + 1).padStart(5, '0')}`
+}

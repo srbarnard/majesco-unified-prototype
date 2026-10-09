@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router'
 import { AppLayout } from '@/app/layouts/AppLayout'
-import { ClaimsPage } from '@/app/pages/ClaimsPage'
+import { ClaimDetails } from '@/pages/claims/ClaimDetails'
+import { ClaimsPage } from '@/pages/claims/ClaimsPage'
 import { CustomerDetails } from '@/pages/customers/CustomerDetails'
 import { CustomersPage } from '@/pages/customers/CustomersPage'
 import { DashboardPage } from '@/app/pages/DashboardPage'
@@ -45,6 +46,9 @@ export const router = createBrowserRouter([
       { path: 'policies/:policyId', element: <PolicyDetails /> },
       { path: 'policies/:policyId/documents/:docId', element: <DocumentViewerPage context="policy" /> },
       { path: 'claims', element: <ClaimsPage /> },
+      { path: 'claims/:claimNumber', element: <ClaimDetails /> },
+      { path: 'claims/:claimNumber/documents/:docId', element: <DocumentViewerPage context="draft" /> },
+      { path: 'documents/:docId', element: <DocumentViewerPage context="draft" /> },
       { path: 'customers', element: <CustomersPage /> },
       { path: 'customers/:customerNumber', element: <CustomerDetails /> },
       { path: 'settings', element: <SettingsPage /> },

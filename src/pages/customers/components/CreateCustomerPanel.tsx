@@ -1,28 +1,23 @@
-import CloseIcon from '@mui/icons-material/Close'
-import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined'
-import Box from '@mui/material/Box'
-import Chip from '@mui/material/Chip'
 import Collapse from '@mui/material/Collapse'
 import Divider from '@mui/material/Divider'
-import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import Link from '@mui/material/Link'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link as RouterLink } from 'react-router'
 import { customerDetailsPath } from '@/pages/customers/data/customerRoutes'
-import type { SxProps, Theme } from '@mui/material/styles'
 import { CopilotQuickActions, InfoBanner } from '@/design-system/components'
-import { entranceMotion, fadeInSx, fadeSlideDownSx } from '@/design-system/tokens/motion'
+import { entranceMotion, fadeSlideDownSx } from '@/design-system/tokens/motion'
 import type { CreatedCustomerEntry } from '@/app/contexts/CustomersContext'
 import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
 import {
+  DraftAccordions,
+  DraftDocumentChips,
   DraftDrawerShell,
   DraftHeader,
   DraftHistoryList,
   DraftInlineLookup,
   DraftInlineOptions,
   DraftInlineTextEdit,
-  DraftNeededList,
   DraftWelcome,
   draftBodySx,
   draftUid,
@@ -30,6 +25,7 @@ import {
   useDebouncedValue,
   useFilledFirstOrder,
   type DraftNeededRow,
+  splitDraftRows,
   type DraftTab,
   type DraftThreadMessage,
 } from '@/pages/shared/components/DraftDrawer'
@@ -124,7 +120,8 @@ const FIELD_HINTS: Record<CapturedField | 'type' | 'role', string> = {
 const REQUEST_FROM_PRODUCER = 'Request from producer'
 const CREATE_TASK = 'Create task'
 const REVIEW_ALL = 'Review all'
-const WORK_VIEW = 'Work view'
+const CREATE_CUSTOMER = 'Create customer'
+const SAVE_DRAFT = 'Save draft'
 const START_QUOTE = 'Start quote'
 const ADD_LOCATION = 'Add location'
 const ADD_TASK = 'Add task'
@@ -134,6 +131,7 @@ const START_QUOTE_REQUEST = /\b(?:start|begin|new|create)\s+(?:a\s+)?quote\b/i
 export type CreateCustomerSavedState = {
   draft: CreateCustomerDraft
   messages: DraftThreadMessage[]
+  sentFiles?: StagedFile[]
 }
 
 type ProducerRequest = { producer: string; fields: string[]; at: Date }
@@ -152,53 +150,8 @@ type CreateCustomerPanelProps = {
   /** Leaves the drawer for New task; a draft is saved first so it's waiting on return. */
   onOpenTask: (related: AddTaskRelated, draftToKeep: CreateCustomerSavedState | null) => void
   onOpenCustomer: (customerId: string) => void
-}
-
-type RecordFact = { term: string; value: string | null; field?: EditField }
-
-/** Zebra label | value list for a saved customer; a fact with a `field` being edited shows its editor. */
-function RecordFactList({
-  facts,
-  editing,
-  renderEditor,
-  rowSx,
-}: {
-  facts: RecordFact[]
-  editing: EditField | null
-  renderEditor: (field: EditField) => ReactNode
-  rowSx?: (index: number) => SxProps<Theme> | undefined
-}) {
-  if (facts.length === 0) return null
-  const textSx = { ...draftBodySx, fontSize: '0.8125rem', lineHeight: 1.5, m: 0 } as const
-  return (
-    <Box component="dl" sx={{ m: 0, mb: 2, borderRadius: 1, overflow: 'hidden' }}>
-      {facts.map((fact, index) => (
-        <Box
-          key={fact.term}
-          sx={[
-            {
-              display: 'grid',
-              gridTemplateColumns: '120px minmax(0, 1fr)',
-              columnGap: 1.5,
-              alignItems: 'baseline',
-              px: 1.5,
-              py: 1,
-              borderRadius: '5px',
-              bgcolor: index % 2 === 0 ? 'action.hover' : 'background.paper',
-            },
-            ...[rowSx?.(index)].flat(),
-          ]}
-        >
-          <Box component="dt" sx={{ ...textSx, color: 'text.secondary' }}>
-            {fact.term}
-          </Box>
-          <Box component="dd" sx={{ ...textSx, color: 'text.primary', overflowWrap: 'anywhere' }}>
-            {fact.field && editing === fact.field ? renderEditor(fact.field) : fact.value}
-          </Box>
-        </Box>
-      ))}
-    </Box>
-  )
+  /** Opens a sent file in the document viewer; the draft is saved so the drawer can resume afterwards. */
+  onOpenDocument?: (file: File, state: CreateCustomerSavedState) => void
 }
 
 function locationIndex(field: EditField) {
@@ -239,9 +192,10 @@ export function CreateCustomerPanel({
   onStartQuote,
   onOpenTask,
   onOpenCustomer,
+  onOpenDocument,
 }: CreateCustomerPanelProps) {
   const [tab, setTab] = useState<DraftTab>('new')
-  const [view, setView] = useState<'work' | 'review'>('work')
+  const [knownOpen, setKnownOpen] = useState(false)
   const [draft, setDraft] = useState<CreateCustomerDraft>(initialState?.draft ?? emptyCreateCustomerDraft)
   const [messages, setMessages] = useState<DraftThreadMessage[]>(initialState?.messages ?? [])
   const [composerValue, setComposerValue] = useState('')
@@ -249,8 +203,7 @@ export function CreateCustomerPanel({
   const [editing, setEditing] = useState<EditField | null>(null)
   const [pickingParent, setPickingParent] = useState(false)
   const [readingFiles, setReadingFiles] = useState<string[]>([])
-  const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([])
-  const [sentFiles, setSentFiles] = useState<StagedFile[]>([])
+  const [sentFiles, setSentFiles] = useState<StagedFile[]>(initialState?.sentFiles ?? [])
   const [producerRequest, setProducerRequest] = useState<ProducerRequest | null>(null)
   const [record, setRecord] = useState<CustomerRecord | null>(null)
   const [createdBannerOpen, setCreatedBannerOpen] = useState(false)
@@ -319,21 +272,20 @@ export function CreateCustomerPanel({
   }, [draft, record, onUpdate])
 
   const buildFinalDraft = (): CreateCustomerDraft => commitDraft
-  const savedState = (): CreateCustomerSavedState => ({ draft: buildFinalDraft(), messages })
+  const savedState = (): CreateCustomerSavedState => ({ draft: buildFinalDraft(), messages, sentFiles })
 
   const addMessage = (text: string) => {
     setMessages((current) => [...current, { id: draftUid('user'), text }])
     setDraft((current) => mergeCustomerDraft(current, inferCustomerFromText(text, pageContext)))
   }
 
-  const handleFilesAdded = (files: File[]) => {
-    setStagedFiles((current) => {
-      const seen = new Set(current.map((staged) => staged.file.name.toLowerCase()))
-      const incoming = files
-        .filter((file) => !seen.has(file.name.toLowerCase()))
-        .map((file) => ({ id: draftUid('file'), file, label: stagedFileLabel(file.name) }))
-      return [...current, ...incoming]
-    })
+  /** A picked or dropped file is read straight into the draft; the composer text stays put. */
+  const handleFilesAdded = (added: File[]) => {
+    const files = added.map((file) => ({ id: draftUid('file'), file, label: stagedFileLabel(file.name) }))
+    if (files.length === 0) return
+    setEditing(null)
+    setPickingParent(false)
+    readFiles(files, '')
   }
 
   const resetDraft = () => {
@@ -341,7 +293,6 @@ export function CreateCustomerPanel({
     setDraft(emptyCreateCustomerDraft)
     setMessages([])
     setReadingFiles([])
-    setStagedFiles([])
     setSentFiles([])
     setProducerRequest(null)
     setComposerValue('')
@@ -349,24 +300,22 @@ export function CreateCustomerPanel({
     setComposerKey((key) => key + 1)
     setEditing(null)
     setPickingParent(false)
-    setView('work')
+    setKnownOpen(false)
   }
 
   const handleSend = (raw: string) => {
     const text = raw.trim()
-    const files = stagedFiles
-    if (!text && files.length === 0) return
+    if (!text) return
     setComposerValue('')
     setParsedComposerValue('')
     setEditing(null)
     setPickingParent(false)
-    if (files.length === 0) {
-      addMessage(text)
-      return
-    }
+    addMessage(text)
+  }
+
+  const readFiles = (files: StagedFile[], text: string) => {
     const names = files.map((staged) => staged.file.name)
     const generation = draftGeneration.current
-    setStagedFiles([])
     setSentFiles((current) => [
       ...current.filter((sent) => !names.includes(sent.file.name)),
       ...files,
@@ -385,28 +334,6 @@ export function CreateCustomerPanel({
       // Typed text in the same send is merged last so it wins over the documents.
       const inferred = [...results.map((result) => result.inferred), inferCustomerFromText(text, pageContext)]
       setDraft((current) => inferred.reduce<CreateCustomerDraft>(mergeCustomerDraft, current))
-    })
-  }
-
-  /** Drops a sent file and clears what it supplied, falling back to other files and typed text. */
-  const removeSentFile = (id: string) => {
-    const removed = sentFiles.find((sent) => sent.id === id)
-    const remaining = sentFiles.filter((sent) => sent.id !== id)
-    setSentFiles(remaining)
-    const contributed = removed?.inferred
-    if (!contributed) return
-    const sources = [
-      ...remaining.map((sent) => sent.inferred ?? {}),
-      ...messages.filter((message) => message.text).map((message) => inferCustomerFromText(message.text, pageContext)),
-    ]
-    setDraft((current) => {
-      const next: Record<string, unknown> = { ...current }
-      for (const key of Object.keys(contributed) as (keyof CreateCustomerDraft)[]) {
-        if (JSON.stringify(current[key]) !== JSON.stringify(contributed[key])) continue
-        const fallback = sources.map((source) => source[key]).filter((value) => value != null && value !== '')
-        next[key] = fallback.length > 0 ? fallback[fallback.length - 1] : key === 'legalName' ? '' : null
-      }
-      return normalizeCustomerDraft(next as CreateCustomerDraft)
     })
   }
 
@@ -642,10 +569,13 @@ export function CreateCustomerPanel({
         return
       }
       case REVIEW_ALL:
-        setView('review')
+        setKnownOpen(true)
         return
-      case WORK_VIEW:
-        setView('work')
+      case CREATE_CUSTOMER:
+        handleCreate()
+        return
+      case SAVE_DRAFT:
+        onSaveDraft(savedState())
         return
       case START_QUOTE: {
         const created = handleCreate()
@@ -658,12 +588,16 @@ export function CreateCustomerPanel({
   const producerCanFill =
     previewDraft.related?.kind === 'Producer' ||
     missingFields.some((field) => field === 'address' || field === 'taxId' || field === 'naics')
-  const workActions =
-    view === 'review'
-      ? [WORK_VIEW]
-      : hasHoles
-        ? [...(producerCanFill ? [REQUEST_FROM_PRODUCER] : []), CREATE_TASK, REVIEW_ALL]
-        : [REVIEW_ALL, ...(canCreate ? [START_QUOTE] : [])]
+  const workActions = [
+    ...(canCreate ? [CREATE_CUSTOMER] : []),
+    ...(hasHoles
+      ? [...(producerCanFill ? [REQUEST_FROM_PRODUCER] : []), CREATE_TASK, ...(knownOpen ? [] : [REVIEW_ALL])]
+      : [...(knownOpen ? [] : [REVIEW_ALL]), ...(canCreate ? [START_QUOTE] : [])]),
+    SAVE_DRAFT,
+  ]
+  // Known facts: everything filled in (incl. DBA, role, locations, notes). Needs attention: the work list's open items.
+  const knownRows = splitDraftRows(reviewRows).known
+  const { attention: attentionRows, considerations: considerationRows } = splitDraftRows(workRows)
 
   const handleRecordAction = (action: string, recordDraft = draft) => {
     if (!record) return
@@ -715,7 +649,7 @@ export function CreateCustomerPanel({
   )
 
   if (record) {
-    const recordFacts: RecordFact[] = [
+    const recordFacts: DraftNeededRow<EditField>[] = [
       { term: 'Type', value: draft.type },
       { term: 'Legal name', value: draft.legalName || null },
       { term: 'DBA', value: draft.dba },
@@ -724,17 +658,15 @@ export function CreateCustomerPanel({
       { term: 'Email', value: draft.email },
       { term: 'Address', value: draft.address ? formatAddress(draft.address) : null },
       ...draft.locations.map((location, index) => ({ term: `Location ${index + 2}`, value: formatAddress(location) })),
-      ...(editing === 'newLocation'
-        ? [{ term: `Location ${draft.locations.length + 2}`, value: null, field: 'newLocation' as const }]
-        : []),
       { term: 'Tax ID', value: draft.taxId ? formatTaxId(draft.taxId) : null },
       { term: 'NAICS', value: draft.naics ? naicsLabel(draft.naics) : null },
       { term: 'Related', value: draft.related ? customerRelatedValue(draft.related) : null },
       { term: 'Notes', value: draft.notes || null },
-    ].filter((fact) => fact.value != null || fact.field)
-    // After the banner lands, the facts then the holes fade in one after another.
-    const introRowSx = (index: number) =>
-      recordIntro ? fadeInSx(entranceMotion.enterMs + index * entranceMotion.staggerMs) : undefined
+    ].filter((fact) => fact.value != null)
+    const recordPendingRows: DraftNeededRow<EditField>[] =
+      editing === 'newLocation'
+        ? [{ term: `Location ${draft.locations.length + 2}`, value: null, field: 'newLocation' }]
+        : []
     const recordOptionalFields: ('phone' | 'email' | 'taxId')[] =
       draft.type === 'Individual' ? ['phone', 'email'] : ['phone', 'email', 'taxId']
     const recordMissingRows: DraftNeededRow<EditField>[] = recordOptionalFields
@@ -763,10 +695,6 @@ export function CreateCustomerPanel({
             onSubmit={handleRecordSend}
           />
         }
-        createLabel=""
-        createDisabled
-        onCreate={() => undefined}
-        onSaveDraft={() => undefined}
       >
         <DraftHeader
           title={record.name}
@@ -791,14 +719,13 @@ export function CreateCustomerPanel({
             Customer created.
           </InfoBanner>
         </Collapse>
-        <RecordFactList facts={recordFacts} editing={editing} renderEditor={renderEditor} rowSx={introRowSx} />
-        <DraftNeededList
-          rows={recordMissingRows}
+        <DraftAccordions
+          known={recordFacts}
+          attention={recordPendingRows}
+          considerations={recordMissingRows}
           editingField={editing}
-          openRowStyle="none"
           onToggle={toggleEditing}
           renderEditor={renderEditor}
-          rowSx={(index) => introRowSx(recordFacts.length + index)}
         />
         <CopilotQuickActions
           label="Suggested actions"
@@ -816,10 +743,6 @@ export function CreateCustomerPanel({
       tab={tab}
       onTabChange={setTab}
       onClose={onClose}
-      createLabel="Create customer"
-      createDisabled={!canCreate}
-      onCreate={handleCreate}
-      onSaveDraft={() => onSaveDraft(savedState())}
       history={historyList}
       composer={
         <CopilotComposer
@@ -832,8 +755,6 @@ export function CreateCustomerPanel({
           showDisclaimer={false}
           onSubmit={(text) => handleSend(text)}
           onFilesAdded={handleFilesAdded}
-          stagedChips={stagedFiles}
-          onRemoveStagedChip={(id) => setStagedFiles((current) => current.filter((staged) => staged.id !== id))}
         />
       }
     >
@@ -874,30 +795,17 @@ export function CreateCustomerPanel({
             backLabel="Cancel customer"
             onBack={resetDraft}
           />
-          {sentFiles.length > 0 ? (
-            <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ pl: 4.25, mb: 1.5 }}>
-              {sentFiles.map((sent) => (
-                <Chip
-                  key={sent.id}
-                  size="small"
-                  variant="outlined"
-                  icon={<InsertDriveFileOutlinedIcon />}
-                  label={sent.label}
-                  onDelete={() => removeSentFile(sent.id)}
-                  deleteIcon={<CloseIcon sx={{ fontSize: '14px !important' }} />}
-                  sx={{ maxWidth: '100%', fontSize: '0.75rem', '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' } }}
-                />
-              ))}
-            </Stack>
-          ) : null}
-          <DraftNeededList
-            rows={view === 'review' ? reviewRows : workRows}
+          <DraftAccordions
+            known={knownRows}
+            attention={attentionRows}
+            considerations={considerationRows}
             editingField={editing}
-            openRowStyle="none"
             onToggle={toggleEditing}
             renderEditor={renderEditor}
+            knownOpen={knownOpen}
+            onKnownOpenChange={setKnownOpen}
+            onGroupToggle={() => setEditing(null)}
           />
-          {view === 'work' && workRows.length === 0 ? <Box sx={{ height: 12 }} /> : null}
           {producerRequest ? (
             <Typography variant="body2" color="text.secondary" sx={{ ...draftBodySx, mb: 2 }}>
               {producerRequest.fields.length > 0
@@ -910,6 +818,13 @@ export function CreateCustomerPanel({
             label="Suggested actions"
             actions={workActions}
             onAction={handleWorkAction}
+          />
+          <DraftDocumentChips
+            files={sentFiles.map((sent) => ({ id: sent.id, label: sent.file.name }))}
+            onOpen={(id) => {
+              const sent = sentFiles.find((file) => file.id === id)
+              if (sent) onOpenDocument?.(sent.file, savedState())
+            }}
           />
         </>
       )}

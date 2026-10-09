@@ -140,6 +140,23 @@ export function isAddressComplete(address: CustomerAddress) {
   return [address.street, address.city, address.state, address.zip].every((part) => part.trim() !== '')
 }
 
+export function locationSummary(location: QuoteLocation) {
+  const { city, state, zip } = location.address
+  const locality = [city, [state, zip].filter(Boolean).join(' ')].filter(Boolean).join(', ')
+  return [locality, location.type ?? 'Type not set'].filter(Boolean).join(' · ')
+}
+
+export function locationsToResolve(locations: QuoteLocation[]) {
+  return locations.filter((location) => !isAddressComplete(location.address)).length
+}
+
+export function locationsCountSummary(locations: QuoteLocation[]) {
+  const toResolve = locationsToResolve(locations)
+  return [`${locations.length} location${locations.length === 1 ? '' : 's'}`, toResolve > 0 ? `${toResolve} to resolve` : null]
+    .filter(Boolean)
+    .join(' · ')
+}
+
 /** Spreadsheets can't be parsed client-side; a dropped schedule stands in with a representative SOV, incomplete rows included. */
 export function scheduleLocations(): QuoteLocation[] {
   return SCHEDULE_ROWS.map(([street, city, state, zip, type]) => ({

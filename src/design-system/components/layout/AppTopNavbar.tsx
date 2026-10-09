@@ -53,9 +53,10 @@ type CreateMenuItem = {
 
 const CREATE_MENU_ITEMS: CreateMenuItem[] = [
   { label: 'Customer', disabled: true },
+  { label: 'Submission', disabled: false, tool: 'newSubmission' },
   { label: 'Quote', disabled: false, tool: 'newQuote' },
   { label: 'Policy', disabled: true },
-  { label: 'Claim', disabled: true },
+  { label: 'Claim', disabled: false, tool: 'newClaim' },
 ]
 
 /** Prototype unread count for account avatar + Notifications menu badge. */

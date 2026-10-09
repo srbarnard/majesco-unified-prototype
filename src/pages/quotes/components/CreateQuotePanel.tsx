@@ -3,7 +3,6 @@ import CloseIcon from '@mui/icons-material/Close'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
-import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Snackbar from '@mui/material/Snackbar'
@@ -27,7 +26,10 @@ import {
   type CustomerType,
 } from '@/pages/customers/data/createCustomerDraft'
 import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
+import { QuoteLocationEditor } from '@/pages/quotes/components/QuoteLocationEditor'
 import {
+  DraftAccordions,
+  DraftDocumentChips,
   DraftDrawerShell,
   DraftHeader,
   DraftHistoryList,
@@ -42,12 +44,12 @@ import {
   useFilledFirstOrder,
   type DraftHistoryItem,
   type DraftNeededRow,
+  splitDraftRows,
   type DraftTab,
   type DraftThreadMessage,
 } from '@/pages/shared/components/DraftDrawer'
 import {
   QUOTE_COVERAGES,
-  QUOTE_LOCATION_TYPES,
   coverageChecked,
   emptyCreateQuoteDraft,
   formatMoney,
@@ -56,6 +58,9 @@ import {
   inferQuoteFromText,
   isAddressComplete,
   isVehicleComplete,
+  locationSummary,
+  locationsCountSummary,
+  locationsToResolve,
   mergeQuoteDraft,
   missingVehicleFields,
   quoteVehicleId,
@@ -78,7 +83,7 @@ import {
 import { insuredsMock } from '@/pages/insureds/data/mockInsureds'
 
 type InlineField = 'name' | 'email' | 'address' | 'naics' | 'revenue' | 'employees' | 'payroll'
-type CollectionField = 'locations' | 'vehicles' | 'documents'
+type CollectionField = 'locations' | 'vehicles'
 type InsuredRowField = InlineField | CollectionField
 type CoverageRowField = `coverage:${string}`
 type InsuredListField = InsuredRowField
@@ -138,6 +143,7 @@ function coverageFromField(field: string): QuoteCoverage | null {
 export type CreateQuoteSavedState = {
   draft: CreateQuoteDraft
   messages: DraftThreadMessage[]
+  sentFiles?: StagedFile[]
 }
 
 export type CreateQuoteMissingInfoEmail = { subject: string; body: string }
@@ -176,23 +182,6 @@ function inlineValue(draft: CreateQuoteDraft, field: InlineField): string | null
     case 'payroll':
       return draft.payroll != null ? formatMoney(draft.payroll) : null
   }
-}
-
-function locationSummary(location: QuoteLocation) {
-  const { city, state, zip } = location.address
-  const locality = [city, [state, zip].filter(Boolean).join(' ')].filter(Boolean).join(', ')
-  return [locality, location.type ?? 'Type not set'].filter(Boolean).join(' · ')
-}
-
-function locationsToResolve(locations: QuoteLocation[]) {
-  return locations.filter((location) => !isAddressComplete(location.address)).length
-}
-
-function locationsCountSummary(locations: QuoteLocation[]) {
-  const toResolve = locationsToResolve(locations)
-  return [plural(locations.length, 'location'), toResolve > 0 ? `${toResolve} to resolve` : null]
-    .filter(Boolean)
-    .join(' · ')
 }
 
 function vehiclesToResolve(vehicles: QuoteVehicle[]) {
@@ -302,60 +291,13 @@ function VehicleEditor({
   )
 }
 
-/** Address lookup + type, with explicit ✓ save and ✕ cancel. */
-function LocationEditor({
-  initial,
-  onSave,
-  onCancel,
-}: {
-  initial: QuoteLocation | null
-  onSave: (location: { address: CustomerAddress; type: QuoteLocationType | null }) => void
-  onCancel: () => void
-}) {
-  const [address, setAddress] = useState<CustomerAddress | null>(initial?.address ?? null)
-  const [type, setType] = useState<QuoteLocationType | null>(initial?.type ?? null)
-  return (
-    <Stack spacing={1.25}>
-      {address ? (
-        <Typography variant="body2" sx={{ ...draftBodySx, fontSize: '0.8125rem' }}>
-          {formatAddress(address)}
-        </Typography>
-      ) : null}
-      <CustomerAddressEditor
-        value={address && isAddressComplete(address) ? address : null}
-        onSelect={setAddress}
-        onDone={() => undefined}
-        onDismiss={onCancel}
-      />
-      <DraftInlineOptions
-        options={QUOTE_LOCATION_TYPES.filter((option) => option !== 'Primary' || initial?.type === 'Primary')}
-        selected={type}
-        onPick={(next) => setType(QUOTE_LOCATION_TYPES.find((option) => option === next) ?? null)}
-      />
-      <Stack direction="row" justifyContent="flex-end" spacing={0.5}>
-        <IconButton size="small" aria-label="Cancel location" onClick={onCancel}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
-        <IconButton
-          size="small"
-          color="primary"
-          aria-label="Save location"
-          disabled={!address || !isAddressComplete(address)}
-          onClick={() => address && isAddressComplete(address) && onSave({ address, type })}
-        >
-          <CheckIcon fontSize="small" />
-        </IconButton>
-      </Stack>
-    </Stack>
-  )
-}
-
 export function CreateQuotePanel({
   initialState,
   onClose,
   onSaveDraft,
   onAddNote,
   onEmailMissingInfo,
+  onOpenDocument,
   history,
   onOpenHistory,
   onStartOver,
@@ -369,14 +311,15 @@ export function CreateQuotePanel({
   onSaveDraft: (state: CreateQuoteSavedState) => void
   onAddNote: (state: CreateQuoteSavedState) => void
   onEmailMissingInfo: (email: CreateQuoteMissingInfoEmail, state: CreateQuoteSavedState) => void
+  /** Opens a sent file in the document viewer; the draft is held so the drawer can resume afterwards. */
+  onOpenDocument?: (file: File, state: CreateQuoteSavedState) => void
 }) {
   const [tab, setTab] = useState<DraftTab>('new')
   const [level, setLevel] = useState<DrawerLevel>('insured')
   const [draft, setDraft] = useState<CreateQuoteDraft>(() => ({ ...emptyCreateQuoteDraft, ...initialState?.draft }))
   const [messages, setMessages] = useState<DraftThreadMessage[]>(initialState?.messages ?? [])
   const [composerValue, setComposerValue] = useState('')
-  const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([])
-  const [sentFiles, setSentFiles] = useState<StagedFile[]>([])
+  const [sentFiles, setSentFiles] = useState<StagedFile[]>(initialState?.sentFiles ?? [])
   const [readingFiles, setReadingFiles] = useState(false)
   const [editing, setEditing] = useState<InsuredListField | null>(null)
   const [editingLocation, setEditingLocation] = useState<LocationRowField | null>(null)
@@ -432,17 +375,15 @@ export function CreateQuotePanel({
     })
   }
 
-  const stageFiles = (files: File[]) => {
-    setStagedFiles((current) => {
-      const seen = new Set(current.map((staged) => staged.file.name.toLowerCase()))
-      const incoming = files
-        .filter((file) => !seen.has(file.name.toLowerCase()))
-        .map((file) => ({ id: draftUid('file'), file, label: stagedFileLabel(file.name) }))
-      return [...current, ...incoming]
-    })
+  /** A picked or dropped file is read straight into the draft; the composer text stays put. */
+  const addFiles = (files: File[]) => {
+    const staged = files.map((file) => ({ id: draftUid('file'), file, label: stagedFileLabel(file.name) }))
+    if (staged.length === 0) return
+    setEditing(null)
+    sendFiles(staged, '')
   }
 
-  /** On submit: staged chips move to the thread, then fill what they can. Locations update the summary without pushing level 2. */
+  /** Files join the thread, then fill what they can. Locations update the summary without pushing level 2. */
   const sendFiles = (staged: StagedFile[], text: string) => {
     setSentFiles((current) => [...current, ...staged])
     setMessages((current) => [...current, { id: draftUid('user'), text, files: staged.map((s) => s.file.name) }])
@@ -461,15 +402,9 @@ export function CreateQuotePanel({
 
   const handleSend = (raw: string) => {
     const text = raw.trim()
-    const staged = stagedFiles
-    if (!text && staged.length === 0) return
+    if (!text) return
     resetComposer()
     setEditing(null)
-    if (staged.length > 0) {
-      setStagedFiles([])
-      sendFiles(staged, onInsured ? text : '')
-    }
-    if (!text) return
 
     if (level === 'coverages') {
       const named = QUOTE_COVERAGES.filter((coverage) => text.toLowerCase().includes(coverage.toLowerCase()))
@@ -499,7 +434,7 @@ export function CreateQuotePanel({
       }
       return
     }
-    if (staged.length === 0) setMessages((current) => [...current, { id: draftUid('user'), text }])
+    setMessages((current) => [...current, { id: draftUid('user'), text }])
     setDraft((current) => mergeQuoteDraft(current, inferQuoteFromText(text)))
   }
 
@@ -565,7 +500,6 @@ export function CreateQuotePanel({
     setEditing(null)
     setEditingLocation(null)
     setEditingVehicle(null)
-    setStagedFiles([])
     setSentFiles([])
     setMessages([])
     setDraft(emptyCreateQuoteDraft)
@@ -642,7 +576,7 @@ export function CreateQuotePanel({
     })
   }
 
-  const savedState = (): CreateQuoteSavedState => ({ draft: commitDraft, messages })
+  const savedState = (): CreateQuoteSavedState => ({ draft: commitDraft, messages, sentFiles })
 
   const profileComplete = requiredFields.every((field) => inlineValue(previewDraft, field) != null)
   const autoChosen = coverageChecked(previewDraft, 'Commercial Auto')
@@ -678,20 +612,15 @@ export function CreateQuotePanel({
           ? { tone: 'error' as const }
           : {}),
     },
-    ...(sentFiles.length > 0
-      ? [
-          {
-            term: 'Documents',
-            value: readingFiles ? `${plural(sentFiles.length, 'document')} · Reading…` : plural(sentFiles.length, 'document'),
-            hint: '',
-            field: 'documents' as const,
-            expandable: true,
-          },
-        ]
-      : []),
     // A dropped vehicle schedule surfaces here until Commercial Auto is chosen; then it lives under Coverages.
     ...(previewDraft.vehicles.length > 0 && !autoChosen ? [vehiclesRow] : []),
   ]
+
+  const {
+    known: insuredKnown,
+    attention: insuredAttention,
+    considerations: insuredConsiderations,
+  } = splitDraftRows(insuredRows)
 
   const insuredActions = profileComplete
     ? [SELECT_COVERAGES, SAVE_DRAFT, ADD_NOTE]
@@ -794,8 +723,6 @@ export function CreateQuotePanel({
             onDismiss={() => setEditing(null)}
           />
         )
-      case 'documents':
-        return documentChips
       case 'locations':
       case 'vehicles':
         return null
@@ -846,7 +773,7 @@ export function CreateQuotePanel({
   ]
 
   const renderLocationEditor = (field: LocationRowField) => (
-    <LocationEditor
+    <QuoteLocationEditor
       initial={
         field === 'newLocation'
           ? null
@@ -885,24 +812,6 @@ export function CreateQuotePanel({
     />
   )
 
-  const documentChips = (
-    <Stack direction="row" flexWrap="wrap" alignItems="center" gap={0.75}>
-      {sentFiles.map((sent) => (
-        <Chip
-          key={sent.id}
-          size="small"
-          label={sent.label}
-          sx={{
-            maxWidth: '100%',
-            fontFamily: figmaFontFamilyStack.body,
-            fontSize: '0.75rem',
-            '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
-          }}
-        />
-      ))}
-    </Stack>
-  )
-
   const insuredLevel = !started ? (
     <>
       <DraftWelcome
@@ -929,22 +838,31 @@ export function CreateQuotePanel({
     <>
       <DraftHeader
         title="New quote"
-        request={previewDraft.type ?? undefined}
+        request={[previewDraft.type, readingFiles ? 'Reading…' : null].filter(Boolean).join(' · ') || undefined}
         backLabel="Back to who is being insured"
         onBack={backToStart}
       />
-      <DraftNeededList
-        rows={insuredRows}
+      <DraftAccordions
+        known={insuredKnown}
+        attention={insuredAttention}
+        considerations={insuredConsiderations}
         editingField={editing}
-        openRowStyle="none"
         onToggle={(field) => {
           if (field === 'locations') pushLocations()
           else if (field === 'vehicles') pushVehicles('insured')
           else setEditing((current) => (current === field ? null : field))
         }}
         renderEditor={renderInlineEditor}
+        onGroupToggle={() => setEditing(null)}
       />
       <CopilotQuickActions label="Suggested actions" actions={insuredActions} onAction={handleInsuredAction} />
+      <DraftDocumentChips
+        files={sentFiles.map((sent) => ({ id: sent.id, label: sent.file.name }))}
+        onOpen={(id) => {
+          const sent = sentFiles.find((file) => file.id === id)
+          if (sent) onOpenDocument?.(sent.file, savedState())
+        }}
+      />
     </>
   )
 
@@ -1112,9 +1030,7 @@ export function CreateQuotePanel({
               showModeSelector={false}
               showDisclaimer={false}
               onSubmit={(text) => handleSend(text)}
-              onFilesAdded={stageFiles}
-              stagedChips={stagedFiles}
-              onRemoveStagedChip={(id) => setStagedFiles((current) => current.filter((staged) => staged.id !== id))}
+              onFilesAdded={addFiles}
             />
           </Box>
         }

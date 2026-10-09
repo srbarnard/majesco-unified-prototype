@@ -1,5 +1,6 @@
 import AccountBoxOutlinedIcon from '@mui/icons-material/AccountBoxOutlined'
 import ChecklistRtlOutlinedIcon from '@mui/icons-material/ChecklistRtlOutlined'
+import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined'
 import FormatQuoteOutlinedIcon from '@mui/icons-material/FormatQuoteOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import MoveToInboxOutlinedIcon from '@mui/icons-material/MoveToInboxOutlined'
@@ -40,6 +41,7 @@ export const appShellNavItems: NavItem[] = [
   { label: 'Submissions', path: '/submissions', icon: MoveToInboxOutlinedIcon },
   { label: 'Quotes', path: '/quotes', icon: FormatQuoteOutlinedIcon },
   { label: 'Policies', path: '/policies', icon: PolicyOutlinedIcon, matchPaths: ['/policies'] },
+  { label: 'Claims', path: '/claims', icon: ContentPasteOutlinedIcon },
   { label: 'Studio', path: '/copilot-studio', copilotIcon: true },
 ]
 

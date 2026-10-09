@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useLocation, useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { CreateQuotePanel, type CreateQuoteSavedState } from '@/pages/quotes/components/CreateQuotePanel'
 import { draftUid } from '@/pages/shared/components/DraftDrawer'
+import { draftDocument } from '@/pages/shared/data/draftDocuments'
 
 type SavedQuoteDraft = { id: string; state: CreateQuoteSavedState }
 
@@ -16,6 +18,8 @@ export function CreateQuoteToolPanel() {
   const [drafts, setDrafts] = useState(savedQuoteDrafts)
   const [session, setSession] = useState(0)
   const resumeQuote = () => openTool('newQuote')
+  const location = useLocation()
+  const navigate = useNavigate()
 
   const holdDraft = (state: CreateQuoteSavedState) => {
     activeDraft = { id: activeDraft?.id ?? draftUid('quote'), state }
@@ -46,6 +50,17 @@ export function CreateQuoteToolPanel() {
       onAddNote={(state) => {
         holdDraft(state)
         openTool('notes')
+      }}
+      onOpenDocument={(file, state) => {
+        holdDraft(state)
+        const document = draftDocument(`quote-${activeDraft!.id}`, file.name, {
+          kind: 'Quote',
+          label: 'New quote',
+          recordTitle: state.draft.name || 'New quote',
+          path: `${location.pathname}${location.search}`,
+          reopen: resumeQuote,
+        })
+        navigate(`/documents/${document.id}`)
       }}
       onEmailMissingInfo={({ subject, body }, state) => {
         holdDraft(state)

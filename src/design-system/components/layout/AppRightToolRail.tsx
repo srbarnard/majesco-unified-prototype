@@ -1,3 +1,5 @@
+import AppRegistrationOutlinedIcon from '@mui/icons-material/AppRegistrationOutlined'
+import AssignmentLateOutlinedIcon from '@mui/icons-material/AssignmentLateOutlined'
 import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined'
@@ -22,7 +24,7 @@ import { surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 type ToolDef = {
   id: RightToolId
   label: string
-  icon: 'copilot' | 'notes' | 'email' | 'newTask' | 'newCustomer' | 'newQuote' | 'filter' | 'parties' | 'history'
+  icon: 'copilot' | 'notes' | 'email' | 'newTask' | 'newCustomer' | 'newSubmission' | 'newQuote' | 'newClaim' | 'filter' | 'parties' | 'history'
 }
 
 const CHAT_TOOL: ToolDef = { id: 'copilot', label: 'Assistant', icon: 'copilot' }
@@ -32,7 +34,9 @@ const REORDERABLE_TOOLS: ToolDef[] = [
   { id: 'email', label: 'Email', icon: 'email' },
   { id: 'newTask', label: 'New task', icon: 'newTask' },
   { id: 'newCustomer', label: 'Create customer', icon: 'newCustomer' },
+  { id: 'newSubmission', label: 'Create submission', icon: 'newSubmission' },
   { id: 'newQuote', label: 'Create quote', icon: 'newQuote' },
+  { id: 'newClaim', label: 'Create claim', icon: 'newClaim' },
 ]
 
 const TOOL_ORDER_STORAGE_KEY = 'rightToolRail.order'
@@ -85,8 +89,14 @@ function ToolIcon({
   if (kind === 'newCustomer') {
     return <PersonAddAltOutlinedIcon sx={{ fontSize: 20 }} />
   }
+  if (kind === 'newSubmission') {
+    return <AppRegistrationOutlinedIcon sx={{ fontSize: 20 }} />
+  }
   if (kind === 'newQuote') {
     return <ReceiptLongOutlinedIcon sx={{ fontSize: 20 }} />
+  }
+  if (kind === 'newClaim') {
+    return <AssignmentLateOutlinedIcon sx={{ fontSize: 20 }} />
   }
   if (kind === 'filter') {
     return <FilterListOutlinedIcon sx={{ fontSize: 20 }} />

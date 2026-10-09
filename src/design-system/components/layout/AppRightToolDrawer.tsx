@@ -18,6 +18,8 @@ import { useRightPanelWidth } from '@/pages/policies/hooks/useCopilotWidth'
 import { NewTaskToolPanel } from '@/pages/tasks/components/NewTaskToolPanel'
 import { CreateCustomerToolPanel } from '@/pages/customers/components/CreateCustomerToolPanel'
 import { CreateQuoteToolPanel } from '@/pages/quotes/components/CreateQuoteToolPanel'
+import { CreateClaimToolPanel } from '@/pages/claims/components/CreateClaimToolPanel'
+import { CreateSubmissionToolPanel } from '@/pages/submissions/components/CreateSubmissionToolPanel'
 
 function ToolPanelBody() {
   const {
@@ -60,6 +62,8 @@ function ToolPanelBody() {
       {activeTool === 'newTask' ? <NewTaskToolPanel /> : null}
       {activeTool === 'newCustomer' ? <CreateCustomerToolPanel /> : null}
       {activeTool === 'newQuote' ? <CreateQuoteToolPanel /> : null}
+      {activeTool === 'newClaim' ? <CreateClaimToolPanel /> : null}
+      {activeTool === 'newSubmission' ? <CreateSubmissionToolPanel /> : null}
     </Box>
   )
 }

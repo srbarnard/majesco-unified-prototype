@@ -74,8 +74,17 @@ function readStoredNavOrder(): NavOrder {
       })
     const main = clean(stored.main)
     const more = clean(stored.more)
-    main.push(...DEFAULT_NAV_ORDER.main.filter((key) => !seen.has(key)))
-    more.push(...DEFAULT_NAV_ORDER.more.filter((key) => !seen.has(key)))
+    // New destinations land after their default predecessor, not at the end of a saved order.
+    const insertMissing = (list: string[], defaults: string[]) => {
+      defaults.forEach((key, index) => {
+        if (seen.has(key)) return
+        seen.add(key)
+        const before = defaults.slice(0, index).reverse().find((candidate) => list.includes(candidate))
+        list.splice(before ? list.indexOf(before) + 1 : 0, 0, key)
+      })
+    }
+    insertMissing(main, DEFAULT_NAV_ORDER.main)
+    insertMissing(more, DEFAULT_NAV_ORDER.more)
     return { main, more }
   } catch {
     return DEFAULT_NAV_ORDER

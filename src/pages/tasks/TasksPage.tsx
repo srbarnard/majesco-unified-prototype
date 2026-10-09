@@ -117,7 +117,9 @@ export function TasksPage() {
       activeTool === 'filter' ||
       activeTool === 'newTask' ||
       activeTool === 'newCustomer' ||
-      activeTool === 'newQuote'
+      activeTool === 'newSubmission' ||
+      activeTool === 'newQuote' ||
+      activeTool === 'newClaim'
     ) {
       setTaskDetailOpen(false)
     }

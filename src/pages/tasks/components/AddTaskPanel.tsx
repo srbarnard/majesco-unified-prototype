@@ -1,4 +1,3 @@
-import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined'
 import MailOutlineIcon from '@mui/icons-material/MailOutline'
 import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
@@ -8,14 +7,16 @@ import Typography from '@mui/material/Typography'
 import { useMemo, useState } from 'react'
 import { CopilotQuickActions } from '@/design-system/components'
 import { CopilotComposer, type CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
+import { createUploadedFile } from '@/pages/quotes/utils/quoteWizardDocuments'
 import {
+  DraftAccordions,
+  DraftDocumentChips,
   DraftDrawerShell,
   DraftHeader,
   DraftHistoryList,
   DraftInlineLookup,
   DraftInlineOptions,
   DraftInlineTextEdit,
-  DraftNeededList,
   DraftWelcome,
   draftBodySx,
   draftChipSx,
@@ -25,6 +26,7 @@ import {
   useDebouncedValue,
   useFilledFirstOrder,
   type DraftNeededRow,
+  splitDraftRows,
   type DraftTab,
   type DraftThreadMessage,
 } from '@/pages/shared/components/DraftDrawer'
@@ -52,6 +54,8 @@ const PRIORITY_OPTIONS: TaskPriority[] = ['Low', 'Medium', 'High']
 const ADD_BLOCKER_ACTION = 'Add blocker'
 const EMAIL_BLOCKER_ACTION = 'Email blocker'
 const REVIEW_ALL_ACTION = 'Review all'
+const CREATE_TASK_ACTION = 'Create task'
+const SAVE_DRAFT_ACTION = 'Save draft'
 const MAX_SUGGESTED_ACTIONS = 3
 const BLOCKER_HINT = 'What’s in the way'
 
@@ -115,18 +119,8 @@ type AddTaskPanelProps = {
   initialRelated?: AddTaskRelated | null
   /** Hands the blocker to the mail rail; the draft is saved so the drawer can resume afterwards. */
   onEmailBlocker?: (email: AddTaskBlockerEmail, state: AddTaskSavedState) => void
-}
-
-function FileChip({ name }: { name: string }) {
-  return (
-    <Chip
-      size="small"
-      variant="outlined"
-      icon={<AttachFileOutlinedIcon sx={{ fontSize: 16 }} />}
-      label={name}
-      sx={{ ...draftChipSx, height: 24, borderColor: 'divider', bgcolor: 'background.paper' }}
-    />
-  )
+  /** Opens an attached file in the document viewer; the draft is saved so the drawer can resume afterwards. */
+  onOpenDocument?: (file: CopilotAttachedFile, state: AddTaskSavedState) => void
 }
 
 function BlockerEmailedTag({ to, sentAt }: { to: string; sentAt: Date }) {
@@ -211,6 +205,7 @@ export function AddTaskPanel({
   pageContext,
   initialRelated,
   onEmailBlocker,
+  onOpenDocument,
 }: AddTaskPanelProps) {
   const [tab, setTab] = useState<DraftTab>(initialTab)
   const [draft, setDraft] = useState<AddTaskDraft>(() =>
@@ -223,7 +218,6 @@ export function AddTaskPanel({
   )
   const [composerValue, setComposerValue] = useState('')
   const [composerKey, setComposerKey] = useState(0)
-  const [stagedFiles, setStagedFiles] = useState<CopilotAttachedFile[]>([])
   const [editing, setEditing] = useState<{ field: EditField; atCreate: boolean } | null>(null)
   const [promptedAtCreate, setPromptedAtCreate] = useState(false)
   const blockerMode = editing?.field === 'blocker'
@@ -268,7 +262,6 @@ export function AddTaskPanel({
     setMessages([])
     setComposerValue('')
     setParsedComposerValue('')
-    setStagedFiles([])
     setComposerKey((key) => key + 1)
     setPromptedAtCreate(false)
     setEditing(null)
@@ -298,6 +291,20 @@ export function AddTaskPanel({
       const notes = current.notes ? `${current.notes}\n${text}` : text
       return { ...mergeDraft(current, infer(text)), notes, attachments }
     })
+  }
+
+  /** A picked or dropped file attaches to the task straight away; the composer text stays put. */
+  const attachFiles = (added: File[]) => {
+    const files = added.map(createUploadedFile)
+    if (files.length === 0) return
+    setMessages((current) => [...current, { id: draftUid('user'), text: '', files: files.map((file) => file.name) }])
+    setDraft((current) => ({
+      ...current,
+      attachments: [
+        ...current.attachments,
+        ...files.filter((file) => !current.attachments.some((existing) => existing.name === file.name)),
+      ],
+    }))
   }
 
   const toggleEditing = (field: EditField, atCreate = false) => {
@@ -369,13 +376,17 @@ export function AddTaskPanel({
 
   const holes = orderedWorkFields.filter((field) => workValue(field) == null)
   const hasDraft = hasThread || Boolean(previewDraft.title)
-  const suggestedActions = (
-    previewDraft.blocker
-      ? [...(onEmailBlocker ? [EMAIL_BLOCKER_ACTION] : []), ...(holes.length > 0 ? [REVIEW_ALL_ACTION] : [])]
-      : hasDraft && !blockerMode
-        ? [ADD_BLOCKER_ACTION]
-        : []
-  ).slice(0, MAX_SUGGESTED_ACTIONS)
+  const suggestedActions = [
+    ...(commitDraft.title ? [CREATE_TASK_ACTION] : []),
+    ...(
+      previewDraft.blocker
+        ? [...(onEmailBlocker ? [EMAIL_BLOCKER_ACTION] : []), ...(holes.length > 0 ? [REVIEW_ALL_ACTION] : [])]
+        : hasDraft && !blockerMode
+          ? [ADD_BLOCKER_ACTION]
+          : []
+    ).slice(0, MAX_SUGGESTED_ACTIONS),
+    SAVE_DRAFT_ACTION,
+  ]
 
   const handleAction = (action: string) => {
     switch (action) {
@@ -396,21 +407,15 @@ export function AddTaskPanel({
       case REVIEW_ALL_ACTION:
         if (holes[0]) setEditing({ field: holes[0], atCreate: false })
         return
+      case CREATE_TASK_ACTION:
+        handleCreate()
+        return
+      case SAVE_DRAFT_ACTION:
+        onSaveDraft({ draft: buildFinalDraft(), messages })
+        return
     }
   }
-  if (previewDraft.attachments.length > 0) {
-    rows.push({
-      term: 'Files',
-      value: `${previewDraft.attachments.length} attached`,
-      extra: (
-        <Stack direction="row" flexWrap="wrap" useFlexGap gap={0.5}>
-          {previewDraft.attachments.map((file) => (
-            <FileChip key={file.id} name={file.name} />
-          ))}
-        </Stack>
-      ),
-    })
-  }
+  const { known, attention, considerations } = splitDraftRows(rows)
 
   const renderEditor = (field: EditField) => {
     const atCreateHint = editing?.atCreate ? 'Optional — select Create task again to skip.' : undefined
@@ -493,10 +498,6 @@ export function AddTaskPanel({
   const buildFinalDraft = (): AddTaskDraft => ({
     ...commitDraft,
     notes: [commitDraft.notes, blockerMode ? '' : composerValue.trim()].filter(Boolean).join('\n'),
-    attachments: [
-      ...commitDraft.attachments,
-      ...stagedFiles.filter((file) => !commitDraft.attachments.some((existing) => existing.id === file.id)),
-    ],
   })
 
   const handleCreate = () => {
@@ -519,10 +520,6 @@ export function AddTaskPanel({
       tab={tab}
       onTabChange={setTab}
       onClose={onClose}
-      createLabel="Create task"
-      createDisabled={!commitDraft.title}
-      onCreate={handleCreate}
-      onSaveDraft={() => onSaveDraft({ draft: buildFinalDraft(), messages })}
       history={
         <DraftHistoryList
           entries={history.map(({ task, createdAt }) => ({
@@ -544,7 +541,7 @@ export function AddTaskPanel({
           showModeSelector={false}
           showDisclaimer={false}
           onSubmit={handleSend}
-          onFilesChange={setStagedFiles}
+          onFilesAdded={attachFiles}
         />
       }
     >
@@ -572,15 +569,23 @@ export function AddTaskPanel({
             backLabel="Cancel task"
             onBack={resetDraft}
           />
-          <DraftNeededList
-            rows={rows}
+          <DraftAccordions
+            known={known}
+            attention={attention}
+            considerations={considerations}
             editingField={editing?.field ?? null}
             onToggle={(field) => toggleEditing(field)}
             renderEditor={renderEditor}
+            onGroupToggle={() => setEditing(null)}
           />
-          {suggestedActions.length > 0 ? (
-            <CopilotQuickActions label="Suggested actions" actions={suggestedActions} onAction={handleAction} />
-          ) : null}
+          <CopilotQuickActions label="Suggested actions" actions={suggestedActions} onAction={handleAction} />
+          <DraftDocumentChips
+            files={previewDraft.attachments.map((file) => ({ id: file.id, label: file.name }))}
+            onOpen={(id) => {
+              const file = previewDraft.attachments.find((attachment) => attachment.id === id)
+              if (file) onOpenDocument?.(file, { draft: buildFinalDraft(), messages })
+            }}
+          />
         </>
       )}
     </DraftDrawerShell>

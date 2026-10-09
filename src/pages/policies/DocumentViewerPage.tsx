@@ -23,10 +23,11 @@ import {
 } from '@/pages/policies/data/resolveDocument'
 import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
 import { resolveQuoteContext } from '@/pages/quotes/data/resolveQuoteContext'
+import { resolveDraftDocument } from '@/pages/shared/data/draftDocuments'
 import { resolveSubmissionContext } from '@/pages/submissions/data/resolveSubmissionContext'
 
 type DocumentViewerPageProps = {
-  context: 'policy' | 'quote-detail' | 'submission-detail'
+  context: 'policy' | 'quote-detail' | 'submission-detail' | 'draft'
 }
 
 export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
@@ -42,13 +43,17 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
 
   const isQuote = context === 'quote-detail'
   const isSubmission = context === 'submission-detail'
+  const isDraft = context === 'draft'
   const quote = isQuote ? resolveQuoteContext(quoteId) : null
   const submission = isSubmission ? resolveSubmissionContext(submissionId) : null
+  const draftEntry = isDraft ? resolveDraftDocument(docId) : undefined
   const document = isQuote && quote
     ? resolveQuoteDocument(quote.quoteNumber, docId)
     : isSubmission && submission
       ? resolveSubmissionDocument(submission.id, docId)
-      : resolvePolicyDocument(docId)
+      : isDraft
+        ? draftEntry?.document
+        : resolvePolicyDocument(docId)
 
   const [attachMode, setAttachMode] = useState<DocumentAttachMode | null>(null)
   const didInitCopilot = useRef(false)
@@ -62,18 +67,24 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
     ? `Quote ${quote?.quoteNumber ?? quoteId}`
     : isSubmission
       ? `Submission ${submission?.submissionNumber ?? submissionId}`
-      : `Policy ${policyDetailsMock.policyNumber}`
+      : isDraft
+        ? (draftEntry?.origin.label ?? 'Draft')
+        : `Policy ${policyDetailsMock.policyNumber}`
 
   const recordTitle = isQuote
     ? (quote?.insuredName ?? 'Quote')
     : isSubmission
       ? (submission?.insuredName ?? 'Submission')
-      : policyDetailsMock.companyName
+      : isDraft
+        ? (draftEntry?.origin.recordTitle ?? 'Draft')
+        : policyDetailsMock.companyName
   const recordSubtitle = isQuote
     ? (quote?.quoteNumber ?? quoteId)
     : isSubmission
       ? (submission?.submissionNumber ?? submissionId)
-      : policyDetailsMock.policyNumber
+      : isDraft
+        ? draftEntry?.origin.recordSubtitle
+        : policyDetailsMock.policyNumber
 
   useRegisterRightToolRecordContext(
     { title: recordTitle, subtitle: recordSubtitle },
@@ -95,7 +106,7 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
   useRegisterRightToolCopilot(
     document && preview
       ? {
-          context,
+          context: isDraft ? 'global' : context,
           activePolicyTab: 'documents',
           focusedDocument: document,
           documentPreviewMode: true,
@@ -150,8 +161,15 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
       navigate(`/submissions/${submissionId}?tab=documents`)
       return
     }
+    if (isDraft) {
+      // Back to the page and drawer the file was opened from, with the draft restored.
+      const origin = draftEntry?.origin
+      navigate(origin?.path ?? '/')
+      origin?.reopen()
+      return
+    }
     navigate(`/policies/${policyId ?? policyDetailsMock.policyNumber}?tab=documents`)
-  }, [isQuote, isSubmission, navigate, policyId, quoteId, submissionId])
+  }, [draftEntry, isDraft, isQuote, isSubmission, navigate, policyId, quoteId, submissionId])
 
   const handleViewerAction = useCallback(
     (action: DocumentViewerAction) => {

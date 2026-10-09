@@ -1,6 +1,4 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import BlockIcon from '@mui/icons-material/Block'
-import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
@@ -62,6 +60,11 @@ import {
 } from '@/pages/submissions/data/submissionCopilotInsights'
 import { AssignBlockedComposeCard } from '@/pages/submissions/components/AssignBlockedComposeCard'
 import { OptionComparisonCard } from '@/pages/submissions/components/OptionComparisonCard'
+import {
+  DraftAccordions,
+  DraftInlineTextEdit,
+  type DraftNeededRow,
+} from '@/pages/shared/components/DraftDrawer'
 import {
   ScheduleProducerFollowUpCard,
   buildProducerFollowUpNotesPrefill,
@@ -228,194 +231,43 @@ function isUploadGuidedAction(action: string) {
   return /upload|attach|import|drop/i.test(action)
 }
 
-function StatusIconBadge({
-  tone,
-  children,
-}: {
-  tone: 'error' | 'warning' | 'success'
-  children: ReactNode
-}) {
-  return (
-    <Box
-      sx={(theme) => {
-        const isLight = theme.palette.mode === 'light'
-        const palette =
-          tone === 'error'
-            ? theme.figmaPalette.red
-            : tone === 'warning'
-              ? theme.figmaPalette.amber
-              : theme.figmaPalette.green
-        return {
-          width: 32,
-          height: 32,
-          borderRadius: '10px',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          bgcolor: isLight ? palette[100] : palette[900],
-          color: isLight ? palette[800] : palette[200],
-        }
-      }}
-    >
-      {children}
-    </Box>
-  )
-}
-
-const flatListRowSx = {
-  width: '100%',
-  display: 'flex',
-  alignItems: 'flex-start',
-  gap: 1.25,
-  px: 2,
-  py: 1.5,
-  border: 'none',
-  borderBottom: 1,
-  borderColor: 'divider',
-  bgcolor: 'transparent',
-  textAlign: 'left' as const,
-} as const
-
-function IssueListItem({
+/** Inline input for one issue row: each missing item, or a review note when nothing specific is missing. */
+function IssueRowEditor({
   issue,
-  onSelect,
-  isLast = false,
+  onResolve,
+  onDismiss,
 }: {
   issue: SubmissionIssue
-  onSelect: (issue: SubmissionIssue) => void
-  isLast?: boolean
+  onResolve: (details: string[]) => void
+  onDismiss: () => void
 }) {
-  const isBlocking = issue.severity === 'blocking'
-  return (
-    <Box
-      component="button"
-      type="button"
-      onClick={() => onSelect(issue)}
-      sx={{
-        ...flatListRowSx,
-        borderBottom: isLast ? 'none' : 1,
-        cursor: 'pointer',
-        '&:hover': { bgcolor: 'action.hover' },
-      }}
-    >
-      <StatusIconBadge tone={isBlocking ? 'error' : 'warning'}>
-        {isBlocking ? (
-          <BlockIcon sx={{ fontSize: 18 }} />
-        ) : (
-          <WarningAmberOutlinedIcon sx={{ fontSize: 18 }} />
-        )}
-      </StatusIconBadge>
-      <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography variant="body2" sx={{ ...headingSx, fontSize: '0.875rem', lineHeight: 1.35 }}>
-          {issue.title}
-        </Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ ...bodySx, fontSize: '0.8125rem', lineHeight: 1.4, mt: 0.25 }}
-        >
-          {issue.summary}
-        </Typography>
-      </Box>
-    </Box>
-  )
-}
+  const [values, setValues] = useState<Record<string, string>>({})
+  const fields = issue.missingDetails.length > 0 ? issue.missingDetails : ['Review note']
 
-function IssueDetailCard({
-  issue,
-  submissionNumber,
-  onBack,
-  onGuidedResolve,
-  onRequestAttach,
-}: {
-  issue: SubmissionIssue
-  submissionNumber: string
-  onBack: () => void
-  onGuidedResolve?: (issue: SubmissionIssue, action: string) => void
-  onRequestAttach?: () => void
-}) {
-  const isResolved = Boolean(issue.resolvedAt)
-  const details = isResolved ? (issue.resolvedDetails ?? []) : issue.missingDetails
-  const isGuided = issue.resolutionMode === 'guided' && !isResolved
-  const timestamp = issue.resolvedAt ?? issue.reportedAt
-
-  const severityLabel = issue.severity === 'blocking' ? 'Blocking' : 'Needs review'
-  const summaryText = isResolved
-    ? `**${issue.title}** is cleared for **${submissionNumber}**. ${issue.whyItMatters} Premium can now be estimated.`
-    : `**${issue.title}** — ${issue.summary} This is marked **${severityLabel.toLowerCase()}** on **${submissionNumber}** and currently blocks intake until resolved. ${issue.whyItMatters}`
-
-  const insights = isResolved
-    ? details.map((detail) => `Resolved · ${detail}`)
-    : [
-        `${severityLabel} · ${isGuided ? 'Guided actions or document upload' : 'Conversational — ask the assistant or attach docs'}`,
-        ...details.map((detail) => `Missing · ${detail}`),
-        'Composer · Drop files here or paste details to resolve',
-      ]
-
-  const quickActions = isResolved
-    ? ['Continue to next issue', 'Summarize submission']
-    : isGuided
-      ? (issue.guidedActions ?? ['Open guided checklist'])
-      : ['Resolve with details below', 'Request from producer', 'Add a note']
+  const commit = (field: string, value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed) return
+    const next = { ...values, [field]: trimmed }
+    setValues(next)
+    if (fields.every((item) => next[item])) onResolve(fields.map((item) => `${item}: ${next[item]}`))
+  }
 
   return (
-    <Stack spacing={0}>
-      <Stack direction="row" alignItems="center" spacing={0.25} sx={{ mb: 1.5 }}>
-        <IconButton size="small" aria-label="Back to issues" onClick={onBack} sx={{ ml: -0.75 }}>
-          <ArrowBackIcon fontSize="small" sx={{ color: 'action.active' }} />
-        </IconButton>
-        <Typography variant="subtitle2" sx={copilotSubtitleSx}>
-          {issue.title}
-        </Typography>
-      </Stack>
-
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ ...bodySx, mb: 0.75 }}>
-        {issue.id} · {submissionNumber} · {timestamp}
-      </Typography>
-
-      <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 2 }}>
-        {renderSummaryText(summaryText)}
-      </Typography>
-
-      <Typography variant="body2" sx={{ ...copilotSectionHeadingSx, mb: 1 }}>
-        Key insights
-      </Typography>
-      <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }}>
-        {insights.map((insight) => (
-          <Typography
-            component="li"
-            variant="body2"
-            color="text.primary"
-            key={insight}
-            sx={{ ...bodySx, mb: 0.5 }}
-          >
-            {insight}
-          </Typography>
-        ))}
-      </Box>
-      <Divider sx={{ mb: 2 }} />
-
-      <CopilotQuickActions
-        actions={quickActions}
-        onAction={(action) => {
-          if (isResolved) {
-            if (action === 'Continue to next issue') onBack()
-            return
-          }
-          if (isUploadGuidedAction(action)) {
-            onRequestAttach?.()
-            return
-          }
-          if (isProducerRequestAction(action) || isAddNoteAction(action)) {
-            onGuidedResolve?.(issue, action)
-            return
-          }
-          if (isGuided || action !== 'Resolve with details below') {
-            onGuidedResolve?.(issue, action)
-          }
-        }}
-      />
+    <Stack spacing={1.25}>
+      {fields.map((field, index) => (
+        <DraftInlineTextEdit
+          key={field}
+          autoFocus={index === 0}
+          initialValue={values[field] ?? ''}
+          label={field}
+          placeholder={field}
+          helperText={issue.missingDetails.length > 0 ? undefined : 'Saved on the submission and clears the warning'}
+          confirmable
+          onCommit={(value) => commit(field, value)}
+          // Moving between fields blurs an empty one; only a single field closes the row on blur.
+          onDismiss={fields.length === 1 ? onDismiss : () => {}}
+        />
+      ))}
     </Stack>
   )
 }
@@ -1858,10 +1710,6 @@ export function SubmissionsCopilotPanel({
     }
   }
 
-  const openIssueNote = (_issue: SubmissionIssue, _action = 'Add a note') => {
-    openTool('notes')
-  }
-
   const handleSubmit = (message: string, files: CopilotAttachedFile[] = []) => {
     if (!focusedSubmission) return
 
@@ -1878,34 +1726,36 @@ export function SubmissionsCopilotPanel({
     if (!details) return
 
     onResolveIssue?.(focusedSubmission.id, targetIssue.id, details)
-    const remainingAfter =
-      openBlockingIssues(focusedSubmission).filter((issue) => issue.id !== targetIssue.id).length
-    setActiveIssueId(remainingAfter === 0 ? null : targetIssue.id)
+    setActiveIssueId(null)
     requestChatReveal()
   }
 
-  const handleGuidedResolve = (issue: SubmissionIssue, action: string) => {
-    if (!focusedSubmission || issue.resolvedAt) return
+  const issueRow = (issue: SubmissionIssue): DraftNeededRow<string> => ({
+    term: issue.title,
+    value: null,
+    hint: issue.summary,
+    tone: issue.severity === 'blocking' ? 'error' : 'warning',
+    field: issue.id,
+  })
+
+  const issueListActions = activeIssue
+    ? [
+        ...(activeIssue.guidedActions ?? []).filter((action) => isUploadGuidedAction(action) || isProducerRequestAction(action)),
+        ...(activeIssue.resolutionMode === 'guided' ? [] : ['Request from producer']),
+        'Add a note',
+      ]
+    : ['Request from producer', 'Upload documents', 'Add a note']
+
+  const handleIssueListAction = (action: string) => {
     if (isUploadGuidedAction(action)) {
       setAttachRequestKey((key) => (key ?? 0) + 1)
       return
     }
     if (isProducerRequestAction(action)) {
-      openProducerEmail(action, issue)
+      openProducerEmail(action, activeIssue)
       return
     }
-    if (isAddNoteAction(action)) {
-      openIssueNote(issue, action)
-      return
-    }
-    const details =
-      issue.missingDetails.length > 0
-        ? issue.missingDetails.map((item) => `${item}: captured via “${action}”`)
-        : [`Resolved via “${action}”`]
-    onResolveIssue?.(focusedSubmission.id, issue.id, details)
-    const remainingAfter =
-      openBlockingIssues(focusedSubmission).filter((open) => open.id !== issue.id).length
-    setActiveIssueId(remainingAfter === 0 ? null : issue.id)
+    if (isAddNoteAction(action)) openTool('notes')
   }
 
   const composerPlaceholder =
@@ -1941,9 +1791,7 @@ export function SubmissionsCopilotPanel({
           ? 'Structure review'
           : activeConfirmation
             ? 'Request sent'
-            : activeIssue
-              ? 'Issue details'
-              : multiSelectMode
+            : multiSelectMode
                 ? 'Selection summary'
                 : focusedSubmission && !statusMode
                   ? 'Submission briefing'
@@ -1963,9 +1811,7 @@ export function SubmissionsCopilotPanel({
             ? `ready:${focusedSubmission.id}:structure`
             : activeConfirmation
               ? `confirm:${focusedSubmission.id}:${activeConfirmation.message.slice(0, 40)}`
-              : activeIssue
-                ? `issue:${focusedSubmission.id}:${activeIssue.id}:${activeIssue.resolvedAt ?? 'open'}`
-                : !statusMode
+              : !statusMode && !activeIssue
                   ? `insight:${focusedSubmission.id}`
                   : `blocked:${focusedSubmission.id}:list`
 
@@ -2015,7 +1861,7 @@ export function SubmissionsCopilotPanel({
       onClose={onClose}
       composerPlaceholder={composerPlaceholder}
       seedComposerMessage={seedComposerMessage}
-      chatFocusKey={`${focusKey}:${entryMode}:${activeIssueId ?? 'list'}:${activeConfirmation ? 'sent' : 'open'}`}
+      chatFocusKey={`${focusKey}:${entryMode}:${activeConfirmation ? 'sent' : 'open'}`}
       contentKey={panelContentKey}
       revealKey={chatRevealKey}
       attachRequestKey={attachRequestKey}
@@ -2033,7 +1879,7 @@ export function SubmissionsCopilotPanel({
         ) : undefined
       }
       toolbarLeading={
-        activeIssue && !activeConfirmation ? undefined : focusedSubmission && onClearFocus ? (
+        focusedSubmission && onClearFocus ? (
           <Stack direction="row" alignItems="center" spacing={0.25} sx={{ minWidth: 0 }}>
             <IconButton
               size="small"
@@ -2053,7 +1899,6 @@ export function SubmissionsCopilotPanel({
           </Typography>
         )
       }
-      showToolbar={!activeIssue || Boolean(activeConfirmation)}
     >
       {multiSelectMode ? (
           <SummarizeView
@@ -2156,15 +2001,7 @@ export function SubmissionsCopilotPanel({
             onAction={handleQuoteConfirmationAction}
             onSeedComposer={seedComposer}
           />
-        ) : activeIssue ? (
-          <IssueDetailCard
-            issue={activeIssue}
-            submissionNumber={focusedSubmission.submissionNumber}
-            onBack={() => setActiveIssueId(null)}
-            onGuidedResolve={handleGuidedResolve}
-            onRequestAttach={() => setAttachRequestKey((key) => (key ?? 0) + 1)}
-          />
-        ) : !statusMode ? (
+        ) : !statusMode && !activeIssue ? (
           <SubmissionInsightView
             submission={focusedSubmission}
             onViewStatus={() => onEntryModeChange?.('status')}
@@ -2182,21 +2019,42 @@ export function SubmissionsCopilotPanel({
             </Typography>
             <Typography variant="body2" sx={{ ...bodySx, lineHeight: 1.6, mb: 1.5 }}>
               {renderSummaryText(
-                `**${focusedSubmission.insuredName}** — Submission **${focusedSubmission.submissionNumber}** is **Blocked**. Select an issue below to resolve it in the assistant.`,
+                `**${focusedSubmission.insuredName}** — Submission **${focusedSubmission.submissionNumber}** is **Blocked**. Select an issue to resolve it here.`,
               )}
             </Typography>
-            <Box sx={{ mx: -2 }}>
-              {[...openBlockingIssues(focusedSubmission), ...openWarningIssues(focusedSubmission)].map(
-                (issue, index, all) => (
-                  <IssueListItem
-                    key={issue.id}
+            <DraftAccordions
+              known={focusedSubmission.issues
+                .filter((issue) => issue.resolvedAt)
+                .map((issue): DraftNeededRow<string> => ({
+                  term: issue.title,
+                  value: (issue.resolvedDetails ?? []).join(' · ') || 'Resolved',
+                }))}
+              attention={openBlockingIssues(focusedSubmission).map(issueRow)}
+              considerations={openWarningIssues(focusedSubmission).map(issueRow)}
+              editingField={activeIssueId}
+              onToggle={(id) => setActiveIssueId((current) => (current === id ? null : id))}
+              onGroupToggle={() => setActiveIssueId(null)}
+              renderEditor={(id) => {
+                const issue = focusedSubmission.issues.find((entry) => entry.id === id)
+                if (!issue) return null
+                return (
+                  <IssueRowEditor
                     issue={issue}
-                    isLast={index === all.length - 1}
-                    onSelect={(next) => setActiveIssueId(next.id)}
+                    onDismiss={() => setActiveIssueId(null)}
+                    onResolve={(details) => {
+                      onResolveIssue?.(focusedSubmission.id, issue.id, details)
+                      setActiveIssueId(null)
+                      requestChatReveal()
+                    }}
                   />
-                ),
-              )}
-            </Box>
+                )
+              }}
+            />
+            <CopilotQuickActions
+              label="Suggested actions"
+              actions={issueListActions}
+              onAction={handleIssueListAction}
+            />
           </>
         )}
     </CopilotDrawerShell>

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useTasksStore } from '@/app/contexts/TasksContext'
 import { AddTaskPanel, type AddTaskBlockerEmail, type AddTaskSavedState } from '@/pages/tasks/components/AddTaskPanel'
+import { draftDocument } from '@/pages/shared/data/draftDocuments'
 import { relatedLabel, resolveTaskPageContext, type AddTaskRelated } from '@/pages/tasks/data/addTaskDraft'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
 
@@ -102,6 +103,18 @@ export function NewTaskToolPanel() {
       onOpenTask={openTask}
       pageContext={pageContext}
       onEmailBlocker={handleEmailBlocker}
+      onOpenDocument={(file, state) => {
+        setSavedAddTask(state)
+        const document = draftDocument(`task-${file.id}`, file.name, {
+          kind: 'Task',
+          label: 'New task',
+          recordTitle: state.draft.title || 'New task',
+          recordSubtitle: state.draft.related ? relatedLabel(state.draft.related) : undefined,
+          path: `${location.pathname}${location.search}`,
+          reopen: resumeAddTask,
+        })
+        navigate(`/documents/${document.id}`)
+      }}
     />
   )
 }
