@@ -24,6 +24,7 @@ import {
 import { useIsDesktopLayout } from '@/pages/policies/hooks/useIsDesktopLayout'
 import { resolveQuoteContext } from '@/pages/quotes/data/resolveQuoteContext'
 import { resolveDraftDocument } from '@/pages/shared/data/draftDocuments'
+import { suggestedRecipients } from '@/pages/shared/data/emailRecipients'
 import { resolveSubmissionContext } from '@/pages/submissions/data/resolveSubmissionContext'
 
 type DocumentViewerPageProps = {
@@ -91,10 +92,26 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
     [recordTitle, recordSubtitle],
   )
 
+  const backToRecord = useRef<() => void>(() => undefined)
+  const returnKind = isQuote
+    ? 'quote'
+    : isSubmission
+      ? 'submission'
+      : isDraft
+        ? (draftEntry?.origin.kind.toLowerCase() ?? 'draft')
+        : 'policy'
+
   // Keep Email / Notes tools document-specific on this screen (hover + rail share drafts).
   useRegisterRightToolEmailAttach(
-    document ? { target: 'email', documents: [document] } : null,
-    [document?.id],
+    document
+      ? {
+          target: 'email',
+          documents: [document],
+          recipients: suggestedRecipients(recordTitle),
+          returnTo: { label: `Back to ${returnKind}`, onReturn: () => backToRecord.current() },
+        }
+      : null,
+    [document?.id, recordTitle, returnKind],
   )
   useRegisterRightToolNoteAttach(
     document ? { target: 'note', documents: [document] } : null,
@@ -170,6 +187,10 @@ export function DocumentViewerPage({ context }: DocumentViewerPageProps) {
     }
     navigate(`/policies/${policyId ?? policyDetailsMock.policyNumber}?tab=documents`)
   }, [draftEntry, isDraft, isQuote, isSubmission, navigate, policyId, quoteId, submissionId])
+  backToRecord.current = () => {
+    closeTool()
+    handleBackToDocuments()
+  }
 
   const handleViewerAction = useCallback(
     (action: DocumentViewerAction) => {

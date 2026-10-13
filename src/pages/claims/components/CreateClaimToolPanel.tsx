@@ -60,6 +60,8 @@ export function CreateClaimToolPanel() {
         if (!draft) return
         const status = draft.driver?.status === 'referred' ? 'Coverage referral' : 'Reported'
         upsertClaim(recordFromDraft(draft, status, getClaim(draft.claimNumber)))
+        // The confirmation lives only in this mount; the next open starts a new claim.
+        setActiveClaimThread(null)
       }}
     />
   )

@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
 import { Link as RouterLink, useNavigate, useParams } from 'react-router'
 import { useRightToolDispatch } from '@/app/contexts/RightToolContext'
+import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
 import { Button, CopilotIcon, StatusChip } from '@/design-system/components'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -47,6 +48,10 @@ export function ClaimDetails() {
   const navigate = useNavigate()
   const { openTool } = useRightToolDispatch()
   const claim = useClaim(claimNumber ? decodeURIComponent(claimNumber) : null)
+  useRegisterRightToolRecordContext(
+    claim ? { title: claim.insured, subtitle: claim.claimNumber, kind: 'claim' } : null,
+    [claim?.insured, claim?.claimNumber],
+  )
   const contentPx = `${layoutTokens.contentPaddingX}px`
 
   if (!claim) {

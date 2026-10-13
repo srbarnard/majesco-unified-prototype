@@ -29,6 +29,8 @@ export type RightToolId =
 export type RightToolRecordContext = {
   title: string
   subtitle?: string
+  /** e.g. "quote", "claim"; Email's way back after Send reads "Back to quote". */
+  kind?: string
 } | null
 
 export type RightToolCopilotSession = Omit<CopilotPanelProps, 'onClose'>

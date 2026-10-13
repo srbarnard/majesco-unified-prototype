@@ -4,6 +4,7 @@ import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useTasksStore } from '@/app/contexts/TasksContext'
 import { AddTaskPanel, type AddTaskBlockerEmail, type AddTaskSavedState } from '@/pages/tasks/components/AddTaskPanel'
 import { draftDocument } from '@/pages/shared/data/draftDocuments'
+import { suggestedRecipients } from '@/pages/shared/data/emailRecipients'
 import { relatedLabel, resolveTaskPageContext, type AddTaskRelated } from '@/pages/tasks/data/addTaskDraft'
 import type { TaskRecord } from '@/pages/tasks/data/mockTasks'
 
@@ -75,13 +76,14 @@ export function NewTaskToolPanel() {
         title: 'Email blocker',
         subtitle: related ? `Related · ${relatedLabel(related)}` : undefined,
       },
+      recipients: suggestedRecipients(related?.names[0]),
+      returnTo: { label: 'Back to task', onReturn: resumeAddTask },
       onCancel: resumeAddTask,
       onSave: (sent) => {
         setSavedAddTask({
           ...state,
           draft: { ...state.draft, blockerEmail: { to: sent?.to.trim() ?? '', sentAt: new Date() } },
         })
-        resumeAddTask()
       },
     })
     openTool('email')

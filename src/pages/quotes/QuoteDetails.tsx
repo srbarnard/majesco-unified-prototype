@@ -103,7 +103,7 @@ export function QuoteDetails() {
   )
 
   useRegisterRightToolRecordContext(
-    { title: quote.insuredName, subtitle: quote.quoteNumber },
+    { title: quote.insuredName, subtitle: quote.quoteNumber, kind: 'quote' },
     [quote.insuredName, quote.quoteNumber],
   )
 

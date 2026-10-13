@@ -91,6 +91,7 @@ export function PolicyDetails() {
     {
       title: overview.companyName,
       subtitle: overview.policyNumber,
+      kind: 'policy',
     },
     [overview.companyName, overview.policyNumber],
   )

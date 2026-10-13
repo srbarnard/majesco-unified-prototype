@@ -195,7 +195,7 @@ export function SubmissionDetails() {
   )
 
   useRegisterRightToolRecordContext(
-    { title: submission.insuredName, subtitle: submission.submissionNumber },
+    { title: submission.insuredName, subtitle: submission.submissionNumber, kind: 'submission' },
     [submission.insuredName, submission.submissionNumber],
   )
 

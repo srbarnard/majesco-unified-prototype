@@ -4,6 +4,7 @@ import { useRightTool } from '@/app/contexts/RightToolContext'
 import { CreateQuotePanel, type CreateQuoteSavedState } from '@/pages/quotes/components/CreateQuotePanel'
 import { draftUid } from '@/pages/shared/components/DraftDrawer'
 import { draftDocument } from '@/pages/shared/data/draftDocuments'
+import { suggestedRecipients } from '@/pages/shared/data/emailRecipients'
 
 type SavedQuoteDraft = { id: string; state: CreateQuoteSavedState }
 
@@ -68,8 +69,9 @@ export function CreateQuoteToolPanel() {
           target: 'email',
           documents: [],
           draft: { subject, body, title: 'Email for missing info', subtitle: state.draft.name || undefined },
+          recipients: suggestedRecipients(state.draft.name),
+          returnTo: { label: 'Back to quote', onReturn: resumeQuote },
           onCancel: resumeQuote,
-          onSave: resumeQuote,
         })
         openTool('email')
       }}

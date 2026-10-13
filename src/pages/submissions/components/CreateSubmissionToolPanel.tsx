@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { draftUid } from '@/pages/shared/components/DraftDrawer'
 import { draftDocument } from '@/pages/shared/data/draftDocuments'
+import { suggestedRecipients } from '@/pages/shared/data/emailRecipients'
 import {
   CreateSubmissionPanel,
   type CreateSubmissionSavedState,
@@ -76,8 +77,9 @@ export function CreateSubmissionToolPanel() {
           target: 'email',
           documents: [],
           draft: { subject, body, title: 'Email for missing info', subtitle: state.draft.account || undefined },
+          recipients: suggestedRecipients(state.draft.account),
+          returnTo: { label: 'Back to submission', onReturn: resumeSubmission },
           onCancel: resumeSubmission,
-          onSave: resumeSubmission,
         })
         openTool('email')
       }}

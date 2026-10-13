@@ -32,9 +32,15 @@ export type CreateClaimDraft = {
   tasks: ClaimTask[]
   /** Notes added while drafting; carried onto the Claims row. */
   notes?: ClaimRecord['notes']
+  /** Person or queue the claim is created assigned to; unset reads as the current user. */
+  assignee?: string
 }
 
 export type ClaimReportMethod = 'Phone' | 'Loss notice'
+
+export const CLAIM_CURRENT_USER = 'Chris Reynolds'
+
+export const CLAIM_QUEUES = ['Auto claims queue', 'Property claims queue', 'Liability claims queue', "Workers' comp claims queue"]
 
 /** Policy lookup keyed by policy number; searchable by number or insured. */
 export const CLAIM_POLICIES = new Map<string, ClaimPolicy>(
@@ -64,11 +70,6 @@ export function emptyClaimDraft(): CreateClaimDraft {
   }
 }
 
-/** Starts a draft on a chosen policy; the loss itself is still unknown. */
-export function policyClaimDraft(policy: ClaimPolicy): CreateClaimDraft {
-  return { ...emptyClaimDraft(), policy, claimNumber: nextClaimNumber(claimPrefix(policy.product)) }
-}
-
 /** What reading the chosen loss notice, police report, and scene photos yields. */
 export function documentClaimDraft(sources: string[]): CreateClaimDraft {
   return {
@@ -95,14 +96,36 @@ export function documentClaimDraft(sources: string[]): CreateClaimDraft {
 const ISO_DATE = /\b(20\d{2})-(\d{2})-(\d{2})\b/
 const US_DATE = /\b(\d{1,2})\/(\d{1,2})\/(20\d{2})\b/
 const EMAIL = /[^\s@]+@[^\s@]+\.[^\s@]+/
-const LOCATION = /\b(?:at|near)\s+([^.;]+?)(?=\s+on\s|\s+\d{1,2}\/\d|\s+20\d{2}-|[.;]|$)/
+/** A place runs to the end of its clause; ", TN" after a city stays part of it. */
+const PLACE_END = String.raw`(?=\s+on\s|\s+\d{1,2}\/\d|\s+20\d{2}-|\s+(?:and|when|while)\s|,(?!\s*[A-Z]{2}\b)|[.;]|$)`
+const LOCATION = new RegExp(String.raw`\b(?:at|near)\s+([^.;]+?(?:,\s*[A-Z]{2}\b)?)` + PLACE_END)
+const ROAD = new RegExp(
+  String.raw`\bon\s+((?:I-?\s?\d+|(?:Highway|Hwy|Route|Rt\.?|US)\s?-?\d+|(?:[A-Z][\w'.]*\s+)+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Dr|Drive|Ln|Lane|Way|Pkwy|Parkway|Hwy)\b)[^.;]*?(?:,\s*[A-Z]{2}\b)?)` +
+    PLACE_END,
+)
+const DAMAGE = /\b(damag|dent|smash|crush|broke|crack|shatter|bumper|windshield|fender|totaled|flood|leak|fire|burn|roof)/i
+const INJURY = /\b(injur|hurt|pain|ambulance|hospital|ER|whiplash|bleeding)\b/i
+
+function isoDate(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
 
 export function parseLossDate(text: string): string | null {
   const iso = text.match(ISO_DATE)
   if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`
   const us = text.match(US_DATE)
   if (us) return `${us[3]}-${us[1].padStart(2, '0')}-${us[2].padStart(2, '0')}`
+  if (/\b(yesterday|last night)\b/i.test(text)) return isoDate(new Date(Date.now() - 86_400_000))
+  if (/\b(today|this (morning|afternoon|evening))\b/i.test(text)) return isoDate(new Date())
   return null
+}
+
+/** Sentences and the clauses inside them, so each fact gets only its own part of the narrative. */
+function clauses(text: string) {
+  return text
+    .split(/(?<=[.;!?])\s+|,\s+(?![A-Z]{2}\b)|\s+(?:and|but)\s+(?=(?:the|a|an|our|my|his|her|their|he|she|they|we|I|it|nobody|no one)\b)/)
+    .map((part) => part.trim())
+    .filter(Boolean)
 }
 
 /** Fills only empty facts from free text; never overwrites what a source already said. */
@@ -115,14 +138,18 @@ export function applyClaimText(draft: CreateClaimDraft, text: string): CreateCla
   if (/airbags?/i.test(text) && (next.airbag === 'missing' || next.airbag === 'unknown')) {
     next.airbag = /(not|didn'?t|did not|no)\b.*deploy|no airbag/i.test(text) ? 'not deployed' : 'deployed'
   }
-  const near = text.match(LOCATION)
+  const near = text.match(ROAD) ?? text.match(LOCATION)
   if (near && !next.location) next.location = near[1].trim()
   if (!next.injuries) {
     if (/\b(no one (was )?(hurt|injured)|no injur|nobody (was )?hurt)/i.test(text)) next.injuries = 'None reported'
     else {
-      const injured = text.split(/(?<=[.;])\s+/).find((sentence) => /\b(injur|hurt|pain|ambulance|hospital|ER)\b/i.test(sentence))
-      if (injured) next.injuries = injured.trim()
+      const injured = clauses(text).find((clause) => INJURY.test(clause))
+      if (injured) next.injuries = injured
     }
+  }
+  if (next.vehicles.length === 0) {
+    const damaged = clauses(text).find((clause) => DAMAGE.test(clause) && !INJURY.test(clause))
+    if (damaged) next.vehicles = [damaged]
   }
   if (!email && !next.description && text.split(/\s+/).length >= 4) next.description = text
   return next
@@ -147,6 +174,12 @@ export function policyMentionedIn(text: string): ClaimPolicy | null {
   for (const policy of CLAIM_POLICIES.values()) {
     if (lower.includes(coreName(policy.insured))) return policy
   }
+  // Callers shorten the name ("Velocity Courier" for Velocity Courier Services LLC); two leading words are enough.
+  for (const policy of CLAIM_POLICIES.values()) {
+    const words = coreName(policy.insured).split(/\s+/)
+    const lead = words.slice(0, 2).map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    if (words.length >= 3 && new RegExp(`\\b${lead.join('\\s+')}\\b`).test(lower)) return policy
+  }
   return null
 }
 
@@ -166,6 +199,22 @@ export function phoneClaimDraft(text: string): CreateClaimDraft {
   // The caller's introduction alone is not a loss description.
   const filled = applyClaimText({ ...base, description: described ?? '' }, text)
   return { ...filled, description: described }
+}
+
+/** What the caller has said so far, layered under the draft: it fills empty facts and never overwrites one. */
+export function applyCallerText(draft: CreateClaimDraft | null, text: string): CreateClaimDraft {
+  const heard = phoneClaimDraft(text)
+  if (!draft) return heard
+  return {
+    ...draft,
+    ...(draft.policy == null && heard.policy ? { policy: heard.policy, claimNumber: heard.claimNumber } : {}),
+    reporter: draft.reporter ?? heard.reporter,
+    dateOfLoss: draft.dateOfLoss ?? heard.dateOfLoss,
+    location: draft.location ?? heard.location,
+    description: draft.description ?? heard.description,
+    vehicles: draft.vehicles.length > 0 ? draft.vehicles : heard.vehicles,
+    injuries: draft.injuries ?? heard.injuries,
+  }
 }
 
 export function formatLossDate(iso: string) {
@@ -207,7 +256,7 @@ export function recordFromDraft(draft: CreateClaimDraft, status: ClaimStatus, ex
     location: draft.location,
     description: draft.description,
     status,
-    assignee: existing?.assignee ?? 'Unassigned',
+    assignee: draft.assignee ?? existing?.assignee ?? 'Unassigned',
     hasAlert: existing?.hasAlert ?? false,
     notes: [
       ...(existing?.notes ?? []),
