@@ -336,9 +336,22 @@ export const initialApprovals: HomeApproval[] = [
   },
 ]
 
-/** claimAlerts lives in sample-data-default.js, which was not provided; left empty rather than invented. */
+/** Joan's claim alerts for the home section. Active is the error row; inactive is the success row. */
 export type HomeClaimAlert = { id: string; claimNumber: string; description: string; active: boolean }
-export const claimAlerts: HomeClaimAlert[] = []
+export const claimAlerts: HomeClaimAlert[] = [
+  {
+    id: 'ca-1',
+    claimNumber: 'CL-90345612-221',
+    description: 'Projected injury exposure is approaching the available policy limit.',
+    active: true,
+  },
+  {
+    id: 'ca-2',
+    claimNumber: 'CL-40218856-002',
+    description: 'Claim has an open task more than 10 days past due.',
+    active: false,
+  },
+]
 
 /* ---- claim helpers ---- */
 type WithWork = { tasks?: HomeTask[]; milestones?: HomeMilestone[] }

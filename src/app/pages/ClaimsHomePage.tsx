@@ -130,7 +130,7 @@ const dueColor = (state: DueState) =>
 
 const NoticeContext = createContext<(message: string) => void>(() => undefined)
 
-function ClaimLink({ children }: { children: string }) {
+function ClaimLink({ children, sx }: { children: string; sx?: object }) {
   const notify = useContext(NoticeContext)
   return (
     <Link
@@ -138,7 +138,7 @@ function ClaimLink({ children }: { children: string }) {
       type="button"
       underline="hover"
       onClick={() => notify(`Claim ${children} isn't available yet.`)}
-      sx={textLinkSx}
+      sx={{ ...textLinkSx, ...sx }}
     >
       {children}
     </Link>
@@ -1539,7 +1539,7 @@ function ClaimAlerts({ claims, onInsights }: { claims: HomeClaim[]; onInsights: 
               role="alert"
               direction="row"
               spacing={1.5}
-              alignItems="center"
+              alignItems="flex-start"
               sx={{
                 mb: 1,
                 px: 2,
@@ -1555,13 +1555,15 @@ function ClaimAlerts({ claims, onInsights }: { claims: HomeClaim[]; onInsights: 
                 size="small"
                 aria-label={`${active ? 'Deactivate' : 'Reactivate'} alert`}
                 onClick={() => setOverrides((current) => ({ ...current, [a.id]: !active }))}
-                sx={{ color: active ? one.error : one.success }}
+                sx={{ color: active ? one.error : one.success, alignSelf: 'flex-start', mt: 0.25 }}
               >
                 {active ? <ErrorOutlineIcon fontSize="small" /> : <CheckCircleOutlineIcon fontSize="small" />}
               </IconButton>
-              <Stack direction="row" spacing={1.5} alignItems="baseline">
-                <ClaimLink>{a.claimNumber}</ClaimLink>
-                <span>{a.description}</span>
+              <Stack spacing={0.25} sx={{ minWidth: 0, flex: 1 }}>
+                <ClaimLink sx={{ color: 'primary.main' }}>{a.claimNumber}</ClaimLink>
+                <Typography variant="body2" sx={{ color: 'inherit' }}>
+                  {a.description}
+                </Typography>
               </Stack>
             </Stack>
           )
