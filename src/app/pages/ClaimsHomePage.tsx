@@ -84,7 +84,7 @@ import {
 } from '@/app/data/claimsHomeMock'
 import { useRegisterRightToolCopilot, useRegisterRightToolCopilotCustom } from '@/app/hooks/useRightToolRegistration'
 import { CopilotDrawerShell } from '@/pages/policies/components/copilot/CopilotDrawerShell'
-import { analyticsBodySx, analyticsChartColors, getAnalyticsChartAxisStyle, getAnalyticsChartGridStroke } from '@/design-system/components/analytics/analyticsStyles'
+import { analyticsBodySx, analyticsChartColors, getAnalyticsChartAxisStyle, getAnalyticsChartGridStroke, getChartTooltipSx } from '@/design-system/components/analytics/analyticsStyles'
 import { accentSubtle, isDarkMode } from '@/design-system/theme/themeSurfaces'
 import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { figmaPalette } from '@/design-system/tokens/figma-palette'
@@ -291,24 +291,16 @@ function ChartTooltip({
   label?: string | number
 }) {
   const value = chartTooltipValue(payload)
+  const tip = getChartTooltipSx(useTheme())
   if (!active || value == null) return null
   return (
-    <Box
-      sx={(theme) => ({
-        px: 1.25,
-        py: 0.75,
-        borderRadius: one.radius,
-        bgcolor: 'background.paper',
-        border: `1px solid ${theme.palette.divider}`,
-        boxShadow: isDarkMode(theme) ? '0 4px 16px rgba(0,0,0,0.45)' : '0 4px 12px rgba(0,0,0,0.08)',
-      })}
-    >
+    <Box sx={tip.box}>
       {label != null && label !== '' ? (
-        <Typography variant="caption" color="text.secondary" sx={analyticsBodySx} display="block">
+        <Typography variant="caption" sx={{ ...analyticsBodySx, color: tip.labelColor }} display="block">
           {label}
         </Typography>
       ) : null}
-      <Typography variant="body2" sx={{ ...analyticsBodySx, fontWeight: 600 }}>
+      <Typography variant="body2" sx={{ ...analyticsBodySx, fontWeight: 600, color: tip.valueColor }}>
         {typeof value === 'number' ? value.toLocaleString('en-US') : ''}
       </Typography>
     </Box>

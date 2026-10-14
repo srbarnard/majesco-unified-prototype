@@ -1,4 +1,6 @@
 import type { SxProps, Theme } from '@mui/material/styles'
+import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
+import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { figmaPalette } from '@/design-system/tokens/figma-palette'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack, figmaFontWeights } from '@/design-system/tokens/figma-typography'
@@ -97,6 +99,29 @@ export function getAnalyticsChartAxisStyle(theme: Theme) {
 
 export function getAnalyticsChartGridStroke(theme: Theme) {
   return chartGridStroke(theme)
+}
+
+/**
+ * Chart hover tooltip that contrasts with the plot.
+ * Light charts use Majesco `tooltipFill` (dark grey) with dark-scheme text.
+ * Dark charts use the light `background.paper` token with light-scheme text.
+ */
+export function getChartTooltipSx(theme: Theme) {
+  const darkChart = isDarkMode(theme)
+  const surface = getFigmaColors(darkChart ? 'light' : 'dark')
+  return {
+    box: {
+      px: 1.25,
+      py: 0.75,
+      borderRadius: `${figmaBorderRadius.borderRadius}px`,
+      bgcolor: darkChart ? surface.background.paper : surface.components.tooltipFill,
+      color: surface.text.primary,
+      border: `1px solid ${surface.divider}`,
+      boxShadow: darkChart ? '0 4px 16px rgba(0,0,0,0.45)' : '0 4px 12px rgba(0,0,0,0.08)',
+    },
+    labelColor: surface.text.secondary,
+    valueColor: surface.text.primary,
+  }
 }
 
 /** @deprecated Use getAnalyticsChartAxisStyle(theme) */

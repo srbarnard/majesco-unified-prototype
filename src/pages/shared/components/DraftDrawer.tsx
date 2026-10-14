@@ -22,6 +22,7 @@ import Typography from '@mui/material/Typography'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { StatusChip } from '@/design-system/components'
+import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import {
@@ -399,7 +400,7 @@ function CategoryBadge({ badge }: { badge: DraftRowBadge }) {
         return {
           width: 32,
           height: 32,
-          borderRadius: '10px',
+          borderRadius: `${figmaBorderRadius.borderRadius}px`,
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -442,7 +443,7 @@ function NeededStatusBadge({ tone }: { tone: NeededBadgeTone }) {
         return {
           width: 32,
           height: 32,
-          borderRadius: '10px',
+          borderRadius: `${figmaBorderRadius.borderRadius}px`,
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',

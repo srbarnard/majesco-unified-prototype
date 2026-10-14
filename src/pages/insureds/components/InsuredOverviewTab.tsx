@@ -34,6 +34,7 @@ import {
 } from '@/design-system/components/analytics/analyticsStyles'
 import { InsightCallout, insightStatusToVariant } from '@/design-system/components/InsightCallout'
 import { isDarkMode, surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
+import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import type { InsuredDetailsRecord } from '@/pages/insureds/data/mockInsuredDetails'
@@ -148,7 +149,7 @@ function ToneIcon({
         return {
           width: 32,
           height: 32,
-          borderRadius: '10px',
+          borderRadius: `${figmaBorderRadius.borderRadius}px`,
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',

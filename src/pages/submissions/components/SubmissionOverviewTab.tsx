@@ -51,6 +51,7 @@ import {
   surfaceMuted,
   surfaceSubtle,
 } from '@/design-system/theme/themeSurfaces'
+import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import type { OverviewQuickAction, OverviewStatTone } from '@/pages/policies/data/mockOverview'
@@ -1143,7 +1144,7 @@ function RiskSignalsCard({
                     return {
                       width: 32,
                       height: 32,
-                      borderRadius: '10px',
+                      borderRadius: `${figmaBorderRadius.borderRadius}px`,
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
