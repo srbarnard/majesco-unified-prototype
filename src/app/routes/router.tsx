@@ -1,10 +1,11 @@
-import { createBrowserRouter } from 'react-router'
+import { Navigate, createBrowserRouter } from 'react-router'
+import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
 import { AppLayout } from '@/app/layouts/AppLayout'
 import { ClaimDetails } from '@/pages/claims/ClaimDetails'
 import { ClaimsPage } from '@/pages/claims/ClaimsPage'
 import { CustomerDetails } from '@/pages/customers/CustomerDetails'
 import { CustomersPage } from '@/pages/customers/CustomersPage'
-import { DashboardPage } from '@/app/pages/DashboardPage'
+import { ClaimsHomePage } from '@/app/pages/ClaimsHomePage'
 import { ActivityPage } from '@/app/pages/ActivityPage'
 import { PlaceholderPage } from '@/app/pages/PlaceholderPage'
 import { CopilotStudioPage } from '@/pages/copilot-studio/CopilotStudioPage'
@@ -21,12 +22,17 @@ import { SubmissionsPage } from '@/pages/submissions/SubmissionsPage'
 import { SubmissionDetails } from '@/pages/submissions/SubmissionDetails'
 import { TasksPage } from '@/pages/tasks/TasksPage'
 
+const claimsOnlyRoutes = [
+  { index: true, element: <ClaimsHomePage /> },
+  { path: '*', element: <Navigate to="/" replace /> },
+]
+
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <AppLayout />,
-    children: [
-      { index: true, element: <DashboardPage /> },
+    children: CLAIMS_ONLY ? claimsOnlyRoutes : [
+      { index: true, element: <ClaimsHomePage /> },
       { path: 'activity', element: <ActivityPage /> },
       { path: 'favorites', element: <PlaceholderPage title="Favorites" description="Saved policies, insureds, and watchlists will appear here." /> },
       { path: 'tasks', element: <TasksPage /> },

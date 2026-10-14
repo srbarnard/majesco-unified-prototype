@@ -21,6 +21,7 @@ import Typography from '@mui/material/Typography'
 import { type Theme } from '@mui/material/styles'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
+import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
 import { useRightToolDispatch, type RightToolId } from '@/app/contexts/RightToolContext'
 import { GlobalSearchField } from '@/design-system/components/GlobalSearch/GlobalSearchField'
 import { useBrowserHistoryNavigation } from '@/hooks/useBrowserHistoryNavigation'
@@ -51,13 +52,15 @@ type CreateMenuItem = {
   tool?: RightToolId
 }
 
-const CREATE_MENU_ITEMS: CreateMenuItem[] = [
+const ALL_CREATE_MENU_ITEMS: CreateMenuItem[] = [
   { label: 'Customer', disabled: true },
   { label: 'Submission', disabled: false, tool: 'newSubmission' },
   { label: 'Quote', disabled: false, tool: 'newQuote' },
   { label: 'Policy', disabled: true },
   { label: 'Claim', disabled: false, tool: 'newClaim' },
 ]
+
+const CREATE_MENU_ITEMS = ALL_CREATE_MENU_ITEMS.filter((item) => !CLAIMS_ONLY || item.tool === 'newClaim')
 
 /** Prototype unread count for account avatar + Notifications menu badge. */
 const UNREAD_NOTIFICATION_COUNT = 3
@@ -162,7 +165,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
             aria-label="Open navigation menu"
             size="small"
             sx={(theme) => ({
-              display: 'inline-flex',
+              display: CLAIMS_ONLY ? 'none' : 'inline-flex',
               ml: 0.5,
               [theme.breakpoints.up('lg')]: { display: 'none' },
             })}
@@ -171,14 +174,9 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
           </IconButton>
           <Box
             component="img"
-            src="/assets/latent-needs-logo.svg"
-            alt="Latent Needs"
-            sx={(theme) => ({
-              width: 28,
-              height: 28,
-              objectFit: 'contain',
-              ...theme.applyStyles('dark', { filter: 'invert(1)' }),
-            })}
+            src="/assets/majesco-logo.png"
+            alt="Majesco"
+            sx={{ width: 28, height: 28, objectFit: 'contain' }}
           />
           <Typography
             component="span"
@@ -233,7 +231,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
           </Stack>
 
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <GlobalSearchField fullWidth />
+            {CLAIMS_ONLY ? null : <GlobalSearchField fullWidth />}
           </Box>
 
           <IconButton
@@ -263,7 +261,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
             size="small"
             aria-label="Open search"
             onClick={() => setMobileSearchOpen((open) => !open)}
-            sx={{ display: { xs: 'inline-flex', lg: 'none' } }}
+            sx={{ display: CLAIMS_ONLY ? 'none' : { xs: 'inline-flex', lg: 'none' } }}
           >
             <SearchIcon fontSize="small" />
           </IconButton>

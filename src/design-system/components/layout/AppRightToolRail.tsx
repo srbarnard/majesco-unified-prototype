@@ -17,6 +17,7 @@ import useMediaQuery from '@mui/material/useMediaQuery'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router'
 import { CopilotIcon } from '@/design-system/components'
+import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
 import { useRightTool, type RightToolId } from '@/app/contexts/RightToolContext'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { surfaceSubtle } from '@/design-system/theme/themeSurfaces'
@@ -116,7 +117,7 @@ export function AppRightToolRail() {
   const { mode, systemMode } = useColorScheme()
   const resolvedMode = mode === 'system' ? systemMode : mode
   const isDarkMode = resolvedMode === 'dark'
-  const hideCopilotTool = location.pathname === '/copilot-studio'
+  const hideCopilotTool = CLAIMS_ONLY || location.pathname === '/copilot-studio'
   const [order, setOrder] = useState<RightToolId[]>(readStoredOrder)
   const [draggingId, setDraggingId] = useState<RightToolId | null>(null)
 
@@ -127,6 +128,7 @@ export function AppRightToolRail() {
   const reorderable = order
     .map((id) => REORDERABLE_TOOLS.find((tool) => tool.id === id))
     .filter((tool): tool is ToolDef => Boolean(tool))
+    .filter((tool) => !CLAIMS_ONLY || tool.id === 'newClaim')
 
   const contextTools: ToolDef[] = [
     ...(historyAvailable

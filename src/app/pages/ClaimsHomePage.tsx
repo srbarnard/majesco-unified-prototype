@@ -1,0 +1,1307 @@
+import AccountTreeIcon from '@mui/icons-material/AccountTree'
+import AddIcon from '@mui/icons-material/Add'
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
+import ChecklistIcon from '@mui/icons-material/Checklist'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import CloseIcon from '@mui/icons-material/Close'
+import CycloneIcon from '@mui/icons-material/Cyclone'
+import DescriptionIcon from '@mui/icons-material/Description'
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
+import EventIcon from '@mui/icons-material/Event'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import FlagIcon from '@mui/icons-material/Flag'
+import ForumIcon from '@mui/icons-material/Forum'
+import GavelIcon from '@mui/icons-material/Gavel'
+import HealingIcon from '@mui/icons-material/Healing'
+import HomeWorkIcon from '@mui/icons-material/HomeWork'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import PaymentsIcon from '@mui/icons-material/Payments'
+import PersonIcon from '@mui/icons-material/Person'
+import PsychologyIcon from '@mui/icons-material/Psychology'
+import RemoveIcon from '@mui/icons-material/Remove'
+import ScheduleIcon from '@mui/icons-material/Schedule'
+import StickyNote2OutlinedIcon from '@mui/icons-material/StickyNote2Outlined'
+import TaskAltIcon from '@mui/icons-material/TaskAlt'
+import Avatar from '@mui/material/Avatar'
+import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import ButtonBase from '@mui/material/ButtonBase'
+import Chip from '@mui/material/Chip'
+import Divider from '@mui/material/Divider'
+import IconButton from '@mui/material/IconButton'
+import Link from '@mui/material/Link'
+import Snackbar from '@mui/material/Snackbar'
+import Stack from '@mui/material/Stack'
+import Tab from '@mui/material/Tab'
+import Tabs from '@mui/material/Tabs'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
+import { useTheme } from '@mui/material/styles'
+import type { SvgIconComponent } from '@mui/icons-material'
+import { Fragment, createContext, useContext, useState, type ReactNode } from 'react'
+import { Bar, BarChart, Cell, Line, LineChart, Pie, PieChart, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from 'recharts'
+import { useGlobalSearch } from '@/app/contexts/GlobalSearchContext'
+import { useRightToolDispatch } from '@/app/contexts/RightToolContext'
+import {
+  FIGMA_METRIC_LABELS,
+  HOME_PAGE_SIZE,
+  HOME_PERSONA,
+  HOME_TODAY,
+  METRIC_VISUALIZATIONS,
+  addDays,
+  claimAlerts,
+  claimManagementMetrics,
+  dueState,
+  escalations,
+  featureName,
+  fmtLongDay,
+  fmtMonthDayLong,
+  homeClaims,
+  homeInitials,
+  humanDue,
+  initialApprovals,
+  isoDate,
+  mondayFor,
+  nextMilestone,
+  nextOpenTask,
+  openTasks,
+  overdueDays,
+  parseIsoDate,
+  sortedClaims,
+  workloadMoves,
+  workloadRows,
+  type ClaimMetric,
+  type DueState,
+  type HomeClaim,
+  type HomeMilestone,
+  type HomeNote,
+  type HomeTask,
+} from '@/app/data/claimsHomeMock'
+import { useRegisterRightToolCopilot } from '@/app/hooks/useRightToolRegistration'
+import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { layoutTokens } from '@/design-system/tokens/layout'
+
+/**
+ * Majesco One (MejB450AvNMSC9sQaswS9T) light tokens, scoped to this page only.
+ * One has no recorded text/secondary or info/main; secondary text uses the app theme's value.
+ */
+const one = {
+  primary: '#005dbf',
+  primaryHover: '#005dbf0a',
+  primaryOutlinedBorder: '#005dbf80',
+  error: '#a82626',
+  success: '#0f5c29',
+  warningText: '#663c00',
+  warningBg: '#fff4e5',
+  divider: '#0000001f',
+  paper: '#ffffff',
+  textPrimary: '#000000de',
+  radius: '4px',
+} as const
+
+/* ---- shared pieces ---- */
+const cardSx = { border: 1, borderColor: one.divider, borderRadius: one.radius, bgcolor: one.paper } as const
+const tagChipSx = { borderColor: one.divider, color: one.textPrimary } as const
+
+function OneCallout({ icon, sx, children }: { icon: ReactNode; sx?: object; children: ReactNode }) {
+  return (
+    <Stack
+      direction="row"
+      spacing={1.5}
+      alignItems="flex-start"
+      sx={{ p: 1.5, borderRadius: one.radius, bgcolor: one.primaryHover, color: one.textPrimary, typography: 'body2', ...sx }}
+    >
+      <Box sx={{ color: one.primary, display: 'flex', flexShrink: 0 }}>{icon}</Box>
+      <Box sx={{ minWidth: 0 }}>{children}</Box>
+    </Stack>
+  )
+}
+const textLinkSx = {
+  fontFamily: figmaFontFamilyStack.heading,
+  fontWeight: 600,
+  fontSize: '0.875rem',
+  textAlign: 'left',
+  verticalAlign: 'baseline',
+} as const
+const warningChipSx = { bgcolor: one.warningBg, color: one.warningText } as const
+const dueColor = (state: DueState) =>
+  state === 'overdue' ? one.error : state === 'today' || state === 'soon' ? one.warningText : 'text.secondary'
+
+const NoticeContext = createContext<(message: string) => void>(() => undefined)
+
+function ClaimLink({ children }: { children: string }) {
+  const notify = useContext(NoticeContext)
+  return (
+    <Link
+      component="button"
+      type="button"
+      underline="hover"
+      onClick={() => notify(`Claim ${children} isn't available yet.`)}
+      sx={textLinkSx}
+    >
+      {children}
+    </Link>
+  )
+}
+
+function CountChip({ label }: { label: ReactNode }) {
+  return (
+    <Chip
+      size="small"
+      variant="outlined"
+      color="primary"
+      label={label}
+      sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 500 }}
+    />
+  )
+}
+
+function ModuleHeader({ title, count, id, children }: { title: string; count?: ReactNode; id?: string; children?: ReactNode }) {
+  return (
+    <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minHeight: 40, mb: 1.5, flexWrap: 'wrap' }}>
+      <Typography variant="h2" component="h2" id={id}>
+        {title}
+      </Typography>
+      {count != null ? <CountChip label={count} /> : null}
+      <Box sx={{ flex: 1 }} />
+      {children}
+    </Stack>
+  )
+}
+
+function ShowMore({
+  expanded,
+  onClick,
+  more,
+  less,
+  icons = [ExpandMoreIcon, ExpandLessIcon],
+}: {
+  expanded: boolean
+  onClick: () => void
+  more: string
+  less: string
+  icons?: [SvgIconComponent, SvgIconComponent]
+}) {
+  const Icon = expanded ? icons[1] : icons[0]
+  return (
+    <Button size="small" startIcon={<Icon />} onClick={onClick}>
+      {expanded ? less : more}
+    </Button>
+  )
+}
+
+function InsightsButton({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <Button size="small" startIcon={<AutoAwesomeIcon sx={{ fontSize: 16 }} />} onClick={onClick}>
+      {count} Insights
+    </Button>
+  )
+}
+
+function EmptyNote({ children }: { children: ReactNode }) {
+  return (
+    <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+      {children}
+    </Typography>
+  )
+}
+
+function CloseButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <IconButton size="small" onClick={onClick} aria-label={label}>
+      <CloseIcon fontSize="small" />
+    </IconButton>
+  )
+}
+
+function NoteCard({ note }: { note: HomeNote }) {
+  return (
+    <Box sx={{ ...cardSx, p: 1.5 }}>
+      <Typography variant="caption" color="text.secondary">
+        <b>{note.author}</b> · {note.date}
+      </Typography>
+      <Typography variant="body2">{note.text}</Typography>
+    </Box>
+  )
+}
+
+/* ---- Daily Brief ---- */
+function ClaimsHealthDonut({ pct }: { pct: number }) {
+  const data = [
+    { name: 'Claims health', value: pct },
+    { name: 'Remaining', value: 100 - pct },
+  ]
+  return (
+    <Box role="img" aria-label={`Claims health ${pct} percent`} sx={{ position: 'relative', width: 96, height: 96, flexShrink: 0 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie data={data} dataKey="value" innerRadius={31} outerRadius={46} startAngle={90} endAngle={-270} stroke="none" isAnimationActive={false}>
+            <Cell fill={one.primary} />
+            <Cell fill={one.divider} />
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+      <Box sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
+        <Typography variant="h4" component="b">
+          {pct}%
+        </Typography>
+      </Box>
+    </Box>
+  )
+}
+
+const overnightRows: [SvgIconComponent, string, string][] = [
+  [AddCircleOutlineIcon, '6 new claims', ' were reported overnight; 2 are still unassigned'],
+  [CycloneIcon, '1 CAT event update', ' added 4 potentially affected claims'],
+  [PaymentsIcon, '3 material reserve/payment changes', ' exceeded review thresholds'],
+  [GavelIcon, '2 new litigation/SIU signals', ' were generated for supervisor review'],
+]
+
+function DailyBrief() {
+  const [expanded, setExpanded] = useState(false)
+  const closure = Number(String(claimManagementMetrics.find((m) => m.id === 'closureRate')?.value ?? '').replace('%', ''))
+  const pct = Number.isFinite(closure) && closure > 0 ? Math.round(closure) : 75
+  const items = expanded ? escalations : escalations.slice(0, 3)
+  const sectionTitle = (text: string) => (
+    <Typography variant="h4" component="h3" sx={{ mb: 1 }}>
+      {text}
+    </Typography>
+  )
+  return (
+    <Box
+      component="section"
+      aria-labelledby="dailyBriefTitle"
+      sx={{ mb: 3, p: 2, border: 1, borderColor: one.divider, borderRadius: one.radius, bgcolor: one.primaryHover }}
+    >
+      <ModuleHeader title="Daily Brief" id="dailyBriefTitle">
+        {escalations.length > 3 ? (
+          <ShowMore expanded={expanded} onClick={() => setExpanded((v) => !v)} more="Show more" less="Show less" icons={[AddIcon, RemoveIcon]} />
+        ) : null}
+      </ModuleHeader>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' }, gap: '16px 24px' }}>
+        <Box sx={{ px: 1 }}>
+          {sectionTitle('Claims Health')}
+          <Stack direction="row" spacing={2} alignItems="center">
+            <ClaimsHealthDonut pct={pct} />
+            <Box component="ul" sx={{ m: 0, pl: 2.25, typography: 'body2', '& li': { mb: 1 } }}>
+              <li>
+                Open inventory is <b>3 claims higher</b> than last week.
+              </li>
+              <li>
+                <b>11 claims</b> are past target lifecycle; 3 need near-term review.
+              </li>
+              <li>
+                Large-loss exposure is concentrated in <b>6 claims</b>.
+              </li>
+            </Box>
+          </Stack>
+        </Box>
+        <Box sx={{ px: 1 }}>
+          {sectionTitle(`Overnight activity (${overnightRows.length})`)}
+          <Stack component="ul" spacing={1} sx={{ m: 0, p: 0, listStyle: 'none' }}>
+            {overnightRows.map(([Icon, bold, rest]) => (
+              <Stack component="li" key={bold} direction="row" spacing={1} alignItems="flex-start" sx={{ typography: 'body2' }}>
+                <Icon sx={{ fontSize: 20, color: one.primary, flexShrink: 0 }} />
+                <span>
+                  <b>{bold}</b>
+                  {rest}
+                </span>
+              </Stack>
+            ))}
+          </Stack>
+        </Box>
+        <Box sx={{ px: 1 }}>
+          {sectionTitle(`Needs attention (${escalations.length})`)}
+          <Stack component="ul" spacing={1} sx={{ m: 0, p: 0, listStyle: 'none' }}>
+            {items.map((x) => (
+              <Stack component="li" key={x.claim} direction="row" spacing={1} alignItems="baseline" sx={{ typography: 'body2' }}>
+                <Box sx={{ flexShrink: 0 }}>
+                  <ClaimLink>{x.claim}</ClaimLink>
+                </Box>
+                <span>{x.description}</span>
+              </Stack>
+            ))}
+          </Stack>
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+
+/* ---- Key Metrics ---- */
+const chartCaptionSx = { fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.75rem', color: 'text.secondary' }
+
+function MetricChart({ id }: { id: string }) {
+  const theme = useTheme()
+  const primary = one.primary
+  const track = one.divider
+  const muted = theme.palette.text.secondary
+  const v = METRIC_VISUALIZATIONS[id]
+  if (!v) return null
+  const foot = (left: string, right: string | null) => (
+    <Stack direction="row" justifyContent="space-between">
+      <Typography variant="caption" color="text.secondary">
+        {left}
+      </Typography>
+      {right ? (
+        <Typography variant="caption" color="text.secondary">
+          {right}
+        </Typography>
+      ) : null}
+    </Stack>
+  )
+  if (v.type === 'progress') {
+    const pct = Math.max(0, Math.min(100, v.value))
+    const target = Math.max(0, Math.min(100, v.target))
+    return (
+      <Box>
+        <Typography sx={chartCaptionSx}>{v.label}</Typography>
+        <Box sx={{ height: 40 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart layout="vertical" data={[{ name: v.label, value: pct }]} margin={{ top: 8, right: 4, bottom: 8, left: 4 }}>
+              <XAxis type="number" domain={[0, 100]} hide />
+              <YAxis type="category" dataKey="name" hide />
+              <Bar dataKey="value" fill={primary} barSize={12} radius={[6, 6, 6, 6]} background={{ fill: track, radius: 6 }} isAnimationActive={false} />
+              <ReferenceLine x={target} stroke={muted} strokeWidth={2} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Box>
+        {foot(`${pct}%`, `Target ${target}%`)}
+      </Box>
+    )
+  }
+  const max = Math.max(...v.values, v.type === 'trend' ? (v.target ?? 0) : 0, 1)
+  if (v.type === 'bars') {
+    const data = v.values.map((value, i) => ({ name: v.categories[i] ?? String(value), value }))
+    return (
+      <Box>
+        <Typography sx={chartCaptionSx}>{v.label}</Typography>
+        <Box sx={{ height: 80 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 11, fill: muted }} />
+              <YAxis hide domain={[0, max]} />
+              <Bar dataKey="value" fill={primary} fillOpacity={0.78} radius={[4, 4, 0, 0]} background={{ fill: track, radius: 4 }} isAnimationActive={false} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Box>
+      </Box>
+    )
+  }
+  const data = v.values.map((value, i) => ({ i, value }))
+  return (
+    <Box>
+      <Typography sx={chartCaptionSx}>{v.label}</Typography>
+      <Box sx={{ height: 62 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 6, right: 4, bottom: 6, left: 4 }}>
+            <XAxis dataKey="i" hide />
+            <YAxis hide domain={[0, max]} />
+            {v.target ? <ReferenceLine y={v.target} stroke={muted} strokeDasharray="3 3" /> : null}
+            <Line type="linear" dataKey="value" stroke={primary} strokeWidth={2.2} dot={false} isAnimationActive={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </Box>
+      {foot('Recent periods', v.target ? `Target ${v.target}` : null)}
+    </Box>
+  )
+}
+
+function MetricCard({ metric, onAction }: { metric: ClaimMetric; onAction: (metric: ClaimMetric) => void }) {
+  const agent = metric.actionType === 'agent'
+  return (
+    <Box component="article" sx={{ ...cardSx, display: 'flex', flexDirection: 'column', minHeight: 203 }}>
+      <Box sx={{ flex: 1, p: 2, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 1.5 }}>
+        <Box>
+          <Typography variant="h4" component="div">
+            {FIGMA_METRIC_LABELS[metric.id] ?? metric.label}
+          </Typography>
+          <Typography variant="h1" component="div" sx={{ my: 0.5 }}>
+            {metric.value}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {metric.support}
+          </Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {metric.trend}
+          </Typography>
+        </Box>
+        <MetricChart id={metric.id} />
+      </Box>
+      <Divider />
+      <Box sx={{ px: 1, py: 0.5 }}>
+        <Button size="small" startIcon={agent ? <PsychologyIcon /> : <ForumIcon />} onClick={() => onAction(metric)}>
+          {agent ? 'Run agent' : 'Ask Copilot'}
+        </Button>
+      </Box>
+    </Box>
+  )
+}
+
+function SuggestionRow({ claim, from, to, why }: { claim: string; from: string; to: string; why: string }) {
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', md: '160px 1fr 1fr' },
+        gap: 1,
+        alignItems: 'center',
+        py: 0.75,
+        borderBottom: 1,
+        borderColor: one.divider,
+      }}
+    >
+      <ClaimLink>{claim}</ClaimLink>
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ typography: 'body2' }}>
+        <b>{from}</b>
+        <ChevronRightIcon sx={{ fontSize: 16 }} />
+        <b>{to}</b>
+      </Stack>
+      <Typography variant="caption" color="text.secondary">
+        {why}
+      </Typography>
+    </Box>
+  )
+}
+
+function AgentPanel({ metric, onClose }: { metric: ClaimMetric; onClose: () => void }) {
+  if (metric.id === 'avgClaims') {
+    return (
+      <Box sx={{ ...cardSx, mt: 2, p: 2 }}>
+        <Stack direction="row" alignItems="flex-start">
+          <Box sx={{ flex: 1 }}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <PsychologyIcon color="primary" />
+              <Typography variant="h3" component="h3">
+                Workload balancing recommendation
+              </Typography>
+            </Stack>
+            <Typography variant="body2" color="text.secondary">
+              Agent analysis · recommendation only
+            </Typography>
+          </Box>
+          <CloseButton onClick={onClose} label="Close workload recommendation" />
+        </Stack>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr auto 1fr' }, gap: 2, alignItems: 'start', my: 2 }}>
+          {(
+            [
+              ['Current state', 'current'],
+              ['Projected state', 'projected'],
+            ] as const
+          ).map(([title, key], idx) => (
+            <Fragment key={key}>
+              {idx === 1 ? (
+                <Box sx={{ alignSelf: 'center', display: { xs: 'none', md: 'block' } }}>
+                  <ChevronRightIcon color="primary" />
+                </Box>
+              ) : null}
+              <Box>
+                <Typography variant="h5" component="h4" sx={{ mb: 1 }}>
+                  {title}
+                </Typography>
+                {workloadRows.map((r) => (
+                  <Stack key={r.name} direction="row" spacing={1} alignItems="baseline" sx={{ py: 0.5, borderBottom: 1, borderColor: one.divider }}>
+                    <Typography variant="body2" sx={{ flex: 1 }}>
+                      {r.name}
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {r[key]}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ width: 120 }}>
+                      {key === 'current'
+                        ? `${r.complexity} complexity`
+                        : r.projected - r.current > 0
+                          ? 'receives work'
+                          : r.projected - r.current < 0
+                            ? 'work reduced'
+                            : 'unchanged'}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Box>
+            </Fragment>
+          ))}
+        </Box>
+        <Typography variant="h5" component="h4" sx={{ mb: 1 }}>
+          Suggested reassignments
+        </Typography>
+        <Stack spacing={1}>
+          {workloadMoves.map((mv) => (
+            <SuggestionRow key={mv.claim} claim={mv.claim} from={mv.from} to={mv.to} why={mv.reason} />
+          ))}
+        </Stack>
+        <OneCallout icon={<InfoOutlinedIcon fontSize="small" />} sx={{ mt: 2 }}>
+          This recommendation is for review only. No assignments will be changed.
+        </OneCallout>
+      </Box>
+    )
+  }
+  return (
+    <Box sx={{ ...cardSx, mt: 2, p: 2 }}>
+      <Stack direction="row" alignItems="flex-start">
+        <Box sx={{ flex: 1 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <PsychologyIcon color="primary" />
+            <Typography variant="h3" component="h3">
+              {metric.actionTitle || metric.label}
+            </Typography>
+          </Stack>
+          <Typography variant="body2" color="text.secondary">
+            Agent analysis · recommendation only
+          </Typography>
+        </Box>
+        <CloseButton onClick={onClose} label="Close agent panel" />
+      </Stack>
+      <OneCallout icon={<AutoAwesomeIcon fontSize="small" />} sx={{ my: 2 }}>
+        <b>
+          {metric.label}: {metric.value}
+        </b>
+        . {metric.support}. {metric.trend}. This simulated agent would rank the underlying claims, explain the drivers, and propose
+        reviewable next actions.
+      </OneCallout>
+      <Typography variant="h5" component="h4" sx={{ mb: 1 }}>
+        Suggested review
+      </Typography>
+      <Stack spacing={1}>
+        <SuggestionRow claim="CL-90345612-221" from="Priority" to="Review" why="Material exposure and timing make this a useful first candidate." />
+        <SuggestionRow claim="CL-40218856-002" from="Priority" to="Follow up" why="Open work is beyond target and requires a near-term action." />
+      </Stack>
+    </Box>
+  )
+}
+
+function KeyMetrics({ onCopilot }: { onCopilot: () => void }) {
+  const [expanded, setExpanded] = useState(false)
+  const [agentId, setAgentId] = useState<string | null>(null)
+  const visible = expanded ? claimManagementMetrics : claimManagementMetrics.slice(0, 4)
+  const agentMetric = claimManagementMetrics.find((m) => m.id === agentId)
+  const onAction = (metric: ClaimMetric) => {
+    if (metric.actionType === 'copilot') onCopilot()
+    else setAgentId((current) => (current === metric.id ? null : metric.id))
+  }
+  return (
+    <Box component="section" aria-labelledby="keyMetricsTitle" sx={{ mb: 3 }}>
+      <ModuleHeader title="Key Metrics" id="keyMetricsTitle" count={`${visible.length} Metrics`}>
+        {claimManagementMetrics.length > 4 ? (
+          <ShowMore
+            expanded={expanded}
+            onClick={() => setExpanded((v) => !v)}
+            more={`Show more metrics (${claimManagementMetrics.length - 4})`}
+            less="Show fewer metrics"
+            icons={[AddIcon, RemoveIcon]}
+          />
+        ) : null}
+      </ModuleHeader>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', xl: 'repeat(4, minmax(0, 1fr))' }, gap: 2 }}>
+        {visible.map((m) => (
+          <MetricCard key={m.id} metric={m} onAction={onAction} />
+        ))}
+      </Box>
+      {agentMetric ? <AgentPanel metric={agentMetric} onClose={() => setAgentId(null)} /> : null}
+    </Box>
+  )
+}
+
+/* ---- claim cards ---- */
+function NextSummaryItem({ kind, item }: { kind: 'task' | 'milestone'; item: HomeTask | HomeMilestone | null }) {
+  const isTask = kind === 'task'
+  const Icon = isTask ? ChecklistIcon : FlagIcon
+  const prefix = isTask ? 'Next task' : 'Next milestone'
+  if (!item) {
+    return (
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ typography: 'body2', minWidth: 0 }}>
+        <Icon sx={{ fontSize: 18, color: 'text.secondary' }} />
+        <b>{prefix}</b>
+        <span>None</span>
+      </Stack>
+    )
+  }
+  const state = dueState(item.dueDate)
+  const hd = humanDue(item.dueDate)
+  const due =
+    state === 'overdue' ? `Overdue by ${overdueDays(item.dueDate)}` : hd === 'Tomorrow' ? 'Due tomorrow' : hd === 'Today' ? 'Today' : `Due ${hd}`
+  const label = 'description' in item ? item.description : item.label
+  const DueIcon = state === 'overdue' ? ErrorOutlineIcon : ScheduleIcon
+  return (
+    <Stack direction="row" spacing={1} alignItems="center" sx={{ typography: 'body2', minWidth: 0 }}>
+      <Icon sx={{ fontSize: 18, color: 'text.secondary', flexShrink: 0 }} />
+      <Box component="b" sx={{ flexShrink: 0 }}>
+        {prefix}
+      </Box>
+      <Box component="span" sx={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {label}
+      </Box>
+      <DueIcon sx={{ fontSize: 16, color: dueColor(state) }} />
+      <Box component="span" sx={{ color: dueColor(state), fontWeight: 600, flexShrink: 0 }}>
+        {due}
+      </Box>
+    </Stack>
+  )
+}
+
+function TaskCard({ task }: { task: HomeTask }) {
+  const state = dueState(task.dueDate)
+  return (
+    <Box sx={{ ...cardSx, p: 1.5, display: 'flex', gap: 2, borderLeft: 4, borderLeftColor: state === 'overdue' ? one.error : one.divider }}>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          {task.description}
+        </Typography>
+        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ typography: 'caption', color: 'text.secondary' }}>
+          <PersonIcon sx={{ fontSize: 14 }} />
+          <span>
+            Assigned to <b>{task.assignedTo}</b>
+          </span>
+        </Stack>
+        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+          {task.tags.map((x) => (
+            <Chip key={x} size="small" variant="outlined" label={x} sx={tagChipSx} />
+          ))}
+        </Stack>
+      </Box>
+      <Stack alignItems="flex-end" spacing={0.5}>
+        <Chip size="small" label={task.status} sx={warningChipSx} />
+        <Typography variant="caption" sx={{ color: dueColor(state), fontWeight: 600 }}>
+          {humanDue(task.dueDate)}
+        </Typography>
+      </Stack>
+    </Box>
+  )
+}
+
+function ActivityPanel({ title, Icon, onClose, children }: { title: string; Icon: SvgIconComponent; onClose: () => void; children: ReactNode }) {
+  return (
+    <Box sx={{ ...cardSx, mt: 1, p: 1.5, bgcolor: one.primaryHover }}>
+      <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
+        <Icon sx={{ fontSize: 20, mr: 1, color: one.primary }} />
+        <Typography variant="h5" component="h4" sx={{ flex: 1 }}>
+          {title}
+        </Typography>
+        <CloseButton onClick={onClose} label={`Close ${title.toLowerCase()}`} />
+      </Stack>
+      <Stack spacing={1}>{children}</Stack>
+    </Box>
+  )
+}
+
+function ClaimCard({ claim, kind }: { claim: HomeClaim; kind: 'my' | 'team' }) {
+  const [panel, setPanel] = useState<'tasks' | 'notes' | null>(null)
+  const [showFeatures, setShowFeatures] = useState(false)
+  const nt = nextOpenTask(claim)
+  const nm = nextMilestone(claim)
+  const overdue = nt ? dueState(nt.dueDate) === 'overdue' : false
+  const myFeatures = claim.features.filter((f) => f.assignedTo === HOME_PERSONA.name)
+  const toggle = (name: 'tasks' | 'notes') => setPanel((current) => (current === name ? null : name))
+  const linkButton = (Icon: SvgIconComponent, label: string, onClick: () => void) => (
+    <Button size="small" startIcon={<Icon sx={{ fontSize: 16 }} />} onClick={onClick}>
+      {label}
+    </Button>
+  )
+  return (
+    <Box sx={{ mb: 1.5 }}>
+      <Box sx={{ ...cardSx, px: 2, py: 1.5, ...(overdue ? { borderLeft: 4, borderLeftColor: one.error } : {}) }}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems={{ md: 'flex-start' }} justifyContent="space-between">
+          <Box sx={{ minWidth: 0 }}>
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+              <ClaimLink>{claim.claim}</ClaimLink>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {claim.insured}
+              </Typography>
+              <Chip size="small" variant="outlined" label="Open" sx={tagChipSx} />
+            </Stack>
+            <Typography variant="body2" color="text.secondary" component="div" sx={{ mt: 0.25 }}>
+              {claim.type} &nbsp;·&nbsp;{' '}
+              {kind === 'team' ? (
+                <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                  <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: one.primary, color: one.paper }}>{homeInitials(claim.assignee)}</Avatar>
+                  {claim.assignee}
+                </Box>
+              ) : (
+                claim.detail
+              )}
+            </Typography>
+          </Box>
+          <Stack direction="row" flexWrap="wrap" useFlexGap sx={{ flexShrink: 0 }}>
+            {linkButton(ChecklistIcon, `Linked tasks (${claim.tasks.length})`, () => toggle('tasks'))}
+            {linkButton(StickyNote2OutlinedIcon, `Linked notes (${claim.notes.length})`, () => toggle('notes'))}
+            {linkButton(AccountTreeIcon, `Linked features (${claim.features.length})`, () => setShowFeatures((v) => !v))}
+          </Stack>
+        </Stack>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: '8px 24px', mt: 1 }}>
+          <NextSummaryItem kind="task" item={nt} />
+          <NextSummaryItem kind="milestone" item={nm} />
+        </Box>
+      </Box>
+      {panel === 'tasks' ? (
+        <ActivityPanel title="Tasks" Icon={TaskAltIcon} onClose={() => setPanel(null)}>
+          {claim.tasks.length ? (
+            [...claim.tasks].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).map((t) => <TaskCard key={t.id} task={t} />)
+          ) : (
+            <EmptyNote>No tasks.</EmptyNote>
+          )}
+        </ActivityPanel>
+      ) : null}
+      {panel === 'notes' ? (
+        <ActivityPanel title="Notes" Icon={StickyNote2OutlinedIcon} onClose={() => setPanel(null)}>
+          {claim.notes.length ? claim.notes.map((n, i) => <NoteCard key={i} note={n} />) : <EmptyNote>No notes.</EmptyNote>}
+        </ActivityPanel>
+      ) : null}
+      {showFeatures ? (
+        <ActivityPanel title={`My Features (${myFeatures.length})`} Icon={AccountTreeIcon} onClose={() => setShowFeatures(false)}>
+          {myFeatures.length ? (
+            myFeatures.map((f) => {
+              const FeatureIcon = f.typeIcon === 'home_work' ? HomeWorkIcon : HealingIcon
+              return (
+                <Box key={f.id} sx={{ ...cardSx, p: 1.5 }}>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                    <FeatureIcon sx={{ fontSize: 20, color: one.primary }} />
+                    <Typography variant="body2" sx={{ fontWeight: 700, flex: 1 }}>
+                      {featureName(f)}
+                    </Typography>
+                    <Chip size="small" label={f.featureStatus} sx={warningChipSx} />
+                  </Stack>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: '8px 24px' }}>
+                    <NextSummaryItem kind="task" item={nextOpenTask(f)} />
+                    <NextSummaryItem kind="milestone" item={nextMilestone(f)} />
+                  </Box>
+                </Box>
+              )
+            })
+          ) : (
+            <EmptyNote>No Features on this claim are assigned to you.</EmptyNote>
+          )}
+        </ActivityPanel>
+      ) : null}
+    </Box>
+  )
+}
+
+function ClaimList({ items, kind }: { items: HomeClaim[]; kind: 'my' | 'team' }) {
+  const [expanded, setExpanded] = useState(false)
+  const sorted = sortedClaims(items)
+  const visible = expanded ? sorted : sorted.slice(0, HOME_PAGE_SIZE)
+  return (
+    <>
+      {visible.map((c) => (
+        <ClaimCard key={c.claim} claim={c} kind={kind} />
+      ))}
+      {sorted.length > HOME_PAGE_SIZE ? (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <ShowMore
+            expanded={expanded}
+            onClick={() => setExpanded((v) => !v)}
+            more={`Show all ${sorted.length} claims`}
+            less="Show fewer claims"
+          />
+        </Box>
+      ) : null}
+    </>
+  )
+}
+
+/* ---- Schedule ---- */
+type ScheduleSelection = { type: 'pastDue' } | { type: 'day'; date: string }
+
+function Schedule({ claims }: { claims: HomeClaim[] }) {
+  const [weekStart, setWeekStart] = useState(() => mondayFor(parseIsoDate(HOME_TODAY)))
+  const [selection, setSelection] = useState<ScheduleSelection | null>(null)
+  const [showAll, setShowAll] = useState(false)
+  const tasks = claims.flatMap((c) => openTasks(c).map((t) => ({ ...t, claim: c.claim, insured: c.insured })))
+  const miles = claims.flatMap((c) =>
+    c.features.flatMap((f) =>
+      f.milestones.filter((m) => m.status !== 'complete').map((m) => ({ ...m, claim: c.claim, feature: featureName(f) })),
+    ),
+  )
+  const pastDue = tasks.filter((t) => t.dueDate < HOME_TODAY).length + miles.filter((m) => m.dueDate < HOME_TODAY).length
+  const days = Array.from({ length: 5 }, (_, i) => addDays(weekStart, i))
+  const currentMonday = isoDate(mondayFor(parseIsoDate(HOME_TODAY)))
+  const select = (next: ScheduleSelection) => {
+    setShowAll(false)
+    setSelection((current) =>
+      current &&
+      current.type === next.type &&
+      (current.type === 'pastDue' || (next.type === 'day' && current.date === next.date))
+        ? null
+        : next,
+    )
+  }
+  const moveWeek = (start: Date) => {
+    setWeekStart(start)
+    setSelection(null)
+  }
+
+  let detail: ReactNode = null
+  if (selection) {
+    const byDate = (x: { dueDate: string }) => (selection.type === 'pastDue' ? x.dueDate < HOME_TODAY : x.dueDate === selection.date)
+    const vt = tasks.filter(byDate).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    const vm = miles.filter(byDate).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    const total = vt.length + vm.length
+    const budget = showAll ? total : HOME_PAGE_SIZE
+    const shownTasks = vt.slice(0, budget)
+    const shownMiles = vm.slice(0, Math.max(0, budget - shownTasks.length))
+    detail = (
+      <Box sx={{ ...cardSx, mt: 2, p: 2 }}>
+        <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
+          <EventIcon sx={{ mr: 1, color: one.primary }} />
+          <Typography variant="h3" component="h3" sx={{ flex: 1 }}>
+            {selection.type === 'pastDue' ? 'Past Due' : fmtLongDay(parseIsoDate(selection.date))}
+          </Typography>
+          <CloseButton onClick={() => setSelection(null)} label="Close schedule detail" />
+        </Stack>
+        <Typography variant="h5" component="h4" sx={{ mb: 1 }}>
+          Tasks <CountChip label={vt.length} />
+        </Typography>
+        <Stack spacing={1} sx={{ mb: 2 }}>
+          {shownTasks.length ? (
+            shownTasks.map((t) => {
+              const state = dueState(t.dueDate)
+              return (
+                <Box key={`${t.claim}-${t.id}`} sx={{ ...cardSx, p: 1.5, display: 'flex', gap: 2 }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {t.description}
+                    </Typography>
+                    <Stack direction="row" spacing={0.75} alignItems="baseline" sx={{ typography: 'caption' }}>
+                      <ClaimLink>{t.claim}</ClaimLink>
+                      <span>·</span>
+                      <span>{t.insured}</span>
+                    </Stack>
+                    <Typography variant="caption" color="text.secondary">
+                      Assigned to <b>{t.assignedTo}</b>
+                    </Typography>
+                    <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+                      <Chip size="small" label={t.status} sx={warningChipSx} />
+                      {t.tags.map((x) => (
+                        <Chip key={x} size="small" variant="outlined" label={x} sx={tagChipSx} />
+                      ))}
+                    </Stack>
+                  </Box>
+                  <Typography variant="caption" sx={{ color: dueColor(state), fontWeight: 600 }}>
+                    {humanDue(t.dueDate)}
+                  </Typography>
+                </Box>
+              )
+            })
+          ) : (
+            <EmptyNote>No tasks.</EmptyNote>
+          )}
+        </Stack>
+        <Typography variant="h5" component="h4" sx={{ mb: 1 }}>
+          Milestones <CountChip label={vm.length} />
+        </Typography>
+        <Stack spacing={1}>
+          {shownMiles.length ? (
+            shownMiles.map((m) => (
+              <Stack key={m.id} direction="row" spacing={1.5} alignItems="center" sx={{ ...cardSx, p: 1.5 }}>
+                <FlagIcon sx={{ color: 'text.secondary' }} />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <ClaimLink>{m.claim}</ClaimLink>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {m.feature}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {m.label}
+                  </Typography>
+                </Box>
+                <Typography variant="caption" sx={{ color: dueColor(dueState(m.dueDate)), fontWeight: 600 }}>
+                  {humanDue(m.dueDate)}
+                </Typography>
+              </Stack>
+            ))
+          ) : (
+            <EmptyNote>No milestones.</EmptyNote>
+          )}
+        </Stack>
+        {total > HOME_PAGE_SIZE ? (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+            <ShowMore expanded={showAll} onClick={() => setShowAll((v) => !v)} more={`Show all ${total}`} less="Show fewer" />
+          </Box>
+        ) : null}
+      </Box>
+    )
+  }
+
+  return (
+    <Box component="section" aria-labelledby="scheduleTitle" sx={{ mb: 3 }}>
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minHeight: 40, mb: 1.5, flexWrap: 'wrap' }}>
+        <Typography variant="h2" component="h2" id="scheduleTitle">
+          Schedule
+        </Typography>
+        <Chip
+          clickable
+          size="small"
+          variant={selection?.type === 'pastDue' ? 'filled' : 'outlined'}
+          color="primary"
+          label={`${pastDue} Past due`}
+          onClick={() => select({ type: 'pastDue' })}
+        />
+        <Box sx={{ flex: 1 }} />
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <IconButton size="small" aria-label="Previous work week" onClick={() => moveWeek(addDays(weekStart, -7))} sx={{ bgcolor: one.primaryHover }}>
+            <ChevronLeftIcon fontSize="small" />
+          </IconButton>
+          {isoDate(weekStart) !== currentMonday ? (
+            <Button size="small" onClick={() => moveWeek(mondayFor(parseIsoDate(HOME_TODAY)))}>
+              Today
+            </Button>
+          ) : null}
+          <Typography variant="subtitle2" component="span">
+            {`${fmtMonthDayLong(days[0])} – ${fmtMonthDayLong(days[4])}`}
+          </Typography>
+          <IconButton size="small" aria-label="Next work week" onClick={() => moveWeek(addDays(weekStart, 7))} sx={{ bgcolor: one.primaryHover }}>
+            <ChevronRightIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+      </Stack>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(5, minmax(0, 1fr))' }, gap: 2 }}>
+        {days.map((day) => {
+          const date = isoDate(day)
+          const tc = tasks.filter((t) => t.dueDate === date).length
+          const mc = miles.filter((m) => m.dueDate === date).length
+          const isToday = date === HOME_TODAY
+          const selected = selection?.type === 'day' && selection.date === date
+          return (
+            <ButtonBase
+              key={date}
+              onClick={() => select({ type: 'day', date })}
+              aria-pressed={selected}
+              sx={{
+                ...cardSx,
+                display: 'block',
+                textAlign: 'left',
+                p: selected ? 'calc(12px - 1px)' : 1.5,
+                ...(selected ? { border: 2, borderColor: one.primary } : {}),
+                '&:hover': { bgcolor: one.primaryHover },
+              }}
+            >
+              <Stack direction="row" justifyContent="space-between" alignItems="baseline">
+                <Typography variant="subtitle2" component="span" color="text.secondary">
+                  {day.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}
+                </Typography>
+                <Typography variant="h3" component="span" sx={{ color: isToday ? one.primary : one.textPrimary }}>
+                  {day.getUTCDate()}
+                </Typography>
+              </Stack>
+              <Typography variant="caption" sx={{ display: 'block', minHeight: 20, color: one.primary, fontWeight: 600 }}>
+                {isToday ? 'Today' : ''}
+              </Typography>
+              <Typography variant="body2" component="div">
+                {tc} task{tc === 1 ? '' : 's'}
+              </Typography>
+              <Typography variant="body2" component="div" color="text.secondary">
+                {mc} milestone{mc === 1 ? '' : 's'}
+              </Typography>
+            </ButtonBase>
+          )
+        })}
+      </Box>
+      {detail}
+    </Box>
+  )
+}
+
+/* ---- Approvals ---- */
+type ApprovalPanel = 'notes' | 'attachments' | 'approve' | 'reject'
+
+function Approvals({ onCopilot }: { onCopilot: () => void }) {
+  const [items, setItems] = useState(initialApprovals)
+  const [panels, setPanels] = useState<Record<string, ApprovalPanel | null>>({})
+  const [comments, setComments] = useState<Record<string, string>>({})
+  const [showAll, setShowAll] = useState(false)
+  const pending = items.filter((a) => a.status === 'Pending').sort((a, b) => a.requested.localeCompare(b.requested))
+  const visible = showAll ? pending : pending.slice(0, HOME_PAGE_SIZE)
+  const setPanel = (id: string, panel: ApprovalPanel) =>
+    setPanels((current) => ({ ...current, [id]: current[id] === panel ? null : panel }))
+  return (
+    <Box component="section" sx={{ mb: 3 }}>
+      <ModuleHeader title="Approvals">
+        <InsightsButton count={pending.length} onClick={onCopilot} />
+      </ModuleHeader>
+      {pending.length === 0 ? (
+        <EmptyNote>No pending approvals.</EmptyNote>
+      ) : (
+        visible.map((a) => {
+          const panel = panels[a.id]
+          return (
+            <Box key={a.id} sx={{ ...cardSx, p: 2, mb: 2 }}>
+              <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }}>
+                <Stack direction="row" spacing={2} alignItems="baseline" flexWrap="wrap" useFlexGap>
+                  <Typography variant="h4" component="span">
+                    {a.type}
+                  </Typography>
+                  <Typography variant="h2" component="span">{`$${a.amount.toLocaleString()}`}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {`Requesting ${fmtMonthDayLong(parseIsoDate(a.requested))}`}
+                  </Typography>
+                </Stack>
+                <Stack direction="row">
+                  <Button size="small" startIcon={<StickyNote2OutlinedIcon sx={{ fontSize: 16 }} />} onClick={() => setPanel(a.id, 'notes')}>
+                    {`Linked notes (${a.notes.length})`}
+                  </Button>
+                  <Button size="small" startIcon={<DescriptionIcon sx={{ fontSize: 16 }} />} onClick={() => setPanel(a.id, 'attachments')}>
+                    {`Linked docs (${a.attachments.length})`}
+                  </Button>
+                </Stack>
+              </Stack>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' }, gap: 2, my: 2 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Claim
+                  </Typography>
+                  <ClaimLink>{a.claim}</ClaimLink>
+                </Box>
+                {(
+                  [
+                    ['Feature', a.feature],
+                    ['Requestor', a.requestor],
+                    ['Reason', a.reason],
+                  ] as const
+                ).map(([term, value]) => (
+                  <Box key={term}>
+                    <Typography variant="body2" color="text.secondary">
+                      {term}
+                    </Typography>
+                    <Typography variant="body2">{value}</Typography>
+                  </Box>
+                ))}
+              </Box>
+              <Stack direction="row" justifyContent="flex-end" spacing={1}>
+                <Button size="small" startIcon={<CloseIcon />} onClick={() => setPanel(a.id, 'reject')}>
+                  Reject
+                </Button>
+                <Button size="small" variant="outlined" startIcon={<CheckCircleOutlineIcon />} onClick={() => setPanel(a.id, 'approve')}>
+                  Approve
+                </Button>
+              </Stack>
+              {panel === 'notes' ? (
+                <ActivityPanel title="Notes" Icon={StickyNote2OutlinedIcon} onClose={() => setPanel(a.id, 'notes')}>
+                  {a.notes.map((n, i) => (
+                    <NoteCard key={i} note={n} />
+                  ))}
+                </ActivityPanel>
+              ) : null}
+              {panel === 'attachments' ? (
+                <ActivityPanel title="Attachments" Icon={DescriptionIcon} onClose={() => setPanel(a.id, 'attachments')}>
+                  {a.attachments.map((x) => (
+                    <Stack key={x.name} direction="row" spacing={1.5} alignItems="center" sx={{ ...cardSx, p: 1.5 }}>
+                      <DescriptionIcon sx={{ color: 'text.secondary' }} />
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {x.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {x.type} · {x.date}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  ))}
+                </ActivityPanel>
+              ) : null}
+              {panel === 'approve' || panel === 'reject' ? (
+                <ActivityPanel
+                  title={`${panel === 'approve' ? 'Approve' : 'Reject'} Approval`}
+                  Icon={panel === 'approve' ? CheckCircleOutlineIcon : CancelOutlinedIcon}
+                  onClose={() => setPanel(a.id, panel)}
+                >
+                  <TextField
+                    size="small"
+                    multiline
+                    minRows={2}
+                    label="Comment"
+                    placeholder="Add a comment…"
+                    value={comments[a.id] ?? ''}
+                    onChange={(event) => setComments((current) => ({ ...current, [a.id]: event.target.value }))}
+                  />
+                  <Stack direction="row" justifyContent="flex-end" spacing={1}>
+                    <Button size="small" onClick={() => setPanel(a.id, panel)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={() => {
+                        setItems((current) =>
+                          current.map((x) =>
+                            x.id === a.id
+                              ? { ...x, status: panel === 'approve' ? 'Approved' : 'Rejected', decisionComment: comments[a.id] ?? '' }
+                              : x,
+                          ),
+                        )
+                        setPanels((current) => ({ ...current, [a.id]: null }))
+                      }}
+                    >
+                      Save
+                    </Button>
+                  </Stack>
+                </ActivityPanel>
+              ) : null}
+            </Box>
+          )
+        })
+      )}
+      {pending.length > HOME_PAGE_SIZE ? (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <ShowMore expanded={showAll} onClick={() => setShowAll((v) => !v)} more={`Show all ${pending.length}`} less="Show fewer" />
+        </Box>
+      ) : null}
+    </Box>
+  )
+}
+
+/* ---- Claim Alerts ---- */
+type AlertFilter = 'active' | 'inactive' | 'all'
+
+function ClaimAlerts({ claims, onCopilot }: { claims: HomeClaim[]; onCopilot: () => void }) {
+  const [filter, setFilter] = useState<AlertFilter>('active')
+  const [overrides, setOverrides] = useState<Record<string, boolean>>({})
+  const [showAll, setShowAll] = useState(false)
+  const scope = new Set(claims.map((c) => c.claim))
+  const all = claimAlerts.filter((a) => scope.has(a.claimNumber))
+  const isActive = (a: (typeof all)[number]) => (a.id in overrides ? overrides[a.id] : a.active)
+  const nActive = all.filter(isActive).length
+  const rows = all.filter((a) => (filter === 'all' ? true : filter === 'active' ? isActive(a) : !isActive(a)))
+  const visible = showAll ? rows : rows.slice(0, HOME_PAGE_SIZE)
+  return (
+    <Box component="section" sx={{ mb: 3 }}>
+      <ModuleHeader title="Claim Alerts" count={nActive}>
+        <InsightsButton count={nActive} onClick={onCopilot} />
+      </ModuleHeader>
+      <Tabs
+        value={filter}
+        onChange={(_, v: AlertFilter) => {
+          setFilter(v)
+          setShowAll(false)
+        }}
+        sx={{ borderBottom: 1, borderColor: one.divider, mb: 1.5 }}
+      >
+        <Tab value="active" label={`Active (${nActive})`} />
+        <Tab value="inactive" label="Inactive" />
+        <Tab value="all" label="All" />
+      </Tabs>
+      {rows.length ? (
+        visible.map((a) => {
+          const active = isActive(a)
+          return (
+            <Stack
+              key={a.id}
+              role="alert"
+              direction="row"
+              spacing={1.5}
+              alignItems="center"
+              sx={{ ...cardSx, mb: 1, px: 1.5, py: 1, borderLeft: 4, borderLeftColor: active ? one.error : one.success, typography: 'body2' }}
+            >
+              <IconButton
+                size="small"
+                aria-label={`${active ? 'Deactivate' : 'Reactivate'} alert`}
+                onClick={() => setOverrides((current) => ({ ...current, [a.id]: !active }))}
+                sx={{ color: active ? one.error : one.success }}
+              >
+                {active ? <ErrorOutlineIcon fontSize="small" /> : <CheckCircleOutlineIcon fontSize="small" />}
+              </IconButton>
+              <Stack direction="row" spacing={1.5} alignItems="baseline">
+                <ClaimLink>{a.claimNumber}</ClaimLink>
+                <span>{a.description}</span>
+              </Stack>
+            </Stack>
+          )
+        })
+      ) : (
+        <EmptyNote>{`No ${filter === 'all' ? '' : `${filter} `}claim alerts.`}</EmptyNote>
+      )}
+      {rows.length > HOME_PAGE_SIZE ? (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <ShowMore expanded={showAll} onClick={() => setShowAll((v) => !v)} more={`Show all ${rows.length}`} less="Show fewer" />
+        </Box>
+      ) : null}
+    </Box>
+  )
+}
+
+/* ---- My Claims / Team Claims ---- */
+type MyClaimsTab = 'my' | 'fnol' | 'unassigned'
+
+function MyClaims({ claims, onCopilot }: { claims: HomeClaim[]; onCopilot: () => void }) {
+  const [tab, setTab] = useState<MyClaimsTab>('my')
+  return (
+    <Box component="section" sx={{ mb: 3 }}>
+      <ModuleHeader title="My Claims">
+        <InsightsButton count={claims.length} onClick={onCopilot} />
+      </ModuleHeader>
+      <Tabs value={tab} onChange={(_, v: MyClaimsTab) => setTab(v)} sx={{ borderBottom: 1, borderColor: one.divider, mb: 1.5 }}>
+        <Tab value="my" label="My claims" />
+        <Tab value="fnol" label="Pending FNOL" />
+        <Tab value="unassigned" label="Unassigned claims" />
+      </Tabs>
+      {tab === 'my' ? (
+        <ClaimList items={claims} kind="my" />
+      ) : (
+        <EmptyNote>{tab === 'fnol' ? 'No pending FNOL submissions.' : 'No unassigned claims.'}</EmptyNote>
+      )}
+    </Box>
+  )
+}
+
+function TeamClaims({ claims }: { claims: HomeClaim[] }) {
+  return (
+    <Box component="section" sx={{ mb: 3 }}>
+      <ModuleHeader title="Team Claims" count={claims.length} />
+      <ClaimList items={claims} kind="team" />
+    </Box>
+  )
+}
+
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
+const MY_CLAIMS = homeClaims.injury
+const TEAM_CLAIMS = [...homeClaims.injury, ...homeClaims.property]
+
+/** Joan's claims home. New Claim opens the shell's Create claim drawer, the same one as + → Claim. */
+export function ClaimsHomePage() {
+  const { openTool } = useRightToolDispatch()
+  const { copilotView, agenticPrompt } = useGlobalSearch()
+  const [notice, setNotice] = useState<string | null>(null)
+  const contentPx = `${layoutTokens.contentPaddingX}px`
+  const openCopilot = () => openTool('copilot')
+
+  useRegisterRightToolCopilot({ context: 'global', globalView: copilotView, agenticPrompt }, [copilotView, agenticPrompt])
+
+  return (
+    <NoticeContext.Provider value={setNotice}>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', bgcolor: 'background.paper' }}>
+        <Box sx={{ px: contentPx, pt: layoutTokens.policyHeaderTopPadding, pb: 6 }}>
+          <Typography variant="h1" component="h1" sx={{ mb: 2 }}>
+            {`${getGreeting()}, ${HOME_PERSONA.name.split(' ')[0]}`}
+          </Typography>
+          <Box component="section" aria-label="Actions" sx={{ mb: 3 }}>
+            <Button
+              variant="outlined"
+              startIcon={<AddIcon />}
+              onClick={() => openTool('newClaim')}
+              sx={{ color: one.primary, borderColor: one.primaryOutlinedBorder, '&:hover': { borderColor: one.primary, bgcolor: one.primaryHover } }}
+            >
+              New Claim
+            </Button>
+          </Box>
+          <DailyBrief />
+          <KeyMetrics onCopilot={openCopilot} />
+          <Schedule claims={MY_CLAIMS} />
+          <Approvals onCopilot={openCopilot} />
+          <ClaimAlerts claims={MY_CLAIMS} onCopilot={openCopilot} />
+          <MyClaims claims={MY_CLAIMS} onCopilot={openCopilot} />
+          <TeamClaims claims={TEAM_CLAIMS} />
+        </Box>
+      </Box>
+      <Snackbar open={notice != null} autoHideDuration={3500} onClose={() => setNotice(null)} message={notice} />
+    </NoticeContext.Provider>
+  )
+}
