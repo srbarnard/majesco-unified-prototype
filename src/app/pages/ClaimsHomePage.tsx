@@ -32,6 +32,7 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import ButtonBase from '@mui/material/ButtonBase'
 import Chip from '@mui/material/Chip'
+import Collapse from '@mui/material/Collapse'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
@@ -43,7 +44,7 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import type { SvgIconComponent } from '@mui/icons-material'
-import { Fragment, createContext, useContext, useState, type ReactNode } from 'react'
+import { Fragment, createContext, useContext, useRef, useState, type ReactNode } from 'react'
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useGlobalSearch } from '@/app/contexts/GlobalSearchContext'
 import { useRightToolDispatch } from '@/app/contexts/RightToolContext'
@@ -202,6 +203,17 @@ function ShowMore({
   )
 }
 
+/** Same height motion as the drawer accordions (MuiCollapse uses the drawer timing). */
+function Reveal({ open, children, sx }: { open: boolean; children: ReactNode; sx?: object }) {
+  const latest = useRef(children)
+  if (children) latest.current = children
+  return (
+    <Collapse in={open} appear unmountOnExit sx={sx}>
+      {open ? children : latest.current}
+    </Collapse>
+  )
+}
+
 function InsightsButton({ count, onClick }: { count: number; onClick: () => void }) {
   return (
     <Button size="small" startIcon={<AutoAwesomeIcon sx={{ fontSize: 16 }} />} onClick={onClick}>
@@ -343,7 +355,8 @@ function DailyBrief() {
   const [expanded, setExpanded] = useState(false)
   const closure = Number(String(claimManagementMetrics.find((m) => m.id === 'closureRate')?.value ?? '').replace('%', ''))
   const pct = Number.isFinite(closure) && closure > 0 ? Math.round(closure) : 75
-  const items = expanded ? escalations : escalations.slice(0, 3)
+  const attentionHead = escalations.slice(0, 3)
+  const attentionMore = escalations.slice(3)
   const sectionTitle = (text: string) => (
     <Typography variant="h4" component="h3" sx={{ mb: 1 }}>
       {text}
@@ -395,7 +408,7 @@ function DailyBrief() {
         <Box sx={{ px: 1 }}>
           {sectionTitle(`Needs attention (${escalations.length})`)}
           <Stack component="ul" spacing={1} sx={{ m: 0, p: 0, listStyle: 'none' }}>
-            {items.map((x) => (
+            {attentionHead.map((x) => (
               <Stack component="li" key={x.claim} direction="row" spacing={1} alignItems="baseline" sx={{ typography: 'body2' }}>
                 <Box sx={{ flexShrink: 0 }}>
                   <ClaimLink>{x.claim}</ClaimLink>
@@ -403,6 +416,18 @@ function DailyBrief() {
                 <span>{x.description}</span>
               </Stack>
             ))}
+            <Reveal open={expanded}>
+              <Stack component="ul" spacing={1} sx={{ m: 0, p: 0, listStyle: 'none' }}>
+                {attentionMore.map((x) => (
+                  <Stack component="li" key={x.claim} direction="row" spacing={1} alignItems="baseline" sx={{ typography: 'body2' }}>
+                    <Box sx={{ flexShrink: 0 }}>
+                      <ClaimLink>{x.claim}</ClaimLink>
+                    </Box>
+                    <span>{x.description}</span>
+                  </Stack>
+                ))}
+              </Stack>
+            </Reveal>
           </Stack>
         </Box>
       </Box>
@@ -699,7 +724,9 @@ function AgentPanel({ metric, onClose }: { metric: ClaimMetric; onClose: () => v
 function KeyMetrics({ onCopilot }: { onCopilot: () => void }) {
   const [expanded, setExpanded] = useState(false)
   const [agentId, setAgentId] = useState<string | null>(null)
-  const visible = expanded ? claimManagementMetrics : claimManagementMetrics.slice(0, 4)
+  const metricHead = claimManagementMetrics.slice(0, 4)
+  const metricMore = claimManagementMetrics.slice(4)
+  const visibleCount = expanded ? claimManagementMetrics.length : metricHead.length
   const agentMetric = claimManagementMetrics.find((m) => m.id === agentId)
   const onAction = (metric: ClaimMetric) => {
     if (metric.actionType === 'copilot') onCopilot()
@@ -707,7 +734,7 @@ function KeyMetrics({ onCopilot }: { onCopilot: () => void }) {
   }
   return (
     <Box component="section" aria-labelledby="keyMetricsTitle" sx={{ mb: 3 }}>
-      <ModuleHeader title="Key Metrics" id="keyMetricsTitle" count={`${visible.length} Metrics`}>
+      <ModuleHeader title="Key Metrics" id="keyMetricsTitle" count={`${visibleCount} Metrics`}>
         {claimManagementMetrics.length > 4 ? (
           <ShowMore
             expanded={expanded}
@@ -719,11 +746,20 @@ function KeyMetrics({ onCopilot }: { onCopilot: () => void }) {
         ) : null}
       </ModuleHeader>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: `${figmaSpacing[2]}px` }}>
-        {visible.map((m) => (
+        {metricHead.map((m) => (
           <MetricCard key={m.id} metric={m} onAction={onAction} />
         ))}
+        <Reveal open={expanded} sx={{ gridColumn: '1 / -1' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: `${figmaSpacing[2]}px` }}>
+            {metricMore.map((m) => (
+              <MetricCard key={m.id} metric={m} onAction={onAction} />
+            ))}
+          </Box>
+        </Reveal>
       </Box>
-      {agentMetric ? <AgentPanel metric={agentMetric} onClose={() => setAgentId(null)} /> : null}
+      <Reveal open={agentMetric != null}>
+        {agentMetric ? <AgentPanel metric={agentMetric} onClose={() => setAgentId(null)} /> : null}
+      </Reveal>
     </Box>
   )
 }
@@ -858,7 +894,7 @@ function ClaimCard({ claim, kind }: { claim: HomeClaim; kind: 'my' | 'team' }) {
           <NextSummaryItem kind="milestone" item={nm} />
         </Box>
       </Box>
-      {panel === 'tasks' ? (
+      <Reveal open={panel === 'tasks'}>
         <ActivityPanel title="Tasks" Icon={TaskAltIcon} onClose={() => setPanel(null)}>
           {claim.tasks.length ? (
             [...claim.tasks].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).map((t) => <TaskCard key={t.id} task={t} />)
@@ -866,13 +902,13 @@ function ClaimCard({ claim, kind }: { claim: HomeClaim; kind: 'my' | 'team' }) {
             <EmptyNote>No tasks.</EmptyNote>
           )}
         </ActivityPanel>
-      ) : null}
-      {panel === 'notes' ? (
+      </Reveal>
+      <Reveal open={panel === 'notes'}>
         <ActivityPanel title="Notes" Icon={StickyNote2OutlinedIcon} onClose={() => setPanel(null)}>
           {claim.notes.length ? claim.notes.map((n, i) => <NoteCard key={i} note={n} />) : <EmptyNote>No notes.</EmptyNote>}
         </ActivityPanel>
-      ) : null}
-      {showFeatures ? (
+      </Reveal>
+      <Reveal open={showFeatures}>
         <ActivityPanel title={`My Features (${myFeatures.length})`} Icon={AccountTreeIcon} onClose={() => setShowFeatures(false)}>
           {myFeatures.length ? (
             myFeatures.map((f) => {
@@ -897,7 +933,7 @@ function ClaimCard({ claim, kind }: { claim: HomeClaim; kind: 'my' | 'team' }) {
             <EmptyNote>No Features on this claim are assigned to you.</EmptyNote>
           )}
         </ActivityPanel>
-      ) : null}
+      </Reveal>
     </Box>
   )
 }
@@ -905,13 +941,21 @@ function ClaimCard({ claim, kind }: { claim: HomeClaim; kind: 'my' | 'team' }) {
 function ClaimList({ items, kind }: { items: HomeClaim[]; kind: 'my' | 'team' }) {
   const [expanded, setExpanded] = useState(false)
   const sorted = sortedClaims(items)
-  const visible = expanded ? sorted : sorted.slice(0, HOME_PAGE_SIZE)
+  const claimHead = sorted.slice(0, HOME_PAGE_SIZE)
+  const claimMore = sorted.slice(HOME_PAGE_SIZE)
   return (
     <>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: `${figmaSpacing[2]}px`, alignItems: 'start' }}>
-        {visible.map((c) => (
+        {claimHead.map((c) => (
           <ClaimCard key={c.claim} claim={c} kind={kind} />
         ))}
+        <Reveal open={expanded} sx={{ gridColumn: '1 / -1' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: `${figmaSpacing[2]}px`, alignItems: 'start' }}>
+            {claimMore.map((c) => (
+              <ClaimCard key={c.claim} claim={c} kind={kind} />
+            ))}
+          </Box>
+        </Reveal>
       </Box>
       {sorted.length > HOME_PAGE_SIZE ? (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -1212,14 +1256,14 @@ function Approvals({ onInsights }: { onInsights: (insight: SectionInsight) => vo
                   Approve
                 </Button>
               </Stack>
-              {panel === 'notes' ? (
+              <Reveal open={panel === 'notes'}>
                 <ActivityPanel title="Notes" Icon={StickyNote2OutlinedIcon} onClose={() => setPanel(a.id, 'notes')}>
                   {a.notes.map((n, i) => (
                     <NoteCard key={i} note={n} />
                   ))}
                 </ActivityPanel>
-              ) : null}
-              {panel === 'attachments' ? (
+              </Reveal>
+              <Reveal open={panel === 'attachments'}>
                 <ActivityPanel title="Attachments" Icon={DescriptionIcon} onClose={() => setPanel(a.id, 'attachments')}>
                   {a.attachments.map((x) => (
                     <Stack key={x.name} direction="row" spacing={1.5} alignItems="center" sx={{ ...cardSx, p: 1.5 }}>
@@ -1235,8 +1279,9 @@ function Approvals({ onInsights }: { onInsights: (insight: SectionInsight) => vo
                     </Stack>
                   ))}
                 </ActivityPanel>
-              ) : null}
-              {panel === 'approve' || panel === 'reject' ? (
+              </Reveal>
+              <Reveal open={panel === 'approve' || panel === 'reject'}>
+                {panel === 'approve' || panel === 'reject' ? (
                 <ActivityPanel
                   title={`${panel === 'approve' ? 'Approve' : 'Reject'} Approval`}
                   Icon={panel === 'approve' ? CheckCircleOutlineIcon : CancelOutlinedIcon}
@@ -1273,7 +1318,8 @@ function Approvals({ onInsights }: { onInsights: (insight: SectionInsight) => vo
                     </Button>
                   </Stack>
                 </ActivityPanel>
-              ) : null}
+                ) : null}
+              </Reveal>
             </Box>
           )
         })}

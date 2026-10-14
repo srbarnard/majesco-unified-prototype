@@ -22,6 +22,7 @@ import Typography from '@mui/material/Typography'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { StatusChip } from '@/design-system/components'
+import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -582,12 +583,12 @@ function NeededItem<F extends string>({
       ) : (
         <Box sx={{ ...lineSx, color: 'text.primary' }}>{line}</Box>
       )}
-      {row.extra || children ? (
-        <Box sx={{ pl: 7.25, pr: 2, pb: 2, pt: 0.5 }}>
-          {row.extra}
-          {children ? <Box sx={{ mt: row.extra ? 0.75 : 0 }}>{children}</Box> : null}
-        </Box>
+      {row.extra ? (
+        <Box sx={{ pl: 7.25, pr: 2, pb: 2, pt: 0.5 }}>{row.extra}</Box>
       ) : null}
+      <Collapse in={Boolean(children)} appear unmountOnExit>
+        <Box sx={{ pl: 7.25, pr: 2, pb: 2, pt: row.extra ? 0 : 0.5 }}>{children}</Box>
+      </Collapse>
     </Box>
   )
 }
@@ -967,7 +968,7 @@ export function DraftDrawerShell({
           overscrollBehavior: 'contain',
         }}
       >
-        {tab === 'history' ? history : children}
+        <CopilotContentTransition contentKey={tab}>{tab === 'history' ? history : children}</CopilotContentTransition>
       </Box>
 
       <Box sx={{ display: tab === 'new' ? 'contents' : 'none' }}>

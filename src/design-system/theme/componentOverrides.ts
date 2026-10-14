@@ -66,6 +66,12 @@ export const componentOverrides: ThemeOptions['components'] = {
       },
     },
   },
+  MuiCollapse: {
+    defaultProps: {
+      timeout: drawerTransitionDuration,
+      easing: drawerTransitionEasing,
+    },
+  },
   MuiDrawer: {
     defaultProps: {
       slots: {
