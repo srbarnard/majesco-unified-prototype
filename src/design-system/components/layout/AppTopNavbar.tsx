@@ -2,7 +2,9 @@ import MenuIcon from '@mui/icons-material/Menu'
 import AddIcon from '@mui/icons-material/Add'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import CheckIcon from '@mui/icons-material/Check'
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
 import SearchIcon from '@mui/icons-material/Search'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
@@ -10,9 +12,11 @@ import AppBar from '@mui/material/AppBar'
 import Avatar from '@mui/material/Avatar'
 import Badge from '@mui/material/Badge'
 import Box from '@mui/material/Box'
+import ButtonBase from '@mui/material/ButtonBase'
 import Collapse from '@mui/material/Collapse'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
+import ListItemText from '@mui/material/ListItemText'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
@@ -62,6 +66,8 @@ const ALL_CREATE_MENU_ITEMS: CreateMenuItem[] = [
 
 const CREATE_MENU_ITEMS = ALL_CREATE_MENU_ITEMS.filter((item) => !CLAIMS_ONLY || item.tool === 'newClaim')
 
+const PRODUCT_ITEMS = ['Policy', 'Claims', 'Billing'] as const
+
 /** Prototype unread count for account avatar + Notifications menu badge. */
 const UNREAD_NOTIFICATION_COUNT = 3
 
@@ -106,6 +112,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
   const { openTool } = useRightToolDispatch()
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [createMenuAnchor, setCreateMenuAnchor] = useState<null | HTMLElement>(null)
+  const [productMenuAnchor, setProductMenuAnchor] = useState<null | HTMLElement>(null)
   const [settingsMenuAnchor, setSettingsMenuAnchor] = useState<null | HTMLElement>(null)
   const [accountMenuAnchor, setAccountMenuAnchor] = useState<null | HTMLElement>(null)
   const { canGoBack, canGoForward, goBack, goForward } = useBrowserHistoryNavigation()
@@ -178,18 +185,75 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
             alt="Majesco"
             sx={{ width: 28, height: 28, objectFit: 'contain' }}
           />
-          <Typography
-            component="span"
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9375rem',
-              display: { xs: 'none', sm: 'block' },
-              py: 0.5,
-              userSelect: 'none',
-            }}
-          >
-            P&amp;C Policy
-          </Typography>
+          {CLAIMS_ONLY ? (
+            <>
+              <ButtonBase
+                aria-label="Switch product, current: P&C Claims"
+                aria-haspopup="true"
+                aria-expanded={Boolean(productMenuAnchor)}
+                onClick={(event) => setProductMenuAnchor(event.currentTarget)}
+                sx={{
+                  display: { xs: 'none', sm: 'inline-flex' },
+                  alignItems: 'center',
+                  gap: 0.25,
+                  py: 0.5,
+                  pl: 0.5,
+                  pr: 0.25,
+                  borderRadius: 1,
+                  '&:hover': { bgcolor: 'action.hover' },
+                }}
+              >
+                <Typography component="span" sx={{ fontWeight: 600, fontSize: '0.9375rem' }}>
+                  P&amp;C Claims
+                </Typography>
+                <KeyboardArrowDownIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+              </ButtonBase>
+              <Menu
+                anchorEl={productMenuAnchor}
+                open={Boolean(productMenuAnchor)}
+                onClose={() => setProductMenuAnchor(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                slotProps={{ paper: { sx: navMenuPaperSx } }}
+              >
+                {PRODUCT_ITEMS.map((product) => {
+                  const current = product === 'Claims'
+                  return (
+                    <MenuItem
+                      key={product}
+                      selected={current}
+                      disabled={!current}
+                      onClick={() => setProductMenuAnchor(null)}
+                      sx={accountMenuItemSx}
+                    >
+                      <ListItemText
+                        primary={`P&C ${product}`}
+                        secondary={current ? null : 'Not in this preview'}
+                        slotProps={{
+                          primary: { sx: { fontSize: '0.875rem', fontWeight: current ? 600 : 400 } },
+                          secondary: { sx: { fontSize: '0.75rem' } },
+                        }}
+                      />
+                      {current ? <CheckIcon fontSize="small" sx={{ ml: 2, color: 'primary.main' }} /> : null}
+                    </MenuItem>
+                  )
+                })}
+              </Menu>
+            </>
+          ) : (
+            <Typography
+              component="span"
+              sx={{
+                fontWeight: 600,
+                fontSize: '0.9375rem',
+                display: { xs: 'none', sm: 'block' },
+                py: 0.5,
+                userSelect: 'none',
+              }}
+            >
+              P&amp;C Policy
+            </Typography>
+          )}
         </Stack>
 
         <Stack
