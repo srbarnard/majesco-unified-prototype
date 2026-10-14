@@ -1116,84 +1116,120 @@ function Schedule({ claims }: { claims: HomeClaim[] }) {
     const budget = showAll ? total : HOME_PAGE_SIZE
     const shownTasks = vt.slice(0, budget)
     const shownMiles = vm.slice(0, Math.max(0, budget - shownTasks.length))
+    const dueMark = (date: string) => {
+      const state = dueState(date)
+      const Icon = state === 'overdue' ? ErrorOutlineIcon : EventIcon
+      return (
+        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: dueColor(state), flexShrink: 0 }}>
+          <Icon sx={{ fontSize: 16 }} />
+          <Typography variant="caption" sx={{ fontWeight: 600, color: 'inherit' }}>
+            {humanDue(date)}
+          </Typography>
+        </Stack>
+      )
+    }
     detail = (
-      <Box sx={{ ...cardSx, mt: 2, p: 2 }}>
-        <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
-          <EventIcon sx={{ mr: 1, color: one.primary }} />
-          <Typography variant="h3" component="h3" sx={{ flex: 1 }}>
+      <Box
+        sx={{
+          mt: 1.5,
+          border: 1,
+          borderColor: agentBorder,
+          borderRadius: one.radius,
+          overflow: 'hidden',
+          bgcolor: (theme) => accentSubtle(theme),
+        }}
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={0.875}
+          sx={{ px: 1.75, py: 1.25, borderBottom: 1, borderColor: agentBorder }}
+        >
+          <EventIcon sx={{ fontSize: 17, color: 'primary.main' }} />
+          <Typography component="h3" sx={{ flex: 1, fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>
             {selection.type === 'pastDue' ? 'Past Due' : fmtLongDay(parseIsoDate(selection.date))}
           </Typography>
           <CloseButton onClick={() => setSelection(null)} label="Close schedule detail" />
         </Stack>
-        <Typography variant="h5" component="h4" sx={{ mb: 1 }}>
-          Tasks <CountChip label={vt.length} />
-        </Typography>
-        <Stack spacing={1} sx={{ mb: 2 }}>
-          {shownTasks.length ? (
-            shownTasks.map((t) => {
-              const state = dueState(t.dueDate)
-              return (
-                <Box key={`${t.claim}-${t.id}`} sx={{ ...cardSx, p: 1.5, display: 'flex', gap: 2 }}>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {t.description}
-                    </Typography>
-                    <Stack direction="row" spacing={0.75} alignItems="baseline" sx={{ typography: 'caption' }}>
-                      <ClaimLink>{t.claim}</ClaimLink>
-                      <span>·</span>
-                      <span>{t.insured}</span>
-                    </Stack>
-                    <Typography variant="caption" color="text.secondary">
-                      Assigned to <b>{t.assignedTo}</b>
-                    </Typography>
-                    <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
-                      <Chip size="small" label={t.status} sx={warningChipSx} />
-                      {t.tags.map((x) => (
-                        <Chip key={x} size="small" variant="outlined" label={x} sx={tagChipSx} />
-                      ))}
-                    </Stack>
+        <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+              <Typography variant="body2" component="h4" sx={{ fontWeight: 700 }}>
+                Tasks
+              </Typography>
+              <CountChip label={vt.length} />
+            </Stack>
+            <Stack spacing={1}>
+              {shownTasks.length ? (
+                shownTasks.map((t) => (
+                  <Box key={`${t.claim}-${t.id}`} sx={{ ...cardSx, p: 1.5, display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {t.description}
+                      </Typography>
+                      <Stack direction="row" spacing={0.75} alignItems="baseline" sx={{ typography: 'caption', color: 'text.secondary', mt: 0.5 }}>
+                        <ClaimLink>{t.claim}</ClaimLink>
+                        <span>·</span>
+                        <span>{t.insured}</span>
+                      </Stack>
+                      <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5, typography: 'caption', color: 'text.secondary' }}>
+                        <PersonIcon sx={{ fontSize: 14 }} />
+                        <span>
+                          Assigned to <b>{t.assignedTo}</b>
+                        </span>
+                      </Stack>
+                      <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+                        <Chip size="small" label={t.status} sx={warningChipSx} />
+                        {t.tags.map((x) => (
+                          <Chip key={x} size="small" variant="outlined" label={x} sx={tagChipSx} />
+                        ))}
+                      </Stack>
+                    </Box>
+                    {dueMark(t.dueDate)}
                   </Box>
-                  <Typography variant="caption" sx={{ color: dueColor(state), fontWeight: 600 }}>
-                    {humanDue(t.dueDate)}
-                  </Typography>
-                </Box>
-              )
-            })
-          ) : (
-            <EmptyNote>No tasks.</EmptyNote>
-          )}
-        </Stack>
-        <Typography variant="h5" component="h4" sx={{ mb: 1 }}>
-          Milestones <CountChip label={vm.length} />
-        </Typography>
-        <Stack spacing={1}>
-          {shownMiles.length ? (
-            shownMiles.map((m) => (
-              <Stack key={m.id} direction="row" spacing={1.5} alignItems="center" sx={{ ...cardSx, p: 1.5 }}>
-                <FlagIcon sx={{ color: 'text.secondary' }} />
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <ClaimLink>{m.claim}</ClaimLink>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {m.feature}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {m.label}
-                  </Typography>
-                </Box>
-                <Typography variant="caption" sx={{ color: dueColor(dueState(m.dueDate)), fontWeight: 600 }}>
-                  {humanDue(m.dueDate)}
-                </Typography>
-              </Stack>
-            ))
-          ) : (
-            <EmptyNote>No milestones.</EmptyNote>
-          )}
-        </Stack>
-        {total > HOME_PAGE_SIZE ? (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
-            <ShowMore expanded={showAll} onClick={() => setShowAll((v) => !v)} more={`Show all ${total}`} less="Show fewer" />
+                ))
+              ) : (
+                <EmptyNote>No tasks.</EmptyNote>
+              )}
+            </Stack>
           </Box>
-        ) : null}
+          <Box>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+              <Typography variant="body2" component="h4" sx={{ fontWeight: 700 }}>
+                Milestones
+              </Typography>
+              <CountChip label={vm.length} />
+            </Stack>
+            <Stack spacing={1}>
+              {shownMiles.length ? (
+                shownMiles.map((m) => (
+                  <Stack key={m.id} direction="row" spacing={1.5} alignItems="center" sx={{ ...cardSx, p: 1.5 }}>
+                    <FlagIcon sx={{ fontSize: 17, color: 'primary.main' }} />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Stack direction="row" spacing={1} alignItems="baseline">
+                        <ClaimLink>{m.claim}</ClaimLink>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                          {m.feature}
+                        </Typography>
+                      </Stack>
+                      <Typography variant="caption" color="text.secondary">
+                        {m.label}
+                      </Typography>
+                    </Box>
+                    {dueMark(m.dueDate)}
+                  </Stack>
+                ))
+              ) : (
+                <EmptyNote>No milestones.</EmptyNote>
+              )}
+            </Stack>
+          </Box>
+          {total > HOME_PAGE_SIZE ? (
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <ShowMore expanded={showAll} onClick={() => setShowAll((v) => !v)} more={`Show all ${total}`} less="Show fewer" />
+            </Box>
+          ) : null}
+        </Box>
       </Box>
     )
   }
@@ -1230,7 +1266,13 @@ function Schedule({ claims }: { claims: HomeClaim[] }) {
           </IconButton>
         </Stack>
       </Stack>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(5, minmax(0, 1fr))' }, gap: 2 }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(5, minmax(0, 1fr))' },
+          gap: `${figmaSpacing[2]}px`,
+        }}
+      >
         {days.map((day) => {
           const date = isoDate(day)
           const tc = tasks.filter((t) => t.dueDate === date).length
@@ -1244,35 +1286,44 @@ function Schedule({ claims }: { claims: HomeClaim[] }) {
               aria-pressed={selected}
               sx={{
                 ...cardSx,
-                display: 'block',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'stretch',
                 textAlign: 'left',
-                p: selected ? 'calc(12px - 1px)' : 1.5,
-                ...(selected ? { border: 2, borderColor: one.primary } : {}),
+                p: selected ? '15px' : 2,
+                borderWidth: selected ? 2 : 1,
+                borderStyle: 'solid',
+                borderColor: selected ? 'primary.main' : 'divider',
+                bgcolor: 'background.paper',
                 '&:hover': { bgcolor: one.primaryHover },
               }}
             >
               <Stack direction="row" justifyContent="space-between" alignItems="baseline">
-                <Typography variant="subtitle2" component="span" color="text.secondary">
+                <Typography variant="body2" component="span">
                   {day.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}
                 </Typography>
-                <Typography variant="h3" component="span" sx={{ color: isToday ? one.primary : one.textPrimary }}>
+                <Typography variant="h3" component="span" color="text.primary">
                   {day.getUTCDate()}
                 </Typography>
               </Stack>
-              <Typography variant="caption" sx={{ display: 'block', minHeight: 20, color: one.primary, fontWeight: 600 }}>
-                {isToday ? 'Today' : ''}
-              </Typography>
-              <Typography variant="body2" component="div">
-                {tc} task{tc === 1 ? '' : 's'}
-              </Typography>
-              <Typography variant="body2" component="div" color="text.secondary">
-                {mc} milestone{mc === 1 ? '' : 's'}
-              </Typography>
+              {isToday ? (
+                <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'primary.main', fontWeight: 600 }}>
+                  Today
+                </Typography>
+              ) : null}
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="body2" component="div" color="text.secondary">
+                  {tc} task{tc === 1 ? '' : 's'}
+                </Typography>
+                <Typography variant="body2" component="div" color="text.secondary">
+                  {mc} milestone{mc === 1 ? '' : 's'}
+                </Typography>
+              </Box>
             </ButtonBase>
           )
         })}
       </Box>
-      {detail}
+      <Reveal open={selection != null}>{detail}</Reveal>
     </Box>
   )
 }
