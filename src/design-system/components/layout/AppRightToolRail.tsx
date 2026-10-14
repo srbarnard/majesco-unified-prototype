@@ -12,12 +12,11 @@ import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
-import { useColorScheme, useTheme } from '@mui/material/styles'
+import { useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router'
-import { CopilotIcon } from '@/design-system/components'
-import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
+import { CopilotMarkIcon } from '@/design-system/icons/CopilotMarkIcon'
 import { useRightTool, type RightToolId } from '@/app/contexts/RightToolContext'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { surfaceSubtle } from '@/design-system/theme/themeSurfaces'
@@ -28,7 +27,7 @@ type ToolDef = {
   icon: 'copilot' | 'notes' | 'email' | 'newTask' | 'newCustomer' | 'newSubmission' | 'newQuote' | 'newClaim' | 'filter' | 'parties' | 'history'
 }
 
-const CHAT_TOOL: ToolDef = { id: 'copilot', label: 'Assistant', icon: 'copilot' }
+const CHAT_TOOL: ToolDef = { id: 'copilot', label: 'Copilot', icon: 'copilot' }
 
 const REORDERABLE_TOOLS: ToolDef[] = [
   { id: 'notes', label: 'Notes', icon: 'notes' },
@@ -64,19 +63,9 @@ function moveTool(order: RightToolId[], dragged: RightToolId, target: RightToolI
   return next
 }
 
-function ToolIcon({
-  kind,
-  active,
-  isDarkMode,
-}: {
-  kind: ToolDef['icon']
-  active: boolean
-  isDarkMode: boolean
-}) {
+function ToolIcon({ kind }: { kind: ToolDef['icon'] }) {
   if (kind === 'copilot') {
-    // Dark mode primary fill is light blue → charcoal mark.
-    // Light mode primary fill is solid blue → white mark.
-    return <CopilotIcon size={22} active={active} inverted={active && !isDarkMode} />
+    return <CopilotMarkIcon sx={{ fontSize: 22 }} />
   }
   if (kind === 'notes') {
     return <StickyNote2OutlinedIcon sx={{ fontSize: 20 }} />
@@ -114,10 +103,7 @@ export function AppRightToolRail() {
   const location = useLocation()
   const isDesktopTools = useMediaQuery(theme.breakpoints.up('lg'))
   const { activeTool, toggleTool, filterContent, partiesContent, historyAvailable } = useRightTool()
-  const { mode, systemMode } = useColorScheme()
-  const resolvedMode = mode === 'system' ? systemMode : mode
-  const isDarkMode = resolvedMode === 'dark'
-  const hideCopilotTool = CLAIMS_ONLY || location.pathname === '/copilot-studio'
+  const hideCopilotTool = location.pathname === '/copilot-studio'
   const [order, setOrder] = useState<RightToolId[]>(readStoredOrder)
   const [draggingId, setDraggingId] = useState<RightToolId | null>(null)
 
@@ -128,7 +114,6 @@ export function AppRightToolRail() {
   const reorderable = order
     .map((id) => REORDERABLE_TOOLS.find((tool) => tool.id === id))
     .filter((tool): tool is ToolDef => Boolean(tool))
-    .filter((tool) => !CLAIMS_ONLY || tool.id === 'newClaim')
 
   const contextTools: ToolDef[] = [
     ...(historyAvailable
@@ -206,7 +191,7 @@ export function AppRightToolRail() {
               },
             })}
           >
-            <ToolIcon kind={tool.icon} active={active} isDarkMode={!!isDarkMode} />
+            <ToolIcon kind={tool.icon} />
           </IconButton>
         </Tooltip>
       </Box>

@@ -35,7 +35,12 @@ import {
 } from '@/design-system/tokens/motion'
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { accentSubtle, surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
-import { moreMenuItems, visibleAppShellNavItems, type NavItem } from '@/design-system/tokens/navigation'
+import {
+  claimsOnlyShellNavItems,
+  moreMenuItems,
+  visibleAppShellNavItems,
+  type NavItem,
+} from '@/design-system/tokens/navigation'
 
 type AppSidebarProps = {
   mobileOpen: boolean
@@ -59,13 +64,16 @@ function isClaimsOnlyNavigable(label: string) {
   return !CLAIMS_ONLY || CLAIMS_ONLY_NAVIGABLE.has(label)
 }
 
+const shellNavItems = CLAIMS_ONLY ? claimsOnlyShellNavItems : visibleAppShellNavItems
+const shellMoreItems = CLAIMS_ONLY ? [] : moreMenuItems
+
 const navItemsByLabel = new Map<string, NavItem>(
-  [...visibleAppShellNavItems, ...moreMenuItems].map((item) => [item.label, item]),
+  [...shellNavItems, ...shellMoreItems].map((item) => [item.label, item]),
 )
 
 const DEFAULT_NAV_ORDER: NavOrder = {
-  main: visibleAppShellNavItems.map((item) => item.label).filter((label) => label !== PINNED_TOP_LABEL),
-  more: moreMenuItems.map((item) => item.label),
+  main: shellNavItems.map((item) => item.label).filter((label) => label !== PINNED_TOP_LABEL),
+  more: shellMoreItems.map((item) => item.label),
 }
 
 function readStoredNavOrder(): NavOrder {
@@ -453,7 +461,7 @@ function SidebarContent({
         {homeItem && renderNavItem(homeItem)}
         {mainItems.map((item) => renderNavItem(item, 'main'))}
 
-        {isDrawer ? (
+        {moreItems.length === 0 ? null : isDrawer ? (
           <>
             <Divider sx={{ my: 1 }} />
             <Typography

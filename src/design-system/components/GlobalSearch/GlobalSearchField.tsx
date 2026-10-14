@@ -12,6 +12,7 @@ type GlobalSearchFieldProps = {
   maxWidth?: number | string
   placeholder?: string
   autoFocus?: boolean
+  showSearchIcon?: boolean
 }
 
 export function GlobalSearchField({
@@ -19,6 +20,7 @@ export function GlobalSearchField({
   maxWidth,
   placeholder = 'Search P&C Policy',
   autoFocus,
+  showSearchIcon = true,
 }: GlobalSearchFieldProps) {
   const { runGlobalSearch } = useGlobalSearch()
   const [query, setQuery] = useState('')
@@ -50,6 +52,7 @@ export function GlobalSearchField({
           value={query}
           onSearchChange={setQuery}
           enableVoice
+          showSearchIcon={showSearchIcon}
           autoFocus={autoFocus}
           onFocus={() => setOpen(true)}
           onKeyDown={(event) => {

@@ -13,6 +13,8 @@ export type SearchFieldProps = Omit<TextFieldProps, 'variant'> & {
   onSearchChange?: (value: string) => void
   /** Enable Web Speech API microphone input. */
   enableVoice?: boolean
+  /** Leading magnifying glass. Patterns search keeps the microphone only. */
+  showSearchIcon?: boolean
   /** Extra icons rendered before the voice button (e.g. add/create). */
   endActions?: React.ReactNode
 }
@@ -23,6 +25,7 @@ export function SearchField({
   onSearchChange,
   onChange,
   enableVoice = false,
+  showSearchIcon = true,
   endActions,
   value,
   slotProps,
@@ -69,11 +72,11 @@ export function SearchField({
           ...slotProps,
           input: {
             ...(typeof inputSlotProps === 'object' ? inputSlotProps : {}),
-            startAdornment: (
+            startAdornment: showSearchIcon ? (
               <InputAdornment position="start">
                 <SearchIcon fontSize="small" color="action" />
               </InputAdornment>
-            ),
+            ) : undefined,
             endAdornment: (enableVoice || endActions) ? (
               <InputAdornment position="end">
                 <Stack direction="row" spacing={0.25} alignItems="center">

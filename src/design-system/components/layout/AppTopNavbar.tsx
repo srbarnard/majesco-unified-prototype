@@ -1,22 +1,19 @@
 import MenuIcon from '@mui/icons-material/Menu'
-import AddIcon from '@mui/icons-material/Add'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
-import CheckIcon from '@mui/icons-material/Check'
+import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined'
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
+import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
 import SearchIcon from '@mui/icons-material/Search'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import AppBar from '@mui/material/AppBar'
 import Avatar from '@mui/material/Avatar'
-import Badge from '@mui/material/Badge'
 import Box from '@mui/material/Box'
-import ButtonBase from '@mui/material/ButtonBase'
+import Button from '@mui/material/Button'
 import Collapse from '@mui/material/Collapse'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
-import ListItemText from '@mui/material/ListItemText'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
@@ -66,9 +63,7 @@ const ALL_CREATE_MENU_ITEMS: CreateMenuItem[] = [
 
 const CREATE_MENU_ITEMS = ALL_CREATE_MENU_ITEMS.filter((item) => !CLAIMS_ONLY || item.tool === 'newClaim')
 
-const PRODUCT_ITEMS = ['Policy', 'Claims', 'Billing'] as const
-
-/** Prototype unread count for account avatar + Notifications menu badge. */
+/** Prototype unread count for the notifications menu. */
 const UNREAD_NOTIFICATION_COUNT = 3
 
 const SETTINGS_MENU_ITEMS = [
@@ -112,7 +107,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
   const { openTool } = useRightToolDispatch()
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [createMenuAnchor, setCreateMenuAnchor] = useState<null | HTMLElement>(null)
-  const [productMenuAnchor, setProductMenuAnchor] = useState<null | HTMLElement>(null)
+  const [notificationMenuAnchor, setNotificationMenuAnchor] = useState<null | HTMLElement>(null)
   const [settingsMenuAnchor, setSettingsMenuAnchor] = useState<null | HTMLElement>(null)
   const [accountMenuAnchor, setAccountMenuAnchor] = useState<null | HTMLElement>(null)
   const { canGoBack, canGoForward, goBack, goForward } = useBrowserHistoryNavigation()
@@ -186,60 +181,18 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
             sx={{ width: 28, height: 28, objectFit: 'contain' }}
           />
           {CLAIMS_ONLY ? (
-            <>
-              <ButtonBase
-                aria-label="Switch product, current: P&C Suite"
-                aria-haspopup="true"
-                aria-expanded={Boolean(productMenuAnchor)}
-                onClick={(event) => setProductMenuAnchor(event.currentTarget)}
-                sx={{
-                  display: { xs: 'none', sm: 'inline-flex' },
-                  alignItems: 'center',
-                  gap: 0.25,
-                  py: 0.5,
-                  pl: 0.5,
-                  pr: 0.25,
-                  borderRadius: 1,
-                  '&:hover': { bgcolor: 'action.hover' },
-                }}
-              >
-                <Typography component="span" sx={{ fontWeight: 600, fontSize: '0.9375rem' }}>
-                  P&amp;C Suite
-                </Typography>
-                <KeyboardArrowDownIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-              </ButtonBase>
-              <Menu
-                anchorEl={productMenuAnchor}
-                open={Boolean(productMenuAnchor)}
-                onClose={() => setProductMenuAnchor(null)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                slotProps={{ paper: { sx: navMenuPaperSx } }}
-              >
-                {PRODUCT_ITEMS.map((product) => {
-                  const current = product === 'Claims'
-                  return (
-                    <MenuItem
-                      key={product}
-                      selected={current}
-                      disabled={!current}
-                      onClick={() => setProductMenuAnchor(null)}
-                      sx={accountMenuItemSx}
-                    >
-                      <ListItemText
-                        primary={`P&C ${product}`}
-                        secondary={current ? null : 'Not in this preview'}
-                        slotProps={{
-                          primary: { sx: { fontSize: '0.875rem', fontWeight: current ? 600 : 400 } },
-                          secondary: { sx: { fontSize: '0.75rem' } },
-                        }}
-                      />
-                      {current ? <CheckIcon fontSize="small" sx={{ ml: 2, color: 'primary.main' }} /> : null}
-                    </MenuItem>
-                  )
-                })}
-              </Menu>
-            </>
+            <Typography
+              component="span"
+              sx={{
+                fontWeight: 600,
+                fontSize: '0.9375rem',
+                display: { xs: 'none', sm: 'block' },
+                py: 0.5,
+                userSelect: 'none',
+              }}
+            >
+              P&amp;C Suite
+            </Typography>
           ) : (
             <Typography
               component="span"
@@ -295,19 +248,28 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
           </Stack>
 
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            {CLAIMS_ONLY ? null : <GlobalSearchField fullWidth />}
+            <GlobalSearchField
+              fullWidth
+              placeholder={CLAIMS_ONLY ? '' : undefined}
+              showSearchIcon={!CLAIMS_ONLY}
+            />
           </Box>
 
-          <IconButton
-            size="small"
-            aria-label="Create new"
+          <Button
+            color="primary"
             aria-haspopup="true"
             aria-expanded={Boolean(createMenuAnchor)}
             onClick={(event) => setCreateMenuAnchor(event.currentTarget)}
-            sx={{ flexShrink: 0 }}
+            sx={{
+              flexShrink: 0,
+              textTransform: 'none',
+              fontWeight: 600,
+              minWidth: 0,
+              px: 1,
+            }}
           >
-            <AddIcon fontSize="small" />
-          </IconButton>
+            Create new
+          </Button>
         </Stack>
 
         <Stack
@@ -325,20 +287,25 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
             size="small"
             aria-label="Open search"
             onClick={() => setMobileSearchOpen((open) => !open)}
-            sx={{ display: CLAIMS_ONLY ? 'none' : { xs: 'inline-flex', lg: 'none' } }}
+            sx={{ display: { xs: 'inline-flex', lg: 'none' } }}
           >
             <SearchIcon fontSize="small" />
           </IconButton>
-          <IconButton
-            size="small"
-            aria-label="Create new"
+          <Button
+            color="primary"
             aria-haspopup="true"
             aria-expanded={Boolean(createMenuAnchor)}
             onClick={(event) => setCreateMenuAnchor(event.currentTarget)}
-            sx={{ display: { xs: 'inline-flex', lg: 'none' } }}
+            sx={{
+              display: { xs: 'inline-flex', lg: 'none' },
+              textTransform: 'none',
+              fontWeight: 600,
+              minWidth: 0,
+              px: 1,
+            }}
           >
-            <AddIcon fontSize="small" />
-          </IconButton>
+            Create new
+          </Button>
           <Menu
             anchorEl={createMenuAnchor}
             open={Boolean(createMenuAnchor)}
@@ -365,8 +332,37 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
             ))}
           </Menu>
           <IconButton
-            color="inherit"
-            aria-label="System administration"
+            size="small"
+            aria-label={
+              UNREAD_NOTIFICATION_COUNT > 0
+                ? `Notifications, ${UNREAD_NOTIFICATION_COUNT} unread`
+                : 'Notifications'
+            }
+            aria-haspopup="true"
+            aria-expanded={Boolean(notificationMenuAnchor)}
+            onClick={(event) => setNotificationMenuAnchor(event.currentTarget)}
+          >
+            <NotificationsNoneOutlinedIcon fontSize="small" />
+          </IconButton>
+          <Menu
+            anchorEl={notificationMenuAnchor}
+            open={Boolean(notificationMenuAnchor)}
+            onClose={() => setNotificationMenuAnchor(null)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            slotProps={{ paper: { sx: navMenuPaperSx } }}
+          >
+            <MenuItem onClick={() => setNotificationMenuAnchor(null)} sx={accountMenuItemSx}>
+              Notifications
+              {UNREAD_NOTIFICATION_COUNT > 0 ? ` (${UNREAD_NOTIFICATION_COUNT})` : ''}
+            </MenuItem>
+          </Menu>
+          <IconButton size="small" aria-label="Clipboard">
+            <ContentPasteOutlinedIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            aria-label="Settings"
             aria-haspopup="true"
             aria-expanded={Boolean(settingsMenuAnchor)}
             onClick={(event) => setSettingsMenuAnchor(event.currentTarget)}
@@ -431,40 +427,18 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
               },
             }}
           >
-            <Badge
-              variant="dot"
-              color="error"
-              overlap="circular"
-              invisible={UNREAD_NOTIFICATION_COUNT <= 0}
-              anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            <Avatar
               sx={{
-                '& .MuiBadge-badge': {
-                  width: 12,
-                  height: 12,
-                  minWidth: 12,
-                  borderRadius: '50%',
-                  top: 0,
-                  right: 0,
-                  transform: 'translate(15%, -15%)',
-                  border: 'none',
-                  boxSizing: 'border-box',
-                  zIndex: 1,
-                },
+                width: 32,
+                height: 32,
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                bgcolor: (theme) => theme.figmaPalette.teal[600],
+                transition: 'background-color 0.15s ease',
               }}
             >
-              <Avatar
-                sx={{
-                  width: 32,
-                  height: 32,
-                  fontSize: '0.8125rem',
-                  fontWeight: 600,
-                  bgcolor: (theme) => theme.figmaPalette.teal[600],
-                  transition: 'background-color 0.15s ease',
-                }}
-              >
-                {userInitials}
-              </Avatar>
-            </Badge>
+              {userInitials}
+            </Avatar>
           </IconButton>
           <Menu
             anchorEl={accountMenuAnchor}
