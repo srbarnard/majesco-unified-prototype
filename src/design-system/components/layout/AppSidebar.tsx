@@ -66,7 +66,7 @@ function isClaimsOnlyNavigable(label: string) {
 }
 
 const shellNavItems = CLAIMS_ONLY ? claimsOnlyShellNavItems : visibleAppShellNavItems
-const shellMoreItems = CLAIMS_ONLY ? [] : moreMenuItems
+const shellMoreItems = moreMenuItems
 
 const navItemsByLabel = new Map<string, NavItem>(
   [...shellNavItems, ...shellMoreItems].map((item) => [item.label, item]),
@@ -462,7 +462,7 @@ function SidebarContent({
         {homeItem && renderNavItem(homeItem)}
         {mainItems.map((item) => renderNavItem(item, 'main'))}
 
-        {moreItems.length === 0 ? null : isDrawer ? (
+        {isDrawer ? (
           <>
             <Divider sx={{ my: 1 }} />
             <Typography
