@@ -184,8 +184,11 @@ export function panelSlideInFromLeftSx(): SxProps<Theme> {
 type DockedPanelSide = 'left' | 'right'
 
 /**
- * Docked side panel motion: transform + subtle opacity only (GPU-friendly).
- * Shell keeps a stable width while mounted; pair with `useAnimatedPanelPresence`.
+ * Docked side panel motion. The shell width and the panel use the MUI drawer
+ * duration and easing so the main content and the panel finish together.
+ * The panel is pinned to the content edge and clipped by the shell, so a
+ * separate translate cannot trail the content and open a gap.
+ * Pair with `useAnimatedPanelPresence`.
  */
 export function dockedPanelMotionSx(options: {
   side: DockedPanelSide
@@ -197,8 +200,6 @@ export function dockedPanelMotionSx(options: {
   const { enterMs, exitMs, enterEasing, exitEasing, panelFadeFrom } = drawerMotion
   const durationMs = entered ? enterMs : exitMs
   const easing = entered ? enterEasing : exitEasing
-  const hiddenX = side === 'right' ? '100%' : '-100%'
-  const opacityMs = Math.round(durationMs * 0.9)
 
   const edgeBorder =
     side === 'right'
@@ -206,49 +207,44 @@ export function dockedPanelMotionSx(options: {
       : { borderRight: (theme: Theme) => `1px solid ${theme.palette.divider}` }
 
   const shellSx: SxProps<Theme> = {
-    width,
+    width: entered ? width : 0,
+    minWidth: 0,
     overflow: 'hidden',
     flexShrink: 0,
     alignSelf: 'stretch',
     height: '100%',
     minHeight: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    // Pin the panel to the content edge. The outer edge clips as the shell
+    // width eases, so the drawer cannot sit past the content and leave a gap.
+    alignItems: side === 'right' ? 'flex-start' : 'flex-end',
     bgcolor: 'background.paper',
     ...edgeBorder,
+    ...(reducedMotion ? {} : { transition: `width ${durationMs}ms ${easing}` }),
   }
 
-  if (reducedMotion) {
-    return {
-      shellSx,
-      innerSx: {
-        width,
-        height: '100%',
-        minHeight: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        transform: 'none',
-        opacity: 1,
-      },
-    }
+  const innerSx: SxProps<Theme> = {
+    width,
+    flexShrink: 0,
+    height: '100%',
+    minHeight: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    transform: 'none',
+    opacity: reducedMotion || entered ? 1 : panelFadeFrom,
+    ...(reducedMotion
+      ? {}
+      : {
+          transition: `opacity ${durationMs}ms ${easing}`,
+          willChange: 'opacity',
+          backfaceVisibility: 'hidden',
+          WebkitFontSmoothing: 'antialiased',
+        }),
   }
 
-  return {
-    shellSx,
-    innerSx: {
-      width,
-      height: '100%',
-      minHeight: 0,
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-      transform: entered ? 'translateX(0)' : `translateX(${hiddenX})`,
-      opacity: entered ? 1 : panelFadeFrom,
-      transition: `transform ${durationMs}ms ${easing}, opacity ${opacityMs}ms ${easing}`,
-      willChange: 'transform, opacity',
-      backfaceVisibility: 'hidden',
-      WebkitFontSmoothing: 'antialiased',
-    },
-  }
+  return { shellSx, innerSx }
 }
 
 /** Bottom sheet paper — rounded top, fixed viewport height, elevation shadow. */
