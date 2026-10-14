@@ -1,5 +1,6 @@
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import AddIcon from '@mui/icons-material/Add'
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
@@ -42,9 +43,9 @@ import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import { useTheme } from '@mui/material/styles'
+import { useTheme, type Theme } from '@mui/material/styles'
 import type { SvgIconComponent } from '@mui/icons-material'
-import { Fragment, createContext, useContext, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useRef, useState, type ReactNode } from 'react'
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useGlobalSearch } from '@/app/contexts/GlobalSearchContext'
 import { useRightToolDispatch } from '@/app/contexts/RightToolContext'
@@ -116,19 +117,6 @@ const cardSx = { border: 1, borderColor: 'divider', borderRadius: one.radius, bg
 const chipRadiusSx = { borderRadius: `${figmaBorderRadius.pillRadius}px` } as const
 const tagChipSx = { borderColor: 'divider', color: 'text.primary', ...chipRadiusSx } as const
 
-function OneCallout({ icon, sx, children }: { icon: ReactNode; sx?: object; children: ReactNode }) {
-  return (
-    <Stack
-      direction="row"
-      spacing={1.5}
-      alignItems="flex-start"
-      sx={{ p: 1.5, borderRadius: one.radius, bgcolor: one.primaryHover, color: one.textPrimary, typography: 'body2', ...sx }}
-    >
-      <Box sx={{ color: one.primary, display: 'flex', flexShrink: 0 }}>{icon}</Box>
-      <Box sx={{ minWidth: 0 }}>{children}</Box>
-    </Stack>
-  )
-}
 const textLinkSx = {
   fontFamily: figmaFontFamilyStack.heading,
   fontWeight: 600,
@@ -580,11 +568,131 @@ function MetricCard({ metric, onAction }: { metric: ClaimMetric; onAction: (metr
         </Box>
       </Box>
       <Divider />
-      <Box sx={{ px: 1, py: 0.5 }}>
+      <Box sx={{ px: 1, py: 0.5, display: 'flex', justifyContent: 'center' }}>
         <Button size="small" startIcon={agent ? <PsychologyIcon /> : <ForumIcon />} onClick={() => onAction(metric)}>
           {agent ? 'Run agent' : 'Ask Copilot'}
         </Button>
       </Box>
+    </Box>
+  )
+}
+
+function workloadDeltaLabel(current: number, projected: number) {
+  if (projected > current) return 'receives work'
+  if (projected < current) return 'work reduced'
+  return 'unchanged'
+}
+
+const agentBorder = (theme: Theme) => (isDarkMode(theme) ? theme.figmaPalette.blue[800] : theme.figmaPalette.blue[200])
+
+function AgentShell({
+  title,
+  onClose,
+  closeLabel,
+  children,
+}: {
+  title: string
+  onClose: () => void
+  closeLabel: string
+  children: ReactNode
+}) {
+  return (
+    <Box
+      sx={{
+        mt: 1.5,
+        border: 1,
+        borderColor: agentBorder,
+        borderRadius: one.radius,
+        overflow: 'hidden',
+        bgcolor: 'background.paper',
+      }}
+    >
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        spacing={1.5}
+        sx={{
+          px: 1.75,
+          py: 1.375,
+          bgcolor: (theme) => accentSubtle(theme),
+          borderBottom: 1,
+          borderColor: agentBorder,
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
+          <Stack direction="row" spacing={0.875} alignItems="center">
+            <PsychologyIcon sx={{ fontSize: 17, color: 'primary.main' }} />
+            <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'primary.main', lineHeight: 1.3 }}>{title}</Typography>
+          </Stack>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 3, mt: '2px' }}>
+            Agent analysis · recommendation only
+          </Typography>
+        </Box>
+        <CloseButton onClick={onClose} label={closeLabel} />
+      </Stack>
+      <Box sx={{ p: 1.75 }}>{children}</Box>
+    </Box>
+  )
+}
+
+function WorkloadStateBlock({ projected }: { projected: boolean }) {
+  return (
+    <Box
+      sx={{
+        border: 1,
+        borderRadius: one.radius,
+        px: 1.5,
+        py: 1.25,
+        borderColor: (theme) =>
+          projected
+            ? isDarkMode(theme)
+              ? theme.figmaPalette.green[700]
+              : theme.figmaPalette.green[200]
+            : theme.palette.divider,
+        bgcolor: (theme) =>
+          projected
+            ? isDarkMode(theme)
+              ? theme.figmaPalette.green[900]
+              : theme.figmaPalette.green[50]
+            : isDarkMode(theme)
+              ? theme.palette.background.paper
+              : theme.figmaPalette.grey[50],
+      }}
+    >
+      <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', mb: 0.75 }}>
+        {projected ? 'Projected state' : 'Current state'}
+      </Typography>
+      {workloadRows.map((row, index) => (
+        <Box
+          key={row.name}
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr) 28px 84px',
+            columnGap: '7px',
+            alignItems: 'center',
+            minHeight: 28,
+            borderTop: index === 0 ? 0 : 1,
+            borderColor: 'divider',
+          }}
+        >
+          <Typography sx={{ fontSize: 12 }}>{row.name}</Typography>
+          <Typography sx={{ fontSize: 13, fontWeight: 700, textAlign: 'right' }}>
+            {projected ? row.projected : row.current}
+          </Typography>
+          <Typography sx={{ fontSize: 10, lineHeight: 1.2, textAlign: 'right', color: 'text.secondary' }}>
+            {projected ? (
+              workloadDeltaLabel(row.current, row.projected)
+            ) : (
+              <>
+                {row.complexity}
+                <br />
+                complexity
+              </>
+            )}
+          </Typography>
+        </Box>
+      ))}
     </Box>
   )
 }
@@ -618,106 +726,80 @@ function SuggestionRow({ claim, from, to, why }: { claim: string; from: string; 
 function AgentPanel({ metric, onClose }: { metric: ClaimMetric; onClose: () => void }) {
   if (metric.id === 'avgClaims') {
     return (
-      <Box sx={{ ...cardSx, mt: 2, p: 2 }}>
-        <Stack direction="row" alignItems="flex-start">
-          <Box sx={{ flex: 1 }}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <PsychologyIcon color="primary" />
-              <Typography variant="h3" component="h3">
-                Workload balancing recommendation
-              </Typography>
-            </Stack>
-            <Typography variant="body2" color="text.secondary">
-              Agent analysis · recommendation only
-            </Typography>
+      <AgentShell title="Workload balancing recommendation" onClose={onClose} closeLabel="Close workload recommendation">
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) 36px minmax(0, 1fr)' },
+            gap: 1.25,
+            alignItems: 'center',
+          }}
+        >
+          <WorkloadStateBlock projected={false} />
+          <Box sx={{ display: 'flex', justifyContent: 'center', color: 'primary.main', transform: { xs: 'rotate(90deg)', md: 'none' } }}>
+            <ArrowForwardIcon sx={{ fontSize: 22 }} />
           </Box>
-          <CloseButton onClick={onClose} label="Close workload recommendation" />
-        </Stack>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr auto 1fr' }, gap: 2, alignItems: 'start', my: 2 }}>
-          {(
-            [
-              ['Current state', 'current'],
-              ['Projected state', 'projected'],
-            ] as const
-          ).map(([title, key], idx) => (
-            <Fragment key={key}>
-              {idx === 1 ? (
-                <Box sx={{ alignSelf: 'center', display: { xs: 'none', md: 'block' } }}>
-                  <ChevronRightIcon color="primary" />
-                </Box>
-              ) : null}
-              <Box>
-                <Typography variant="h5" component="h4" sx={{ mb: 1 }}>
-                  {title}
-                </Typography>
-                {workloadRows.map((r) => (
-                  <Stack key={r.name} direction="row" spacing={1} alignItems="baseline" sx={{ py: 0.5, borderBottom: 1, borderColor: one.divider }}>
-                    <Typography variant="body2" sx={{ flex: 1 }}>
-                      {r.name}
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                      {r[key]}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ width: 120 }}>
-                      {key === 'current'
-                        ? `${r.complexity} complexity`
-                        : r.projected - r.current > 0
-                          ? 'receives work'
-                          : r.projected - r.current < 0
-                            ? 'work reduced'
-                            : 'unchanged'}
-                    </Typography>
-                  </Stack>
-                ))}
-              </Box>
-            </Fragment>
-          ))}
+          <WorkloadStateBlock projected />
         </Box>
-        <Typography variant="h5" component="h4" sx={{ mb: 1 }}>
-          Suggested reassignments
-        </Typography>
-        <Stack spacing={1}>
+        <Typography sx={{ fontSize: 13, fontWeight: 700, mt: '14px', mb: '7px' }}>Suggested reassignments</Typography>
+        <Stack spacing={0.75}>
           {workloadMoves.map((mv) => (
-            <SuggestionRow key={mv.claim} claim={mv.claim} from={mv.from} to={mv.to} why={mv.reason} />
+            <Box
+              key={mv.claim}
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: '145px minmax(220px, 0.8fr) minmax(0, 1fr)' },
+                gap: 1.5,
+                alignItems: 'center',
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: one.radius,
+                px: 1.25,
+                py: 1,
+              }}
+            >
+              <ClaimLink>{mv.claim}</ClaimLink>
+              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ typography: 'caption', fontWeight: 700 }}>
+                <Box component="b">{mv.from}</Box>
+                <ArrowForwardIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                <Box component="b">{mv.to}</Box>
+              </Stack>
+              <Typography variant="caption" color="text.secondary">
+                {mv.reason}
+              </Typography>
+            </Box>
           ))}
         </Stack>
-        <OneCallout icon={<InfoOutlinedIcon fontSize="small" />} sx={{ mt: 2 }}>
-          This recommendation is for review only. No assignments will be changed.
-        </OneCallout>
-      </Box>
+        <Stack direction="row" spacing={0.75} alignItems="flex-start" sx={{ mt: 1.25 }}>
+          <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.secondary', mt: '1px' }} />
+          <Typography variant="caption" color="text.secondary">
+            This prototype recommendation is for review only. No assignments will be changed.
+          </Typography>
+        </Stack>
+      </AgentShell>
     )
   }
   return (
-    <Box sx={{ ...cardSx, mt: 2, p: 2 }}>
-      <Stack direction="row" alignItems="flex-start">
-        <Box sx={{ flex: 1 }}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <PsychologyIcon color="primary" />
-            <Typography variant="h3" component="h3">
-              {metric.actionTitle || metric.label}
-            </Typography>
-          </Stack>
-          <Typography variant="body2" color="text.secondary">
-            Agent analysis · recommendation only
-          </Typography>
-        </Box>
-        <CloseButton onClick={onClose} label="Close agent panel" />
+    <AgentShell title={metric.actionTitle || metric.label} onClose={onClose} closeLabel="Close agent panel">
+      <Stack direction="row" spacing={0.75} alignItems="flex-start" sx={{ mb: 1.75 }}>
+        <AutoAwesomeIcon sx={{ fontSize: 14, color: 'text.secondary', mt: '1px' }} />
+        <Typography variant="caption" color="text.secondary">
+          <b>
+            {metric.label}: {metric.value}
+          </b>
+          <br />
+          {metric.support}. {metric.trend}. This simulated agent would rank the underlying claims, explain the drivers, and propose
+          reviewable next actions.
+        </Typography>
       </Stack>
-      <OneCallout icon={<AutoAwesomeIcon fontSize="small" />} sx={{ my: 2 }}>
-        <b>
-          {metric.label}: {metric.value}
-        </b>
-        . {metric.support}. {metric.trend}. This simulated agent would rank the underlying claims, explain the drivers, and propose
-        reviewable next actions.
-      </OneCallout>
-      <Typography variant="h5" component="h4" sx={{ mb: 1 }}>
+      <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.25px', textTransform: 'uppercase', color: 'text.secondary', mb: 0.875 }}>
         Suggested review
       </Typography>
-      <Stack spacing={1}>
+      <Stack spacing={0.75}>
         <SuggestionRow claim="CL-90345612-221" from="Priority" to="Review" why="Material exposure and timing make this a useful first candidate." />
         <SuggestionRow claim="CL-40218856-002" from="Priority" to="Follow up" why="Open work is beyond target and requires a near-term action." />
       </Stack>
-    </Box>
+    </AgentShell>
   )
 }
 
@@ -745,20 +827,33 @@ function KeyMetrics({ onCopilot }: { onCopilot: () => void }) {
           />
         ) : null}
       </ModuleHeader>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: `${figmaSpacing[2]}px` }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' },
+          gap: `${figmaSpacing[2]}px`,
+        }}
+      >
         {metricHead.map((m) => (
           <MetricCard key={m.id} metric={m} onAction={onAction} />
         ))}
-        <Reveal open={expanded} sx={{ gridColumn: '1 / -1' }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: `${figmaSpacing[2]}px` }}>
-            {metricMore.map((m) => (
-              <MetricCard key={m.id} metric={m} onAction={onAction} />
-            ))}
-          </Box>
-        </Reveal>
       </Box>
       <Reveal open={agentMetric != null}>
         {agentMetric ? <AgentPanel metric={agentMetric} onClose={() => setAgentId(null)} /> : null}
+      </Reveal>
+      <Reveal open={expanded}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' },
+            gap: `${figmaSpacing[2]}px`,
+            mt: 2,
+          }}
+        >
+          {metricMore.map((m) => (
+            <MetricCard key={m.id} metric={m} onAction={onAction} />
+          ))}
+        </Box>
       </Reveal>
     </Box>
   )
