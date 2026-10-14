@@ -172,7 +172,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
             aria-label="Open navigation menu"
             size="small"
             sx={(theme) => ({
-              display: CLAIMS_ONLY ? 'none' : 'inline-flex',
+              display: 'inline-flex',
               ml: 0.5,
               [theme.breakpoints.up('lg')]: { display: 'none' },
             })}

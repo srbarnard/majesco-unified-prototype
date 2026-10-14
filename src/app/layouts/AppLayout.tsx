@@ -3,7 +3,6 @@ import { useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router'
-import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
 import { GlobalSearchProvider } from '@/app/contexts/GlobalSearchContext'
 import { FavoritesProvider } from '@/app/contexts/FavoritesContext'
 import { RightToolProvider } from '@/app/contexts/RightToolContext'
@@ -70,12 +69,8 @@ function AppLayoutContent() {
           position: 'relative',
         }}
       >
-        {CLAIMS_ONLY ? null : (
-          <>
-            <AppSidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
-            <SecondaryNavPanel />
-          </>
-        )}
+        <AppSidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
+        <SecondaryNavPanel />
 
         <Box
           component="main"

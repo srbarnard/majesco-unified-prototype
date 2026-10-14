@@ -21,6 +21,7 @@ import useMediaQuery from '@mui/material/useMediaQuery'
 import type { DragEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
+import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
 import { useSidebar } from '@/app/contexts/SidebarContext'
 import { CopilotIcon } from '@/design-system/components'
 import { filterHeadingSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
@@ -49,6 +50,7 @@ type NavListId = 'main' | 'more'
 type NavOrder = Record<NavListId, string[]>
 
 const PINNED_TOP_LABEL = 'Home'
+const CLAIMS_ONLY_NAV_LABEL = 'Claims'
 const NAV_ORDER_STORAGE_KEY = 'leftNav.order'
 
 const navItemsByLabel = new Map<string, NavItem>(
@@ -310,13 +312,18 @@ function SidebarContent({
         }
   }
 
-  const renderNavItem = (item: NavItem, list?: NavListId) => {
+  const renderNavItem = (item: NavItem, navList?: NavListId) => {
     const Icon = item.icon
+    const claimsOnlyLink = CLAIMS_ONLY && item.label === CLAIMS_ONLY_NAV_LABEL
+    const claimsOnlyDisabled = CLAIMS_ONLY && !claimsOnlyLink
+    const list = CLAIMS_ONLY ? undefined : navList
     const isPanelActive = item.panel ? secondaryPanel === item.panel : false
-    const isRouteItemActive = item.path
-      ? !isSecondaryPanelOpen && isRouteActive(location.pathname, item.path, item.matchPaths)
-      : false
-    const active = isPanelActive || isRouteItemActive
+    const isRouteItemActive = claimsOnlyLink
+      ? location.pathname === '/'
+      : item.path
+        ? !isSecondaryPanelOpen && isRouteActive(location.pathname, item.path, item.matchPaths)
+        : false
+    const active = !claimsOnlyDisabled && (isPanelActive || isRouteItemActive)
     const drag = list ? dragHandlers(item.label, list) : { draggable: false }
     const dragSx = list
       ? { opacity: dragKey === item.label ? 0.4 : 1, cursor: dragKey ? 'grabbing' : undefined }
@@ -353,6 +360,15 @@ function SidebarContent({
       </ListItemIcon>
     )
 
+    if (claimsOnlyDisabled) {
+      return (
+        <ListItemButton key={item.label} disabled sx={itemSx(false)}>
+          {icon}
+          {label}
+        </ListItemButton>
+      )
+    }
+
     if (item.panel) {
       return (
         <ListItemButton
@@ -374,8 +390,8 @@ function SidebarContent({
         key={item.label}
         {...drag}
         component={NavLink}
-        to={item.path!}
-        end={item.path === '/'}
+        to={claimsOnlyLink ? '/' : item.path!}
+        end={claimsOnlyLink || item.path === '/'}
         onClick={handleRouteNavClick}
         data-nav-active={active ? 'true' : undefined}
         sx={{ ...itemSx(active), ...dragSx }}
@@ -443,6 +459,7 @@ function SidebarContent({
         ) : (
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 0.25, mb: 0.5 }}>
             <IconButton
+              disabled={CLAIMS_ONLY}
               aria-label="More navigation options"
               aria-haspopup="menu"
               aria-expanded={Boolean(moreAnchor)}
