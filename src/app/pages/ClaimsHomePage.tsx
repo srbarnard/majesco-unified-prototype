@@ -1639,15 +1639,25 @@ function ClaimAlerts({ claims, onInsights }: { claims: HomeClaim[]; onInsights: 
                 borderRadius: one.radius,
                 border: 0,
                 typography: 'body2',
-                bgcolor: (theme) => (active ? theme.figmaPalette.red[50] : theme.figmaPalette.green[50]),
-                color: (theme) => (active ? theme.figmaPalette.red[900] : theme.figmaPalette.green[900]),
+                bgcolor: (theme) =>
+                  isDarkMode(theme)
+                    ? `var(--mui-palette-Alert-${active ? 'error' : 'success'}StandardBg)`
+                    : active
+                      ? theme.figmaPalette.red[50]
+                      : theme.figmaPalette.green[50],
+                color: (theme) =>
+                  isDarkMode(theme)
+                    ? `var(--mui-palette-Alert-${active ? 'error' : 'success'}Color)`
+                    : active
+                      ? theme.figmaPalette.red[900]
+                      : theme.figmaPalette.green[900],
               }}
             >
               <IconButton
                 size="small"
                 aria-label={`${active ? 'Deactivate' : 'Reactivate'} alert`}
                 onClick={() => setOverrides((current) => ({ ...current, [a.id]: !active }))}
-                sx={{ color: active ? one.error : one.success, alignSelf: 'flex-start', mt: 0.25 }}
+                sx={{ color: active ? 'error.main' : 'success.main', alignSelf: 'flex-start', mt: 0.25 }}
               >
                 {active ? <ErrorOutlineIcon fontSize="small" /> : <CheckCircleOutlineIcon fontSize="small" />}
               </IconButton>
