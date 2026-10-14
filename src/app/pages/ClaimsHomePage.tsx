@@ -497,10 +497,20 @@ function MetricChart({ id }: { id: string }) {
         <Typography sx={chartCaptionSx}>{v.label}</Typography>
         <Box sx={{ height: 96 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
+            <BarChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
               <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="name" axisLine={{ stroke: gridStroke }} tickLine={false} interval={0} tick={axisStyle} />
-              <YAxis width={28} domain={[0, max]} tick={axisStyle} tickLine={false} axisLine={false} />
+              <XAxis
+                dataKey="name"
+                axisLine={{ stroke: gridStroke }}
+                tickLine={false}
+                interval={0}
+                tick={{ ...axisStyle, fontSize: 9 }}
+                tickFormatter={(value: string | number) => {
+                  const label = String(value)
+                  return label.length > 5 ? `${label.slice(0, 2)}...` : label
+                }}
+              />
+              <YAxis hide domain={[0, max]} />
               {tooltip}
               <Bar dataKey="value" fill={series} radius={[barRadius, barRadius, 0, 0]} {...chartMotion} />
             </BarChart>
