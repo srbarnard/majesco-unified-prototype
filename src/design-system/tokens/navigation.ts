@@ -59,9 +59,9 @@ export const moreMenuItems: MoreMenuItem[] = [
 
 export const visibleAppShellNavItems = appShellNavItems.filter((item) => !item.hidden)
 
-/** Patterns Dashboard rail. Home and Claims navigate; the rest stay visible. */
+/** Patterns Dashboard rail. Claims opens the section landing; the rest stay visible. */
 export const claimsOnlyShellNavItems: NavItem[] = [
-  { label: 'Home', path: '/', icon: HomeOutlinedIcon },
+  { label: 'Home', icon: HomeOutlinedIcon },
   { label: 'Activity', icon: HistoryOutlinedIcon, panel: 'activity' },
   { label: 'Favorites', icon: StarBorderOutlinedIcon, panel: 'favorites' },
   { label: 'Tasks', path: '/tasks', icon: ChecklistRtlOutlinedIcon },

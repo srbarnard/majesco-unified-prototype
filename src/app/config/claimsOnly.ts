@@ -1,6 +1,7 @@
 /**
- * Claims-only share build: Home opens the Claims home and Claims opens the claims list.
- * Other Patterns nav items stay visible but do not navigate. Create new still opens
- * the claim drawer. The right rail keeps the full tool set.
+ * Claims-only share build: Claims is the only nav item that navigates, and it opens
+ * the Claims section landing (Daily Brief, Key Metrics, Schedule). Home and the other
+ * Patterns items stay visible but do not navigate. Create new still opens the claim
+ * drawer. The right rail keeps the full tool set.
  */
 export const CLAIMS_ONLY = true

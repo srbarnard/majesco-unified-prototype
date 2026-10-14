@@ -58,8 +58,8 @@ type NavOrder = Record<NavListId, string[]>
 const PINNED_TOP_LABEL = 'Home'
 const NAV_ORDER_STORAGE_KEY = 'leftNav.order'
 
-/** Home opens the Claims home. Claims opens the claims list. Everything else stays visible. */
-const CLAIMS_ONLY_NAVIGABLE = new Set(['Home', 'Claims'])
+/** Claims opens the section landing. Home and every other item stay visible. */
+const CLAIMS_ONLY_NAVIGABLE = new Set(['Claims'])
 
 function isClaimsOnlyNavigable(label: string) {
   return !CLAIMS_ONLY || CLAIMS_ONLY_NAVIGABLE.has(label)

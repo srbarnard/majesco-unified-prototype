@@ -23,11 +23,11 @@ import { SubmissionDetails } from '@/pages/submissions/SubmissionDetails'
 import { TasksPage } from '@/pages/tasks/TasksPage'
 
 const claimsOnlyRoutes = [
-  { index: true, element: <ClaimsHomePage /> },
-  { path: 'claims', element: <ClaimsPage /> },
+  { index: true, element: <Navigate to="/claims" replace /> },
+  { path: 'claims', element: <ClaimsHomePage /> },
   { path: 'claims/:claimNumber', element: <ClaimDetails /> },
   { path: 'claims/:claimNumber/documents/:docId', element: <DocumentViewerPage context="draft" /> },
-  { path: '*', element: <Navigate to="/" replace /> },
+  { path: '*', element: <Navigate to="/claims" replace /> },
 ]
 
 export const router = createBrowserRouter([
