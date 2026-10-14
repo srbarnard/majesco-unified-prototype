@@ -47,7 +47,6 @@ import { useTheme, type Theme } from '@mui/material/styles'
 import type { SvgIconComponent } from '@mui/icons-material'
 import { createContext, useContext, useRef, useState, type ReactNode } from 'react'
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { useGlobalSearch } from '@/app/contexts/GlobalSearchContext'
 import { useRightToolDispatch } from '@/app/contexts/RightToolContext'
 import {
   FIGMA_METRIC_LABELS,
@@ -84,7 +83,7 @@ import {
   type HomeNote,
   type HomeTask,
 } from '@/app/data/claimsHomeMock'
-import { useRegisterRightToolCopilot, useRegisterRightToolCopilotCustom } from '@/app/hooks/useRightToolRegistration'
+import { useRegisterRightToolCopilotCustom } from '@/app/hooks/useRightToolRegistration'
 import { CopilotDrawerShell } from '@/pages/policies/components/copilot/CopilotDrawerShell'
 import { analyticsBodySx, analyticsChartColors, getAnalyticsChartAxisStyle, getAnalyticsChartGridStroke, getChartTooltipSx } from '@/design-system/components/analytics/analyticsStyles'
 import { accentSubtle, isDarkMode } from '@/design-system/theme/themeSurfaces'
@@ -215,6 +214,37 @@ type SectionInsight = {
   title: string
   ask: string
   points: string[]
+}
+
+/** Claims desk briefing. Stays put — no daily or policy summary. */
+const CLAIMS_COPILOT_POINTS = [
+  'Open claims are 74, up 3 from last week.',
+  'Average claim lifecycle is 42 days, 6 days above the 36-day target.',
+  '11 claims are past the target lifecycle.',
+  'CL-90345612-221 is active: projected injury exposure is approaching the available policy limit.',
+  '7 claims are unassigned, including 4 older than 24 hours.',
+]
+
+function ClaimsCopilotPanel({ onClose }: { onClose: () => void }) {
+  return (
+    <CopilotDrawerShell
+      onClose={onClose}
+      contentKey="claims-summary"
+      composerPlaceholder="Ask about claims"
+      toolbarLeading={<Typography variant="subtitle2">Claims summary</Typography>}
+    >
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        Here is what needs attention on your claims desk.
+      </Typography>
+      <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
+        {CLAIMS_COPILOT_POINTS.map((point) => (
+          <Typography component="li" variant="body2" key={point} sx={{ mb: 0.75 }}>
+            {point}
+          </Typography>
+        ))}
+      </Box>
+    </CopilotDrawerShell>
+  )
 }
 
 function ClaimsSectionInsightPanel({ insight, onClose }: { insight: SectionInsight; onClose: () => void }) {
@@ -573,7 +603,14 @@ function MetricCard({ metric, onAction }: { metric: ClaimMetric; onAction: (metr
             {metric.trend}
           </Typography>
         </Box>
-        <Box sx={{ borderLeft: { md: 1 }, borderTop: { xs: 1, md: 0 }, borderColor: 'divider', pl: { md: 2 }, pt: { xs: 1.5, md: 0 } }}>
+        <Box
+          sx={(theme) => ({
+            borderLeft: { md: `1px solid ${theme.palette.divider}` },
+            borderTop: { xs: `1px solid ${theme.palette.divider}`, md: 0 },
+            pl: { md: 2 },
+            pt: { xs: 1.5, md: 0 },
+          })}
+        >
           <MetricChart id={metric.id} />
         </Box>
       </Box>
@@ -1641,7 +1678,6 @@ const TEAM_CLAIMS = [...homeClaims.injury, ...homeClaims.property]
 /** Joan's claims home. New Claim opens the shell's Create claim drawer, the same one as + → Claim. */
 export function ClaimsHomePage() {
   const { openTool, closeTool } = useRightToolDispatch()
-  const { copilotView, agenticPrompt } = useGlobalSearch()
   const [notice, setNotice] = useState<string | null>(null)
   const [sectionInsight, setSectionInsight] = useState<SectionInsight | null>(null)
   const openCopilot = () => {
@@ -1652,18 +1688,17 @@ export function ClaimsHomePage() {
     setSectionInsight(insight)
     openTool('copilot')
   }
+  const closeCopilot = () => {
+    setSectionInsight(null)
+    closeTool()
+  }
 
-  useRegisterRightToolCopilot({ context: 'global', globalView: copilotView, agenticPrompt }, [copilotView, agenticPrompt])
   useRegisterRightToolCopilotCustom(
     sectionInsight ? (
-      <ClaimsSectionInsightPanel
-        insight={sectionInsight}
-        onClose={() => {
-          setSectionInsight(null)
-          closeTool()
-        }}
-      />
-    ) : null,
+      <ClaimsSectionInsightPanel insight={sectionInsight} onClose={closeCopilot} />
+    ) : (
+      <ClaimsCopilotPanel onClose={closeCopilot} />
+    ),
     [sectionInsight?.id, sectionInsight?.points?.join('\n')],
   )
 
