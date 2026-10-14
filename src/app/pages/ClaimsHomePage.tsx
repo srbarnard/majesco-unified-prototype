@@ -82,7 +82,8 @@ import {
   type HomeNote,
   type HomeTask,
 } from '@/app/data/claimsHomeMock'
-import { useRegisterRightToolCopilot } from '@/app/hooks/useRightToolRegistration'
+import { useRegisterRightToolCopilot, useRegisterRightToolCopilotCustom } from '@/app/hooks/useRightToolRegistration'
+import { CopilotDrawerShell } from '@/pages/policies/components/copilot/CopilotDrawerShell'
 import { analyticsBodySx, analyticsChartColors, getAnalyticsChartAxisStyle, getAnalyticsChartGridStroke } from '@/design-system/components/analytics/analyticsStyles'
 import { accentSubtle, isDarkMode } from '@/design-system/theme/themeSurfaces'
 import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
@@ -209,6 +210,43 @@ function InsightsButton({ count, onClick }: { count: number; onClick: () => void
   )
 }
 
+type SectionInsight = {
+  id: string
+  title: string
+  ask: string
+  points: string[]
+}
+
+function ClaimsSectionInsightPanel({ insight, onClose }: { insight: SectionInsight; onClose: () => void }) {
+  const points = insight.points.length > 0 ? insight.points : ['Nothing requires attention right now.']
+  return (
+    <CopilotDrawerShell
+      onClose={onClose}
+      contentKey={insight.id}
+      toolbarLeading={
+        <Stack direction="row" spacing={0.75} alignItems="center">
+          <AutoAwesomeIcon sx={{ fontSize: 20, color: 'primary.main' }} />
+          <Typography variant="subtitle2">{insight.title}</Typography>
+        </Stack>
+      }
+    >
+      <Typography variant="caption" color="text.secondary" display="block">
+        You asked
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 2 }}>
+        {insight.ask}
+      </Typography>
+      <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
+        {points.map((point) => (
+          <Typography component="li" variant="body2" key={point} sx={{ mb: 0.75 }}>
+            {point}
+          </Typography>
+        ))}
+      </Box>
+    </CopilotDrawerShell>
+  )
+}
+
 function EmptyNote({ children }: { children: ReactNode }) {
   return (
     <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
@@ -286,7 +324,7 @@ function ClaimsHealthDonut({ pct }: { pct: number }) {
     <Box role="img" aria-label={`Claims health ${pct} percent`} sx={{ position: 'relative', width: 80, height: 80, flexShrink: 0 }}>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-          <Pie data={data} dataKey="value" nameKey="name" innerRadius={26} outerRadius={38} startAngle={90} endAngle={-270} stroke="none" isAnimationActive={false}>
+          <Pie data={data} dataKey="value" nameKey="name" innerRadius={26} outerRadius={38} startAngle={90} endAngle={-270} stroke="none" {...chartMotion}>
             <Cell fill={analyticsChartColors[0]} />
             <Cell fill={figmaPalette.grey[200]} />
           </Pie>
@@ -381,7 +419,21 @@ function DailyBrief() {
 }
 
 /* ---- Key Metrics ---- */
-const chartCaptionSx = { fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.75rem', color: 'text.secondary' }
+const chartCaptionSx = {
+  fontFamily: figmaFontFamilyStack.heading,
+  fontWeight: 600,
+  fontSize: '0.75rem',
+  color: 'text.secondary',
+  mb: 1.5,
+} as const
+
+/** Same motion as the prototype bar and line charts. */
+const chartMotion = {
+  isAnimationActive: true,
+  animationBegin: 0,
+  animationDuration: 700,
+  animationEasing: 'ease-out' as const,
+}
 
 function MetricChart({ id }: { id: string }) {
   const theme = useTheme()
@@ -423,7 +475,7 @@ function MetricChart({ id }: { id: string }) {
               <XAxis type="number" domain={[0, 100]} tick={axisStyle} tickLine={false} axisLine={{ stroke: gridStroke }} />
               <YAxis type="category" dataKey="name" hide />
               {tooltip}
-              <Bar dataKey="value" fill={series} barSize={12} radius={[barRadius, barRadius, barRadius, barRadius]} isAnimationActive={false} />
+              <Bar dataKey="value" fill={series} barSize={12} radius={[barRadius, barRadius, barRadius, barRadius]} {...chartMotion} />
               <ReferenceLine x={target} stroke={theme.palette.text.secondary} strokeDasharray="3 3" />
             </BarChart>
           </ResponsiveContainer>
@@ -445,7 +497,7 @@ function MetricChart({ id }: { id: string }) {
               <XAxis dataKey="name" axisLine={{ stroke: gridStroke }} tickLine={false} interval={0} tick={axisStyle} />
               <YAxis width={28} domain={[0, max]} tick={axisStyle} tickLine={false} axisLine={false} />
               {tooltip}
-              <Bar dataKey="value" fill={series} radius={[barRadius, barRadius, 0, 0]} isAnimationActive={false} />
+              <Bar dataKey="value" fill={series} radius={[barRadius, barRadius, 0, 0]} {...chartMotion} />
             </BarChart>
           </ResponsiveContainer>
         </Box>
@@ -468,7 +520,7 @@ function MetricChart({ id }: { id: string }) {
             <YAxis width={32} domain={[min - pad, max + pad]} tick={axisStyle} tickLine={false} axisLine={false} />
             {tooltip}
             {v.target != null ? <ReferenceLine y={v.target} stroke={theme.palette.text.secondary} strokeDasharray="3 3" /> : null}
-            <Line type="linear" dataKey="value" stroke={series} strokeWidth={2} dot={{ r: 2, fill: series }} isAnimationActive={false} />
+            <Line type="linear" dataKey="value" stroke={series} strokeWidth={2} dot={{ r: 2, fill: series }} {...chartMotion} />
           </LineChart>
         </ResponsiveContainer>
       </Box>
@@ -1087,7 +1139,7 @@ function Schedule({ claims }: { claims: HomeClaim[] }) {
 /* ---- Approvals ---- */
 type ApprovalPanel = 'notes' | 'attachments' | 'approve' | 'reject'
 
-function Approvals({ onCopilot }: { onCopilot: () => void }) {
+function Approvals({ onInsights }: { onInsights: (insight: SectionInsight) => void }) {
   const [items, setItems] = useState(initialApprovals)
   const [panels, setPanels] = useState<Record<string, ApprovalPanel | null>>({})
   const [comments, setComments] = useState<Record<string, string>>({})
@@ -1099,7 +1151,17 @@ function Approvals({ onCopilot }: { onCopilot: () => void }) {
   return (
     <Box component="section" sx={{ mb: 3 }}>
       <ModuleHeader title="Approvals">
-        <InsightsButton count={pending.length} onClick={onCopilot} />
+        <InsightsButton
+          count={pending.length}
+          onClick={() =>
+            onInsights({
+              id: 'approvals',
+              title: 'Approvals awaiting your decision',
+              ask: 'Summarize the approvals waiting on me.',
+              points: pending.map((a) => `${a.type} of $${a.amount.toLocaleString()} on ${a.claim} — ${a.reason}.`),
+            })
+          }
+        />
       </ModuleHeader>
       {pending.length === 0 ? (
         <EmptyNote>No pending approvals.</EmptyNote>
@@ -1237,7 +1299,7 @@ function Approvals({ onCopilot }: { onCopilot: () => void }) {
 /* ---- Claim Alerts ---- */
 type AlertFilter = 'active' | 'inactive' | 'all'
 
-function ClaimAlerts({ claims, onCopilot }: { claims: HomeClaim[]; onCopilot: () => void }) {
+function ClaimAlerts({ claims, onInsights }: { claims: HomeClaim[]; onInsights: (insight: SectionInsight) => void }) {
   const [filter, setFilter] = useState<AlertFilter>('active')
   const [overrides, setOverrides] = useState<Record<string, boolean>>({})
   const [showAll, setShowAll] = useState(false)
@@ -1250,7 +1312,17 @@ function ClaimAlerts({ claims, onCopilot }: { claims: HomeClaim[]; onCopilot: ()
   return (
     <Box component="section" sx={{ mb: 3 }}>
       <ModuleHeader title="Claim Alerts" count={nActive}>
-        <InsightsButton count={nActive} onClick={onCopilot} />
+        <InsightsButton
+          count={nActive}
+          onClick={() =>
+            onInsights({
+              id: 'claimAlerts',
+              title: 'Active claim alerts',
+              ask: 'Explain the active claim alerts.',
+              points: all.filter(isActive).map((a) => `${a.claimNumber} — ${a.description}`),
+            })
+          }
+        />
       </ModuleHeader>
       <Tabs
         value={filter}
@@ -1315,12 +1387,27 @@ function ClaimAlerts({ claims, onCopilot }: { claims: HomeClaim[]; onCopilot: ()
 /* ---- My Claims / Team Claims ---- */
 type MyClaimsTab = 'my' | 'fnol' | 'unassigned'
 
-function MyClaims({ claims, onCopilot }: { claims: HomeClaim[]; onCopilot: () => void }) {
+function MyClaims({ claims, onInsights }: { claims: HomeClaim[]; onInsights: (insight: SectionInsight) => void }) {
   const [tab, setTab] = useState<MyClaimsTab>('my')
   return (
     <Box component="section" sx={{ mb: 3 }}>
       <ModuleHeader title="My Claims">
-        <InsightsButton count={claims.length} onClick={onCopilot} />
+        <InsightsButton
+          count={claims.length}
+          onClick={() =>
+            onInsights({
+              id: 'myClaims',
+              title: 'My claims summary',
+              ask: 'Summarize my claims and what needs attention.',
+              points: sortedClaims(claims)
+                .slice(0, 4)
+                .map((c) => {
+                  const task = nextOpenTask(c)
+                  return `${c.claim} — ${task ? `${task.description} (${humanDue(task.dueDate)})` : 'no open tasks'}.`
+                }),
+            })
+          }
+        />
       </ModuleHeader>
       <Tabs value={tab} onChange={(_, v: MyClaimsTab) => setTab(v)} sx={{ borderBottom: 1, borderColor: one.divider, mb: 1.5 }}>
         <Tab value="my" label="My claims" />
@@ -1357,36 +1444,51 @@ const TEAM_CLAIMS = [...homeClaims.injury, ...homeClaims.property]
 
 /** Joan's claims home. New Claim opens the shell's Create claim drawer, the same one as + → Claim. */
 export function ClaimsHomePage() {
-  const { openTool } = useRightToolDispatch()
+  const { openTool, closeTool } = useRightToolDispatch()
   const { copilotView, agenticPrompt } = useGlobalSearch()
   const [notice, setNotice] = useState<string | null>(null)
-  const openCopilot = () => openTool('copilot')
+  const [sectionInsight, setSectionInsight] = useState<SectionInsight | null>(null)
+  const openCopilot = () => {
+    setSectionInsight(null)
+    openTool('copilot')
+  }
+  const openSectionInsights = (insight: SectionInsight) => {
+    setSectionInsight(insight)
+    openTool('copilot')
+  }
 
   useRegisterRightToolCopilot({ context: 'global', globalView: copilotView, agenticPrompt }, [copilotView, agenticPrompt])
+  useRegisterRightToolCopilotCustom(
+    sectionInsight ? (
+      <ClaimsSectionInsightPanel
+        insight={sectionInsight}
+        onClose={() => {
+          setSectionInsight(null)
+          closeTool()
+        }}
+      />
+    ) : null,
+    [sectionInsight?.id, sectionInsight?.points?.join('\n')],
+  )
 
   return (
     <NoticeContext.Provider value={setNotice}>
-      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', bgcolor: 'background.default' }}>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', bgcolor: 'background.paper' }}>
         <Box sx={{ px: `${figmaSpacing[3]}px`, pt: layoutTokens.policyHeaderTopPadding, pb: 6 }}>
           <Typography variant="h1" component="h1" sx={{ mb: 2 }}>
             {`${getGreeting()}, ${HOME_PERSONA.name.split(' ')[0]}`}
           </Typography>
           <Box component="section" aria-label="Actions" sx={{ mb: 3 }}>
-            <Button
-              variant="outlined"
-              startIcon={<AddIcon />}
-              onClick={() => openTool('newClaim')}
-              sx={{ color: one.primary, borderColor: one.primaryOutlinedBorder, '&:hover': { borderColor: one.primary, bgcolor: one.primaryHover } }}
-            >
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => openTool('newClaim')}>
               New Claim
             </Button>
           </Box>
           <DailyBrief />
           <KeyMetrics onCopilot={openCopilot} />
           <Schedule claims={MY_CLAIMS} />
-          <Approvals onCopilot={openCopilot} />
-          <ClaimAlerts claims={MY_CLAIMS} onCopilot={openCopilot} />
-          <MyClaims claims={MY_CLAIMS} onCopilot={openCopilot} />
+          <Approvals onInsights={openSectionInsights} />
+          <ClaimAlerts claims={MY_CLAIMS} onInsights={openSectionInsights} />
+          <MyClaims claims={MY_CLAIMS} onInsights={openSectionInsights} />
           <TeamClaims claims={TEAM_CLAIMS} />
         </Box>
       </Box>
