@@ -28,7 +28,6 @@ import RemoveIcon from '@mui/icons-material/Remove'
 import ScheduleIcon from '@mui/icons-material/Schedule'
 import StickyNote2OutlinedIcon from '@mui/icons-material/StickyNote2Outlined'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
-import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import ButtonBase from '@mui/material/ButtonBase'
@@ -63,7 +62,6 @@ import {
   fmtLongDay,
   fmtMonthDayLong,
   homeClaims,
-  homeInitials,
   humanDue,
   initialApprovals,
   isoDate,
@@ -907,38 +905,59 @@ function KeyMetrics({ onCopilot }: { onCopilot: () => void }) {
 }
 
 /* ---- claim cards ---- */
-function NextSummaryItem({ kind, item }: { kind: 'task' | 'milestone'; item: HomeTask | HomeMilestone | null }) {
+function dueLabel(date: string) {
+  const state = dueState(date)
+  const hd = humanDue(date)
+  const text = state === 'overdue' ? `Overdue by ${overdueDays(date)}` : hd === 'Tomorrow' ? 'Due tomorrow' : hd === 'Today' ? 'Today' : `Due ${hd}`
+  return { state, text }
+}
+
+function DueMark({ date }: { date: string }) {
+  const { state, text } = dueLabel(date)
+  return (
+    <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: dueColor(state), flexShrink: 0 }}>
+      <ScheduleIcon sx={{ fontSize: 16 }} />
+      <Typography variant="body2" sx={{ fontWeight: 600, color: 'inherit' }}>
+        {text}
+      </Typography>
+    </Stack>
+  )
+}
+
+function NextLine({
+  kind,
+  item,
+  onOpen,
+}: {
+  kind: 'task' | 'milestone'
+  item: HomeTask | HomeMilestone | null
+  onOpen?: () => void
+}) {
   const isTask = kind === 'task'
   const Icon = isTask ? ChecklistIcon : FlagIcon
-  const prefix = isTask ? 'Next task' : 'Next milestone'
-  if (!item) {
-    return (
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ typography: 'body2', minWidth: 0 }}>
-        <Icon sx={{ fontSize: 18, color: 'text.secondary' }} />
-        <b>{prefix}</b>
-        <span>None</span>
-      </Stack>
-    )
-  }
-  const state = dueState(item.dueDate)
-  const hd = humanDue(item.dueDate)
-  const due =
-    state === 'overdue' ? `Overdue by ${overdueDays(item.dueDate)}` : hd === 'Tomorrow' ? 'Due tomorrow' : hd === 'Today' ? 'Today' : `Due ${hd}`
-  const label = 'description' in item ? item.description : item.label
-  const DueIcon = state === 'overdue' ? ErrorOutlineIcon : ScheduleIcon
+  const label = item == null ? 'None' : 'description' in item ? item.description : item.label
   return (
-    <Stack direction="row" spacing={1} alignItems="center" sx={{ typography: 'body2', minWidth: 0 }}>
-      <Icon sx={{ fontSize: 18, color: 'text.secondary', flexShrink: 0 }} />
-      <Box component="b" sx={{ flexShrink: 0 }}>
-        {prefix}
-      </Box>
-      <Box component="span" sx={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {label}
-      </Box>
-      <DueIcon sx={{ fontSize: 16, color: dueColor(state) }} />
-      <Box component="span" sx={{ color: dueColor(state), fontWeight: 600, flexShrink: 0 }}>
-        {due}
-      </Box>
+    <Stack direction="row" spacing={0.75} alignItems="center" useFlexGap flexWrap="wrap" sx={{ minWidth: 0 }}>
+      <Icon sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }} />
+      <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
+        {isTask ? 'Next task' : 'Next milestone'}
+      </Typography>
+      {item && onOpen ? (
+        <Link
+          component="button"
+          type="button"
+          underline="hover"
+          onClick={onOpen}
+          sx={{ ...textLinkSx, minWidth: 0 }}
+        >
+          {label}
+        </Link>
+      ) : (
+        <Typography variant="body2" noWrap sx={{ minWidth: 0 }}>
+          {label}
+        </Typography>
+      )}
+      {item ? <DueMark date={item.dueDate} /> : null}
     </Stack>
   )
 }
@@ -988,23 +1007,30 @@ function ActivityPanel({ title, Icon, onClose, children }: { title: string; Icon
   )
 }
 
-function ClaimCard({ claim, kind }: { claim: HomeClaim; kind: 'my' | 'team' }) {
-  const [panel, setPanel] = useState<'tasks' | 'notes' | null>(null)
-  const [showFeatures, setShowFeatures] = useState(false)
+function ClaimCard({ claim }: { claim: HomeClaim }) {
+  const [panel, setPanel] = useState<'tasks' | 'notes' | 'features' | null>(null)
+  const [featureFocus, setFeatureFocus] = useState<{ id: string; kind: 'notes' | 'tasks' } | null>(null)
   const nt = nextOpenTask(claim)
   const nm = nextMilestone(claim)
-  const overdue = nt ? dueState(nt.dueDate) === 'overdue' : false
   const myFeatures = claim.features.filter((f) => f.assignedTo === HOME_PERSONA.name)
-  const toggle = (name: 'tasks' | 'notes') => setPanel((current) => (current === name ? null : name))
+  const toggle = (name: 'tasks' | 'notes' | 'features') => {
+    setFeatureFocus(null)
+    setPanel((current) => (current === name ? null : name))
+  }
   const linkButton = (Icon: SvgIconComponent, label: string, onClick: () => void) => (
-    <Button size="small" startIcon={<Icon sx={{ fontSize: 16 }} />} onClick={onClick}>
+    <Button
+      size="small"
+      startIcon={<Icon sx={{ fontSize: 16 }} />}
+      onClick={onClick}
+      sx={{ justifyContent: 'flex-start', minWidth: 0, px: 1, py: 0.25 }}
+    >
       {label}
     </Button>
   )
   return (
-    <Box>
-      <Box sx={{ ...cardSx, px: 2, py: 1.5, ...(overdue ? { borderLeft: 4, borderLeftColor: one.error } : {}) }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems={{ md: 'flex-start' }} justifyContent="space-between">
+    <Box sx={{ ...cardSx, overflow: 'hidden', gridColumn: panel ? { md: '1 / -1' } : undefined }}>
+      <Box sx={{ px: 2, py: 1.5 }}>
+        <Stack direction="row" spacing={2} alignItems="flex-start" justifyContent="space-between">
           <Box sx={{ minWidth: 0 }}>
             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
               <ClaimLink>{claim.claim}</ClaimLink>
@@ -1013,74 +1039,103 @@ function ClaimCard({ claim, kind }: { claim: HomeClaim; kind: 'my' | 'team' }) {
               </Typography>
               <Chip size="small" variant="outlined" label="Open" sx={tagChipSx} />
             </Stack>
-            <Typography variant="body2" color="text.secondary" component="div" sx={{ mt: 0.25 }}>
-              {claim.type} &nbsp;·&nbsp;{' '}
-              {kind === 'team' ? (
-                <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
-                  <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: one.primary, color: one.paper }}>{homeInitials(claim.assignee)}</Avatar>
-                  {claim.assignee}
-                </Box>
-              ) : (
-                claim.detail
-              )}
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+              {`${claim.type} · ${claim.detail}`}
             </Typography>
           </Box>
-          <Stack direction="row" flexWrap="wrap" useFlexGap sx={{ flexShrink: 0 }}>
+          <Stack alignItems="flex-start" sx={{ flexShrink: 0 }}>
             {linkButton(ChecklistIcon, `Linked tasks (${claim.tasks.length})`, () => toggle('tasks'))}
             {linkButton(StickyNote2OutlinedIcon, `Linked notes (${claim.notes.length})`, () => toggle('notes'))}
-            {linkButton(AccountTreeIcon, `Linked features (${claim.features.length})`, () => setShowFeatures((v) => !v))}
+            {linkButton(AccountTreeIcon, `Linked features (${claim.features.length})`, () => toggle('features'))}
           </Stack>
         </Stack>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: '8px 24px', mt: 1 }}>
-          <NextSummaryItem kind="task" item={nt} />
-          <NextSummaryItem kind="milestone" item={nm} />
-        </Box>
+        <Stack spacing={0.5} sx={{ mt: 1.5 }}>
+          <NextLine kind="task" item={nt} onOpen={nt ? () => toggle('tasks') : undefined} />
+          <NextLine kind="milestone" item={nm} />
+        </Stack>
       </Box>
       <Reveal open={panel === 'tasks'}>
-        <ActivityPanel title="Tasks" Icon={TaskAltIcon} onClose={() => setPanel(null)}>
-          {claim.tasks.length ? (
-            [...claim.tasks].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).map((t) => <TaskCard key={t.id} task={t} />)
-          ) : (
-            <EmptyNote>No tasks.</EmptyNote>
-          )}
-        </ActivityPanel>
+        <Box sx={{ px: 2, pb: 1.5 }}>
+          <ActivityPanel title="Tasks" Icon={TaskAltIcon} onClose={() => setPanel(null)}>
+            {claim.tasks.length ? (
+              [...claim.tasks].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).map((t) => <TaskCard key={t.id} task={t} />)
+            ) : (
+              <EmptyNote>No tasks.</EmptyNote>
+            )}
+          </ActivityPanel>
+        </Box>
       </Reveal>
       <Reveal open={panel === 'notes'}>
-        <ActivityPanel title="Notes" Icon={StickyNote2OutlinedIcon} onClose={() => setPanel(null)}>
-          {claim.notes.length ? claim.notes.map((n, i) => <NoteCard key={i} note={n} />) : <EmptyNote>No notes.</EmptyNote>}
-        </ActivityPanel>
+        <Box sx={{ px: 2, pb: 1.5 }}>
+          <ActivityPanel title="Notes" Icon={StickyNote2OutlinedIcon} onClose={() => setPanel(null)}>
+            {claim.notes.length ? claim.notes.map((n, i) => <NoteCard key={i} note={n} />) : <EmptyNote>No notes.</EmptyNote>}
+          </ActivityPanel>
+        </Box>
       </Reveal>
-      <Reveal open={showFeatures}>
-        <ActivityPanel title={`My Features (${myFeatures.length})`} Icon={AccountTreeIcon} onClose={() => setShowFeatures(false)}>
+      <Reveal open={panel === 'features'}>
+        <Box sx={{ px: 2, py: 1.5, bgcolor: (theme) => accentSubtle(theme) }}>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+            <AccountTreeIcon sx={{ fontSize: 20, color: one.primary }} />
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+              My Features
+            </Typography>
+            <CountChip label={myFeatures.length} />
+          </Stack>
           {myFeatures.length ? (
-            myFeatures.map((f) => {
-              const FeatureIcon = f.typeIcon === 'home_work' ? HomeWorkIcon : HealingIcon
-              return (
-                <Box key={f.id} sx={{ ...cardSx, p: 1.5 }}>
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                    <FeatureIcon sx={{ fontSize: 20, color: one.primary }} />
-                    <Typography variant="body2" sx={{ fontWeight: 700, flex: 1 }}>
-                      {featureName(f)}
-                    </Typography>
-                    <Chip size="small" label={f.featureStatus} sx={warningChipSx} />
-                  </Stack>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: '8px 24px' }}>
-                    <NextSummaryItem kind="task" item={nextOpenTask(f)} />
-                    <NextSummaryItem kind="milestone" item={nextMilestone(f)} />
+            <Stack spacing={1.5}>
+              {myFeatures.map((f) => {
+                const FeatureIcon = f.typeIcon === 'home_work' ? HomeWorkIcon : HealingIcon
+                const focus = featureFocus?.id === f.id ? featureFocus.kind : null
+                const toggleFocus = (kind: 'notes' | 'tasks') =>
+                  setFeatureFocus((current) => (current?.id === f.id && current.kind === kind ? null : { id: f.id, kind }))
+                return (
+                  <Box key={f.id}>
+                    <Stack spacing={0.75}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <FeatureIcon sx={{ fontSize: 20, color: one.primary, flexShrink: 0 }} />
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                          {featureName(f)}
+                        </Typography>
+                        <Chip size="small" label={f.featureStatus} sx={warningChipSx} />
+                        <Box sx={{ flex: 1 }} />
+                        <Stack direction="row" sx={{ flexShrink: 0 }}>
+                          {linkButton(StickyNote2OutlinedIcon, `${f.notes.length} Note${f.notes.length === 1 ? '' : 's'}`, () => toggleFocus('notes'))}
+                          {linkButton(ChecklistIcon, `${f.tasks.length} Task${f.tasks.length === 1 ? '' : 's'}`, () => toggleFocus('tasks'))}
+                        </Stack>
+                      </Stack>
+                      <Stack direction={{ xs: 'column', md: 'row' }} spacing={{ xs: 0.5, md: 3 }} alignItems={{ md: 'center' }}>
+                        <NextLine kind="task" item={nextOpenTask(f)} onOpen={() => toggleFocus('tasks')} />
+                        <NextLine kind="milestone" item={nextMilestone(f)} />
+                      </Stack>
+                    </Stack>
+                    <Reveal open={focus === 'tasks'}>
+                      <Stack spacing={1} sx={{ mt: 1 }}>
+                        {f.tasks.length ? (
+                          [...f.tasks].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).map((t) => <TaskCard key={t.id} task={t} />)
+                        ) : (
+                          <EmptyNote>No tasks.</EmptyNote>
+                        )}
+                      </Stack>
+                    </Reveal>
+                    <Reveal open={focus === 'notes'}>
+                      <Stack spacing={1} sx={{ mt: 1 }}>
+                        {f.notes.length ? f.notes.map((n, i) => <NoteCard key={i} note={n} />) : <EmptyNote>No notes.</EmptyNote>}
+                      </Stack>
+                    </Reveal>
                   </Box>
-                </Box>
-              )
-            })
+                )
+              })}
+            </Stack>
           ) : (
             <EmptyNote>No Features on this claim are assigned to you.</EmptyNote>
           )}
-        </ActivityPanel>
+        </Box>
       </Reveal>
     </Box>
   )
 }
 
-function ClaimList({ items, kind }: { items: HomeClaim[]; kind: 'my' | 'team' }) {
+function ClaimList({ items }: { items: HomeClaim[] }) {
   const [expanded, setExpanded] = useState(false)
   const sorted = sortedClaims(items)
   const claimHead = sorted.slice(0, HOME_PAGE_SIZE)
@@ -1089,12 +1144,12 @@ function ClaimList({ items, kind }: { items: HomeClaim[]; kind: 'my' | 'team' })
     <>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: `${figmaSpacing[2]}px`, alignItems: 'start' }}>
         {claimHead.map((c) => (
-          <ClaimCard key={c.claim} claim={c} kind={kind} />
+          <ClaimCard key={c.claim} claim={c} />
         ))}
         <Reveal open={expanded} sx={{ gridColumn: '1 / -1' }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: `${figmaSpacing[2]}px`, alignItems: 'start' }}>
             {claimMore.map((c) => (
-              <ClaimCard key={c.claim} claim={c} kind={kind} />
+              <ClaimCard key={c.claim} claim={c} />
             ))}
           </Box>
         </Reveal>
@@ -1617,14 +1672,14 @@ function ClaimAlerts({ claims, onInsights }: { claims: HomeClaim[]; onInsights: 
   )
 }
 
-/* ---- My Claims / Team Claims ---- */
+/* ---- My claims ---- */
 type MyClaimsTab = 'my' | 'fnol' | 'unassigned'
 
 function MyClaims({ claims, onInsights }: { claims: HomeClaim[]; onInsights: (insight: SectionInsight) => void }) {
   const [tab, setTab] = useState<MyClaimsTab>('my')
   return (
     <Box component="section" sx={{ mb: 3 }}>
-      <ModuleHeader title="My Claims">
+      <ModuleHeader title="My claims">
         <InsightsButton
           count={claims.length}
           onClick={() =>
@@ -1648,19 +1703,10 @@ function MyClaims({ claims, onInsights }: { claims: HomeClaim[]; onInsights: (in
         <Tab value="unassigned" label="Unassigned claims" />
       </Tabs>
       {tab === 'my' ? (
-        <ClaimList items={claims} kind="my" />
+        <ClaimList items={claims} />
       ) : (
         <EmptyNote>{tab === 'fnol' ? 'No pending FNOL submissions.' : 'No unassigned claims.'}</EmptyNote>
       )}
-    </Box>
-  )
-}
-
-function TeamClaims({ claims }: { claims: HomeClaim[] }) {
-  return (
-    <Box component="section" sx={{ mb: 3 }}>
-      <ModuleHeader title="Team Claims" count={claims.length} />
-      <ClaimList items={claims} kind="team" />
     </Box>
   )
 }
@@ -1673,7 +1719,6 @@ function getGreeting() {
 }
 
 const MY_CLAIMS = homeClaims.injury
-const TEAM_CLAIMS = [...homeClaims.injury, ...homeClaims.property]
 
 /** Joan's claims home. New Claim opens the shell's Create claim drawer, the same one as + → Claim. */
 export function ClaimsHomePage() {
@@ -1720,7 +1765,6 @@ export function ClaimsHomePage() {
           <Approvals onInsights={openSectionInsights} />
           <ClaimAlerts claims={MY_CLAIMS} onInsights={openSectionInsights} />
           <MyClaims claims={MY_CLAIMS} onInsights={openSectionInsights} />
-          <TeamClaims claims={TEAM_CLAIMS} />
         </Box>
       </Box>
       <Snackbar open={notice != null} autoHideDuration={3500} onClose={() => setNotice(null)} message={notice} />
