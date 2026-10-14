@@ -384,6 +384,8 @@ export function CreateClaimPanel({
     if (!policy) return
     setEditing(null)
     setStart((current) => (current === 'policy' ? null : current))
+    // The new facts stay collapsed so Needs attention remains the open group.
+    setKnownOpen(false)
     focusComposer()
     updateDraft((current) => ({
       ...current,
