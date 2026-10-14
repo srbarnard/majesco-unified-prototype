@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router'
 import { CopilotMarkIcon } from '@/design-system/icons/CopilotMarkIcon'
 import { useRightTool, type RightToolId } from '@/app/contexts/RightToolContext'
+import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 
@@ -171,7 +172,7 @@ export function AppRightToolRail() {
             sx={(theme) => ({
               width: 36,
               height: 36,
-              borderRadius: 1,
+              borderRadius: `${figmaBorderRadius.borderRadius}px`,
               cursor: 'inherit',
               // Match chart pills: primary.main fill + contrastText icon (dark on light blue in dark mode).
               color: active

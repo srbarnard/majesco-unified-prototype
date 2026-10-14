@@ -1,3 +1,5 @@
+import { figmaBorderRadius } from './figma-border-radius'
+
 export const layoutTokens = {
   drawerWidth: 260,
   drawerCollapsedWidth: 72,
@@ -22,8 +24,8 @@ export const layoutTokens = {
   detailPanelFallbackWidth: 420,
   /** Horizontal padding for main content areas (px). */
   contentPaddingX: 25,
-  /** Dashboard card corner radius (px). */
-  cardRadius: 10,
+  /** Dashboard card corner radius — Majesco One `borderRadius` (4). */
+  cardRadius: figmaBorderRadius.borderRadius,
   /** Subtle elevation for dashboard cards. */
   cardShadow: '0 0 4px rgba(0, 0, 0, 0.08)',
   /** Top padding for policy header and matching side panel titles. */

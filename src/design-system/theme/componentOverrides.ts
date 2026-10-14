@@ -318,7 +318,7 @@ export const componentOverrides: ThemeOptions['components'] = {
   MuiChip: {
     styleOverrides: {
       root: {
-        borderRadius: 30,
+        borderRadius: borderRadius.pill,
         fontWeight: 500,
         fontSize: '0.75rem',
       },

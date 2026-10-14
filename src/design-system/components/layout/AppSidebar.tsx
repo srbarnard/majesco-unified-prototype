@@ -33,6 +33,7 @@ import {
   navItemActiveIndicatorStyles,
   navItemInteractionStyles,
 } from '@/design-system/tokens/motion'
+import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { accentSubtle, surfaceMuted, surfaceSubtle } from '@/design-system/theme/themeSurfaces'
 import {
@@ -296,7 +297,7 @@ function SidebarContent({
           py: 1.25,
           px: 2,
           mb: 0.25,
-          borderRadius: 1,
+          borderRadius: `${figmaBorderRadius.borderRadius}px`,
           minHeight: 48,
           flex: '0 0 auto',
           position: 'relative' as const,
@@ -315,7 +316,7 @@ function SidebarContent({
           py: 1.25,
           px: 0.5,
           mb: 0.25,
-          borderRadius: 1,
+          borderRadius: `${figmaBorderRadius.borderRadius}px`,
           minHeight: 64,
           flex: '0 0 auto',
           position: 'relative' as const,
@@ -497,7 +498,7 @@ function SidebarContent({
               onDrop={dropIntoMore}
               sx={{
                 color: moreHasActiveRoute ? 'primary.main' : 'text.secondary',
-                borderRadius: 1,
+                borderRadius: `${figmaBorderRadius.borderRadius}px`,
                 bgcolor: (theme) => (moreHasActiveRoute ? accentSubtle(theme) : surfaceSubtle(theme)),
                 '&:hover': { bgcolor: (theme) => theme.palette.action.hover },
               }}
@@ -534,7 +535,7 @@ function SidebarContent({
               onDrop={dropIntoMore}
               sx={{
                 minWidth: 220,
-                borderRadius: 1,
+                borderRadius: `${figmaBorderRadius.borderRadius}px`,
                 border: 1,
                 borderColor: 'divider',
                 boxShadow: 2,

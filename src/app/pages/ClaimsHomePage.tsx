@@ -44,7 +44,7 @@ import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import type { SvgIconComponent } from '@mui/icons-material'
 import { Fragment, createContext, useContext, useState, type ReactNode } from 'react'
-import { Bar, BarChart, Cell, Line, LineChart, Pie, PieChart, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useGlobalSearch } from '@/app/contexts/GlobalSearchContext'
 import { useRightToolDispatch } from '@/app/contexts/RightToolContext'
 import {
@@ -83,6 +83,11 @@ import {
   type HomeTask,
 } from '@/app/data/claimsHomeMock'
 import { useRegisterRightToolCopilot } from '@/app/hooks/useRightToolRegistration'
+import { analyticsBodySx, analyticsChartColors, getAnalyticsChartAxisStyle, getAnalyticsChartGridStroke } from '@/design-system/components/analytics/analyticsStyles'
+import { accentSubtle, isDarkMode } from '@/design-system/theme/themeSurfaces'
+import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
+import { figmaPalette } from '@/design-system/tokens/figma-palette'
+import { figmaSpacing } from '@/design-system/tokens/figma-spacing'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
 
@@ -101,12 +106,13 @@ const one = {
   divider: '#0000001f',
   paper: '#ffffff',
   textPrimary: '#000000de',
-  radius: '4px',
+  radius: `${figmaBorderRadius.borderRadius}px`,
 } as const
 
 /* ---- shared pieces ---- */
-const cardSx = { border: 1, borderColor: one.divider, borderRadius: one.radius, bgcolor: one.paper } as const
-const tagChipSx = { borderColor: one.divider, color: one.textPrimary } as const
+const cardSx = { border: 1, borderColor: 'divider', borderRadius: one.radius, bgcolor: 'background.paper' } as const
+const chipRadiusSx = { borderRadius: `${figmaBorderRadius.pillRadius}px` } as const
+const tagChipSx = { borderColor: 'divider', color: 'text.primary', ...chipRadiusSx } as const
 
 function OneCallout({ icon, sx, children }: { icon: ReactNode; sx?: object; children: ReactNode }) {
   return (
@@ -128,7 +134,7 @@ const textLinkSx = {
   textAlign: 'left',
   verticalAlign: 'baseline',
 } as const
-const warningChipSx = { bgcolor: one.warningBg, color: one.warningText } as const
+const warningChipSx = { bgcolor: one.warningBg, color: one.warningText, ...chipRadiusSx } as const
 const dueColor = (state: DueState) =>
   state === 'overdue' ? one.error : state === 'today' || state === 'soon' ? one.warningText : 'text.secondary'
 
@@ -156,7 +162,7 @@ function CountChip({ label }: { label: ReactNode }) {
       variant="outlined"
       color="primary"
       label={label}
-      sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 500 }}
+      sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 500, ...chipRadiusSx }}
     />
   )
 }
@@ -231,22 +237,63 @@ function NoteCard({ note }: { note: HomeNote }) {
 }
 
 /* ---- Daily Brief ---- */
+function chartTooltipValue(payload: unknown): number | undefined {
+  if (!Array.isArray(payload) || payload.length === 0) return undefined
+  const value = (payload[0] as { value?: unknown }).value
+  return typeof value === 'number' ? value : undefined
+}
+
+function ChartTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean
+  payload?: unknown
+  label?: string | number
+}) {
+  const value = chartTooltipValue(payload)
+  if (!active || value == null) return null
+  return (
+    <Box
+      sx={(theme) => ({
+        px: 1.25,
+        py: 0.75,
+        borderRadius: one.radius,
+        bgcolor: 'background.paper',
+        border: `1px solid ${theme.palette.divider}`,
+        boxShadow: isDarkMode(theme) ? '0 4px 16px rgba(0,0,0,0.45)' : '0 4px 12px rgba(0,0,0,0.08)',
+      })}
+    >
+      {label != null && label !== '' ? (
+        <Typography variant="caption" color="text.secondary" sx={analyticsBodySx} display="block">
+          {label}
+        </Typography>
+      ) : null}
+      <Typography variant="body2" sx={{ ...analyticsBodySx, fontWeight: 600 }}>
+        {typeof value === 'number' ? value.toLocaleString('en-US') : ''}
+      </Typography>
+    </Box>
+  )
+}
+
 function ClaimsHealthDonut({ pct }: { pct: number }) {
   const data = [
     { name: 'Claims health', value: pct },
     { name: 'Remaining', value: 100 - pct },
   ]
   return (
-    <Box role="img" aria-label={`Claims health ${pct} percent`} sx={{ position: 'relative', width: 96, height: 96, flexShrink: 0 }}>
+    <Box role="img" aria-label={`Claims health ${pct} percent`} sx={{ position: 'relative', width: 80, height: 80, flexShrink: 0 }}>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-          <Pie data={data} dataKey="value" innerRadius={31} outerRadius={46} startAngle={90} endAngle={-270} stroke="none" isAnimationActive={false}>
-            <Cell fill={one.primary} />
-            <Cell fill={one.divider} />
+          <Pie data={data} dataKey="value" nameKey="name" innerRadius={26} outerRadius={38} startAngle={90} endAngle={-270} stroke="none" isAnimationActive={false}>
+            <Cell fill={analyticsChartColors[0]} />
+            <Cell fill={figmaPalette.grey[200]} />
           </Pie>
+          <Tooltip content={(props) => <ChartTooltip active={props.active} payload={props.payload} label={props.label} />} />
         </PieChart>
       </ResponsiveContainer>
-      <Box sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
+      <Box sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', pointerEvents: 'none' }}>
         <Typography variant="h4" component="b">
           {pct}%
         </Typography>
@@ -276,7 +323,7 @@ function DailyBrief() {
     <Box
       component="section"
       aria-labelledby="dailyBriefTitle"
-      sx={{ mb: 3, p: 2, border: 1, borderColor: one.divider, borderRadius: one.radius, bgcolor: one.primaryHover }}
+      sx={{ mb: 3, p: 2, border: 1, borderColor: 'divider', borderRadius: one.radius, bgcolor: (theme) => accentSubtle(theme) }}
     >
       <ModuleHeader title="Daily Brief" id="dailyBriefTitle">
         {escalations.length > 3 ? (
@@ -338,11 +385,12 @@ const chartCaptionSx = { fontFamily: figmaFontFamilyStack.heading, fontWeight: 6
 
 function MetricChart({ id }: { id: string }) {
   const theme = useTheme()
-  const primary = one.primary
-  const track = one.divider
-  const muted = theme.palette.text.secondary
+  const axisStyle = getAnalyticsChartAxisStyle(theme)
+  const gridStroke = getAnalyticsChartGridStroke(theme)
+  const series = analyticsChartColors[0]
   const v = METRIC_VISUALIZATIONS[id]
   if (!v) return null
+  const barRadius = figmaBorderRadius.borderRadius
   const foot = (left: string, right: string | null) => (
     <Stack direction="row" justifyContent="space-between">
       <Typography variant="caption" color="text.secondary">
@@ -355,19 +403,28 @@ function MetricChart({ id }: { id: string }) {
       ) : null}
     </Stack>
   )
+  const tooltip = (
+    <Tooltip
+      content={(props) => (
+        <ChartTooltip active={props.active} payload={props.payload} label={props.label} />
+      )}
+    />
+  )
   if (v.type === 'progress') {
     const pct = Math.max(0, Math.min(100, v.value))
     const target = Math.max(0, Math.min(100, v.target))
     return (
       <Box>
         <Typography sx={chartCaptionSx}>{v.label}</Typography>
-        <Box sx={{ height: 40 }}>
+        <Box sx={{ height: 72 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart layout="vertical" data={[{ name: v.label, value: pct }]} margin={{ top: 8, right: 4, bottom: 8, left: 4 }}>
-              <XAxis type="number" domain={[0, 100]} hide />
+            <BarChart layout="vertical" data={[{ name: v.label, value: pct }]} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+              <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" horizontal={false} />
+              <XAxis type="number" domain={[0, 100]} tick={axisStyle} tickLine={false} axisLine={{ stroke: gridStroke }} />
               <YAxis type="category" dataKey="name" hide />
-              <Bar dataKey="value" fill={primary} barSize={12} radius={[6, 6, 6, 6]} background={{ fill: track, radius: 6 }} isAnimationActive={false} />
-              <ReferenceLine x={target} stroke={muted} strokeWidth={2} />
+              {tooltip}
+              <Bar dataKey="value" fill={series} barSize={12} radius={[barRadius, barRadius, barRadius, barRadius]} isAnimationActive={false} />
+              <ReferenceLine x={target} stroke={theme.palette.text.secondary} strokeDasharray="3 3" />
             </BarChart>
           </ResponsiveContainer>
         </Box>
@@ -375,39 +432,47 @@ function MetricChart({ id }: { id: string }) {
       </Box>
     )
   }
-  const max = Math.max(...v.values, v.type === 'trend' ? (v.target ?? 0) : 0, 1)
   if (v.type === 'bars') {
     const data = v.values.map((value, i) => ({ name: v.categories[i] ?? String(value), value }))
+    const max = Math.max(...v.values, 1)
     return (
       <Box>
         <Typography sx={chartCaptionSx}>{v.label}</Typography>
-        <Box sx={{ height: 80 }}>
+        <Box sx={{ height: 96 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-              <XAxis dataKey="name" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 11, fill: muted }} />
-              <YAxis hide domain={[0, max]} />
-              <Bar dataKey="value" fill={primary} fillOpacity={0.78} radius={[4, 4, 0, 0]} background={{ fill: track, radius: 4 }} isAnimationActive={false} />
+            <BarChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
+              <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="name" axisLine={{ stroke: gridStroke }} tickLine={false} interval={0} tick={axisStyle} />
+              <YAxis width={28} domain={[0, max]} tick={axisStyle} tickLine={false} axisLine={false} />
+              {tooltip}
+              <Bar dataKey="value" fill={series} radius={[barRadius, barRadius, 0, 0]} isAnimationActive={false} />
             </BarChart>
           </ResponsiveContainer>
         </Box>
       </Box>
     )
   }
-  const data = v.values.map((value, i) => ({ i, value }))
+  const data = v.values.map((value, i) => ({ name: String(i + 1), value }))
+  const values = v.target != null ? [...v.values, v.target] : v.values
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const pad = Math.max((max - min) * 0.25, 1)
   return (
     <Box>
       <Typography sx={chartCaptionSx}>{v.label}</Typography>
-      <Box sx={{ height: 62 }}>
+      <Box sx={{ height: 96 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 6, right: 4, bottom: 6, left: 4 }}>
-            <XAxis dataKey="i" hide />
-            <YAxis hide domain={[0, max]} />
-            {v.target ? <ReferenceLine y={v.target} stroke={muted} strokeDasharray="3 3" /> : null}
-            <Line type="linear" dataKey="value" stroke={primary} strokeWidth={2.2} dot={false} isAnimationActive={false} />
+          <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="name" tick={axisStyle} tickLine={false} axisLine={{ stroke: gridStroke }} />
+            <YAxis width={32} domain={[min - pad, max + pad]} tick={axisStyle} tickLine={false} axisLine={false} />
+            {tooltip}
+            {v.target != null ? <ReferenceLine y={v.target} stroke={theme.palette.text.secondary} strokeDasharray="3 3" /> : null}
+            <Line type="linear" dataKey="value" stroke={series} strokeWidth={2} dot={{ r: 2, fill: series }} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </Box>
-      {foot('Recent periods', v.target ? `Target ${v.target}` : null)}
+      {foot('Recent periods', v.target != null ? `Target ${v.target}` : null)}
     </Box>
   )
 }
@@ -416,7 +481,17 @@ function MetricCard({ metric, onAction }: { metric: ClaimMetric; onAction: (metr
   const agent = metric.actionType === 'agent'
   return (
     <Box component="article" sx={{ ...cardSx, display: 'flex', flexDirection: 'column', minHeight: 203 }}>
-      <Box sx={{ flex: 1, p: 2, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 1.5 }}>
+      <Box
+        sx={{
+          flex: 1,
+          p: 2,
+          display: 'grid',
+          gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) minmax(0, 1fr)' },
+          gap: 2,
+          alignItems: 'stretch',
+          minHeight: 116,
+        }}
+      >
         <Box>
           <Typography variant="h4" component="div">
             {FIGMA_METRIC_LABELS[metric.id] ?? metric.label}
@@ -431,7 +506,9 @@ function MetricCard({ metric, onAction }: { metric: ClaimMetric; onAction: (metr
             {metric.trend}
           </Typography>
         </Box>
-        <MetricChart id={metric.id} />
+        <Box sx={{ borderLeft: { md: 1 }, borderTop: { xs: 1, md: 0 }, borderColor: 'divider', pl: { md: 2 }, pt: { xs: 1.5, md: 0 } }}>
+          <MetricChart id={metric.id} />
+        </Box>
       </Box>
       <Divider />
       <Box sx={{ px: 1, py: 0.5 }}>
@@ -597,7 +674,7 @@ function KeyMetrics({ onCopilot }: { onCopilot: () => void }) {
           />
         ) : null}
       </ModuleHeader>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', xl: 'repeat(4, minmax(0, 1fr))' }, gap: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: `${figmaSpacing[2]}px` }}>
         {visible.map((m) => (
           <MetricCard key={m.id} metric={m} onAction={onAction} />
         ))}
@@ -703,7 +780,7 @@ function ClaimCard({ claim, kind }: { claim: HomeClaim; kind: 'my' | 'team' }) {
     </Button>
   )
   return (
-    <Box sx={{ mb: 1.5 }}>
+    <Box>
       <Box sx={{ ...cardSx, px: 2, py: 1.5, ...(overdue ? { borderLeft: 4, borderLeftColor: one.error } : {}) }}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems={{ md: 'flex-start' }} justifyContent="space-between">
           <Box sx={{ minWidth: 0 }}>
@@ -787,9 +864,11 @@ function ClaimList({ items, kind }: { items: HomeClaim[]; kind: 'my' | 'team' })
   const visible = expanded ? sorted : sorted.slice(0, HOME_PAGE_SIZE)
   return (
     <>
-      {visible.map((c) => (
-        <ClaimCard key={c.claim} claim={c} kind={kind} />
-      ))}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: `${figmaSpacing[2]}px`, alignItems: 'start' }}>
+        {visible.map((c) => (
+          <ClaimCard key={c.claim} claim={c} kind={kind} />
+        ))}
+      </Box>
       {sorted.length > HOME_PAGE_SIZE ? (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <ShowMore
@@ -942,7 +1021,7 @@ function Schedule({ claims }: { claims: HomeClaim[] }) {
         />
         <Box sx={{ flex: 1 }} />
         <Stack direction="row" alignItems="center" spacing={1}>
-          <IconButton size="small" aria-label="Previous work week" onClick={() => moveWeek(addDays(weekStart, -7))} sx={{ bgcolor: one.primaryHover }}>
+          <IconButton size="small" aria-label="Previous work week" onClick={() => moveWeek(addDays(weekStart, -7))} sx={{ bgcolor: (theme) => (isDarkMode(theme) ? theme.figmaPalette.grey[800] : theme.figmaPalette.grey[100]) }}>
             <ChevronLeftIcon fontSize="small" />
           </IconButton>
           {isoDate(weekStart) !== currentMonday ? (
@@ -953,7 +1032,7 @@ function Schedule({ claims }: { claims: HomeClaim[] }) {
           <Typography variant="subtitle2" component="span">
             {`${fmtMonthDayLong(days[0])} – ${fmtMonthDayLong(days[4])}`}
           </Typography>
-          <IconButton size="small" aria-label="Next work week" onClick={() => moveWeek(addDays(weekStart, 7))} sx={{ bgcolor: one.primaryHover }}>
+          <IconButton size="small" aria-label="Next work week" onClick={() => moveWeek(addDays(weekStart, 7))} sx={{ bgcolor: (theme) => (isDarkMode(theme) ? theme.figmaPalette.grey[800] : theme.figmaPalette.grey[100]) }}>
             <ChevronRightIcon fontSize="small" />
           </IconButton>
         </Stack>
@@ -1025,10 +1104,11 @@ function Approvals({ onCopilot }: { onCopilot: () => void }) {
       {pending.length === 0 ? (
         <EmptyNote>No pending approvals.</EmptyNote>
       ) : (
-        visible.map((a) => {
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: `${figmaSpacing[2]}px`, alignItems: 'start' }}>
+        {visible.map((a) => {
           const panel = panels[a.id]
           return (
-            <Box key={a.id} sx={{ ...cardSx, p: 2, mb: 2 }}>
+            <Box key={a.id} sx={{ ...cardSx, p: 2 }}>
               <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }}>
                 <Stack direction="row" spacing={2} alignItems="baseline" flexWrap="wrap" useFlexGap>
                   <Typography variant="h4" component="span">
@@ -1142,7 +1222,8 @@ function Approvals({ onCopilot }: { onCopilot: () => void }) {
               ) : null}
             </Box>
           )
-        })
+        })}
+        </Box>
       )}
       {pending.length > HOME_PAGE_SIZE ? (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -1193,7 +1274,16 @@ function ClaimAlerts({ claims, onCopilot }: { claims: HomeClaim[]; onCopilot: ()
               direction="row"
               spacing={1.5}
               alignItems="center"
-              sx={{ ...cardSx, mb: 1, px: 1.5, py: 1, borderLeft: 4, borderLeftColor: active ? one.error : one.success, typography: 'body2' }}
+              sx={{
+                mb: 1,
+                px: 2,
+                py: 1.5,
+                borderRadius: one.radius,
+                border: 0,
+                typography: 'body2',
+                bgcolor: (theme) => (active ? theme.figmaPalette.red[50] : theme.figmaPalette.green[50]),
+                color: (theme) => (active ? theme.figmaPalette.red[900] : theme.figmaPalette.green[900]),
+              }}
             >
               <IconButton
                 size="small"
@@ -1270,15 +1360,14 @@ export function ClaimsHomePage() {
   const { openTool } = useRightToolDispatch()
   const { copilotView, agenticPrompt } = useGlobalSearch()
   const [notice, setNotice] = useState<string | null>(null)
-  const contentPx = `${layoutTokens.contentPaddingX}px`
   const openCopilot = () => openTool('copilot')
 
   useRegisterRightToolCopilot({ context: 'global', globalView: copilotView, agenticPrompt }, [copilotView, agenticPrompt])
 
   return (
     <NoticeContext.Provider value={setNotice}>
-      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', bgcolor: 'background.paper' }}>
-        <Box sx={{ px: contentPx, pt: layoutTokens.policyHeaderTopPadding, pb: 6 }}>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', bgcolor: 'background.default' }}>
+        <Box sx={{ px: `${figmaSpacing[3]}px`, pt: layoutTokens.policyHeaderTopPadding, pb: 6 }}>
           <Typography variant="h1" component="h1" sx={{ mb: 2 }}>
             {`${getGreeting()}, ${HOME_PERSONA.name.split(' ')[0]}`}
           </Typography>
