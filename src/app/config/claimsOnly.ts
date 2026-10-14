@@ -1,5 +1,6 @@
 /**
- * Claims-only share build: the Claims home is the only reachable page, the left nav is hidden,
- * and the right tool rail and + menu offer only Create claim.
+ * Claims-only share build: Home opens the Claims home and Claims opens the claims list.
+ * Other nav destinations stay visible but do not navigate. The right tool rail and + menu
+ * offer only Create claim.
  */
 export const CLAIMS_ONLY = true

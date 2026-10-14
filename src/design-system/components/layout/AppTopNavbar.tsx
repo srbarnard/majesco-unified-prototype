@@ -188,7 +188,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
           {CLAIMS_ONLY ? (
             <>
               <ButtonBase
-                aria-label="Switch product, current: P&C Claims"
+                aria-label="Switch product, current: P&C Suite"
                 aria-haspopup="true"
                 aria-expanded={Boolean(productMenuAnchor)}
                 onClick={(event) => setProductMenuAnchor(event.currentTarget)}
@@ -204,7 +204,7 @@ export function AppTopNavbar({ userInitials = 'CR', onMobileMenuClick }: AppTopN
                 }}
               >
                 <Typography component="span" sx={{ fontWeight: 600, fontSize: '0.9375rem' }}>
-                  P&amp;C Claims
+                  P&amp;C Suite
                 </Typography>
                 <KeyboardArrowDownIcon fontSize="small" sx={{ color: 'text.secondary' }} />
               </ButtonBase>

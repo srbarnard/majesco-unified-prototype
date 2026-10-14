@@ -50,8 +50,14 @@ type NavListId = 'main' | 'more'
 type NavOrder = Record<NavListId, string[]>
 
 const PINNED_TOP_LABEL = 'Home'
-const CLAIMS_ONLY_NAV_LABEL = 'Claims'
 const NAV_ORDER_STORAGE_KEY = 'leftNav.order'
+
+/** Home opens the Claims home. Claims opens the claims list. Everything else stays visible. */
+const CLAIMS_ONLY_NAVIGABLE = new Set(['Home', 'Claims'])
+
+function isClaimsOnlyNavigable(label: string) {
+  return !CLAIMS_ONLY || CLAIMS_ONLY_NAVIGABLE.has(label)
+}
 
 const navItemsByLabel = new Map<string, NavItem>(
   [...visibleAppShellNavItems, ...moreMenuItems].map((item) => [item.label, item]),
@@ -314,16 +320,13 @@ function SidebarContent({
 
   const renderNavItem = (item: NavItem, navList?: NavListId) => {
     const Icon = item.icon
-    const claimsOnlyLink = CLAIMS_ONLY && item.label === CLAIMS_ONLY_NAV_LABEL
-    const claimsOnlyDisabled = CLAIMS_ONLY && !claimsOnlyLink
-    const list = CLAIMS_ONLY ? undefined : navList
+    const navigable = isClaimsOnlyNavigable(item.label)
+    const list = navList
     const isPanelActive = item.panel ? secondaryPanel === item.panel : false
-    const isRouteItemActive = claimsOnlyLink
-      ? location.pathname === '/'
-      : item.path
-        ? !isSecondaryPanelOpen && isRouteActive(location.pathname, item.path, item.matchPaths)
-        : false
-    const active = !claimsOnlyDisabled && (isPanelActive || isRouteItemActive)
+    const isRouteItemActive = item.path
+      ? !isSecondaryPanelOpen && isRouteActive(location.pathname, item.path, item.matchPaths)
+      : false
+    const active = navigable && (isPanelActive || isRouteItemActive)
     const drag = list ? dragHandlers(item.label, list) : { draggable: false }
     const dragSx = list
       ? { opacity: dragKey === item.label ? 0.4 : 1, cursor: dragKey ? 'grabbing' : undefined }
@@ -360,9 +363,22 @@ function SidebarContent({
       </ListItemIcon>
     )
 
-    if (claimsOnlyDisabled) {
+    if (!navigable) {
       return (
-        <ListItemButton key={item.label} disabled sx={itemSx(false)}>
+        <ListItemButton
+          key={item.label}
+          {...drag}
+          aria-disabled
+          disableRipple
+          onClick={(event) => event.preventDefault()}
+          sx={{
+            ...itemSx(false),
+            ...dragSx,
+            color: 'text.disabled',
+            '&:hover': { bgcolor: 'transparent' },
+            '&:active': { transform: 'none' },
+          }}
+        >
           {icon}
           {label}
         </ListItemButton>
@@ -390,8 +406,8 @@ function SidebarContent({
         key={item.label}
         {...drag}
         component={NavLink}
-        to={claimsOnlyLink ? '/' : item.path!}
-        end={claimsOnlyLink || item.path === '/'}
+        to={item.path!}
+        end={item.path === '/'}
         onClick={handleRouteNavClick}
         data-nav-active={active ? 'true' : undefined}
         sx={{ ...itemSx(active), ...dragSx }}
@@ -459,7 +475,6 @@ function SidebarContent({
         ) : (
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 0.25, mb: 0.5 }}>
             <IconButton
-              disabled={CLAIMS_ONLY}
               aria-label="More navigation options"
               aria-haspopup="menu"
               aria-expanded={Boolean(moreAnchor)}
@@ -531,13 +546,41 @@ function SidebarContent({
                         {item.copilotIcon ? (
                           <CopilotIcon size={20} />
                         ) : (
-                          item.icon && <item.icon sx={{ fontSize: 20, color: 'text.secondary' }} />
+                          item.icon && (
+                            <item.icon
+                              sx={{
+                                fontSize: 20,
+                                color: isClaimsOnlyNavigable(item.label) ? 'text.secondary' : 'inherit',
+                              }}
+                            />
+                          )
                         )}
                       </ListItemIcon>
-                      <Typography variant="body2">{item.label}</Typography>
+                      <Typography variant="body2" color="inherit">
+                        {item.label}
+                      </Typography>
                     </>
                   )
                   const menuItemSx = { py: 1, gap: 1.5, opacity: dragKey === item.label ? 0.4 : 1 }
+
+                  if (!isClaimsOnlyNavigable(item.label)) {
+                    return (
+                      <MenuItem
+                        key={item.label}
+                        {...dragHandlers(item.label, 'more')}
+                        aria-disabled
+                        disableRipple
+                        onClick={(event) => event.preventDefault()}
+                        sx={{
+                          ...menuItemSx,
+                          color: 'text.disabled',
+                          '&:hover': { bgcolor: 'transparent' },
+                        }}
+                      >
+                        {content}
+                      </MenuItem>
+                    )
+                  }
 
                   if (item.panel) {
                     return (
