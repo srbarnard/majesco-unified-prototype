@@ -104,11 +104,12 @@ export function getAnalyticsChartGridStroke(theme: Theme) {
 /**
  * Chart hover tooltip that contrasts with the plot.
  * Light charts use Majesco `tooltipFill` (dark grey) with dark-scheme text.
- * Dark charts use the light `background.paper` token with light-scheme text.
+ * Dark charts use the same treatment as the analytics charts: dark `background.paper`,
+ * dark-scheme text, and the dark divider.
  */
 export function getChartTooltipSx(theme: Theme) {
   const darkChart = isDarkMode(theme)
-  const surface = getFigmaColors(darkChart ? 'light' : 'dark')
+  const surface = getFigmaColors('dark')
   return {
     box: {
       px: 1.25,
