@@ -1,16 +1,17 @@
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
-import Collapse from '@mui/material/Collapse'
+import PersonAddAltOutlinedIcon from '@mui/icons-material/PersonAddAltOutlined'
+import Box from '@mui/material/Box'
 import Divider from '@mui/material/Divider'
 import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import type { Theme } from '@mui/material/styles'
+import { alpha, type Theme } from '@mui/material/styles'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link as RouterLink } from 'react-router'
-import { customerDetailsPath } from '@/pages/customers/data/customerRoutes'
-import { Button as DsButton, CopilotQuickActions, InfoBanner } from '@/design-system/components'
+import { Button as DsButton, CopilotQuickActions } from '@/design-system/components'
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
-import { entranceMotion, fadeSlideDownSx } from '@/design-system/tokens/motion'
+import { fadeSlideDownSx } from '@/design-system/tokens/motion'
+import { copilotSubtitleSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import type { CreatedCustomerEntry } from '@/app/contexts/CustomersContext'
 import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
 import {
@@ -148,7 +149,7 @@ const threadLinkSx = (theme: Theme) => ({
 })
 const ADD_LOCATION = 'Add location'
 const ADD_TASK = 'Add task'
-const CREATED_BANNER_MS = 6000
+const CREATE_ANOTHER_CUSTOMER = 'Create another customer'
 const START_QUOTE_REQUEST = /\b(?:start|begin|new|create)\s+(?:a\s+)?quote\b/i
 
 export type CreateCustomerSavedState = {
@@ -229,21 +230,7 @@ export function CreateCustomerPanel({
   const [sentFiles, setSentFiles] = useState<StagedFile[]>(initialState?.sentFiles ?? [])
   const [producerRequest, setProducerRequest] = useState<ProducerRequest | null>(null)
   const [record, setRecord] = useState<CustomerRecord | null>(null)
-  const [createdBannerOpen, setCreatedBannerOpen] = useState(false)
-  // True only right after Create, so the entrance plays once — not on every revisit of the record.
-  const [recordIntro, setRecordIntro] = useState(false)
-
-  useEffect(() => {
-    if (!createdBannerOpen) return
-    const timer = window.setTimeout(() => setCreatedBannerOpen(false), CREATED_BANNER_MS)
-    return () => window.clearTimeout(timer)
-  }, [createdBannerOpen])
-
-  useEffect(() => {
-    if (!recordIntro) return
-    const timer = window.setTimeout(() => setRecordIntro(false), 1500)
-    return () => window.clearTimeout(timer)
-  }, [recordIntro])
+  const [justCreated, setJustCreated] = useState(false)
   const [parsedComposerValue, setParsedComposerValue] = useDebouncedValue(composerValue)
   // Bumped on reset so a file that finishes reading after Cancel doesn't repopulate the draft.
   const draftGeneration = useRef(0)
@@ -575,8 +562,7 @@ export function CreateCustomerPanel({
     setParsedComposerValue('')
     setEditing(null)
     setRecord(customer)
-    setCreatedBannerOpen(true)
-    setRecordIntro(true)
+    setJustCreated(true)
     return { customer, finalDraft }
   }
 
@@ -622,10 +608,11 @@ export function CreateCustomerPanel({
 
   const handleRecordAction = (action: string, recordDraft = draft) => {
     if (!record) return
-    setCreatedBannerOpen(false)
     if (action === START_QUOTE) onStartQuote(buildQuotePrefillFromDraft(recordDraft, record.customerNumber))
-    else if (action === ADD_LOCATION) setEditing('newLocation')
-    else if (action === ADD_TASK) onOpenTask(findRelated('Customer', record.customerNumber, [record.name]), null)
+    else if (action === ADD_LOCATION) {
+      setJustCreated(false)
+      setEditing('newLocation')
+    } else if (action === ADD_TASK) onOpenTask(findRelated('Customer', record.customerNumber, [record.name]), null)
   }
 
   /** Record composer: same field parse as the draft, but the saved name and type don't change. */
@@ -635,7 +622,7 @@ export function CreateCustomerPanel({
     setComposerValue('')
     setParsedComposerValue('')
     setEditing(null)
-    setCreatedBannerOpen(false)
+    setJustCreated(false)
     const next = {
       ...mergeCustomerDraft(draft, inferCustomerFromText(text, pageContext)),
       type: draft.type,
@@ -646,13 +633,12 @@ export function CreateCustomerPanel({
   }
 
   const toggleEditing = (field: EditField) => {
-    if (record) setCreatedBannerOpen(false)
     setEditing((current) => (current === field ? null : field))
   }
 
   const startAnotherCustomer = () => {
     setRecord(null)
-    setCreatedBannerOpen(false)
+    setJustCreated(false)
     resetDraft()
     setTab('new')
   }
@@ -668,6 +654,95 @@ export function CreateCustomerPanel({
       onOpen={onOpenCustomer}
     />
   )
+
+  const recordActions = (
+    <CopilotQuickActions
+      label="Suggested actions"
+      actions={[START_QUOTE, ADD_LOCATION, ADD_TASK]}
+      onAction={(action) => handleRecordAction(action)}
+    />
+  )
+
+  if (record && justCreated) {
+    const confirmationRows: { term: string; value: string }[] = [
+      { term: 'Customer', value: record.name },
+      { term: 'Number', value: record.customerNumber },
+      ...(draft.type ? [{ term: 'Type', value: draft.type }] : []),
+      ...(draft.address ? [{ term: 'Address', value: formatAddress(draft.address) }] : []),
+    ]
+    return (
+      <DraftDrawerShell
+        variant="record"
+        heading="Create customer"
+        closeLabel="Close create customer drawer"
+        tab={tab}
+        onTabChange={setTab}
+        onNewTabClick={startAnotherCustomer}
+        onClose={onClose}
+        history={historyList}
+        composer={null}
+      >
+        <Stack alignItems="center" sx={[{ pt: 4, pb: 2, textAlign: 'center' }, fadeSlideDownSx()]}>
+          <Box
+            aria-hidden
+            sx={(theme) => ({
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              display: 'grid',
+              placeItems: 'center',
+              bgcolor: alpha(theme.palette.success.main, theme.palette.mode === 'dark' ? 0.2 : 0.12),
+              color: 'success.main',
+              mb: 1.5,
+            })}
+          >
+            <PersonAddAltOutlinedIcon sx={{ fontSize: 28 }} />
+          </Box>
+          <Typography variant="subtitle1" sx={{ ...copilotSubtitleSx, lineHeight: 1.35 }}>
+            Customer created
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ ...draftBodySx, mt: 0.5 }}>
+            {`Customer ${record.customerNumber} created for ${record.name}.`}
+          </Typography>
+          <Box sx={{ width: '100%', mt: 3, textAlign: 'left' }}>
+            {confirmationRows.map(({ term, value }, index) => (
+              <Stack
+                key={term}
+                direction="row"
+                spacing={1.5}
+                alignItems="baseline"
+                sx={{ px: 1.5, py: 1, borderRadius: '5px', bgcolor: index % 2 === 0 ? 'action.hover' : 'background.paper' }}
+              >
+                <Typography variant="caption" color="text.primary" sx={{ ...draftBodySx, fontWeight: 600, width: 84, flexShrink: 0 }}>
+                  {term}
+                </Typography>
+                <Typography variant="body2" sx={{ ...draftBodySx, minWidth: 0, wordBreak: 'break-word' }}>
+                  {value}
+                </Typography>
+              </Stack>
+            ))}
+          </Box>
+          <Stack direction="row" alignItems="center" justifyContent="center" flexWrap="wrap" gap={0.5} sx={{ mt: 3 }}>
+            <DsButton size="small" variant="contained" color="primary" onClick={onClose}>
+              Close
+            </DsButton>
+            <Link
+              component="button"
+              type="button"
+              underline="none"
+              color="text.primary"
+              onClick={startAnotherCustomer}
+              sx={threadLinkSx}
+            >
+              <AddCircleOutlineIcon sx={{ fontSize: 16 }} />
+              {CREATE_ANOTHER_CUSTOMER}
+            </Link>
+          </Stack>
+        </Stack>
+        {recordActions}
+      </DraftDrawerShell>
+    )
+  }
 
   if (record) {
     const recordFacts: DraftNeededRow<EditField>[] = [
@@ -719,27 +794,10 @@ export function CreateCustomerPanel({
       >
         <DraftHeader
           title={record.name}
-          request={
-            <Link
-              component={RouterLink}
-              to={customerDetailsPath(record.customerNumber)}
-              underline="hover"
-              color="primary"
-            >
-              {record.customerNumber}
-            </Link>
-          }
+          request={record.customerNumber}
           backLabel="Start another customer"
           onBack={startAnotherCustomer}
         />
-        <Collapse in={createdBannerOpen} timeout={entranceMotion.enterMs} unmountOnExit>
-          <InfoBanner
-            onDismiss={() => setCreatedBannerOpen(false)}
-            sx={[{ mb: 1.5 }, recordIntro ? fadeSlideDownSx() : {}]}
-          >
-            Customer created.
-          </InfoBanner>
-        </Collapse>
         <DraftAccordions
           known={recordFacts}
           attention={recordPendingRows}
@@ -748,11 +806,7 @@ export function CreateCustomerPanel({
           onToggle={toggleEditing}
           renderEditor={renderEditor}
         />
-        <CopilotQuickActions
-          label="Suggested actions"
-          actions={[START_QUOTE, ADD_LOCATION, ADD_TASK]}
-          onAction={(action) => handleRecordAction(action)}
-        />
+        {recordActions}
       </DraftDrawerShell>
     )
   }
