@@ -572,19 +572,26 @@ function MetricChart({ id }: { id: string }) {
   )
 }
 
+/** Side-by-side chart only when the card itself is wide enough for the labels. */
+const metricChartBeside = '@container metric (min-width: 280px)'
+
 function MetricCard({ metric, onAction }: { metric: ClaimMetric; onAction: (metric: ClaimMetric) => void }) {
   const agent = metric.actionType === 'agent'
   return (
-    <Box component="article" sx={{ ...cardSx, display: 'flex', flexDirection: 'column', minHeight: 203 }}>
+    <Box
+      component="article"
+      sx={{ ...cardSx, containerType: 'inline-size', containerName: 'metric', display: 'flex', flexDirection: 'column', minHeight: 203 }}
+    >
       <Box
         sx={{
           flex: 1,
           p: 2,
           display: 'grid',
-          gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) minmax(0, 1fr)' },
+          gridTemplateColumns: 'minmax(0, 1fr)',
           gap: 2,
           alignItems: 'stretch',
           minHeight: 116,
+          [metricChartBeside]: { gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' },
         }}
       >
         <Box>
@@ -603,10 +610,14 @@ function MetricCard({ metric, onAction }: { metric: ClaimMetric; onAction: (metr
         </Box>
         <Box
           sx={(theme) => ({
-            borderLeft: { md: `1px solid ${theme.palette.divider}` },
-            borderTop: { xs: `1px solid ${theme.palette.divider}`, md: 0 },
-            pl: { md: 2 },
-            pt: { xs: 1.5, md: 0 },
+            borderTop: `1px solid ${theme.palette.divider}`,
+            pt: 1.5,
+            [metricChartBeside]: {
+              borderTop: 0,
+              borderLeft: `1px solid ${theme.palette.divider}`,
+              pt: 0,
+              pl: 2,
+            },
           })}
         >
           <MetricChart id={metric.id} />
@@ -848,6 +859,19 @@ function AgentPanel({ metric, onClose }: { metric: ClaimMetric; onClose: () => v
   )
 }
 
+/** Follows the content width, including when a drawer takes space the viewport breakpoint cannot see. */
+const metricsGridSx = {
+  display: 'grid',
+  gap: `${figmaSpacing[2]}px`,
+  gridTemplateColumns: 'minmax(0, 1fr)',
+  '@container metrics (min-width: 640px)': {
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  },
+  '@container metrics (min-width: 1100px)': {
+    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+  },
+} as const
+
 function KeyMetrics({ onCopilot }: { onCopilot: () => void }) {
   const [expanded, setExpanded] = useState(false)
   const [agentId, setAgentId] = useState<string | null>(null)
@@ -860,7 +884,7 @@ function KeyMetrics({ onCopilot }: { onCopilot: () => void }) {
     else setAgentId((current) => (current === metric.id ? null : metric.id))
   }
   return (
-    <Box component="section" aria-labelledby="keyMetricsTitle" sx={{ mb: 3 }}>
+    <Box component="section" aria-labelledby="keyMetricsTitle" sx={{ mb: 3, containerType: 'inline-size', containerName: 'metrics' }}>
       <ModuleHeader title="Key Metrics" id="keyMetricsTitle" count={`${visibleCount} Metrics`}>
         {claimManagementMetrics.length > 4 ? (
           <ShowMore
@@ -872,13 +896,7 @@ function KeyMetrics({ onCopilot }: { onCopilot: () => void }) {
           />
         ) : null}
       </ModuleHeader>
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' },
-          gap: `${figmaSpacing[2]}px`,
-        }}
-      >
+      <Box sx={metricsGridSx}>
         {metricHead.map((m) => (
           <MetricCard key={m.id} metric={m} onAction={onAction} />
         ))}
@@ -887,14 +905,7 @@ function KeyMetrics({ onCopilot }: { onCopilot: () => void }) {
         {agentMetric ? <AgentPanel metric={agentMetric} onClose={() => setAgentId(null)} /> : null}
       </Reveal>
       <Reveal open={expanded}>
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' },
-            gap: `${figmaSpacing[2]}px`,
-            mt: 2,
-          }}
-        >
+        <Box sx={{ ...metricsGridSx, mt: 2 }}>
           {metricMore.map((m) => (
             <MetricCard key={m.id} metric={m} onAction={onAction} />
           ))}
