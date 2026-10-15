@@ -20,7 +20,7 @@ import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import type { SxProps, Theme } from '@mui/material/styles'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { StatusChip } from '@/design-system/components'
 import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
@@ -487,9 +487,25 @@ function NeededItem<F extends string>({
   sx?: SxProps<Theme>
   children?: ReactNode
 }) {
+  const editorRef = useRef<HTMLDivElement>(null)
+  // Pointerdown blurs a focused editor, and that blur commits and closes the row
+  // before click. The click must not toggle it open again.
+  const editorWasFocused = useRef(false)
   const missing = row.value == null
   // An empty hint ('') means the row shows its title only.
   const subtitle = missing ? (row.hint ?? 'still needed') : row.value
+  const onTogglePointerDown = () => {
+    const editor = editorRef.current
+    const active = document.activeElement
+    editorWasFocused.current = Boolean(editor && active instanceof Node && editor.contains(active))
+  }
+  const onToggleClick = () => {
+    if (!onToggle) return
+    const blurredOpenEditor = editorWasFocused.current
+    editorWasFocused.current = false
+    if (blurredOpenEditor && !expanded) return
+    onToggle()
+  }
   const line = (
     <>
       {row.badge ? (
@@ -563,7 +579,8 @@ function NeededItem<F extends string>({
       {onToggle ? (
         <ButtonBase
           disableRipple
-          onClick={onToggle}
+          onPointerDown={onTogglePointerDown}
+          onClick={onToggleClick}
           aria-expanded={expanded}
           aria-label={
             row.chevron
@@ -587,7 +604,9 @@ function NeededItem<F extends string>({
         <Box sx={{ pl: 7.25, pr: 2, pb: 2, pt: 0.5 }}>{row.extra}</Box>
       ) : null}
       <Collapse in={Boolean(children)} appear unmountOnExit>
-        <Box sx={{ pl: 7.25, pr: 2, pb: 2, pt: row.extra ? 0 : 0.5 }}>{children}</Box>
+        <Box ref={editorRef} sx={{ pl: 7.25, pr: 2, pb: 2, pt: row.extra ? 0 : 0.5 }}>
+          {children}
+        </Box>
       </Collapse>
     </Box>
   )
