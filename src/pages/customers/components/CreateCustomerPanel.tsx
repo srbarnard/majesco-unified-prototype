@@ -1,11 +1,15 @@
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
 import Collapse from '@mui/material/Collapse'
 import Divider from '@mui/material/Divider'
-import Typography from '@mui/material/Typography'
 import Link from '@mui/material/Link'
+import Stack from '@mui/material/Stack'
+import Typography from '@mui/material/Typography'
+import type { Theme } from '@mui/material/styles'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link as RouterLink } from 'react-router'
 import { customerDetailsPath } from '@/pages/customers/data/customerRoutes'
-import { CopilotQuickActions, InfoBanner } from '@/design-system/components'
+import { Button as DsButton, CopilotQuickActions, InfoBanner } from '@/design-system/components'
+import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { entranceMotion, fadeSlideDownSx } from '@/design-system/tokens/motion'
 import type { CreatedCustomerEntry } from '@/app/contexts/CustomersContext'
 import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
@@ -122,7 +126,26 @@ const CREATE_TASK = 'Create task'
 const REVIEW_ALL = 'Review all'
 const CREATE_CUSTOMER = 'Create customer'
 const SAVE_DRAFT = 'Save draft'
+const CANCEL_CUSTOMER = 'Cancel'
 const START_QUOTE = 'Start quote'
+const MAX_SUGGESTED_ACTIONS = 3
+
+/** Same text-link treatment as Cancel beside Submit claim. */
+const threadLinkSx = (theme: Theme) => ({
+  ...draftBodySx,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 0.5,
+  px: 1,
+  py: 0.5,
+  borderRadius: 1.5,
+  transition: 'background-color 0.15s ease, color 0.15s ease',
+  '&:hover': {
+    bgcolor: getFigmaColors(theme.palette.mode).primary.hover,
+    color: 'primary.main',
+  },
+  '&:active': { bgcolor: getFigmaColors(theme.palette.mode).primary.selected },
+})
 const ADD_LOCATION = 'Add location'
 const ADD_TASK = 'Add task'
 const CREATED_BANNER_MS = 6000
@@ -588,13 +611,11 @@ export function CreateCustomerPanel({
   const producerCanFill =
     previewDraft.related?.kind === 'Producer' ||
     missingFields.some((field) => field === 'address' || field === 'taxId' || field === 'naics')
-  const workActions = [
-    ...(canCreate ? [CREATE_CUSTOMER] : []),
-    ...(hasHoles
-      ? [...(producerCanFill ? [REQUEST_FROM_PRODUCER] : []), CREATE_TASK, ...(knownOpen ? [] : [REVIEW_ALL])]
-      : [...(knownOpen ? [] : [REVIEW_ALL]), ...(canCreate ? [START_QUOTE] : [])]),
-    SAVE_DRAFT,
-  ]
+  const otherActions = hasHoles
+    ? [...(producerCanFill ? [REQUEST_FROM_PRODUCER] : []), CREATE_TASK, ...(knownOpen ? [] : [REVIEW_ALL])]
+    : [...(knownOpen ? [] : [REVIEW_ALL]), ...(canCreate ? [START_QUOTE] : [])]
+  // Create customer is the submit button once it is ready. Save draft keeps a slot; the rest fill by relevance.
+  const workActions = [...otherActions.slice(0, MAX_SUGGESTED_ACTIONS - 1), SAVE_DRAFT]
   // Known facts: everything filled in (incl. DBA, role, locations, notes). Needs attention: the work list's open items.
   const knownRows = splitDraftRows(reviewRows).known
   const { attention: attentionRows, considerations: considerationRows } = splitDraftRows(workRows)
@@ -813,6 +834,24 @@ export function CreateCustomerPanel({
                 : `Asked ${producerRequest.producer} to confirm the details`}
               {` · ${formatDraftCreatedTime(producerRequest.at)}`}
             </Typography>
+          ) : null}
+          {canCreate ? (
+            <Stack direction="row" alignItems="center" spacing={1} sx={[{ mb: 2 }, fadeSlideDownSx()]}>
+              <DsButton size="small" variant="contained" color="primary" onClick={handleCreate}>
+                {CREATE_CUSTOMER}
+              </DsButton>
+              <Link
+                component="button"
+                type="button"
+                underline="none"
+                color="text.primary"
+                onClick={onClose}
+                sx={threadLinkSx}
+              >
+                <CancelOutlinedIcon sx={{ fontSize: 16 }} />
+                {CANCEL_CUSTOMER}
+              </Link>
+            </Stack>
           ) : null}
           <CopilotQuickActions
             label="Suggested actions"
