@@ -67,7 +67,7 @@ export type ClaimParty = {
   feature: string
 }
 
-export type FeatureCard = { title: string; fields: { label: string; value: string }[] }
+export type FeatureCard = { title: string; status?: string; fields: { label: string; value: string }[] }
 
 export type FeatureFinancials = {
   lossReserve: number | null
@@ -85,9 +85,11 @@ export type DetailFeature = {
   kind: 'injury' | 'vehicle' | 'property'
   adjusterName: string
   adjusterContact: string
+  supervisorName: string
+  supervisorContact: string
   mine: boolean
   cards: FeatureCard[]
-  milestones: { label: string; status: string }[]
+  milestones: { label: string; status: string; goal?: string }[]
   financials: FeatureFinancials
   litigation: boolean
 }
@@ -96,7 +98,7 @@ export type PolicyCoverage = { name: string; limit: number; limitType: string; c
 export type PolicyHistoryRow = { claim: string; dateOfLoss: string; type: string; status: string; paid: string }
 export type PolicyFormRow = { form: string; description: string; edition: string; status: string }
 export type ClaimAlertRow = { id: string; description: string; active: boolean }
-export type ClaimInsight = { type: string; description: string }
+export type ClaimInsight = { type: string; description: string; action?: 'Ask Copilot' | 'Open litigation' | 'Create task' }
 export type PendingApproval = { id: string; type: 'Reserve' | 'Payment'; amount: number; feature: string; status: string; reason: string }
 
 export type ClaimDetailModel = {
@@ -264,6 +266,8 @@ function homeFeature(claim: HomeClaim, feature: HomeFeature): DetailFeature {
     kind: feature.typeIcon === 'home_work' ? 'property' : 'injury',
     adjusterName: feature.assignedTo,
     adjusterContact: '',
+    supervisorName: '',
+    supervisorContact: '',
     mine: feature.assignedTo === HOME_PERSONA.name,
     milestones: feature.milestones.map((milestone) => ({
       label: sc(milestone.label),
@@ -324,19 +328,26 @@ function joanDetail(): ClaimDetailModel {
       cause: 'Whiplash / Soft Tissue',
       description:
         'Driver of insured vehicle reports neck and lower back pain following the collision. Evaluated on-site by EMS, declined transport.',
+      where: 'Insured vehicle',
       adjuster: 'Jordan Blake · jblake@insurer.com · (555) 201-3344',
       financials: { lossReserve: 2500, lossPaid: 0, expenseReserve: 500, expensePaid: 150 },
-      exposure: '$7,500 - $10,000',
+      exposure: '$7,500-$10,000',
+      lastReview: '30 days ago',
+      nextReview: 'Aug 7, 2026',
       medicare: 'Eligible',
+      cmsResponse: '01-verified',
+      cmsReference: '1EG4-TE5-MK72',
       isoStatus: 'Match',
-      isoRisk: 'Low Risk',
-      litigation: null,
+      isoRisk: 'Low risk',
+      litigationStatus: 'No suit filed',
+      plaintiff: '—',
+      defense: '—',
       milestones: [
-        ['Contact', 'Complete'],
-        ['Medicare reporting', 'Complete'],
-        ['Injury evaluation', 'Complete'],
-        ['Coverage and financials', 'Complete'],
-        ['30 day follow up', 'In progress'],
+        ['Initial contact', 'Complete', '2 days'],
+        ['Medical reporting', 'Complete', '3 days'],
+        ['Injury evaluation (IME)', 'In progress', '3 days'],
+        ['Coverage', 'In progress', '3 days'],
+        ['30 day follow up', 'In progress', '3 days'],
       ],
     }),
     joanInjury({
@@ -348,19 +359,26 @@ function joanDetail(): ClaimDetailModel {
       cause: 'Broken Bone',
       description:
         'Driver of the third-party vehicle sustained a fractured wrist bracing for impact. Currently in a cast, ongoing orthopedic follow-up.',
+      where: 'Third-party vehicle',
       adjuster: 'Jordan Blake · jblake@insurer.com · (555) 201-3344',
       financials: { lossReserve: 55000, lossPaid: 0, expenseReserve: 8000, expensePaid: 2400 },
       exposure: '$50,000 - $60,000',
+      lastReview: 'Yesterday',
+      nextReview: 'Jul 20, 2026',
       medicare: 'Pending response',
-      isoStatus: 'No Match',
-      isoRisk: 'No Risk',
-      litigation: 'Open',
+      cmsResponse: '50 - Pending CMS processing',
+      cmsReference: 'Pending',
+      isoStatus: 'No match',
+      isoRisk: 'No risk',
+      litigationStatus: 'Open',
+      plaintiff: 'Lisa B @ M&M (123) 456-7890 x 981',
+      defense: 'John C @ Morris LLP (999) 813-7658',
       milestones: [
-        ['Contact', 'Complete'],
-        ['Medicare reporting', 'In progress'],
-        ['Injury evaluation', 'Complete'],
-        ['Coverage and financials', 'Complete'],
-        ['30 day follow up', 'Not started'],
+        ['Contact', 'Complete', '2 days'],
+        ['Medicare reporting', 'In progress', '3 days'],
+        ['Injury evaluation', 'Complete', '3 days'],
+        ['Coverage and financials', 'Complete', '3 days'],
+        ['30 day follow up', 'Not started', '3 days'],
       ],
     }),
     joanVehicle({
@@ -426,7 +444,7 @@ function joanDetail(): ClaimDetailModel {
     dateReported: 'Jun 16, 2026',
     lossDescription:
       "Insured's commercial vehicle rear-ended a passenger vehicle at a signalized intersection during evening rush hour. Both drivers reported pain at the scene; both vehicles sustained damage requiring inspection.",
-    owner: 'Jordan Blake',
+    owner: 'Sara Chen',
     policyNumber: '01-5550005-03',
     policyType: 'Occurrence',
     policyEffective: 'Feb 1, 2026',
@@ -456,14 +474,17 @@ function joanDetail(): ClaimDetailModel {
       {
         type: 'Attention',
         description: 'Medicare status is Eligible — no further CMS action required for 1 - Marcus Webb - Medical payments.',
+        action: 'Ask Copilot',
       },
       {
-        type: 'Litigation',
-        description: 'Feature 2 - Pam Paulsen - Bodily injury liability has an active litigation record that should remain visible in claim handling.',
+        type: 'Feature 2',
+        description: 'Pam Paulsen - Bodily injury liability has an active litigation record that should remain visible in claim handling.',
+        action: 'Open litigation',
       },
       {
-        type: 'Opportunity',
-        description: 'Consider fast-track settlement under Medical payments coverage based on the current feature information.',
+        type: 'Attention',
+        description: 'Medicare status is Eligible — no further CMS action required for 1 - Marcus Webb - Medical payments.',
+        action: 'Create task',
       },
     ],
     features,
@@ -490,6 +511,8 @@ function splitAdjuster(value: string) {
   return { name, contact: rest.join(' · ') }
 }
 
+const JOAN_SUPERVISOR = { name: 'Mary Higgins', contact: 'mhiggins@insurer.com · (234) 123-2345' }
+
 function joanInjury(input: {
   id: string
   featureNumber: number
@@ -498,14 +521,21 @@ function joanInjury(input: {
   limit: number
   cause: string
   description: string
+  where: string
   adjuster: string
   financials: JoanMoney
   exposure: string
+  lastReview: string
+  nextReview: string
   medicare: string
+  cmsResponse: string
+  cmsReference: string
   isoStatus: string
   isoRisk: string
-  litigation: string | null
-  milestones: [string, string][]
+  litigationStatus: string
+  plaintiff: string
+  defense: string
+  milestones: [string, string, string][]
 }): DetailFeature {
   const adjuster = splitAdjuster(input.adjuster)
   const coverage = sc(input.coverage)
@@ -517,21 +547,36 @@ function joanInjury(input: {
     kind: 'injury',
     adjusterName: adjuster.name,
     adjusterContact: adjuster.contact,
+    supervisorName: JOAN_SUPERVISOR.name,
+    supervisorContact: JOAN_SUPERVISOR.contact,
     mine: adjuster.name === HOME_PERSONA.name,
     financials: joanMoney(input.financials),
-    litigation: input.litigation != null,
-    milestones: input.milestones.map(([label, status]) => ({ label: sc(label), status })),
+    litigation: input.litigationStatus.toLowerCase() !== 'no suit filed',
+    milestones: input.milestones.map(([label, status, goal]) => ({ label: sc(label), status, goal })),
     cards: [
       {
-        title: 'Coverage details',
+        title: 'Details',
+        status: 'Complete',
+        fields: [
+          { label: 'Insured party', value: input.subject },
+          { label: 'Injury cause', value: sc(input.cause) },
+          { label: 'Where was the injured person', value: input.where },
+          { label: 'Fatality', value: 'No' },
+          { label: 'Injury description', value: input.description },
+        ],
+      },
+      {
+        title: 'Coverage',
+        status: 'Complete',
         fields: [
           { label: 'Coverage', value: coverage },
-          { label: 'Coverage limit', value: money(input.limit) },
+          { label: 'Limit', value: money(input.limit) },
           { label: 'Limit type', value: 'Per-occurrence' },
         ],
       },
       {
         title: 'Financials',
+        status: 'Complete',
         fields: [
           { label: 'Loss reserve', value: money(input.financials.lossReserve) },
           { label: 'Loss paid', value: money(input.financials.lossPaid) },
@@ -540,31 +585,35 @@ function joanInjury(input: {
         ],
       },
       {
-        title: 'Injury details',
-        fields: [
-          { label: 'Injured party', value: input.subject },
-          { label: 'Injury', value: sc(input.cause) },
-          { label: 'Injury description', value: input.description },
-        ],
-      },
-      {
         title: 'Injury evaluation',
-        fields: [{ label: 'Estimated exposure', value: input.exposure }],
+        status: 'Complete',
+        fields: [
+          { label: 'Estimated exposure', value: input.exposure },
+          { label: 'Last review', value: input.lastReview },
+          { label: 'Next review', value: input.nextReview },
+        ],
       },
       {
         title: 'Medicare reporting',
-        fields: [{ label: 'Medicare status', value: input.medicare }],
+        status: input.medicare,
+        fields: [
+          { label: 'CMS', value: input.cmsResponse },
+          { label: 'CMS reference', value: input.cmsReference },
+        ],
       },
       {
         title: 'ISO claim search',
+        status: input.isoStatus,
+        fields: [{ label: 'Risk indicator', value: input.isoRisk }],
+      },
+      {
+        title: 'Litigation',
+        status: input.litigationStatus,
         fields: [
-          { label: 'Status', value: input.isoStatus },
-          { label: 'Risk profile indicator', value: input.isoRisk },
+          { label: 'Plaintiff attorney', value: input.plaintiff },
+          { label: 'Defense attorney', value: input.defense },
         ],
       },
-      ...(input.litigation
-        ? [{ title: 'Litigation details', fields: [{ label: 'Status', value: input.litigation }] }]
-        : []),
     ],
   }
 }
@@ -600,6 +649,8 @@ function joanVehicle(input: {
     kind: 'vehicle',
     adjusterName: adjuster.name,
     adjusterContact: adjuster.contact,
+    supervisorName: JOAN_SUPERVISOR.name,
+    supervisorContact: JOAN_SUPERVISOR.contact,
     mine: adjuster.name === HOME_PERSONA.name,
     financials: joanMoney(input.financials),
     litigation: false,

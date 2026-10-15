@@ -1,17 +1,26 @@
+import AddIcon from '@mui/icons-material/Add'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import ChecklistIcon from '@mui/icons-material/Checklist'
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
+import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
+import GavelOutlinedIcon from '@mui/icons-material/GavelOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
+import HealingOutlinedIcon from '@mui/icons-material/HealingOutlined'
+import HomeWorkOutlinedIcon from '@mui/icons-material/HomeWorkOutlined'
 import HubOutlinedIcon from '@mui/icons-material/HubOutlined'
-import MailOutlineIcon from '@mui/icons-material/MailOutline'
-import StickyNote2OutlinedIcon from '@mui/icons-material/StickyNote2Outlined'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import RemoveIcon from '@mui/icons-material/Remove'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
+import Menu from '@mui/material/Menu'
+import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
 import Table from '@mui/material/Table'
@@ -21,11 +30,13 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
-import type { SvgIconComponent } from '@mui/icons-material'
-import { useState } from 'react'
+import { alpha } from '@mui/material/styles'
+import { useState, type ReactNode } from 'react'
 import { Link as RouterLink, useNavigate, useParams } from 'react-router'
 import { useRightToolDispatch } from '@/app/contexts/RightToolContext'
-import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
+import { useRegisterRightToolParties, useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
+import { PartiesPanel } from '@/pages/policies/components/PartiesPanel'
+import type { PolicyParty } from '@/pages/policies/data/mockPolicyDetails'
 import { ClaimCollaborationDrawer, type CollabKind } from '@/pages/claims/components/ClaimCollaborationDrawer'
 import {
   claimDetailFromCatalog,
@@ -48,7 +59,10 @@ const labelSx = { fontSize: '0.75rem', color: 'text.secondary', display: 'block'
 
 type PageTab = 'summary' | 'policy' | 'financials' | 'alerts'
 type PolicyTab = 'coverages' | 'history' | 'forms'
-type FeatureTab = 'all' | 'open' | 'closed' | 'litigation' | 'financials'
+type FeatureTab = 'all' | 'open' | 'closed' | 'approvals' | 'litigation' | 'financials' | 'subrogation' | 'salvage'
+
+const INSIGHTS_RUN = 'Sep 30, 2026 · 8:00 AM'
+const ADD_TO_CLAIM = ['New feature', 'Arbitration', 'Litigation', 'Negotiation', 'Salvage', 'Subrogation']
 
 export function ClaimDetails() {
   const { claimNumber } = useParams<{ claimNumber: string }>()
@@ -76,20 +90,23 @@ export function ClaimDetails() {
 
 function ClaimDetailBody({ detail }: { detail: ClaimDetailModel }) {
   const navigate = useNavigate()
-  const { openTool } = useRightToolDispatch()
+  const { openTool, closeTool } = useRightToolDispatch()
   const [tab, setTab] = useState<PageTab>('summary')
   const [policyTab, setPolicyTab] = useState<PolicyTab>('coverages')
   const [featureTab, setFeatureTab] = useState<FeatureTab>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
   const showFeature = (id: string) => {
+    setTab('financials')
     setExpanded(id)
     requestAnimationFrame(() => document.getElementById(`feature-${id}`)?.scrollIntoView({ block: 'nearest' }))
   }
   const [insightsOpen, setInsightsOpen] = useState(true)
+  const [lastRun, setLastRun] = useState(INSIGHTS_RUN)
   const [alerts, setAlerts] = useState(detail.alerts)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerKind, setDrawerKind] = useState<CollabKind>('tasks')
   const [drawerFeature, setDrawerFeature] = useState<string | null>(null)
+  useRegisterRightToolParties(<PartiesPanel parties={claimParties(detail)} onClose={closeTool} />, [detail.claimNumber, closeTool])
 
   const financials = claimFinancials(detail)
   const activeAlerts = alerts.filter((alert) => alert.active).length
@@ -99,10 +116,20 @@ function ClaimDetailBody({ detail }: { detail: ClaimDetailModel }) {
     setDrawerOpen(true)
   }
   const showFeatures = (tab === 'summary' || tab === 'financials') && detail.features.length > 0
+  const runInsight = (action: ClaimDetailModel['insights'][number]['action']) => {
+    if (action === 'Ask Copilot') openTool('copilot')
+    if (action === 'Create task') openCollab('tasks')
+    if (action === 'Open litigation') {
+      setTab('summary')
+      setFeatureTab('litigation')
+      const litigated = detail.features.find((feature) => feature.litigation)
+      if (litigated) setExpanded(litigated.id)
+    }
+  }
 
   return (
     <Box sx={{ flex: 1, minHeight: 0, height: '100%', overflow: 'auto', bgcolor: 'background.default' }}>
-      <Box sx={{ px: `${layoutTokens.contentPaddingX}px`, pt: layoutTokens.policyHeaderTopPadding, pb: 2 }}>
+      <Box sx={{ px: `${layoutTokens.contentPaddingX}px`, pt: layoutTokens.policyHeaderTopPadding, pb: 2, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ md: 'center' }}>
           <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 180 }}>
             <IconButton size="small" aria-label="Back to claims" onClick={() => navigate('/claims')}>
@@ -116,30 +143,22 @@ function ClaimDetailBody({ detail }: { detail: ClaimDetailModel }) {
             value={tab}
             onChange={(_, next: PageTab) => setTab(next)}
             variant="scrollable"
-            sx={{ flex: 1, borderBottom: 1, borderColor: 'divider', minHeight: 40 }}
+            sx={{ flex: 1, minHeight: 40, '& .MuiTabs-flexContainer': { justifyContent: { md: 'center' } } }}
           >
             <Tab value="summary" label="Summary" />
             <Tab value="policy" label="Policy" />
             <Tab value="financials" label="Financials" />
             <Tab value="alerts" label={activeAlerts > 0 ? `Alerts (${activeAlerts})` : 'Alerts'} />
           </Tabs>
-          <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap">
-            <Button size="small" startIcon={<GroupsOutlinedIcon />} onClick={() => openCollab('tasks')}>
-              Collaboration
-            </Button>
-            <Button size="small" startIcon={<GroupsOutlinedIcon />} onClick={() => openCollab('parties')}>
-              Parties
-            </Button>
-            <Button size="small" startIcon={<HubOutlinedIcon />} onClick={() => openTool('copilot')}>
-              Copilot
-            </Button>
-          </Stack>
+          <Button size="small" startIcon={<GroupsOutlinedIcon />} onClick={() => openTool('parties')}>
+            Parties
+          </Button>
         </Stack>
 
-        <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap" sx={{ mt: 2 }}>
-          <RibbonLink label="Claims" value={detail.claimNumber} onClick={() => setTab('summary')} />
-          <RibbonLink label="Customer" value={detail.insured} onClick={() => openCollab('parties')} />
-          <RibbonLink label="Policy" value={detail.policyNumber ?? '—'} onClick={() => setTab('policy')} />
+        <Stack direction="row" spacing={3} useFlexGap flexWrap="wrap" sx={{ mt: 1.5 }}>
+          <RibbonLink label="Claims" value={detail.claimNumber} info="Claim details" onClick={() => setTab('summary')} />
+          <RibbonLink label="Customer" value={detail.insured} info="Customer details" onClick={() => openTool('parties')} />
+          <RibbonLink label="Policy" value={detail.policyNumber ?? '—'} info="Policy details" onClick={() => setTab('policy')} />
           <RibbonFact label="Type" value={sc(detail.claimType)} />
           <RibbonFact label="Date of loss" value={showDate(detail.dateOfLoss)} />
           <RibbonFact label="Date reported" value={showDate(detail.dateReported)} />
@@ -147,28 +166,20 @@ function ClaimDetailBody({ detail }: { detail: ClaimDetailModel }) {
         </Stack>
       </Box>
 
-      <Stack spacing={2} sx={{ px: `${layoutTokens.contentPaddingX}px`, pb: 4 }}>
+      <Stack spacing={2} sx={{ px: `${layoutTokens.contentPaddingX}px`, py: 2, pb: 4 }}>
         {tab !== 'alerts' && detail.insights.length > 0 ? (
-          <Box sx={{ ...cardSx, p: 2 }}>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <HubOutlinedIcon sx={{ fontSize: 20, color: 'primary.main' }} />
-              <Typography variant="h6" component="h2" sx={{ fontWeight: 600, fontSize: '1rem' }}>
-                Claim insights
-              </Typography>
-              <Box sx={{ flex: 1 }} />
-              <Button size="small" onClick={() => setInsightsOpen((open) => !open)}>
-                {insightsOpen ? 'Show less' : 'Show more'}
-              </Button>
-            </Stack>
-            {insightsOpen
-              ? detail.insights.map((insight) => (
-                  <Typography key={`${insight.type}-${insight.description}`} variant="body2" sx={{ mt: 1 }}>
-                    <Box component="span" sx={{ fontWeight: 700 }}>{`${sc(insight.type)}: `}</Box>
-                    {insight.description}
-                  </Typography>
-                ))
-              : null}
-          </Box>
+          <InsightsPanel
+            insights={detail.insights}
+            open={insightsOpen}
+            lastRun={lastRun}
+            onToggle={() => setInsightsOpen((current) => !current)}
+            onRefresh={() =>
+              setLastRun(
+                new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).replace(',', ' ·'),
+              )
+            }
+            onAction={runInsight}
+          />
         ) : null}
 
         {tab === 'summary' ? <SummaryCard detail={detail} financials={financials} onOpen={openCollab} /> : null}
@@ -231,17 +242,12 @@ function SummaryCard({
   return (
     <Box sx={cardSx}>
       <CardHead title={detail.claimNumber} detail={detail} onOpen={onOpen} />
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' }, gap: 2, p: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))', lg: 'repeat(9, minmax(0, 1fr))' }, gap: 2, p: 2 }}>
         {fields.map(([label, value]) => (
-          <Box key={label}>
-            <Typography sx={labelSx}>{label}</Typography>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {value}
-            </Typography>
-          </Box>
+          <Field key={label} label={label} value={value} />
         ))}
       </Box>
-      <Box sx={{ px: 2, pb: 2 }}>
+      <Box sx={{ px: 2, py: 2, borderTop: 1, borderColor: 'divider' }}>
         <Typography sx={labelSx}>Loss description</Typography>
         <Typography variant="body2">{detail.lossDescription ?? '—'}</Typography>
       </Box>
@@ -272,14 +278,9 @@ function PolicyCard({
     <Stack spacing={2}>
       <Box sx={cardSx}>
         <CardHead title="General policy details" detail={detail} onOpen={onOpen} />
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' }, gap: 2, p: 2 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, p: 2 }}>
           {fields.map(([label, value]) => (
-            <Box key={label}>
-              <Typography sx={labelSx}>{label}</Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {value}
-              </Typography>
-            </Box>
+            <Field key={label} label={label} value={value} />
           ))}
         </Box>
       </Box>
@@ -301,12 +302,14 @@ function PolicyCard({
               <DataTable
                 headers={['Claim', 'Date of loss', 'Type', 'Status', 'Paid']}
                 rows={detail.policyHistory.map((row) => [row.claim, row.dateOfLoss, sc(row.type), row.status, row.paid])}
+                chips={[3]}
               />
             ) : null}
             {policyTab === 'forms' ? (
               <DataTable
                 headers={['Form', 'Description', 'Edition', 'Status']}
                 rows={detail.forms.map((row) => [row.form, sc(row.description), row.edition, row.status])}
+                chips={[3]}
               />
             ) : null}
           </Box>
@@ -351,20 +354,24 @@ function FinancialsCard({
                   <TableCell>{money(incurredFor(feature.financials))}</TableCell>
                   <TableCell>
                     <Button size="small" onClick={() => onViewFeature(feature.id)}>
-                      View feature
+                      View transaction
                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
-              <TableRow>
+              <TableRow sx={{ bgcolor: 'action.hover' }}>
                 <TableCell sx={{ fontWeight: 700 }}>Claim total</TableCell>
-                <TableCell>{money(totals.lossReserve)}</TableCell>
-                <TableCell>{money(totals.lossPaid)}</TableCell>
-                <TableCell>{money(totals.expenseReserve)}</TableCell>
-                <TableCell>{money(totals.expensePaid)}</TableCell>
-                <TableCell>{money(totals.recovered)}</TableCell>
-                <TableCell>{money(totals.incurred)}</TableCell>
-                <TableCell />
+                <TableCell sx={{ fontWeight: 700 }}>{money(totals.lossReserve)}</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>{money(totals.lossPaid)}</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>{money(totals.expenseReserve)}</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>{money(totals.expensePaid)}</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>{money(totals.recovered)}</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>{money(totals.incurred)}</TableCell>
+                <TableCell>
+                  <Button size="small" onClick={() => document.getElementById('claim-features')?.scrollIntoView({ block: 'nearest' })}>
+                    View transaction
+                  </Button>
+                </TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -389,7 +396,7 @@ function FinancialsCard({
 }
 
 function AlertsCard({ alerts, onToggle }: { alerts: ClaimDetailModel['alerts']; onToggle: (id: string) => void }) {
-  const [filter, setFilter] = useState<'active' | 'inactive' | 'all'>('active')
+  const [filter, setFilter] = useState<'active' | 'inactive' | 'all'>('all')
   const active = alerts.filter((alert) => alert.active)
   const inactive = alerts.filter((alert) => !alert.active)
   const rows = filter === 'active' ? active : filter === 'inactive' ? inactive : alerts
@@ -415,42 +422,14 @@ function AlertsCard({ alerts, onToggle }: { alerts: ClaimDetailModel['alerts']; 
 
 function AlertRow({ active, description, onToggle }: { active: boolean; description: string; onToggle: () => void }) {
   return (
-    <Stack
-      role="alert"
-      direction="row"
-      spacing={1.5}
-      alignItems="flex-start"
-      sx={{
-        px: 2,
-        py: 1.5,
-        borderRadius: `${figmaBorderRadius.borderRadius}px`,
-        typography: 'body2',
-        bgcolor: (theme) =>
-          isDarkMode(theme)
-            ? `var(--mui-palette-Alert-${active ? 'error' : 'success'}StandardBg)`
-            : active
-              ? theme.figmaPalette.red[50]
-              : theme.figmaPalette.green[50],
-        color: (theme) =>
-          isDarkMode(theme)
-            ? `var(--mui-palette-Alert-${active ? 'error' : 'success'}Color)`
-            : active
-              ? theme.figmaPalette.red[900]
-              : theme.figmaPalette.green[900],
-      }}
+    <Alert
+      severity={active ? 'warning' : 'success'}
+      icon={active ? <WarningAmberIcon fontSize="small" /> : <CheckCircleOutlineIcon fontSize="small" />}
+      onClick={onToggle}
+      sx={{ cursor: 'pointer', alignItems: 'center' }}
     >
-      <IconButton
-        size="small"
-        aria-label={active ? 'Mark alert inactive' : 'Reactivate alert'}
-        onClick={onToggle}
-        sx={{ color: active ? 'error.main' : 'success.main' }}
-      >
-        {active ? <ErrorOutlineIcon fontSize="small" /> : <CheckCircleOutlineIcon fontSize="small" />}
-      </IconButton>
-      <Typography variant="body2" sx={{ color: 'inherit' }}>
-        {description}
-      </Typography>
-    </Stack>
+      {description}
+    </Alert>
   )
 }
 
@@ -471,25 +450,27 @@ function FeaturesSection({
 }) {
   const closed = (feature: DetailFeature) => feature.status.toLowerCase() === 'closed'
   const hasMoney = (feature: DetailFeature) => feature.financials.lossReserve != null || feature.financials.lossPaid != null
+  const approvalText = detail.approvals.map((approval) => approval.feature.toLowerCase()).join(' ')
   const filters: { id: FeatureTab; label: string; test: (feature: DetailFeature) => boolean }[] = [
     { id: 'all', label: `All (${detail.features.length})`, test: () => true },
     { id: 'open', label: `Open (${detail.features.filter((feature) => !closed(feature)).length})`, test: (feature) => !closed(feature) },
     { id: 'closed', label: `Closed (${detail.features.filter(closed).length})`, test: closed },
+    { id: 'approvals', label: 'Approvals', test: (feature) => approvalText.includes(feature.displayName.toLowerCase()) },
     { id: 'litigation', label: 'Litigation', test: (feature) => feature.litigation },
     { id: 'financials', label: 'Financials', test: hasMoney },
+    { id: 'subrogation', label: 'Subrogation', test: () => false },
+    { id: 'salvage', label: 'Salvage', test: () => false },
   ]
   const visible = detail.features.filter((filters.find((item) => item.id === featureTab) ?? filters[0]).test)
   const mine = visible.filter((feature) => feature.mine)
   const others = visible.filter((feature) => !feature.mine)
   return (
-    <Box component="section">
+    <Box id="claim-features" component="section">
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-        <Typography variant="h6" component="h2" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600 }}>
+        <Typography variant="h6" component="h2" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '1rem', textTransform: 'none', letterSpacing: 'normal', flex: 1 }}>
           Features
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {`Viewing ${visible.length} feature${visible.length === 1 ? '' : 's'} (${mine.length} assigned to you)`}
-        </Typography>
+        <AddToClaimButton />
       </Stack>
       <Tabs value={featureTab} onChange={(_, next: FeatureTab) => onFeatureTab(next)} variant="scrollable" sx={{ borderBottom: 1, borderColor: 'divider', mb: 1.5 }}>
         {filters.map((filter) => (
@@ -539,7 +520,6 @@ function FeatureGroup({
 
 function FeatureRow({
   feature,
-  detail,
   open,
   onToggle,
   onOpen,
@@ -550,57 +530,95 @@ function FeatureRow({
   onToggle: () => void
   onOpen: (kind: CollabKind, featureId: string | null) => void
 }) {
-  const openTasks = detail.tasks.filter((task) => task.featureId === feature.id && task.status !== 'Completed').length
-  const notes = detail.notes.filter((note) => note.featureId === feature.id).length
-  const documents = detail.documents.filter((document) => document.featureId === feature.id).length
+  const Icon = feature.kind === 'vehicle' ? DirectionsCarOutlinedIcon : feature.kind === 'property' ? HomeWorkOutlinedIcon : HealingOutlinedIcon
+  const complete = feature.milestones.filter((milestone) => milestone.status.toLowerCase() === 'complete').length
+  const progress = feature.milestones.length ? Math.round((complete / feature.milestones.length) * 100) : 0
+  const contact = (label: string, name: string, extra: string) =>
+    name ? (
+      <Typography variant="body2" color="text.secondary" component="span">
+        <Box component="span" sx={{ fontWeight: 600, color: 'text.primary' }}>{label}</Box>
+        {` • ${name}${extra ? ` • ${extra.replaceAll(' · ', ' • ')}` : ''}`}
+      </Typography>
+    ) : null
   return (
     <Box id={`feature-${feature.id}`} sx={cardSx}>
       <Box sx={{ p: 1.5 }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems={{ md: 'center' }} justifyContent="space-between">
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
-            <Button size="small" aria-label={open ? 'Collapse feature' : 'Expand feature'} onClick={onToggle} sx={{ minWidth: 0, px: 1 }}>
-              {open ? '−' : '+'}
-            </Button>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {feature.displayName}
-            </Typography>
-            <Chip size="small" label={feature.status} variant="outlined" />
-          </Stack>
-          <Stack direction="row" useFlexGap flexWrap="wrap">
-            <Button size="small" startIcon={<ChecklistIcon />} onClick={() => onOpen('tasks', feature.id)}>{`Linked tasks (${openTasks})`}</Button>
-            <Button size="small" startIcon={<StickyNote2OutlinedIcon />} onClick={() => onOpen('notes', feature.id)}>{`Linked notes (${notes})`}</Button>
-            <Button size="small" startIcon={<DescriptionOutlinedIcon />} onClick={() => onOpen('documents', feature.id)}>{`Linked docs (${documents})`}</Button>
-          </Stack>
+        <Stack direction="row" spacing={1} alignItems="flex-start">
+          <IconButton size="small" aria-label={open ? 'Collapse feature' : 'Expand feature'} onClick={onToggle}>
+            {open ? <RemoveIcon fontSize="small" /> : <AddIcon fontSize="small" />}
+          </IconButton>
+          <IconTile>
+            <Icon sx={{ fontSize: 18 }} />
+          </IconTile>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
+              <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main', flex: 1 }}>
+                {feature.displayName}
+              </Typography>
+              <StatusChip label={feature.status} />
+              <ActionsMenu
+                label="Actions"
+                items={[
+                  ['Tasks', () => onOpen('tasks', feature.id)],
+                  ['Notes', () => onOpen('notes', feature.id)],
+                  ['Documents', () => onOpen('documents', feature.id)],
+                ]}
+              />
+            </Stack>
+            <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap" sx={{ mt: 0.5 }}>
+              {contact('Adjuster', feature.adjusterName, feature.adjusterContact)}
+              {contact('Supervisor', feature.supervisorName, feature.supervisorContact)}
+            </Stack>
+          </Box>
         </Stack>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75, pl: 5 }}>
-          {`Adjuster · ${feature.adjusterName}${feature.adjusterContact ? ` · ${feature.adjusterContact}` : ''}`}
-        </Typography>
       </Box>
       {open ? (
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1.5, p: 1.5, borderTop: 1, borderColor: 'divider' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1.5, p: 1.5, pt: 0 }}>
           {feature.milestones.length > 0 ? (
             <Box sx={{ ...cardSx, p: 1.5 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                Action plan
-              </Typography>
-              {feature.milestones.map((milestone) => (
-                <Typography key={milestone.label} variant="body2">
-                  {`${milestone.label} · ${milestone.status}`}
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  Action plan
                 </Typography>
-              ))}
+                <Typography variant="body2" color="text.secondary" sx={{ flex: 1, textAlign: 'right' }}>
+                  {`${progress}% complete`}
+                </Typography>
+              </Stack>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    {['Milestone', 'Status', 'Goal'].map((header) => (
+                      <TableCell key={header} sx={{ color: 'text.secondary' }}>{header}</TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {feature.milestones.map((milestone) => (
+                    <TableRow key={milestone.label}>
+                      <TableCell>{milestone.label}</TableCell>
+                      <TableCell><StatusChip label={milestone.status} /></TableCell>
+                      <TableCell>{milestone.goal ?? '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </Box>
           ) : null}
           {feature.cards.map((card) => (
             <Box key={card.title} sx={{ ...cardSx, p: 1.5 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                {card.title}
-              </Typography>
-              {card.fields.map((field) => (
-                <Box key={field.label} sx={{ mb: 0.75 }}>
-                  <Typography sx={labelSx}>{field.label}</Typography>
-                  <Typography variant="body2">{field.value}</Typography>
-                </Box>
-              ))}
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  {card.title}
+                </Typography>
+                {card.status ? <StatusChip label={card.status} /> : null}
+                <Box sx={{ flex: 1 }} />
+                <ActionsMenu label="Actions" items={[['Notes', () => onOpen('notes', feature.id)]]} />
+              </Stack>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 1.5 }}>
+                {card.fields.map((field) => (
+                  <Field key={field.label} label={field.label} value={field.value} />
+                ))}
+              </Box>
             </Box>
           ))}
         </Box>
@@ -611,26 +629,19 @@ function FeatureRow({
 
 function CardHead({ title, detail, onOpen }: { title: string; detail: ClaimDetailModel; onOpen: (kind: CollabKind) => void }) {
   const pending = detail.tasks.filter((task) => task.status !== 'Completed').length
+  const items: [string, () => void][] = [
+    [`Tasks (${pending})`, () => onOpen('tasks')],
+    [`Notes (${detail.notes.length})`, () => onOpen('notes')],
+    [`Email (${detail.emails.length})`, () => onOpen('emails')],
+    [`Documents (${detail.documents.length})`, () => onOpen('documents')],
+  ]
   return (
-    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-      <Typography variant="h6" component="h2" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '1rem', flex: 1 }}>
+    <Stack direction="row" spacing={1} alignItems="center" sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+      <Typography variant="h6" component="h2" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '1rem', textTransform: 'none', letterSpacing: 'normal', flex: 1 }}>
         {title}
       </Typography>
-      <Stack direction="row" useFlexGap flexWrap="wrap">
-        <HeadLink icon={ChecklistIcon} label={`Tasks (${pending})`} onClick={() => onOpen('tasks')} />
-        <HeadLink icon={StickyNote2OutlinedIcon} label={`Notes (${detail.notes.length})`} onClick={() => onOpen('notes')} />
-        <HeadLink icon={MailOutlineIcon} label={`Email (${detail.emails.length})`} onClick={() => onOpen('emails')} />
-        <HeadLink icon={DescriptionOutlinedIcon} label={`Documents (${detail.documents.length})`} onClick={() => onOpen('documents')} />
-      </Stack>
+      <ActionsMenu label="Actions" items={items} />
     </Stack>
-  )
-}
-
-function HeadLink({ icon: Icon, label, onClick }: { icon: SvgIconComponent; label: string; onClick: () => void }) {
-  return (
-    <Button size="small" startIcon={<Icon sx={{ fontSize: 16 }} />} onClick={onClick}>
-      {label}
-    </Button>
   )
 }
 
@@ -645,18 +656,21 @@ function RibbonFact({ label, value }: { label: string; value: string }) {
   )
 }
 
-function RibbonLink({ label, value, onClick }: { label: string; value: string; onClick: () => void }) {
+function RibbonLink({ label, value, info, onClick }: { label: string; value: string; info: string; onClick: () => void }) {
   return (
     <Box>
       <Typography sx={labelSx}>{label}</Typography>
-      <Link component="button" type="button" underline="hover" onClick={onClick} sx={{ fontWeight: 600, fontSize: '0.875rem', verticalAlign: 'baseline' }}>
-        {value}
-      </Link>
+      <Stack direction="row" spacing={0.5} alignItems="center">
+        <Link component="button" type="button" underline="hover" onClick={onClick} sx={{ fontWeight: 600, fontSize: '0.875rem', verticalAlign: 'baseline' }}>
+          {value}
+        </Link>
+        <InfoOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} aria-label={info} />
+      </Stack>
     </Box>
   )
 }
 
-function DataTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
+function DataTable({ headers, rows, chips = [] }: { headers: string[]; rows: string[][]; chips?: number[] }) {
   return (
     <Table size="small">
       <TableHead>
@@ -670,13 +684,215 @@ function DataTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
         {rows.map((row) => (
           <TableRow key={row.join('|')}>
             {row.map((cell, index) => (
-              <TableCell key={`${headers[index]}-${cell}`}>{cell}</TableCell>
+              <TableCell key={`${headers[index]}-${cell}`}>{chips.includes(index) ? <StatusChip label={cell} /> : cell}</TableCell>
             ))}
           </TableRow>
         ))}
       </TableBody>
     </Table>
   )
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <Box sx={{ minWidth: 0 }}>
+      <Typography sx={labelSx}>{label}</Typography>
+      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+        {value}
+      </Typography>
+    </Box>
+  )
+}
+
+function IconTile({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      sx={{
+        width: 32,
+        height: 32,
+        borderRadius: `${figmaBorderRadius.borderRadius}px`,
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0,
+        color: 'primary.main',
+        bgcolor: (theme) => (isDarkMode(theme) ? alpha(theme.palette.primary.main, 0.16) : theme.figmaPalette.blue[100]),
+      }}
+    >
+      {children}
+    </Box>
+  )
+}
+
+function statusTone(label: string): 'success' | 'warning' | 'info' | 'neutral' {
+  const value = label.toLowerCase()
+  if (value.includes('progress')) return 'info'
+  if (/(complete|closed|active|eligible|^match$|no suit)/.test(value)) return 'success'
+  if (value === 'open' || value.includes('pending') || value.includes('not started')) return 'warning'
+  return 'neutral'
+}
+
+function StatusChip({ label }: { label: string }) {
+  const tone = statusTone(label)
+  return (
+    <Chip
+      size="small"
+      label={label}
+      sx={{
+        height: 24,
+        fontWeight: 600,
+        border: 0,
+        borderRadius: `${figmaBorderRadius.borderRadius}px`,
+        bgcolor: (theme) => {
+          const dark = isDarkMode(theme)
+          if (tone === 'success') return dark ? theme.figmaPalette.green[900] : theme.figmaPalette.green[50]
+          if (tone === 'warning') return dark ? theme.figmaPalette.amber[900] : theme.figmaPalette.amber[50]
+          if (tone === 'info') return dark ? theme.figmaPalette.lightBlue[900] : theme.figmaPalette.lightBlue[50]
+          return dark ? theme.palette.action.selected : theme.figmaPalette.grey[100]
+        },
+        color: (theme) => {
+          const dark = isDarkMode(theme)
+          if (tone === 'success') return dark ? theme.figmaPalette.green[200] : theme.figmaPalette.green[800]
+          if (tone === 'warning') return dark ? theme.figmaPalette.amber[200] : theme.figmaPalette.amber[900]
+          if (tone === 'info') return dark ? theme.figmaPalette.lightBlue[200] : theme.figmaPalette.lightBlue[800]
+          return 'text.secondary'
+        },
+      }}
+    />
+  )
+}
+
+function ActionsMenu({ label, items }: { label: string; items: [string, () => void][] }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  return (
+    <>
+      <Button
+        size="small"
+        startIcon={<MoreVertIcon sx={{ fontSize: 18 }} />}
+        aria-haspopup="menu"
+        aria-expanded={anchor != null}
+        onClick={(event) => setAnchor(event.currentTarget)}
+        sx={{ fontWeight: 600, flexShrink: 0 }}
+      >
+        {label}
+      </Button>
+      <Menu
+        anchorEl={anchor}
+        open={anchor != null}
+        onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        {items.map(([item, onClick]) => (
+          <MenuItem
+            key={item}
+            onClick={() => {
+              setAnchor(null)
+              onClick()
+            }}
+          >
+            {item}
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
+  )
+}
+
+function AddToClaimButton() {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  return (
+    <>
+      <Button size="small" variant="outlined" startIcon={<AddIcon />} aria-haspopup="menu" onClick={(event) => setAnchor(event.currentTarget)}>
+        Add to claim
+      </Button>
+      <Menu anchorEl={anchor} open={anchor != null} onClose={() => setAnchor(null)}>
+        {ADD_TO_CLAIM.map((item) => (
+          <MenuItem key={item} disabled>
+            {item}
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
+  )
+}
+
+function InsightsPanel({
+  insights,
+  open,
+  lastRun,
+  onToggle,
+  onRefresh,
+  onAction,
+}: {
+  insights: ClaimDetailModel['insights']
+  open: boolean
+  lastRun: string
+  onToggle: () => void
+  onRefresh: () => void
+  onAction: (action: ClaimDetailModel['insights'][number]['action']) => void
+}) {
+  return (
+    <Box
+      sx={{
+        p: 2,
+        borderRadius: `${figmaBorderRadius.borderRadius}px`,
+        bgcolor: (theme) => (isDarkMode(theme) ? alpha(theme.palette.primary.main, 0.16) : theme.figmaPalette.blue[100]),
+      }}
+    >
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems={{ md: 'center' }}>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <IconTile>
+            <HubOutlinedIcon sx={{ fontSize: 18 }} />
+          </IconTile>
+          <Typography variant="h6" component="h2" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 700, fontSize: '1rem', textTransform: 'none', letterSpacing: 'normal' }}>
+            Claim Insights
+          </Typography>
+        </Stack>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ color: 'text.secondary' }}>
+          <Typography variant="body2">{`Last run ${lastRun}`}</Typography>
+          <Button size="small" startIcon={<RefreshIcon />} onClick={onRefresh}>
+            Refresh
+          </Button>
+        </Stack>
+        <Box sx={{ flex: 1 }} />
+        <Button size="small" startIcon={open ? <RemoveIcon /> : <AddIcon />} onClick={onToggle}>
+          {open ? 'Show less' : 'Show more'}
+        </Button>
+      </Stack>
+      {open
+        ? insights.map((insight) => (
+            <Stack key={`${insight.action ?? insight.type}-${insight.description}`} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} sx={{ mt: 1 }}>
+              <Typography variant="body2" component="div" sx={{ flex: 1 }}>
+                <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
+                  <li>
+                    <Box component="span" sx={{ fontWeight: 700 }}>{`${insight.type}: `}</Box>
+                    {insight.description}
+                  </li>
+                </Box>
+              </Typography>
+              {insight.action ? (
+                <Button
+                  size="small"
+                  startIcon={insight.action === 'Open litigation' ? <GavelOutlinedIcon /> : insight.action === 'Create task' ? <ChecklistIcon /> : <HubOutlinedIcon />}
+                  onClick={() => onAction(insight.action)}
+                >
+                  {insight.action}
+                </Button>
+              ) : null}
+            </Stack>
+          ))
+        : null}
+    </Box>
+  )
+}
+
+function claimParties(detail: ClaimDetailModel): PolicyParty[] {
+  return detail.parties.map((party, index) => {
+    const bits = party.contact.split('·').map((part) => part.trim()).filter((part) => part && part !== '—')
+    const email = bits.find((part) => part.includes('@'))
+    const phone = bits.find((part) => part !== email && /\d/.test(part))
+    return { id: `${detail.claimNumber}-${index}`, role: party.role, name: party.name, email, phone, defaultExpanded: index === 0 }
+  })
 }
 
 function showDate(value: string | null): string {
