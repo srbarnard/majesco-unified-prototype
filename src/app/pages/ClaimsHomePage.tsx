@@ -11,8 +11,11 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import CloseIcon from '@mui/icons-material/Close'
 import CycloneIcon from '@mui/icons-material/Cyclone'
 import DescriptionIcon from '@mui/icons-material/Description'
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
+import ErrorIcon from '@mui/icons-material/Error'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 import EventIcon from '@mui/icons-material/Event'
+import GridViewIcon from '@mui/icons-material/GridView'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import FlagIcon from '@mui/icons-material/Flag'
@@ -32,6 +35,7 @@ import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import ButtonBase from '@mui/material/ButtonBase'
+import Checkbox from '@mui/material/Checkbox'
 import Chip from '@mui/material/Chip'
 import Collapse from '@mui/material/Collapse'
 import Divider from '@mui/material/Divider'
@@ -41,10 +45,18 @@ import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
+import Table from '@mui/material/Table'
+import TableBody from '@mui/material/TableBody'
+import TableCell from '@mui/material/TableCell'
+import TableContainer from '@mui/material/TableContainer'
+import TableHead from '@mui/material/TableHead'
+import TableRow from '@mui/material/TableRow'
 import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
+import ToggleButton from '@mui/material/ToggleButton'
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
-import { useTheme, type Theme } from '@mui/material/styles'
+import { alpha, useTheme, type Theme } from '@mui/material/styles'
 import type { SvgIconComponent } from '@mui/icons-material'
 import { useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
@@ -93,6 +105,7 @@ import { figmaPalette } from '@/design-system/tokens/figma-palette'
 import { figmaSpacing } from '@/design-system/tokens/figma-spacing'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
+import { sc } from '@/pages/claims/data/sentenceCase'
 
 /**
  * Majesco One (MejB450AvNMSC9sQaswS9T) light tokens, scoped to this page only.
@@ -125,6 +138,15 @@ const textLinkSx = {
   verticalAlign: 'baseline',
 } as const
 const warningChipSx = { bgcolor: one.warningBg, color: one.warningText, ...chipRadiusSx } as const
+const openChipSx = {
+  height: 24,
+  fontWeight: 500,
+  border: 0,
+  borderRadius: 999,
+  bgcolor: (theme: Theme) => (isDarkMode(theme) ? theme.palette.action.selected : theme.palette.grey[300]),
+  color: 'text.primary',
+  '& .MuiChip-label': { px: 1.25 },
+} as const
 const dueColor = (state: DueState) =>
   state === 'overdue' ? one.error : state === 'today' || state === 'soon' ? one.warningText : 'text.secondary'
 
@@ -920,8 +942,107 @@ function KeyMetrics({ onCopilot }: { onCopilot: () => void }) {
 function dueLabel(date: string) {
   const state = dueState(date)
   const hd = humanDue(date)
-  const text = state === 'overdue' ? `Overdue by ${overdueDays(date)}` : hd === 'Tomorrow' ? 'Due tomorrow' : hd === 'Today' ? 'Today' : `Due ${hd}`
+  const text =
+    state === 'overdue'
+      ? `Overdue by ${overdueDays(date)}`
+      : hd === 'Tomorrow'
+        ? 'Due tomorrow'
+        : hd === 'Today'
+          ? 'Today'
+          : `Due ${fmtMonthDayLong(parseIsoDate(date))}`
   return { state, text }
+}
+
+/** Overdue stays error, today uses the One purple scale, later dates stay secondary text. */
+function claimDueColor(state: DueState, theme: Theme) {
+  if (state === 'overdue') return theme.palette.error.main
+  if (state === 'today') return isDarkMode(theme) ? figmaPalette.purple[300] : figmaPalette.purple[400]
+  return theme.palette.text.secondary
+}
+
+function claimDescription(claim: HomeClaim) {
+  return `${sc(claim.type)} • ${claim.detail}`
+}
+
+/** Sentence-case title-style labels. Keep numbered names such as "30 Day Follow Up". */
+function displayLabel(value: string) {
+  return /\d/.test(value) ? value : sc(value)
+}
+
+function claimActionCount(claim: HomeClaim) {
+  return claim.tasks.length + claim.notes.length + claim.features.length
+}
+
+function ClaimDue({ date }: { date: string }) {
+  const { state, text } = dueLabel(date)
+  const Icon = state === 'overdue' ? ErrorIcon : ScheduleIcon
+  return (
+    <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: (theme) => claimDueColor(state, theme), flexShrink: 0 }}>
+      <Icon sx={{ fontSize: 16 }} />
+      <Typography variant="body2" sx={{ fontWeight: 600, color: 'inherit' }}>
+        {text}
+      </Typography>
+    </Stack>
+  )
+}
+
+function ClaimNextLine({ kind, item }: { kind: 'task' | 'milestone'; item: HomeTask | HomeMilestone | null }) {
+  const isTask = kind === 'task'
+  const label = item == null ? 'None' : 'description' in item ? item.description : displayLabel(item.label)
+  return (
+    <Stack direction="row" spacing={0.75} alignItems="center" useFlexGap flexWrap="wrap" sx={{ minWidth: 0 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
+        {isTask ? 'Next task:' : 'Next milestone:'}
+      </Typography>
+      <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 0 }}>
+        {label}
+      </Typography>
+      {item ? <ClaimDue date={item.dueDate} /> : null}
+    </Stack>
+  )
+}
+
+function ClaimActions({
+  claim,
+  onOpen,
+}: {
+  claim: HomeClaim
+  onOpen: (name: 'tasks' | 'notes' | 'features') => void
+}) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  const close = (name?: 'tasks' | 'notes' | 'features') => {
+    setAnchor(null)
+    if (name) onOpen(name)
+  }
+  return (
+    <Stack direction="row" alignItems="center" spacing={0.75} sx={{ flexShrink: 0 }}>
+      <Button
+        size="small"
+        startIcon={<MoreVertIcon sx={{ fontSize: 18 }} />}
+        aria-haspopup="menu"
+        aria-expanded={anchor != null}
+        onClick={(event) => setAnchor(event.currentTarget)}
+        sx={{ fontWeight: 600 }}
+      >
+        Actions
+      </Button>
+      <Typography variant="body2" color="primary.main" sx={{ fontWeight: 600 }}>
+        {claimActionCount(claim)}
+      </Typography>
+      <Menu
+        anchorEl={anchor}
+        open={anchor != null}
+        onClose={() => close()}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{ paper: { sx: { minWidth: 180 } } }}
+      >
+        <MenuItem sx={{ minHeight: 36 }} onClick={() => close('tasks')}>{`Tasks (${claim.tasks.length})`}</MenuItem>
+        <MenuItem sx={{ minHeight: 36 }} onClick={() => close('notes')}>{`Notes (${claim.notes.length})`}</MenuItem>
+        <MenuItem sx={{ minHeight: 36 }} onClick={() => close('features')}>{`Features (${claim.features.length})`}</MenuItem>
+      </Menu>
+    </Stack>
+  )
 }
 
 function DueMark({ date }: { date: string }) {
@@ -1019,7 +1140,15 @@ function ActivityPanel({ title, Icon, onClose, children }: { title: string; Icon
   )
 }
 
-function ClaimCard({ claim }: { claim: HomeClaim }) {
+function ClaimCard({
+  claim,
+  selected,
+  onToggleSelected,
+}: {
+  claim: HomeClaim
+  selected: boolean
+  onToggleSelected: () => void
+}) {
   const [panel, setPanel] = useState<'tasks' | 'notes' | 'features' | null>(null)
   const [featureFocus, setFeatureFocus] = useState<{ id: string; kind: 'notes' | 'tasks' } | null>(null)
   const nt = nextOpenTask(claim)
@@ -1040,30 +1169,35 @@ function ClaimCard({ claim }: { claim: HomeClaim }) {
     </Button>
   )
   return (
-    <Box sx={{ ...cardSx, overflow: 'hidden', gridColumn: panel ? { md: '1 / -1' } : undefined }}>
-      <Box sx={{ px: 2, py: 1.5 }}>
-        <Stack direction="row" spacing={2} alignItems="flex-start" justifyContent="space-between">
-          <Box sx={{ minWidth: 0 }}>
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-              <ClaimLink>{claim.claim}</ClaimLink>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {claim.insured}
-              </Typography>
-              <Chip size="small" variant="outlined" label="Open" sx={tagChipSx} />
+    <Box sx={{ ...cardSx, overflow: 'hidden' }}>
+      <Box sx={{ p: 2 }}>
+        <Stack direction="row" spacing={1} alignItems="flex-start">
+          <Checkbox
+            size="small"
+            checked={selected}
+            onChange={onToggleSelected}
+            inputProps={{ 'aria-label': `Select ${claim.claim}` }}
+            sx={{ p: 0.25, mt: 0.125 }}
+          />
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ flex: 1, minWidth: 0 }}>
+                <ClaimLink>{claim.claim}</ClaimLink>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  {claim.insured}
+                </Typography>
+                <Chip size="small" label="Open" sx={openChipSx} />
+              </Stack>
+              <ClaimActions claim={claim} onOpen={toggle} />
             </Stack>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-              {`${claim.type} · ${claim.detail}`}
+            <Typography variant="body2" sx={{ mt: 0.5 }}>
+              {claimDescription(claim)}
             </Typography>
+            <Stack direction="row" useFlexGap flexWrap="wrap" columnGap={3} rowGap={0.5} sx={{ mt: 1.5 }}>
+              <ClaimNextLine kind="task" item={nt} />
+              <ClaimNextLine kind="milestone" item={nm} />
+            </Stack>
           </Box>
-          <Stack alignItems="flex-start" sx={{ flexShrink: 0 }}>
-            {linkButton(ChecklistIcon, `Linked tasks (${claim.tasks.length})`, () => toggle('tasks'))}
-            {linkButton(StickyNote2OutlinedIcon, `Linked notes (${claim.notes.length})`, () => toggle('notes'))}
-            {linkButton(AccountTreeIcon, `Linked features (${claim.features.length})`, () => toggle('features'))}
-          </Stack>
-        </Stack>
-        <Stack spacing={0.5} sx={{ mt: 1.5 }}>
-          <NextLine kind="task" item={nt} onOpen={nt ? () => toggle('tasks') : undefined} />
-          <NextLine kind="milestone" item={nm} />
         </Stack>
       </Box>
       <Reveal open={panel === 'tasks'}>
@@ -1147,25 +1281,162 @@ function ClaimCard({ claim }: { claim: HomeClaim }) {
   )
 }
 
-function ClaimList({ items }: { items: HomeClaim[] }) {
-  const [expanded, setExpanded] = useState(false)
-  const sorted = sortedClaims(items)
-  const claimHead = sorted.slice(0, HOME_PAGE_SIZE)
-  const claimMore = sorted.slice(HOME_PAGE_SIZE)
+function ClaimTableRow({
+  claim,
+  selected,
+  onToggleSelected,
+}: {
+  claim: HomeClaim
+  selected: boolean
+  onToggleSelected: () => void
+}) {
+  const [panel, setPanel] = useState<'tasks' | 'notes' | 'features' | null>(null)
+  const task = nextOpenTask(claim)
+  const milestone = nextMilestone(claim)
+  const toggle = (name: 'tasks' | 'notes' | 'features') => setPanel((current) => (current === name ? null : name))
   return (
     <>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: `${figmaSpacing[2]}px`, alignItems: 'start' }}>
-        {claimHead.map((c) => (
-          <ClaimCard key={c.claim} claim={c} />
-        ))}
-        <Reveal open={expanded} sx={{ gridColumn: '1 / -1' }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: `${figmaSpacing[2]}px`, alignItems: 'start' }}>
-            {claimMore.map((c) => (
-              <ClaimCard key={c.claim} claim={c} />
+      <TableRow hover>
+        <TableCell padding="checkbox">
+          <Checkbox
+            size="small"
+            checked={selected}
+            onChange={onToggleSelected}
+            inputProps={{ 'aria-label': `Select ${claim.claim}` }}
+          />
+        </TableCell>
+        <TableCell>
+          <ClaimLink>{claim.claim}</ClaimLink>
+        </TableCell>
+        <TableCell>
+          <Typography variant="body2" sx={{ fontWeight: 700 }}>
+            {claim.insured}
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Chip size="small" label="Open" sx={openChipSx} />
+        </TableCell>
+        <TableCell>
+          <Typography variant="body2">{claimDescription(claim)}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+            {milestone ? `Next milestone: ${displayLabel(milestone.label)}` : 'Next milestone: None'}
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Stack spacing={0.25}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {task ? task.description : 'None'}
+            </Typography>
+            {task ? <ClaimDue date={task.dueDate} /> : null}
+          </Stack>
+        </TableCell>
+        <TableCell>
+          <ClaimActions claim={claim} onOpen={toggle} />
+        </TableCell>
+      </TableRow>
+      {panel ? (
+        <TableRow>
+          <TableCell colSpan={7} sx={{ bgcolor: (theme) => accentSubtle(theme), borderBottom: 1, borderColor: 'divider' }}>
+            {panel === 'tasks' ? (
+              <Stack spacing={1}>
+                {claim.tasks.length ? (
+                  [...claim.tasks].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).map((t) => <TaskCard key={t.id} task={t} />)
+                ) : (
+                  <EmptyNote>No tasks.</EmptyNote>
+                )}
+              </Stack>
+            ) : null}
+            {panel === 'notes' ? (
+              <Stack spacing={1}>
+                {claim.notes.length ? claim.notes.map((n, i) => <NoteCard key={i} note={n} />) : <EmptyNote>No notes.</EmptyNote>}
+              </Stack>
+            ) : null}
+            {panel === 'features' ? (
+              <Stack spacing={0.5}>
+                {claim.features.length ? (
+                  claim.features.map((f) => (
+                    <Typography key={f.id} variant="body2" sx={{ fontWeight: 600 }}>
+                      {featureName(f)}
+                    </Typography>
+                  ))
+                ) : (
+                  <EmptyNote>No features.</EmptyNote>
+                )}
+              </Stack>
+            ) : null}
+          </TableCell>
+        </TableRow>
+      ) : null}
+    </>
+  )
+}
+
+function ClaimTable({
+  items,
+  selected,
+  onToggleSelected,
+}: {
+  items: HomeClaim[]
+  selected: ReadonlySet<string>
+  onToggleSelected: (claimNumber: string) => void
+}) {
+  return (
+    <TableContainer sx={{ ...cardSx, overflow: 'auto' }}>
+      <Table size="small" sx={{ minWidth: 880 }}>
+        <TableHead>
+          <TableRow>
+            {['', 'Claim', 'Insured', 'Status', 'Description', 'Next task', 'Actions'].map((label) => (
+              <TableCell key={label || 'select'} sx={{ color: 'text.secondary', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                {label}
+              </TableCell>
             ))}
-          </Box>
-        </Reveal>
-      </Box>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {items.map((claim) => (
+            <ClaimTableRow
+              key={claim.claim}
+              claim={claim}
+              selected={selected.has(claim.claim)}
+              onToggleSelected={() => onToggleSelected(claim.claim)}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  )
+}
+
+function ClaimList({
+  items,
+  view,
+  selected,
+  onToggleSelected,
+}: {
+  items: HomeClaim[]
+  view: 'card' | 'table'
+  selected: ReadonlySet<string>
+  onToggleSelected: (claimNumber: string) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const sorted = sortedClaims(items)
+  const visible = expanded ? sorted : sorted.slice(0, HOME_PAGE_SIZE)
+  return (
+    <>
+      {view === 'card' ? (
+        <Box
+          data-claim-view="card"
+          sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: `${figmaSpacing[2]}px`, alignItems: 'start' }}
+        >
+          {visible.map((c) => (
+            <ClaimCard key={c.claim} claim={c} selected={selected.has(c.claim)} onToggleSelected={() => onToggleSelected(c.claim)} />
+          ))}
+        </Box>
+      ) : (
+        <Box data-claim-view="table">
+          <ClaimTable items={visible} selected={selected} onToggleSelected={onToggleSelected} />
+        </Box>
+      )}
       {sorted.length > HOME_PAGE_SIZE ? (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <ShowMore
@@ -1706,33 +1977,86 @@ type MyClaimsTab = 'my' | 'fnol' | 'unassigned'
 
 function MyClaims({ claims, onInsights }: { claims: HomeClaim[]; onInsights: (insight: SectionInsight) => void }) {
   const [tab, setTab] = useState<MyClaimsTab>('my')
+  const [view, setView] = useState<'card' | 'table'>('card')
+  const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set())
+  const insightClaims = sortedClaims(claims).slice(0, 3)
+  const toggleSelected = (claimNumber: string) => {
+    setSelected((current) => {
+      const next = new Set(current)
+      if (next.has(claimNumber)) next.delete(claimNumber)
+      else next.add(claimNumber)
+      return next
+    })
+  }
   return (
     <Box component="section" sx={{ mb: 3 }}>
-      <ModuleHeader title="My claims">
-        <InsightsButton
-          count={claims.length}
+      <Stack direction="row" alignItems="center" spacing={1.5} useFlexGap flexWrap="wrap" sx={{ minHeight: 40, mb: 1.5 }}>
+        <Typography variant="h2" component="h2">
+          My Claims
+        </Typography>
+        <Button
+          size="small"
+          variant="outlined"
           onClick={() =>
             onInsights({
               id: 'myClaims',
-              title: 'My claims summary',
+              title: 'My Claims summary',
               ask: 'Summarize my claims and what needs attention.',
-              points: sortedClaims(claims)
-                .slice(0, 4)
-                .map((c) => {
-                  const task = nextOpenTask(c)
-                  return `${c.claim} — ${task ? `${task.description} (${humanDue(task.dueDate)})` : 'no open tasks'}.`
-                }),
+              points: insightClaims.map((c) => {
+                const task = nextOpenTask(c)
+                return `${c.claim} — ${task ? `${task.description} (${humanDue(task.dueDate)})` : 'no open tasks'}.`
+              }),
             })
           }
-        />
-      </ModuleHeader>
+          sx={{ borderRadius: 999, px: 1.5, borderColor: 'primary.main', fontWeight: 500 }}
+        >
+          {`${insightClaims.length} Insights`}
+        </Button>
+        <Box sx={{ flex: 1 }} />
+        <ToggleButtonGroup
+          exclusive
+          size="small"
+          value={view}
+          aria-label="My Claims layout"
+          onChange={(_, next: 'card' | 'table' | null) => {
+            if (next) setView(next)
+          }}
+          sx={{
+            '& .MuiToggleButtonGroup-grouped': { border: 0, borderRadius: '8px !important', mx: 0.25 },
+            '& .MuiToggleButton-root': {
+              textTransform: 'none',
+              fontFamily: figmaFontFamilyStack.heading,
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              color: 'primary.main',
+              gap: 0.75,
+              px: 1.25,
+              py: 0.5,
+              '&.Mui-selected': {
+                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                color: 'primary.main',
+                '&:hover': { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12) },
+              },
+            },
+          }}
+        >
+          <ToggleButton value="card" aria-label="Card">
+            <CheckBoxOutlineBlankIcon sx={{ fontSize: 18 }} />
+            Card
+          </ToggleButton>
+          <ToggleButton value="table" aria-label="Table">
+            <GridViewIcon sx={{ fontSize: 18 }} />
+            Table
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Stack>
       <Tabs value={tab} onChange={(_, v: MyClaimsTab) => setTab(v)} sx={{ borderBottom: 1, borderColor: one.divider, mb: 1.5 }}>
-        <Tab value="my" label="My claims" />
+        <Tab value="my" label="My Claims" />
         <Tab value="fnol" label="Pending FNOL" />
-        <Tab value="unassigned" label="Unassigned claims" />
+        <Tab value="unassigned" label="Unassigned Claims" />
       </Tabs>
       {tab === 'my' ? (
-        <ClaimList items={claims} />
+        <ClaimList items={claims} view={view} selected={selected} onToggleSelected={toggleSelected} />
       ) : (
         <EmptyNote>{tab === 'fnol' ? 'No pending FNOL submissions.' : 'No unassigned claims.'}</EmptyNote>
       )}
