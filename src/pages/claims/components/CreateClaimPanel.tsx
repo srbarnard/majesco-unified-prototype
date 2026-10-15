@@ -35,6 +35,8 @@ import {
   applyClaimText,
   documentClaimDraft,
   emptyClaimDraft,
+  PROPERTY_DAMAGE_PREFIX,
+  VEHICLE_DAMAGE_PREFIX,
   formatKnownLossDate,
   formatLossDate,
   parseLossDate,
@@ -108,8 +110,8 @@ const EMPTY_DAMAGE_ITEM: DamageItem = {
 }
 const DRIVABLE = 'Drivable'
 const NOT_DRIVABLE = 'Not drivable'
-const PROPERTY_PREFIX = 'Property · '
-const VEHICLE_PREFIX = 'Vehicle · '
+const PROPERTY_PREFIX = PROPERTY_DAMAGE_PREFIX
+const VEHICLE_PREFIX = VEHICLE_DAMAGE_PREFIX
 
 function damageEntryParts(entry: string): { term: 'Vehicle' | 'Property'; body: string } {
   if (entry.startsWith(PROPERTY_PREFIX)) return { term: 'Property', body: entry.slice(PROPERTY_PREFIX.length) }

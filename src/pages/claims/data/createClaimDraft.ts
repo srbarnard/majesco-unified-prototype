@@ -141,7 +141,32 @@ const ROAD = new RegExp(
     PLACE_END,
 )
 const DAMAGE = /\b(damag|dent|smash|crush|broke|crack|shatter|bumper|windshield|fender|totaled|flood|leak|fire|burn|roof)/i
+/** A line is a vehicle only when the loss names one. "Fire" and "warehouse" do not. */
+const VEHICLE = /\b(vehicles?|cars?|autos?|trucks?|box\s+trucks?|vans?|suvs?|motorcycles?|sedans?|pickups?|trailers?|buses|rear[-\s]?ended)\b/i
+/** Perils that describe property damage rather than a vehicle. */
+const PROPERTY_PERIL = /\b(fires?|burns?|flood(?:ing|ed|s)?|leaks?|roofs?|smoke)\b/i
 const INJURY = /\b(injur|hurt|pain|ambulance|hospital|ER|whiplash|bleeding)\b/i
+/** Stored ahead of a property line so the damage list can label it Property. */
+export const PROPERTY_DAMAGE_PREFIX = 'Property · '
+export const VEHICLE_DAMAGE_PREFIX = 'Vehicle · '
+
+/** Damage words with the place name removed: "Warehouse fire" → "fire". */
+function propertyDamageDetail(clause: string): string | null {
+  if (VEHICLE.test(clause) || !PROPERTY_PERIL.test(clause)) return null
+  const detail = clause
+    .replace(/\b(storefronts?|store\s*fronts?|retail|stores?|shops?|warehouses?|offices?|buildings?|garages?)\b/gi, ' ')
+    .replace(
+      /\b(?:on\s+)?(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}(?:st|nd|rd|th)?(?:(?:,\s*|\s+)20\d{2})?\b/gi,
+      ' ',
+    )
+    .replace(/\b\d{1,2}\/\d{1,2}(?:\/20\d{2})?\b/g, ' ')
+    .replace(/\b(?:yesterday|today|last night|this (?:morning|afternoon|evening))\b/gi, ' ')
+    .replace(/\b(the|a|an|at|in|on|our|my)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!detail || !PROPERTY_PERIL.test(detail)) return null
+  return detail
+}
 
 function isoDate(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -223,7 +248,11 @@ export function applyClaimText(draft: CreateClaimDraft, text: string): CreateCla
   }
   if (next.vehicles.length === 0) {
     const damaged = clauses(text).find((clause) => DAMAGE.test(clause) && !INJURY.test(clause))
-    if (damaged) next.vehicles = [damaged]
+    if (damaged && VEHICLE.test(damaged)) next.vehicles = [damaged]
+    else if (damaged) {
+      const detail = propertyDamageDetail(damaged)
+      if (detail) next.vehicles = [`${PROPERTY_DAMAGE_PREFIX}${detail}`]
+    }
   }
   if (!email && !next.description && text.split(/\s+/).length >= 4) next.description = text
   return next
