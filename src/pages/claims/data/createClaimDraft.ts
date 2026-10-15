@@ -86,8 +86,8 @@ export function documentClaimDraft(sources: string[]): CreateClaimDraft {
     airbag: 'missing',
     driver: { name: 'Marcus Reyes', status: 'off-schedule' },
     vehicles: [
-      'Insured 2022 Isuzu NPR box truck · front bumper and grille',
-      'Claimant 2019 Honda Accord · rear bumper and trunk',
+      'Insured 2022 Isuzu NPR box truck, front bumper and grille',
+      'Claimant 2019 Honda Accord, rear bumper and trunk',
     ],
     injuries: 'Claimant reports neck pain; treated and released at the scene',
     tasks: [],

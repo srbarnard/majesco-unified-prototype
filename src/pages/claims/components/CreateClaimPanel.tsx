@@ -116,6 +116,12 @@ function damageEntryParts(entry: string): { term: 'Vehicle' | 'Property'; body: 
   if (entry.startsWith(VEHICLE_PREFIX)) return { term: 'Vehicle', body: entry.slice(VEHICLE_PREFIX.length) }
   return { term: 'Vehicle', body: entry }
 }
+
+/** Vehicle and injury list items separate the subject from the detail with a comma. */
+function damageItemText(value: string) {
+  return value.replaceAll(' · ', ', ')
+}
+
 const NO_ONE_HURT = 'No one hurt'
 const SOMEONE_HURT = 'Someone was hurt'
 const ADD_DAMAGE_ITEM = 'Add item'
@@ -327,7 +333,7 @@ export function CreateClaimPanel({
       estimate ? `Est. ${estimate}` : null,
     ]
       .filter(Boolean)
-      .join(' · ')
+      .join(', ')
     updateDraft((current) => ({
       ...current,
       vehicles: [...current.vehicles, `${involved === 'Property' ? PROPERTY_PREFIX : VEHICLE_PREFIX}${entry}`],
@@ -676,7 +682,7 @@ export function CreateClaimPanel({
           const parts = damageEntryParts(entry)
           return {
             term: parts.term,
-            value: parts.body,
+            value: damageItemText(parts.body),
             ...editableField(`item-${index}`),
           }
         }),
@@ -684,7 +690,7 @@ export function CreateClaimPanel({
           ? [{ term: 'Injuries', value: draft.injuries, ...editableField('injuries') }]
           : (draft.injuries?.split('; ') ?? []).map((injury, index) => ({
               term: 'Injury',
-              value: injury,
+              value: damageItemText(injury),
               ...editableField(`injury-${index}`),
             }))),
         ...(draft.vehicles.length > 0 || draft.injuries
@@ -743,8 +749,8 @@ export function CreateClaimPanel({
     if (!draft) return null
     if (field.startsWith('item-') || field.startsWith('injury-')) {
       const value = field.startsWith('item-')
-        ? damageEntryParts(draft.vehicles[Number(field.slice('item-'.length))] ?? '').body
-        : (draft.injuries?.split('; ')[Number(field.slice('injury-'.length))] ?? '')
+        ? damageItemText(damageEntryParts(draft.vehicles[Number(field.slice('item-'.length))] ?? '').body)
+        : damageItemText(draft.injuries?.split('; ')[Number(field.slice('injury-'.length))] ?? '')
       if (!value) return null
       const label = field.startsWith('item-') ? damageEntryParts(draft.vehicles[Number(field.slice('item-'.length))] ?? '').term : 'Injury'
       return (
@@ -1154,13 +1160,13 @@ export function CreateClaimPanel({
     ? [
         ...draft.vehicles.map((entry, index) => {
           const parts = damageEntryParts(entry)
-          return { term: parts.term, value: parts.body, field: `item-${index}` }
+          return { term: parts.term, value: damageItemText(parts.body), field: `item-${index}` }
         }),
         ...(draft.injuries === 'None reported'
           ? [{ term: 'Injuries', value: draft.injuries, field: 'injuries' }]
           : (draft.injuries?.split('; ') ?? []).map((injury, index) => ({
               term: 'Injury',
-              value: injury,
+              value: damageItemText(injury),
               field: `injury-${index}`,
             }))),
       ]
