@@ -1,3 +1,4 @@
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
 import CheckIcon from '@mui/icons-material/Check'
 import CloseIcon from '@mui/icons-material/Close'
 import Box from '@mui/material/Box'
@@ -5,15 +6,18 @@ import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
+import Link from '@mui/material/Link'
 import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+import type { Theme } from '@mui/material/styles'
 import { useMemo, useState } from 'react'
-import { CopilotQuickActions } from '@/design-system/components'
+import { Button as DsButton, CopilotQuickActions } from '@/design-system/components'
 import { accentSubtle, accentSubtleHover } from '@/design-system/theme/themeSurfaces'
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { fadeSlideDownSx } from '@/design-system/tokens/motion'
 import { CustomerAddressEditor } from '@/pages/customers/components/CustomerAddressEditor'
 import { extractCustomerFromFile, customerDocumentTypeLabel } from '@/pages/customers/data/customerDocumentExtraction'
 import {
@@ -130,6 +134,25 @@ const ADD_LOCATION = 'Add location'
 const ADD_VEHICLE = 'Add vehicle'
 const SAVE_DRAFT = 'Save draft'
 const SELECT_COVERAGES = 'Select coverages'
+const CANCEL_QUOTE = 'Cancel'
+const MAX_SUGGESTED_ACTIONS = 3
+
+/** Same text-link treatment as Cancel beside Submit claim. */
+const threadLinkSx = (theme: Theme) => ({
+  ...draftBodySx,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 0.5,
+  px: 1,
+  py: 0.5,
+  borderRadius: 1.5,
+  transition: 'background-color 0.15s ease, color 0.15s ease',
+  '&:hover': {
+    bgcolor: getFigmaColors(theme.palette.mode).primary.hover,
+    color: 'primary.main',
+  },
+  '&:active': { bgcolor: getFigmaColors(theme.palette.mode).primary.selected },
+})
 const VIN_PATTERN = /\b[A-HJ-NPR-Z0-9]{17}\b/i
 
 function coverageField(coverage: QuoteCoverage): CoverageRowField {
@@ -453,6 +476,8 @@ export function CreateQuotePanel({
   }
 
   const pushCoverages = () => {
+    setDraft(commitDraft)
+    resetComposer()
     setEditing(null)
     setEditingCoverage(null)
     setLevel('coverages')
@@ -622,9 +647,9 @@ export function CreateQuotePanel({
     considerations: insuredConsiderations,
   } = splitDraftRows(insuredRows)
 
-  const insuredActions = profileComplete
-    ? [SELECT_COVERAGES, SAVE_DRAFT, ADD_NOTE]
-    : [ADD_NOTE, EMAIL_MISSING_INFO, SAVE_DRAFT]
+  const insuredActions = (
+    profileComplete ? [SAVE_DRAFT, ADD_NOTE] : [ADD_NOTE, EMAIL_MISSING_INFO, SAVE_DRAFT]
+  ).slice(0, MAX_SUGGESTED_ACTIONS)
 
   const addedCoverages = QUOTE_COVERAGES.filter((coverage) => coverageChecked(previewDraft, coverage))
   const coverageSuggestions = suggestCoverages(previewDraft)
@@ -855,6 +880,24 @@ export function CreateQuotePanel({
         renderEditor={renderInlineEditor}
         onGroupToggle={() => setEditing(null)}
       />
+      {profileComplete ? (
+        <Stack direction="row" alignItems="center" spacing={1} sx={[{ mb: 2 }, fadeSlideDownSx()]}>
+          <DsButton size="small" variant="contained" color="primary" onClick={pushCoverages}>
+            {SELECT_COVERAGES}
+          </DsButton>
+          <Link
+            component="button"
+            type="button"
+            underline="none"
+            color="text.primary"
+            onClick={onClose}
+            sx={threadLinkSx}
+          >
+            <CancelOutlinedIcon sx={{ fontSize: 16 }} />
+            {CANCEL_QUOTE}
+          </Link>
+        </Stack>
+      ) : null}
       <CopilotQuickActions label="Suggested actions" actions={insuredActions} onAction={handleInsuredAction} />
       <DraftDocumentChips
         files={sentFiles.map((sent) => ({ id: sent.id, label: sent.file.name }))}
