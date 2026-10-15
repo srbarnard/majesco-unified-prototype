@@ -220,6 +220,7 @@ function nowLabel() {
 export function CreateClaimPanel({
   initialState,
   initialIntent,
+  openedFromHistory = false,
   history,
   onOpenHistory,
   onStartOver,
@@ -231,6 +232,8 @@ export function CreateClaimPanel({
   initialState?: CreateClaimSavedState | null
   /** Row action that opened the drawer on this claim (Assign, Add note, Add task). */
   initialIntent?: ClaimDrawerIntent
+  /** History reopened this mount. A created claim stays on its completed view. */
+  openedFromHistory?: boolean
   history: DraftHistoryItem[]
   onOpenHistory: (id: string) => void
   /** Back to "What happened?"; the next save writes a new History row. */
@@ -250,6 +253,10 @@ export function CreateClaimPanel({
   const [savedDraft, setDraft] = useState<CreateClaimDraft | null>(initialState?.draft ?? null)
   const [created, setCreated] = useState(initialState?.created ?? false)
   const [justCreated, setJustCreated] = useState(false)
+  /** A created claim opened from History: the completed view, not a new intake. */
+  const [reviewingCompleted, setReviewingCompleted] = useState(
+    () => openedFromHistory && Boolean(initialState?.created && initialState.draft),
+  )
   const [start, setStart] = useState<StartMode | null>(null)
   const [reading, setReading] = useState<string[] | null>(null)
   const [composerValue, setComposerValue] = useState('')
@@ -377,6 +384,7 @@ export function CreateClaimPanel({
     setDraft(null)
     setCreated(false)
     setJustCreated(false)
+    setReviewingCompleted(false)
     setStart(null)
     setEditing(null)
     setComposerValue('')
@@ -661,7 +669,11 @@ export function CreateClaimPanel({
         ...(draft.description
           ? [{ term: 'What happened', value: draft.description, ...editableField('description' as const) }]
           : []),
-        ...(editable ? [{ term: 'Assigned to', value: assigneeLabel(owner), field: 'assignee' as const }] : []),
+        {
+          term: 'Assigned to',
+          value: assigneeLabel(owner),
+          ...(editable ? { field: 'assignee' as const } : {}),
+        },
         ...(draft.claimant
           ? [
               {
@@ -1143,6 +1155,28 @@ export function CreateClaimPanel({
     </Stack>
   ) : null
 
+  /** History of a created claim: the same confirmation, plus the facts captured for it. */
+  const completedView = draft ? (
+    <>
+      {confirmationView}
+      <DraftAccordions
+        known={factRows}
+        attention={[]}
+        knownOpen={knownOpen}
+        onKnownOpenChange={setKnownOpen}
+        editingField={editing}
+        onToggle={toggleEditing}
+        renderEditor={renderEditor}
+        onGroupToggle={() => setEditing(null)}
+      />
+      <Box sx={{ mt: 2 }}>
+        <CopilotQuickActions label="Suggested actions" actions={[ADD_NOTE, ADD_TASK]} onAction={handleThreadAction} />
+        {threadEditors}
+      </Box>
+      <DraftDocumentChips files={sources.map((source) => ({ id: source, label: source }))} onOpen={openDocument} />
+    </>
+  ) : null
+
   const filedView = draft ? (
     <>
       <DraftHeader
@@ -1397,7 +1431,15 @@ export function CreateClaimPanel({
     </>
   )
 
-  const body = confirmed ? confirmationView : filed ? filedView : level === 'damage' ? damageView : intakeView
+  const body = confirmed
+    ? confirmationView
+    : reviewingCompleted
+      ? completedView
+      : filed
+        ? filedView
+        : level === 'damage'
+          ? damageView
+          : intakeView
   const placeholder =
     level === 'damage'
       ? 'Describe what was damaged…'
@@ -1431,7 +1473,7 @@ export function CreateClaimPanel({
         />
       }
       composer={
-        confirmed ? null : (
+        confirmed || reviewingCompleted ? null : (
         <Box ref={composerRef}>
           <CopilotComposer
             placeholder={placeholder}

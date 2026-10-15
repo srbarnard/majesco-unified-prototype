@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { CreateClaimPanel } from '@/pages/claims/components/CreateClaimPanel'
 import {
@@ -25,12 +25,20 @@ export function CreateClaimToolPanel() {
   const threads = useClaimThreads()
   const request = useClaimDrawerRequest()
   const [session, setSession] = useState(0)
+  /** History opens the saved claim; a new drawer request starts a fresh claim. */
+  const openedFromHistory = useRef(false)
+  const requestKey = useRef(request.key)
+  if (requestKey.current !== request.key) {
+    requestKey.current = request.key
+    openedFromHistory.current = false
+  }
 
   return (
     <CreateClaimPanel
       key={`${request.key}-${session}`}
       initialState={getActiveClaimThread()?.state ?? null}
       initialIntent={request.intent}
+      openedFromHistory={openedFromHistory.current}
       history={threads.map(({ id, state }) => ({
         id,
         title: threadTitle(state),
@@ -40,6 +48,7 @@ export function CreateClaimToolPanel() {
         const thread = threads.find((entry) => entry.id === id)
         if (!thread) return
         setActiveClaimThread(thread)
+        openedFromHistory.current = true
         setSession((current) => current + 1)
       }}
       onStartOver={() => setActiveClaimThread(null)}
