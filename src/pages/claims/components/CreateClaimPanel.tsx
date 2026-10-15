@@ -263,6 +263,8 @@ export function CreateClaimPanel({
   const [attachRequest, setAttachRequest] = useState(0)
   const readTimer = useRef<number | null>(null)
   const composerRef = useRef<HTMLDivElement>(null)
+  /** Fields currently listed under Known facts. Edits there must not collapse that group. */
+  const knownFactFields = useRef(new Set<Field>())
   const record = useClaim(savedDraft?.claimNumber)
   /** Submitted this session, or already filed in the Claims table. */
   const filed = created || (record != null && record.status !== 'Draft')
@@ -397,14 +399,15 @@ export function CreateClaimPanel({
     setDraft(callerIntake ? applyCallerText(savedDraft, text) : applyClaimText(savedDraft ?? emptyClaimDraft(), text))
   }
 
-  /** A chosen policy is a fact: Policy (and its Insured) join Known facts, and the composer takes focus again. */
+  /** A chosen policy is a fact. Changing it from Known facts leaves that group open; the starter lookup keeps it collapsed. */
   const pickPolicy = (policyNumber: string) => {
     const policy = CLAIM_POLICIES.get(policyNumber)
     if (!policy) return
+    const insideKnownFacts = editing != null && knownFactFields.current.has(editing)
     setEditing(null)
     setStart((current) => (current === 'policy' ? null : current))
-    // The new facts stay collapsed so Needs attention remains the open group.
-    setKnownOpen(false)
+    if (insideKnownFacts) setKnownOpen(true)
+    else setKnownOpen(false)
     focusComposer()
     updateDraft((current) => ({
       ...current,
@@ -712,6 +715,12 @@ export function CreateClaimPanel({
         ...(record?.notes ?? draft.notes ?? []).map((note) => ({ term: 'Note', value: note.text, meta: metaText(note.at) })),
       ]
     : []
+
+  knownFactFields.current = new Set(factRows.flatMap((row) => (row.field != null ? [row.field] : [])))
+  // Opening a Known facts editor pins the group open, so finishing the edit cannot collapse it.
+  useEffect(() => {
+    if (editing != null && knownFactFields.current.has(editing)) setKnownOpen(true)
+  }, [editing])
 
   const sources = draft?.sources ?? []
 
