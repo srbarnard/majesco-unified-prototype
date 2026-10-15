@@ -18,7 +18,6 @@ import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import type { SvgIconComponent } from '@mui/icons-material'
 import { useMemo, useState } from 'react'
 import {
   featureNameById,
@@ -189,7 +188,7 @@ export function ClaimCollaborationDrawer({
       slotProps={{
         paper: {
           sx: {
-            width: { xs: '100%', sm: 440 },
+            width: { xs: '100%', sm: 520 },
             right: { lg: `${layoutTokens.toolRailWidth}px` },
             height: '100%',
             display: 'flex',
@@ -215,13 +214,13 @@ export function ClaimCollaborationDrawer({
             setSelected([])
             resetDraft()
           }}
-          variant="scrollable"
-          sx={{ borderBottom: 1, borderColor: 'divider', px: 1 }}
+          variant="fullWidth"
+          sx={{ borderBottom: 1, borderColor: 'divider', '& .MuiTab-root': { minWidth: 0, px: 0.5, minHeight: 48 } }}
         >
-          <CollabTab value="tasks" icon={ChecklistIcon} label="Tasks" count={countLabel('tasks', tasks, notes, emails, documents)} />
-          <CollabTab value="notes" icon={StickyNote2OutlinedIcon} label="Notes" count={countLabel('notes', tasks, notes, emails, documents)} />
-          <CollabTab value="emails" icon={MailOutlineIcon} label="Email" count={countLabel('emails', tasks, notes, emails, documents)} />
-          <CollabTab value="documents" icon={DescriptionOutlinedIcon} label="Documents" count={countLabel('documents', tasks, notes, emails, documents)} />
+          <Tab value="tasks" icon={<ChecklistIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Tasks (${countLabel('tasks', tasks, notes, emails, documents)})`} />
+          <Tab value="notes" icon={<StickyNote2OutlinedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Notes (${countLabel('notes', tasks, notes, emails, documents)})`} />
+          <Tab value="emails" icon={<MailOutlineIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Email (${countLabel('emails', tasks, notes, emails, documents)})`} />
+          <Tab value="documents" icon={<DescriptionOutlinedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Documents (${countLabel('documents', tasks, notes, emails, documents)})`} />
         </Tabs>
       ) : null}
       <Box sx={{ flex: 1, overflow: 'auto', px: 2, py: 1.5 }}>
@@ -347,10 +346,6 @@ export function ClaimCollaborationDrawer({
       </Box>
     </Drawer>
   )
-}
-
-function CollabTab({ value, icon: Icon, label, count }: { value: CollabKind; icon: SvgIconComponent; label: string; count: number }) {
-  return <Tab value={value} icon={<Icon sx={{ fontSize: 18 }} />} iconPosition="start" label={`${label} (${count})`} />
 }
 
 function RecordCard({

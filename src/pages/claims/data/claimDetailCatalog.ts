@@ -226,7 +226,7 @@ function homeDetail(claim: HomeClaim): ClaimDetailModel {
     status: 'Open',
     dateOfLoss: null,
     dateReported: null,
-    lossDescription: `${claim.type} · ${claim.detail}`,
+    lossDescription: `${sc(claim.type)} · ${claim.detail}`,
     owner: claim.assignee,
     policyNumber: null,
     policyType: null,

@@ -81,6 +81,10 @@ function ClaimDetailBody({ detail }: { detail: ClaimDetailModel }) {
   const [policyTab, setPolicyTab] = useState<PolicyTab>('coverages')
   const [featureTab, setFeatureTab] = useState<FeatureTab>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
+  const showFeature = (id: string) => {
+    setExpanded(id)
+    requestAnimationFrame(() => document.getElementById(`feature-${id}`)?.scrollIntoView({ block: 'nearest' }))
+  }
   const [insightsOpen, setInsightsOpen] = useState(true)
   const [alerts, setAlerts] = useState(detail.alerts)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -171,7 +175,7 @@ function ClaimDetailBody({ detail }: { detail: ClaimDetailModel }) {
         {tab === 'policy' ? (
           <PolicyCard detail={detail} policyTab={policyTab} onPolicyTab={setPolicyTab} onOpen={openCollab} />
         ) : null}
-        {tab === 'financials' ? <FinancialsCard detail={detail} onOpen={openCollab} onViewFeature={(id) => setExpanded(id)} /> : null}
+        {tab === 'financials' ? <FinancialsCard detail={detail} onOpen={openCollab} onViewFeature={showFeature} /> : null}
         {tab === 'alerts' ? (
           <AlertsCard
             alerts={alerts}
@@ -550,7 +554,7 @@ function FeatureRow({
   const notes = detail.notes.filter((note) => note.featureId === feature.id).length
   const documents = detail.documents.filter((document) => document.featureId === feature.id).length
   return (
-    <Box sx={cardSx}>
+    <Box id={`feature-${feature.id}`} sx={cardSx}>
       <Box sx={{ p: 1.5 }}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems={{ md: 'center' }} justifyContent="space-between">
           <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
