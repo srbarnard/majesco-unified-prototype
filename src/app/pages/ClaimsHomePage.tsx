@@ -36,7 +36,6 @@ import Collapse from '@mui/material/Collapse'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
-import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
@@ -44,7 +43,8 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useTheme, type Theme } from '@mui/material/styles'
 import type { SvgIconComponent } from '@mui/icons-material'
-import { createContext, useContext, useRef, useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router'
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useRightToolDispatch } from '@/app/contexts/RightToolContext'
 import {
@@ -125,16 +125,14 @@ const warningChipSx = { bgcolor: one.warningBg, color: one.warningText, ...chipR
 const dueColor = (state: DueState) =>
   state === 'overdue' ? one.error : state === 'today' || state === 'soon' ? one.warningText : 'text.secondary'
 
-const NoticeContext = createContext<(message: string) => void>(() => undefined)
-
 function ClaimLink({ children, sx }: { children: string; sx?: object }) {
-  const notify = useContext(NoticeContext)
+  const navigate = useNavigate()
   return (
     <Link
       component="button"
       type="button"
       underline="hover"
-      onClick={() => notify(`Claim ${children} isn't available yet.`)}
+      onClick={() => navigate(`/claims/${encodeURIComponent(children)}`)}
       sx={{ ...textLinkSx, ...sx }}
     >
       {children}
@@ -1744,7 +1742,6 @@ const MY_CLAIMS = homeClaims.injury
 /** Joan's claims home. New Claim opens the shell's Create claim drawer, the same one as + → Claim. */
 export function ClaimsHomePage() {
   const { openTool, closeTool } = useRightToolDispatch()
-  const [notice, setNotice] = useState<string | null>(null)
   const [sectionInsight, setSectionInsight] = useState<SectionInsight | null>(null)
   const openCopilot = () => {
     setSectionInsight(null)
@@ -1769,26 +1766,23 @@ export function ClaimsHomePage() {
   )
 
   return (
-    <NoticeContext.Provider value={setNotice}>
-      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', bgcolor: 'background.paper' }}>
-        <Box sx={{ px: `${figmaSpacing[3]}px`, pt: layoutTokens.policyHeaderTopPadding, pb: 6 }}>
-          <Typography variant="h1" component="h1" sx={{ mb: 2 }}>
-            {`${getGreeting()}, ${HOME_PERSONA.name.split(' ')[0]}`}
-          </Typography>
-          <Box component="section" aria-label="Actions" sx={{ mb: 3 }}>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => openTool('newClaim')}>
-              New Claim
-            </Button>
-          </Box>
-          <DailyBrief />
-          <KeyMetrics onCopilot={openCopilot} />
-          <Schedule claims={MY_CLAIMS} />
-          <Approvals onInsights={openSectionInsights} />
-          <ClaimAlerts claims={MY_CLAIMS} onInsights={openSectionInsights} />
-          <MyClaims claims={MY_CLAIMS} onInsights={openSectionInsights} />
+    <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', bgcolor: 'background.paper' }}>
+      <Box sx={{ px: `${figmaSpacing[3]}px`, pt: layoutTokens.policyHeaderTopPadding, pb: 6 }}>
+        <Typography variant="h1" component="h1" sx={{ mb: 2 }}>
+          {`${getGreeting()}, ${HOME_PERSONA.name.split(' ')[0]}`}
+        </Typography>
+        <Box component="section" aria-label="Actions" sx={{ mb: 3 }}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => openTool('newClaim')}>
+            New Claim
+          </Button>
         </Box>
+        <DailyBrief />
+        <KeyMetrics onCopilot={openCopilot} />
+        <Schedule claims={MY_CLAIMS} />
+        <Approvals onInsights={openSectionInsights} />
+        <ClaimAlerts claims={MY_CLAIMS} onInsights={openSectionInsights} />
+        <MyClaims claims={MY_CLAIMS} onInsights={openSectionInsights} />
       </Box>
-      <Snackbar open={notice != null} autoHideDuration={3500} onClose={() => setNotice(null)} message={notice} />
-    </NoticeContext.Provider>
+    </Box>
   )
 }
