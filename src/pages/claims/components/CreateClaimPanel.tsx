@@ -83,7 +83,8 @@ type EditKey =
   | 'driver'
   | 'vehicles'
   | 'injuries'
-type Field = EditKey | 'insured' | 'claimant' | 'sources' | 'airbag' | 'damage' | 'assignee' | 'note' | 'task'
+type ItemField = `item-${number}` | `injury-${number}`
+type Field = EditKey | ItemField | 'insured' | 'claimant' | 'sources' | 'airbag' | 'damage' | 'assignee' | 'note' | 'task'
 type TextKey = Exclude<EditKey, 'policy'>
 type StartMode = 'documents' | 'phone' | 'policy'
 type DamageField = 'involved' | 'damage' | 'hurt' | 'injury' | 'drivable' | 'estimate'
@@ -671,17 +672,23 @@ export function CreateClaimPanel({
               },
             ]
           : []),
-        ...(draft.vehicles.length > 0
-          ? [
-              {
-                term: 'Vehicles and damage',
-                value: draft.vehicles.join('; '),
-                ...(editable ? { field: 'vehicles' as const, chevron: true } : {}),
-              },
-            ]
-          : []),
-        ...(draft.injuries
-          ? [{ term: 'Injuries', value: draft.injuries, ...(editable ? { field: 'injuries' as const, chevron: true } : {}) }]
+        ...draft.vehicles.map((entry, index) => {
+          const parts = damageEntryParts(entry)
+          return {
+            term: parts.term,
+            value: parts.body,
+            ...editableField(`item-${index}`),
+          }
+        }),
+        ...(draft.injuries === 'None reported'
+          ? [{ term: 'Injuries', value: draft.injuries, ...editableField('injuries') }]
+          : (draft.injuries?.split('; ') ?? []).map((injury, index) => ({
+              term: 'Injury',
+              value: injury,
+              ...editableField(`injury-${index}`),
+            }))),
+        ...(draft.vehicles.length > 0 || draft.injuries
+          ? [{ term: 'Damage or injuries', value: addedDamage ?? 'Added', ...editableField('damage'), chevron: true }]
           : []),
         ...(draft.airbag && draft.airbag !== 'missing'
           ? [{ term: 'Airbag deployment', value: AIRBAG_LABELS[draft.airbag], ...editableField('airbag' as const) }]
@@ -734,6 +741,23 @@ export function CreateClaimPanel({
 
   const renderEditor = (field: Field) => {
     if (!draft) return null
+    if (field.startsWith('item-') || field.startsWith('injury-')) {
+      const value = field.startsWith('item-')
+        ? damageEntryParts(draft.vehicles[Number(field.slice('item-'.length))] ?? '').body
+        : (draft.injuries?.split('; ')[Number(field.slice('injury-'.length))] ?? '')
+      if (!value) return null
+      const label = field.startsWith('item-') ? damageEntryParts(draft.vehicles[Number(field.slice('item-'.length))] ?? '').term : 'Injury'
+      return (
+        <DraftInlineTextEdit
+          initialValue={value}
+          label={label}
+          helperText={label === 'Injury' ? 'Who was hurt, and how' : 'What was damaged'}
+          confirmable
+          onCommit={(next) => commitDamageRow(field, next)}
+          onDismiss={() => setEditing(null)}
+        />
+      )
+    }
     switch (field) {
       case 'policy':
       case 'insured':
@@ -961,9 +985,7 @@ export function CreateClaimPanel({
         knownOpen={knownOpen}
         onKnownOpenChange={setKnownOpen}
         editingField={editing}
-        onToggle={(field) =>
-          field === 'damage' || field === 'vehicles' || field === 'injuries' ? openDamage() : toggleEditing(field)
-        }
+        onToggle={(field) => (field === 'damage' ? openDamage() : toggleEditing(field))}
         renderEditor={renderEditor}
         onGroupToggle={() => setEditing(null)}
       />
@@ -1172,6 +1194,7 @@ export function CreateClaimPanel({
     }
     setDraft((saved) => edit(saved ?? emptyClaimDraft()) ?? edit(draftRef.current ?? emptyClaimDraft()) ?? saved)
     setEditingDamageRow(null)
+    setEditing((current) => (current === field ? null : current))
   }
 
   const renderDamageItemEditor = (field: string) => {
