@@ -21,6 +21,7 @@ import GavelIcon from '@mui/icons-material/Gavel'
 import HealingIcon from '@mui/icons-material/Healing'
 import HomeWorkIcon from '@mui/icons-material/HomeWork'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
 import PaymentsIcon from '@mui/icons-material/Payments'
 import PersonIcon from '@mui/icons-material/Person'
 import PsychologyIcon from '@mui/icons-material/Psychology'
@@ -36,6 +37,8 @@ import Collapse from '@mui/material/Collapse'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
+import Menu from '@mui/material/Menu'
+import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
@@ -1437,13 +1440,21 @@ function Approvals({ onInsights }: { onInsights: (insight: SectionInsight) => vo
   const [panels, setPanels] = useState<Record<string, ApprovalPanel | null>>({})
   const [comments, setComments] = useState<Record<string, string>>({})
   const [showAll, setShowAll] = useState(false)
+  const [menu, setMenu] = useState<{ id: string; anchor: HTMLElement } | null>(null)
   const pending = items.filter((a) => a.status === 'Pending').sort((a, b) => a.requested.localeCompare(b.requested))
   const visible = showAll ? pending : pending.slice(0, HOME_PAGE_SIZE)
   const setPanel = (id: string, panel: ApprovalPanel) =>
     setPanels((current) => ({ ...current, [id]: current[id] === panel ? null : panel }))
+  const openFromMenu = (id: string, panel: ApprovalPanel) => {
+    setMenu(null)
+    setPanel(id, panel)
+  }
   return (
     <Box component="section" sx={{ mb: 3 }}>
-      <ModuleHeader title="Approvals">
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minHeight: 40, mb: 1.5 }}>
+        <Typography variant="h2" component="h2">
+          Approvals
+        </Typography>
         <InsightsButton
           count={pending.length}
           onClick={() =>
@@ -1455,7 +1466,7 @@ function Approvals({ onInsights }: { onInsights: (insight: SectionInsight) => vo
             })
           }
         />
-      </ModuleHeader>
+      </Stack>
       {pending.length === 0 ? (
         <EmptyNote>No pending approvals.</EmptyNote>
       ) : (
@@ -1464,26 +1475,27 @@ function Approvals({ onInsights }: { onInsights: (insight: SectionInsight) => vo
           const panel = panels[a.id]
           return (
             <Box key={a.id} sx={{ ...cardSx, p: 2 }}>
-              <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }}>
-                <Stack direction="row" spacing={2} alignItems="baseline" flexWrap="wrap" useFlexGap>
-                  <Typography variant="h4" component="span">
-                    {a.type}
-                  </Typography>
-                  <Typography variant="h2" component="span">{`$${a.amount.toLocaleString()}`}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {`Requesting ${fmtMonthDayLong(parseIsoDate(a.requested))}`}
-                  </Typography>
-                </Stack>
-                <Stack direction="row">
-                  <Button size="small" startIcon={<StickyNote2OutlinedIcon sx={{ fontSize: 16 }} />} onClick={() => setPanel(a.id, 'notes')}>
-                    {`Linked notes (${a.notes.length})`}
-                  </Button>
-                  <Button size="small" startIcon={<DescriptionIcon sx={{ fontSize: 16 }} />} onClick={() => setPanel(a.id, 'attachments')}>
-                    {`Linked docs (${a.attachments.length})`}
-                  </Button>
-                </Stack>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+                <Typography variant="h4" component="h3">
+                  {a.type}
+                </Typography>
+                <Button
+                  size="small"
+                  startIcon={<MoreVertIcon sx={{ fontSize: 18 }} />}
+                  aria-haspopup="menu"
+                  aria-expanded={menu?.id === a.id}
+                  onClick={(event) => setMenu({ id: a.id, anchor: event.currentTarget })}
+                >
+                  Actions
+                </Button>
               </Stack>
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' }, gap: 2, my: 2 }}>
+              <Stack direction="row" spacing={1} alignItems="baseline" sx={{ mt: 1 }}>
+                <Typography variant="h2" component="p">{`$${a.amount.toLocaleString()}`}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {`Requesting ${fmtMonthDayLong(parseIsoDate(a.requested))}`}
+                </Typography>
+              </Stack>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' }, gap: 2, mt: 2 }}>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
                     Claim
@@ -1505,14 +1517,6 @@ function Approvals({ onInsights }: { onInsights: (insight: SectionInsight) => vo
                   </Box>
                 ))}
               </Box>
-              <Stack direction="row" justifyContent="flex-end" spacing={1}>
-                <Button size="small" startIcon={<CloseIcon />} onClick={() => setPanel(a.id, 'reject')}>
-                  Reject
-                </Button>
-                <Button size="small" variant="outlined" startIcon={<CheckCircleOutlineIcon />} onClick={() => setPanel(a.id, 'approve')}>
-                  Approve
-                </Button>
-              </Stack>
               <Reveal open={panel === 'notes'}>
                 <ActivityPanel title="Notes" Icon={StickyNote2OutlinedIcon} onClose={() => setPanel(a.id, 'notes')}>
                   {a.notes.map((n, i) => (
@@ -1587,6 +1591,12 @@ function Approvals({ onInsights }: { onInsights: (insight: SectionInsight) => vo
           <ShowMore expanded={showAll} onClick={() => setShowAll((v) => !v)} more={`Show all ${pending.length}`} less="Show fewer" />
         </Box>
       ) : null}
+      <Menu anchorEl={menu?.anchor ?? null} open={menu != null} onClose={() => setMenu(null)}>
+        <MenuItem onClick={() => menu && openFromMenu(menu.id, 'notes')}>Notes</MenuItem>
+        <MenuItem onClick={() => menu && openFromMenu(menu.id, 'attachments')}>Documents</MenuItem>
+        <MenuItem onClick={() => menu && openFromMenu(menu.id, 'approve')}>Approve</MenuItem>
+        <MenuItem onClick={() => menu && openFromMenu(menu.id, 'reject')}>Reject</MenuItem>
+      </Menu>
     </Box>
   )
 }

@@ -773,6 +773,8 @@ const catalog = new Map<string, ClaimDetailModel>(
   [...homeClaims.injury, ...homeClaims.property].map((claim) => [claim.claim, homeDetail(claim)]),
 )
 catalog.set(JOAN_CLAIM, joanDetail())
+const ivyClaim = homeClaims.injury.find((claim) => claim.claim === 'CL-90345612-221')
+if (ivyClaim) catalog.set('CL-23456789', homeDetail({ ...ivyClaim, claim: 'CL-23456789' }))
 
 export function claimDetailFromCatalog(claimNumber: string): ClaimDetailModel | null {
   return catalog.get(claimNumber) ?? null
