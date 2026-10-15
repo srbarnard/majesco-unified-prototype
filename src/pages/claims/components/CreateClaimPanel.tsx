@@ -109,6 +109,12 @@ const DRIVABLE = 'Drivable'
 const NOT_DRIVABLE = 'Not drivable'
 const PROPERTY_PREFIX = 'Property · '
 const VEHICLE_PREFIX = 'Vehicle · '
+
+function damageEntryParts(entry: string): { term: 'Vehicle' | 'Property'; body: string } {
+  if (entry.startsWith(PROPERTY_PREFIX)) return { term: 'Property', body: entry.slice(PROPERTY_PREFIX.length) }
+  if (entry.startsWith(VEHICLE_PREFIX)) return { term: 'Vehicle', body: entry.slice(VEHICLE_PREFIX.length) }
+  return { term: 'Vehicle', body: entry }
+}
 const NO_ONE_HURT = 'No one hurt'
 const SOMEONE_HURT = 'Someone was hurt'
 const ADD_DAMAGE_ITEM = 'Add item'
@@ -242,6 +248,7 @@ export function CreateClaimPanel({
   const [level, setLevel] = useState<'claim' | 'damage'>('claim')
   const [damageItem, setDamageItem] = useState<DamageItem | null>(null)
   const [damageEditing, setDamageEditing] = useState<DamageField | null>(null)
+  const [editingDamageRow, setEditingDamageRow] = useState<string | null>(null)
   const [damageKnownOpen, setDamageKnownOpen] = useState(true)
   const [editing, setEditing] = useState<Field | null>(intentField(initialIntent))
   const [attachRequest, setAttachRequest] = useState(0)
@@ -298,6 +305,7 @@ export function CreateClaimPanel({
 
   const openDamage = () => {
     setEditing(null)
+    setEditingDamageRow(null)
     setLevel('damage')
     if (draft && draft.vehicles.length === 0 && draft.injuries == null) editDamageItem(EMPTY_DAMAGE_ITEM)
   }
@@ -306,6 +314,7 @@ export function CreateClaimPanel({
     setLevel('claim')
     setDamageItem(null)
     setDamageEditing(null)
+    setEditingDamageRow(null)
   }
 
   const confirmDamageItem = () => {
@@ -1121,11 +1130,10 @@ export function CreateClaimPanel({
 
   const damageItemRows: DraftNeededRow<string>[] = draft
     ? [
-        ...draft.vehicles.map((entry, index) => ({
-          term: entry.startsWith(PROPERTY_PREFIX) ? 'Property' : 'Vehicle',
-          value: entry.replace(PROPERTY_PREFIX, '').replace(VEHICLE_PREFIX, ''),
-          field: `item-${index}`,
-        })),
+        ...draft.vehicles.map((entry, index) => {
+          const parts = damageEntryParts(entry)
+          return { term: parts.term, value: parts.body, field: `item-${index}` }
+        }),
         ...(draft.injuries === 'None reported'
           ? [{ term: 'Injuries', value: draft.injuries, field: 'injuries' }]
           : (draft.injuries?.split('; ') ?? []).map((injury, index) => ({
@@ -1135,6 +1143,51 @@ export function CreateClaimPanel({
             }))),
       ]
     : []
+
+  const draftRef = useRef(draft)
+  draftRef.current = draft
+
+  const commitDamageRow = (field: string, value: string) => {
+    const next = value.trim()
+    if (!next) return
+    const edit = (current: CreateClaimDraft): CreateClaimDraft | null => {
+      const vehicleIndex = /^item-(\d+)$/.exec(field)
+      if (vehicleIndex) {
+        const index = Number(vehicleIndex[1])
+        const entry = current.vehicles[index]
+        if (entry == null) return null
+        const prefix = entry.startsWith(PROPERTY_PREFIX) ? PROPERTY_PREFIX : entry.startsWith(VEHICLE_PREFIX) ? VEHICLE_PREFIX : ''
+        const vehicles = [...current.vehicles]
+        vehicles[index] = `${prefix}${next}`
+        return { ...current, vehicles }
+      }
+      if (field === 'injuries') return { ...current, injuries: next }
+      const injuryIndex = /^injury-(\d+)$/.exec(field)
+      if (!injuryIndex || current.injuries == null) return null
+      const parts = current.injuries.split('; ')
+      const index = Number(injuryIndex[1])
+      if (parts[index] == null) return null
+      parts[index] = next
+      return { ...current, injuries: parts.join('; ') }
+    }
+    setDraft((saved) => edit(saved ?? emptyClaimDraft()) ?? edit(draftRef.current ?? emptyClaimDraft()) ?? saved)
+    setEditingDamageRow(null)
+  }
+
+  const renderDamageItemEditor = (field: string) => {
+    const row = damageItemRows.find((item) => item.field === field)
+    if (!row?.value) return null
+    return (
+      <DraftInlineTextEdit
+        initialValue={row.value}
+        label={row.term}
+        helperText={row.term === 'Injury' || row.term === 'Injuries' ? 'Who was hurt, and how' : 'What was damaged'}
+        confirmable
+        onCommit={(value) => commitDamageRow(field, value)}
+        onDismiss={() => setEditingDamageRow(null)}
+      />
+    )
+  }
 
   /** Empty required slots are blockers; empty optional ones are considerations; anything filled is a known fact. */
   const question = (
@@ -1285,10 +1338,9 @@ export function CreateClaimPanel({
           {damageItemRows.length > 0 ? (
             <DraftNeededList
               rows={damageItemRows}
-              editingField={null}
-              openRowStyle="none"
-              onToggle={() => undefined}
-              renderEditor={() => null}
+              editingField={editingDamageRow}
+              onToggle={(field) => setEditingDamageRow((current) => (current === field ? null : field))}
+              renderEditor={renderDamageItemEditor}
             />
           ) : (
             <Typography variant="body2" color="text.secondary" sx={{ ...draftBodySx, mb: 2 }}>
