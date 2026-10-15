@@ -95,6 +95,42 @@ export function documentClaimDraft(sources: string[]): CreateClaimDraft {
 
 const ISO_DATE = /\b(20\d{2})-(\d{2})-(\d{2})\b/
 const US_DATE = /\b(\d{1,2})\/(\d{1,2})\/(20\d{2})\b/
+/** Month/day with no year, e.g. 10/10. A slash-year stays with US_DATE. */
+const US_SHORT = /\b(\d{1,2})\/(\d{1,2})\b(?!\/)/
+const MONTHS: Record<string, number> = {
+  january: 1,
+  jan: 1,
+  february: 2,
+  feb: 2,
+  march: 3,
+  mar: 3,
+  april: 4,
+  apr: 4,
+  may: 5,
+  june: 6,
+  jun: 6,
+  july: 7,
+  jul: 7,
+  august: 8,
+  aug: 8,
+  september: 9,
+  sept: 9,
+  sep: 9,
+  october: 10,
+  oct: 10,
+  november: 11,
+  nov: 11,
+  december: 12,
+  dec: 12,
+}
+const MONTH_NAME = Object.keys(MONTHS)
+  .sort((a, b) => b.length - a.length)
+  .join('|')
+/** "october 10th", "on October 10", "October 10, 2026". */
+const NAMED_DATE = new RegExp(
+  String.raw`\b(?:on\s+)?(${MONTH_NAME})\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:(?:,\s*|\s+)(20\d{2}))?\b`,
+  'i',
+)
 const EMAIL = /[^\s@]+@[^\s@]+\.[^\s@]+/
 /** A place runs to the end of its clause; ", TN" after a city stays part of it. */
 const PLACE_END = String.raw`(?=\s+on\s|\s+\d{1,2}\/\d|\s+20\d{2}-|\s+(?:and|when|while)\s|,(?!\s*[A-Z]{2}\b)|[.;]|$)`
@@ -110,11 +146,40 @@ function isoDate(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
+function daysInMonth(year: number, month: number) {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate()
+}
+
+/** A real calendar day, or null. Yearless dates use the current year. */
+function isoFromParts(year: number, month: number, day: number): string | null {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null
+  if (month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) return null
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
 export function parseLossDate(text: string): string | null {
   const iso = text.match(ISO_DATE)
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`
+  if (iso) {
+    const parsed = isoFromParts(Number(iso[1]), Number(iso[2]), Number(iso[3]))
+    if (parsed) return parsed
+  }
   const us = text.match(US_DATE)
-  if (us) return `${us[3]}-${us[1].padStart(2, '0')}-${us[2].padStart(2, '0')}`
+  if (us) {
+    const parsed = isoFromParts(Number(us[3]), Number(us[1]), Number(us[2]))
+    if (parsed) return parsed
+  }
+  const named = text.match(NAMED_DATE)
+  if (named) {
+    const month = MONTHS[named[1].toLowerCase()]
+    const year = named[3] ? Number(named[3]) : new Date().getFullYear()
+    const parsed = isoFromParts(year, month, Number(named[2]))
+    if (parsed) return parsed
+  }
+  const short = text.match(US_SHORT)
+  if (short) {
+    const parsed = isoFromParts(new Date().getFullYear(), Number(short[1]), Number(short[2]))
+    if (parsed) return parsed
+  }
   if (/\b(yesterday|last night)\b/i.test(text)) return isoDate(new Date(Date.now() - 86_400_000))
   if (/\b(today|this (morning|afternoon|evening))\b/i.test(text)) return isoDate(new Date())
   return null
@@ -220,6 +285,17 @@ export function applyCallerText(draft: CreateClaimDraft | null, text: string): C
 export function formatLossDate(iso: string) {
   const [year, month, day] = iso.split('-')
   return `${month}/${day}/${year}`
+}
+
+const LOSS_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/** Known facts: "Oct 10, 2026", read from the ISO parts so the day does not shift. */
+export function formatKnownLossDate(iso: string) {
+  const [year, month, day] = iso.split('-')
+  const monthIndex = Number(month) - 1
+  const dayNumber = Number(day)
+  if (!year || monthIndex < 0 || monthIndex > 11 || !dayNumber) return formatLossDate(iso)
+  return `${LOSS_MONTHS[monthIndex]} ${dayNumber}, ${year}`
 }
 
 /** A Claims row opened in the drawer: the facts the list knows, nothing more. */

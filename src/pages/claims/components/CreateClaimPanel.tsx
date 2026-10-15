@@ -35,6 +35,7 @@ import {
   applyClaimText,
   documentClaimDraft,
   emptyClaimDraft,
+  formatKnownLossDate,
   formatLossDate,
   parseLossDate,
   type CreateClaimDraft,
@@ -619,7 +620,7 @@ export function CreateClaimPanel({
           ? [{ term: 'Policy', value: `${draft.policy.policyNumber} · ${draft.policy.product}`, ...editableField('policy' as const) }]
           : []),
         ...(draft.dateOfLoss
-          ? [{ term: 'Date of loss', value: formatLossDate(draft.dateOfLoss), ...editableField('dateOfLoss' as const) }]
+          ? [{ term: 'Date of loss', value: formatKnownLossDate(draft.dateOfLoss), ...editableField('dateOfLoss' as const) }]
           : []),
         ...(draft.location
           ? [
