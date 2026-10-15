@@ -1,11 +1,16 @@
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
 import MailOutlineIcon from '@mui/icons-material/MailOutline'
 import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
+import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+import type { Theme } from '@mui/material/styles'
 import { useMemo, useState } from 'react'
-import { CopilotQuickActions } from '@/design-system/components'
+import { Button as DsButton, CopilotQuickActions } from '@/design-system/components'
+import { getFigmaColors } from '@/design-system/tokens/figma-colors'
+import { fadeSlideDownSx } from '@/design-system/tokens/motion'
 import { CopilotComposer, type CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
 import { createUploadedFile } from '@/pages/quotes/utils/quoteWizardDocuments'
 import {
@@ -56,8 +61,26 @@ const EMAIL_BLOCKER_ACTION = 'Email blocker'
 const REVIEW_ALL_ACTION = 'Review all'
 const CREATE_TASK_ACTION = 'Create task'
 const SAVE_DRAFT_ACTION = 'Save draft'
+const CANCEL_TASK_ACTION = 'Cancel'
 const MAX_SUGGESTED_ACTIONS = 3
 const BLOCKER_HINT = 'What’s in the way'
+
+/** Same text-link treatment as Cancel beside Submit claim. */
+const threadLinkSx = (theme: Theme) => ({
+  ...draftBodySx,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 0.5,
+  px: 1,
+  py: 0.5,
+  borderRadius: 1.5,
+  transition: 'background-color 0.15s ease, color 0.15s ease',
+  '&:hover': {
+    bgcolor: getFigmaColors(theme.palette.mode).primary.hover,
+    color: 'primary.main',
+  },
+  '&:active': { bgcolor: getFigmaColors(theme.palette.mode).primary.selected },
+})
 
 type EditField = 'title' | 'assignee' | 'related' | 'priority' | 'due' | 'description' | 'blocker'
 type WorkField = Exclude<EditField, 'description' | 'blocker'>
@@ -376,8 +399,9 @@ export function AddTaskPanel({
 
   const holes = orderedWorkFields.filter((field) => workValue(field) == null)
   const hasDraft = hasThread || Boolean(previewDraft.title)
+  /** A title is enough to create; the button replaces Create task in Suggested actions. */
+  const canCreate = Boolean(commitDraft.title)
   const suggestedActions = [
-    ...(commitDraft.title ? [CREATE_TASK_ACTION] : []),
     ...(
       previewDraft.blocker
         ? [...(onEmailBlocker ? [EMAIL_BLOCKER_ACTION] : []), ...(holes.length > 0 ? [REVIEW_ALL_ACTION] : [])]
@@ -578,6 +602,24 @@ export function AddTaskPanel({
             renderEditor={renderEditor}
             onGroupToggle={() => setEditing(null)}
           />
+          {canCreate ? (
+            <Stack direction="row" alignItems="center" spacing={1} sx={[{ mb: 2 }, fadeSlideDownSx()]}>
+              <DsButton size="small" variant="contained" color="primary" onClick={handleCreate}>
+                {CREATE_TASK_ACTION}
+              </DsButton>
+              <Link
+                component="button"
+                type="button"
+                underline="none"
+                color="text.primary"
+                onClick={onClose}
+                sx={threadLinkSx}
+              >
+                <CancelOutlinedIcon sx={{ fontSize: 16 }} />
+                {CANCEL_TASK_ACTION}
+              </Link>
+            </Stack>
+          ) : null}
           <CopilotQuickActions label="Suggested actions" actions={suggestedActions} onAction={handleAction} />
           <DraftDocumentChips
             files={previewDraft.attachments.map((file) => ({ id: file.id, label: file.name }))}
