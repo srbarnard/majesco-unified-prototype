@@ -1,19 +1,22 @@
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import CloseIcon from '@mui/icons-material/Close'
 import MarkEmailReadOutlinedIcon from '@mui/icons-material/MarkEmailReadOutlined'
 import Box from '@mui/material/Box'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
+import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
-import { alpha } from '@mui/material/styles'
+import { alpha, type Theme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
 import { useEffect, useState } from 'react'
 import { useRightTool, type RightToolRecordContext } from '@/app/contexts/RightToolContext'
 import { Button } from '@/design-system/components/Button'
 import { CopilotQuickActions } from '@/design-system/components/CopilotQuickActions'
+import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
+import { fadeSlideDownSx } from '@/design-system/tokens/motion'
 import {
-  AttachedDocumentChips,
   DocumentAttachPanelContent,
   documentViewerAttachLabels,
   getAttachPanelSubtitle,
@@ -37,6 +40,25 @@ const bodySx = {
   fontFamily: figmaFontFamilyStack.body,
   fontWeight: 400,
 } as const
+
+const SEND_ANOTHER_EMAIL = 'Send another email'
+
+/** Same text-link treatment as Create another claim beside Close. */
+const threadLinkSx = (theme: Theme) => ({
+  ...bodySx,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 0.5,
+  px: 1,
+  py: 0.5,
+  borderRadius: 1.5,
+  transition: 'background-color 0.15s ease, color 0.15s ease',
+  '&:hover': {
+    bgcolor: getFigmaColors(theme.palette.mode).primary.hover,
+    color: 'primary.main',
+  },
+  '&:active': { bgcolor: getFigmaColors(theme.palette.mode).primary.selected },
+})
 
 const emptyEmailAttachMode: DocumentAttachMode = { target: 'email', documents: [] }
 
@@ -178,6 +200,13 @@ export function EmailToolPanel() {
     wayOut?.onReturn()
   }
 
+  const sendAnotherEmail = () => {
+    setSent(null)
+    setStarter(null)
+    setRecipient(null)
+    setPicking(null)
+  }
+
   const starting = !draft && !hasDocuments && !attachMode.readOnly
   const recipients = attachMode.recipients ?? suggestedRecipients(recordContext?.title)
   const starterLabels = buildStarters(recordContext).map((item) => item.label)
@@ -279,7 +308,7 @@ export function EmailToolPanel() {
         }}
       >
         {sent ? (
-          <Stack alignItems="center" sx={{ pt: 4, pb: 2, textAlign: 'center' }}>
+          <Stack alignItems="center" sx={[{ pt: 4, pb: 2, textAlign: 'center' }, fadeSlideDownSx()]}>
             <Box
               aria-hidden
               sx={(theme) => ({
@@ -299,61 +328,50 @@ export function EmailToolPanel() {
               Email sent
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ ...bodySx, mt: 0.5, wordBreak: 'break-word' }}>
-              {`Delivered to ${sent.to.trim()}`}
+              {`Email sent to ${sent.to.trim()}.`}
             </Typography>
-
-            <Box
-              sx={{
-                width: '100%',
-                mt: 3,
-                p: 2,
-                textAlign: 'left',
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: `${layoutTokens.cardRadius}px`,
-              }}
-            >
-              <Stack spacing={1}>
-                {[
+            <Box sx={{ width: '100%', mt: 3, textAlign: 'left' }}>
+              {(
+                [
                   ['To', sent.to.trim()],
                   ['Subject', sent.subject.trim()],
-                ].map(([term, value]) => (
-                  <Stack key={term} direction="row" spacing={1.5} alignItems="baseline">
-                    <Typography variant="caption" color="text.secondary" sx={{ ...bodySx, width: 56, flexShrink: 0 }}>
-                      {term}
-                    </Typography>
-                    <Typography variant="body2" sx={{ ...bodySx, minWidth: 0, wordBreak: 'break-word' }}>
-                      {value}
-                    </Typography>
-                  </Stack>
-                ))}
-              </Stack>
-              {sent.body.trim() ? (
-                <>
-                  <Divider sx={{ my: 1.5 }} />
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{
-                      ...bodySx,
-                      whiteSpace: 'pre-line',
-                      wordBreak: 'break-word',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 4,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {sent.body.trim().replace(/\n{2,}/g, '\n')}
+                  ...(sent.documents.length > 0
+                    ? [['Documents', sent.documents.map((document) => document.name).join(', ')]]
+                    : []),
+                ] as [string, string][]
+              ).map(([term, value], index) => (
+                <Stack
+                  key={term}
+                  direction="row"
+                  spacing={1.5}
+                  alignItems="baseline"
+                  sx={{ px: 1.5, py: 1, borderRadius: '5px', bgcolor: index % 2 === 0 ? 'action.hover' : 'background.paper' }}
+                >
+                  <Typography variant="caption" color="text.primary" sx={{ ...bodySx, fontWeight: 600, width: 84, flexShrink: 0 }}>
+                    {term}
                   </Typography>
-                </>
-              ) : null}
-              {sent.documents.length > 0 ? <AttachedDocumentChips documents={sent.documents} placement="below" /> : null}
+                  <Typography variant="body2" sx={{ ...bodySx, minWidth: 0, wordBreak: 'break-word' }}>
+                    {value}
+                  </Typography>
+                </Stack>
+              ))}
             </Box>
-
-            <Button size="small" variant="contained" color="primary" onClick={leaveConfirmation} sx={{ mt: 3 }}>
-              Close
-            </Button>
+            <Stack direction="row" alignItems="center" justifyContent="center" flexWrap="wrap" gap={0.5} sx={{ mt: 3 }}>
+              <Button size="small" variant="contained" color="primary" onClick={leaveConfirmation}>
+                Close
+              </Button>
+              <Link
+                component="button"
+                type="button"
+                underline="none"
+                color="text.primary"
+                onClick={sendAnotherEmail}
+                sx={threadLinkSx}
+              >
+                <AddCircleOutlineIcon sx={{ fontSize: 16 }} />
+                {SEND_ANOTHER_EMAIL}
+              </Link>
+            </Stack>
           </Stack>
         ) : (
           <DocumentAttachPanelContent
