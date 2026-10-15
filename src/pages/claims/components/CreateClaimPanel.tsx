@@ -25,7 +25,7 @@ import {
   type CreateClaimSavedState,
 } from '@/pages/claims/data/claimDrawerStore'
 import { claimPrefix, getClaim, nextClaimNumber, updateClaim, useClaim } from '@/pages/claims/data/claimsStore'
-import { insuredLocations } from '@/pages/claims/data/policyLocations'
+import { insuredLocations, matchingInsuredLocations } from '@/pages/claims/data/policyLocations'
 import {
   CLAIM_CURRENT_USER,
   CLAIM_POLICIES,
@@ -603,6 +603,11 @@ export function CreateClaimPanel({
   /** Started from a picked policy: no documents read and no caller, so the other ways in no longer apply. */
   const fromPolicy = draft?.policy != null && draft.sources.length === 0 && !callerIntake
   const policyLocations = fromPolicy && draft?.policy ? insuredLocations(draft.policy) : []
+  /** More than one insured site fits the loss, so the thread asks which one. */
+  const locationChoices =
+    draft?.policy && draft.location == null && liveText
+      ? matchingInsuredLocations(liveText, insuredLocations(draft.policy))
+      : []
   const insuredLocation = policyLocations.find((location) => location.address === draft?.location)
   const factRows: DraftNeededRow<Field>[] = draft
     ? [
@@ -972,6 +977,17 @@ export function CreateClaimPanel({
               {CANCEL_CLAIM}
             </Link>
           </Stack>
+        ) : null}
+        {locationChoices.length > 1 ? (
+          <CopilotQuickActions
+            label="Which location?"
+            actions={locationChoices.map((location) => location.name)}
+            onAction={(name) => {
+              const location = locationChoices.find((item) => item.name === name)
+              if (!location) return
+              updateDraft((current) => ({ ...current, location: location.address }))
+            }}
+          />
         ) : null}
         <CopilotQuickActions label="Suggested actions" actions={intakeActions} onAction={handleThreadAction} />
         {start === 'policy' ? <Box sx={{ mt: 1 }}>{policyLookup(() => setStart(null))}</Box> : null}

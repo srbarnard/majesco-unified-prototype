@@ -5,6 +5,7 @@ import {
   type ClaimStatus,
   type ClaimTask,
 } from '@/pages/claims/data/claimsStore'
+import { insuredLocations, matchingInsuredLocations } from '@/pages/claims/data/policyLocations'
 import { policiesListMock } from '@/pages/policies/data/mockPoliciesList'
 
 export type ClaimPolicy = { insured: string; product: string; policyNumber: string }
@@ -203,7 +204,15 @@ export function applyClaimText(draft: CreateClaimDraft, text: string): CreateCla
   if (/airbags?/i.test(text) && (next.airbag === 'missing' || next.airbag === 'unknown')) {
     next.airbag = /(not|didn'?t|did not|no)\b.*deploy|no airbag/i.test(text) ? 'not deployed' : 'deployed'
   }
-  const near = text.match(ROAD) ?? text.match(LOCATION)
+  // A named kind of site ("storefront", "warehouse") resolves only to that policy's location.
+  // Several matches stay empty so the thread can ask, and a road is not guessed over them.
+  let matchedSites = 0
+  if (!next.location && next.policy) {
+    const sites = matchingInsuredLocations(text, insuredLocations(next.policy))
+    matchedSites = sites.length
+    if (sites.length === 1) next.location = sites[0].address
+  }
+  const near = matchedSites > 1 ? null : (text.match(ROAD) ?? text.match(LOCATION))
   if (near && !next.location) next.location = near[1].trim()
   if (!next.injuries) {
     if (/\b(no one (was )?(hurt|injured)|no injur|nobody (was )?hurt)/i.test(text)) next.injuries = 'None reported'
