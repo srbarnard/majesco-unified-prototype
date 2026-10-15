@@ -57,12 +57,6 @@ export function NewTaskToolPanel() {
   const handleCreate = (task: TaskRecord) => {
     createTask(task)
     setPrefill(null)
-    if (onTasksPage) {
-      openTask(task.id)
-      return
-    }
-    // Stay on the current page; History confirms the task was created.
-    setSession((current) => ({ key: current.key + 1, tab: 'history' }))
   }
 
   const handleEmailBlocker = ({ subject, body, related }: AddTaskBlockerEmail, state: AddTaskSavedState) => {

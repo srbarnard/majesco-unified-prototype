@@ -1,17 +1,21 @@
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
+import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined'
 import MailOutlineIcon from '@mui/icons-material/MailOutline'
+import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
 import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import type { Theme } from '@mui/material/styles'
+import { alpha, type Theme } from '@mui/material/styles'
 import { useMemo, useState } from 'react'
 import { Button as DsButton, CopilotQuickActions } from '@/design-system/components'
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { fadeSlideDownSx } from '@/design-system/tokens/motion'
 import { CopilotComposer, type CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
+import { copilotSubtitleSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import { createUploadedFile } from '@/pages/quotes/utils/quoteWizardDocuments'
 import {
   DraftAccordions,
@@ -47,6 +51,7 @@ import {
   formatDueLabel,
   inferFromText,
   mergeDraft,
+  relatedLabel,
   type AddTaskDraft,
   type AddTaskDue,
   type AddTaskPageContext,
@@ -62,6 +67,7 @@ const REVIEW_ALL_ACTION = 'Review all'
 const CREATE_TASK_ACTION = 'Create task'
 const SAVE_DRAFT_ACTION = 'Save draft'
 const CANCEL_TASK_ACTION = 'Cancel'
+const CREATE_ANOTHER_TASK = 'Create another task'
 const MAX_SUGGESTED_ACTIONS = 3
 const BLOCKER_HINT = 'What’s in the way'
 
@@ -243,6 +249,7 @@ export function AddTaskPanel({
   const [composerKey, setComposerKey] = useState(0)
   const [editing, setEditing] = useState<{ field: EditField; atCreate: boolean } | null>(null)
   const [promptedAtCreate, setPromptedAtCreate] = useState(false)
+  const [createdTask, setCreatedTask] = useState<TaskRecord | null>(null)
   const blockerMode = editing?.field === 'blocker'
   const dueOptions = useMemo(() => buildDueOptions(), [])
   const [parsedComposerValue, setParsedComposerValue] = useDebouncedValue(composerValue)
@@ -534,7 +541,113 @@ export function AddTaskPanel({
       toggleEditing(missing, true)
       return
     }
-    onCreate(buildTaskFromDraft(finalDraft))
+    const task = buildTaskFromDraft(finalDraft)
+    onCreate(task)
+    setDraft(finalDraft)
+    setComposerValue('')
+    setParsedComposerValue('')
+    setEditing(null)
+    setCreatedTask(task)
+  }
+
+  const startAnotherTask = () => {
+    setCreatedTask(null)
+    resetDraft()
+    setTab('new')
+  }
+
+  const historyList = (
+    <DraftHistoryList
+      entries={history.map(({ task, createdAt }) => ({
+        id: task.id,
+        title: task.taskName,
+        subtitle: [task.assignedTo, formatDraftCreatedTime(createdAt)].join(' · '),
+      }))}
+      emptyText="Tasks you create this session show up here."
+      onOpen={onOpenTask}
+    />
+  )
+
+  if (createdTask) {
+    const confirmationRows: { term: string; value: string }[] = [
+      { term: 'Task', value: createdTask.taskName },
+      { term: 'Number', value: createdTask.refNumber },
+      { term: 'Assignee', value: createdTask.assignedTo },
+      { term: 'Due', value: createdTask.dueLabel },
+      { term: 'Priority', value: createdTask.priority },
+      ...(draft.related ? [{ term: 'Related', value: relatedLabel(draft.related) }] : []),
+    ]
+    return (
+      <DraftDrawerShell
+        variant="record"
+        heading="New task"
+        closeLabel="Close new task drawer"
+        tab={tab}
+        onTabChange={setTab}
+        onNewTabClick={startAnotherTask}
+        onClose={onClose}
+        history={historyList}
+        composer={null}
+      >
+        <Stack alignItems="center" sx={[{ pt: 4, pb: 2, textAlign: 'center' }, fadeSlideDownSx()]}>
+          <Box
+            aria-hidden
+            sx={(theme) => ({
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              display: 'grid',
+              placeItems: 'center',
+              bgcolor: alpha(theme.palette.success.main, theme.palette.mode === 'dark' ? 0.2 : 0.12),
+              color: 'success.main',
+              mb: 1.5,
+            })}
+          >
+            <InventoryOutlinedIcon sx={{ fontSize: 28 }} />
+          </Box>
+          <Typography variant="subtitle1" sx={{ ...copilotSubtitleSx, lineHeight: 1.35 }}>
+            Task created
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ ...draftBodySx, mt: 0.5 }}>
+            {`Task ${createdTask.refNumber} created for ${createdTask.taskName}.`}
+          </Typography>
+          <Box sx={{ width: '100%', mt: 3, textAlign: 'left' }}>
+            {confirmationRows.map(({ term, value }, index) => (
+              <Stack
+                key={term}
+                direction="row"
+                spacing={1.5}
+                alignItems="baseline"
+                sx={{ px: 1.5, py: 1, borderRadius: '5px', bgcolor: index % 2 === 0 ? 'action.hover' : 'background.paper' }}
+              >
+                <Typography variant="caption" color="text.primary" sx={{ ...draftBodySx, fontWeight: 600, width: 84, flexShrink: 0 }}>
+                  {term}
+                </Typography>
+                <Typography variant="body2" sx={{ ...draftBodySx, minWidth: 0, wordBreak: 'break-word' }}>
+                  {value}
+                </Typography>
+              </Stack>
+            ))}
+          </Box>
+          <Stack direction="row" alignItems="center" justifyContent="center" flexWrap="wrap" gap={0.5} sx={{ mt: 3 }}>
+            <DsButton size="small" variant="contained" color="primary" onClick={onClose}>
+              Close
+            </DsButton>
+            <Link
+              component="button"
+              type="button"
+              underline="none"
+              color="text.primary"
+              onClick={startAnotherTask}
+              sx={threadLinkSx}
+            >
+              <AddCircleOutlineIcon sx={{ fontSize: 16 }} />
+              {CREATE_ANOTHER_TASK}
+            </Link>
+          </Stack>
+        </Stack>
+      </DraftDrawerShell>
+    )
   }
 
   return (
@@ -544,17 +657,7 @@ export function AddTaskPanel({
       tab={tab}
       onTabChange={setTab}
       onClose={onClose}
-      history={
-        <DraftHistoryList
-          entries={history.map(({ task, createdAt }) => ({
-            id: task.id,
-            title: task.taskName,
-            subtitle: [task.assignedTo, formatDraftCreatedTime(createdAt)].join(' · '),
-          }))}
-          emptyText="Tasks you create this session show up here."
-          onOpen={onOpenTask}
-        />
-      }
+      history={historyList}
       composer={
         <CopilotComposer
           key={composerKey}
