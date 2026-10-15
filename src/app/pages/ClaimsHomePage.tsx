@@ -598,6 +598,40 @@ function MetricChart({ id }: { id: string }) {
 /** Side-by-side chart only when the card itself is wide enough for the labels. */
 const metricChartBeside = '@container metric (min-width: 280px)'
 
+type MetricTone = 'success' | 'warning' | 'error' | 'neutral'
+
+/**
+ * Status of the number already printed on the card. Missed targets are warnings.
+ * Copy that says the line is already crossed ("past milestone", "above configured
+ * thresholds", "need near-term review") is an error. A period-over-period rise is a
+ * warning for workload and inventory, and neutral when the count is falling.
+ */
+function metricTone(metric: ClaimMetric): MetricTone {
+  const blob = `${metric.support} ${metric.trend}`.toLowerCase()
+  if (/above configured thresholds|past milestone target|need near-term review/.test(blob)) return 'error'
+  if (/above target|below target/.test(blob)) return 'warning'
+  if (/within\b.*\btarget/.test(blob)) return 'success'
+  if (/older than/.test(blob)) return 'warning'
+
+  const viz = METRIC_VISUALIZATIONS[metric.id]
+  if (viz?.type === 'progress' && viz.value > viz.target) return 'warning'
+
+  const delta = metric.trend.match(/^([+-])/)
+  if (!delta) return 'neutral'
+  const up = delta[1] === '+'
+  const higherIsBetter = /closure|sla|recovery/.test(metric.id)
+  if (higherIsBetter) return up ? 'neutral' : 'warning'
+  return up ? 'warning' : 'neutral'
+}
+
+function metricNumberColor(theme: Theme, tone: MetricTone) {
+  const dark = isDarkMode(theme)
+  if (tone === 'success') return dark ? theme.palette.success.main : one.success
+  if (tone === 'warning') return dark ? theme.palette.warning.main : one.warningText
+  if (tone === 'error') return dark ? theme.palette.error.main : one.error
+  return theme.palette.text.primary
+}
+
 function MetricCard({ metric, onAction }: { metric: ClaimMetric; onAction: (metric: ClaimMetric) => void }) {
   const agent = metric.actionType === 'agent'
   return (
@@ -621,7 +655,11 @@ function MetricCard({ metric, onAction }: { metric: ClaimMetric; onAction: (metr
           <Typography variant="h4" component="div">
             {FIGMA_METRIC_LABELS[metric.id] ?? metric.label}
           </Typography>
-          <Typography variant="h1" component="div" sx={{ my: 0.5 }}>
+          <Typography
+            variant="h1"
+            component="div"
+            sx={(theme) => ({ my: 0.5, color: metricNumberColor(theme, metricTone(metric)) })}
+          >
             {metric.value}
           </Typography>
           <Typography variant="body2" color="text.secondary">
