@@ -8,13 +8,26 @@ import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 import Link from '@mui/material/Link'
+import Paper from '@mui/material/Paper'
+import Popper from '@mui/material/Popper'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import { useLayoutEffect, useRef, useState, type ChangeEvent } from 'react'
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from 'react'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { CustomerAddressEditor } from '@/pages/customers/components/CustomerAddressEditor'
 import { formatAddress } from '@/pages/customers/data/createCustomerDraft'
-import { draftInputSx } from '@/pages/shared/components/DraftDrawer'
+import { draftInputSx, useDebouncedValue } from '@/pages/shared/components/DraftDrawer'
 import type { InsuredLocation } from '@/pages/claims/data/policyLocations'
 import { matchVehicles } from '@/pages/claims/data/vehicleCatalog'
 
@@ -131,6 +144,108 @@ export function ClaimVehicleDamageEdit({
 type LocationOption = { kind: 'insured'; location: InsuredLocation } | { kind: 'elsewhere' }
 
 const SOMEWHERE_ELSE: LocationOption = { kind: 'elsewhere' }
+/** Coalesce keystrokes before the menu rebuilds. The field itself stays immediate. */
+const INSURED_LOCATION_DEBOUNCE_MS = 120
+/** Insured rows kept in the menu. "Somewhere else" always follows them. */
+const INSURED_LOCATION_LIMIT = 6
+
+type IndexedLocation = { location: InsuredLocation; haystack: string }
+
+/** Word-AND match on the location name and address — the same rule the menu used on each keystroke. */
+function filterInsuredLocations(indexed: readonly IndexedLocation[], query: string): LocationOption[] {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean)
+  const matches: LocationOption[] = []
+  for (const item of indexed) {
+    if (!words.every((word) => item.haystack.includes(word))) continue
+    matches.push({ kind: 'insured', location: item.location })
+    if (matches.length >= INSURED_LOCATION_LIMIT) break
+  }
+  matches.push(SOMEWHERE_ELSE)
+  return matches
+}
+
+function locationOptionKey(option: LocationOption) {
+  return option.kind === 'insured' ? option.location.id : 'elsewhere'
+}
+
+/**
+ * The menu is split from the field so typing does not reconcile every row.
+ * It only renders again when the debounced matches (or the highlight) change.
+ */
+const InsuredLocationList = memo(function InsuredLocationList({
+  options,
+  highlight,
+  listId,
+  onHighlight,
+  onPick,
+}: {
+  options: LocationOption[]
+  highlight: number
+  listId: string
+  onHighlight: (index: number) => void
+  onPick: (option: LocationOption) => void
+}) {
+  const active = options.length === 0 ? 0 : Math.min(highlight, options.length - 1)
+  return (
+    <Paper elevation={8} sx={{ maxHeight: 280, overflowY: 'auto' }}>
+      <Box
+        component="ul"
+        id={listId}
+        role="listbox"
+        aria-label="Insured locations"
+        sx={{ listStyle: 'none', m: 0, p: 0.5, fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem' }}
+      >
+        {options.map((option, index) => {
+          const selected = index === active
+          return (
+            <Box
+              component="li"
+              key={locationOptionKey(option)}
+              id={`${listId}-option-${index}`}
+              role="option"
+              aria-selected={selected}
+              onMouseEnter={() => onHighlight(index)}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => onPick(option)}
+              sx={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 1,
+                px: 1,
+                py: 0.75,
+                borderRadius: 0.5,
+                cursor: 'pointer',
+                bgcolor: selected ? 'action.hover' : 'transparent',
+              }}
+            >
+              {option.kind === 'insured' ? (
+                <>
+                  <PlaceOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary', mt: 0.25 }} />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={optionTextSx}>{option.location.address}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
+                      {option.location.name}
+                    </Typography>
+                  </Box>
+                </>
+              ) : (
+                <>
+                  <EditLocationAltOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary', mt: 0.25 }} />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={optionTextSx}>Somewhere else</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
+                      Not an insured location
+                    </Typography>
+                  </Box>
+                </>
+              )}
+            </Box>
+          )
+        })}
+      </Box>
+    </Paper>
+  )
+})
 
 /**
  * Location on a policy claim: the policy's insured locations first; "Somewhere else" always trails the
@@ -146,6 +261,64 @@ export function ClaimInsuredLocationEdit({
   onDismiss: () => void
 }) {
   const [elsewhere, setElsewhere] = useState(false)
+  const [input, setInput] = useState('')
+  const [query] = useDebouncedValue(input, INSURED_LOCATION_DEBOUNCE_MS)
+  const [open, setOpen] = useState(true)
+  const [highlight, setHighlight] = useState(0)
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  const movedHighlight = useRef(false)
+  const listId = useId().replace(/:/g, '')
+  const indexed = useMemo<IndexedLocation[]>(
+    () =>
+      locations.map((location) => ({
+        location,
+        haystack: `${location.name} ${location.address}`.toLowerCase(),
+      })),
+    [locations],
+  )
+  const options = useMemo(() => filterInsuredLocations(indexed, query), [indexed, query])
+  const popperModifiers = useMemo(() => [{ name: 'offset', options: { offset: [0, 4] } }], [])
+
+  useEffect(() => {
+    setHighlight(0)
+    movedHighlight.current = false
+  }, [options])
+
+  const onHighlight = useCallback((index: number) => {
+    movedHighlight.current = true
+    setHighlight(index)
+  }, [])
+
+  const onPick = useCallback(
+    (option: LocationOption) => {
+      if (option.kind === 'insured') onCommit(option.location.address)
+      else setElsewhere(true)
+    },
+    [onCommit],
+  )
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      onDismiss()
+      return
+    }
+    if (!open) return
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      movedHighlight.current = true
+      setHighlight((index) => Math.min(index + 1, options.length - 1))
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      movedHighlight.current = true
+      setHighlight((index) => Math.max(index - 1, 0))
+    } else if (event.key === 'Enter') {
+      event.preventDefault()
+      const pool = query === input || movedHighlight.current ? options : filterInsuredLocations(indexed, input)
+      const choice = pool[Math.min(highlight, Math.max(pool.length - 1, 0))]
+      if (choice) onPick(choice)
+    }
+  }
 
   if (elsewhere) {
     return (
@@ -172,69 +345,53 @@ export function ClaimInsuredLocationEdit({
     )
   }
 
+  const active = options.length === 0 ? 0 : Math.min(highlight, options.length - 1)
+
   return (
-    <Autocomplete<LocationOption, false, true>
-      size="small"
-      disableClearable
-      openOnFocus
-      autoHighlight
-      options={[...locations.map((location) => ({ kind: 'insured' as const, location })), SOMEWHERE_ELSE]}
-      filterOptions={(all, { inputValue }) => {
-        const words = inputValue.toLowerCase().split(/\s+/).filter(Boolean)
-        const matches = all.filter(
-          (option) =>
-            option.kind === 'insured' &&
-            words.every((word) => `${option.location.name} ${option.location.address}`.toLowerCase().includes(word)),
-        )
-        return [...matches, SOMEWHERE_ELSE]
-      }}
-      getOptionLabel={(option) => (option.kind === 'insured' ? option.location.address : 'Somewhere else')}
-      isOptionEqualToValue={() => false}
-      onChange={(_, next) => {
-        if (next.kind === 'insured') onCommit(next.location.address)
-        else setElsewhere(true)
-      }}
-      onClose={(_, reason) => {
-        if (reason === 'escape') onDismiss()
-      }}
-      renderOption={({ key, ...props }, option) => (
-        <Box component="li" key={key} {...props} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-          {option.kind === 'insured' ? (
-            <>
-              <PlaceOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary', mt: 0.25 }} />
-              <Box sx={{ minWidth: 0 }}>
-                <Typography sx={optionTextSx}>{option.location.address}</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
-                  {option.location.name}
-                </Typography>
-              </Box>
-            </>
-          ) : (
-            <>
-              <EditLocationAltOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary', mt: 0.25 }} />
-              <Box sx={{ minWidth: 0 }}>
-                <Typography sx={optionTextSx}>Somewhere else</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ fontFamily: figmaFontFamilyStack.body }}>
-                  Not an insured location
-                </Typography>
-              </Box>
-            </>
-          )}
-        </Box>
-      )}
-      renderInput={(params) => (
-        <TextField
-          {...params}
-          placeholder="Search insured locations…"
-          autoFocus
-          helperText="Insured locations on this policy"
-          inputProps={{ ...params.inputProps, 'aria-label': 'Insured location' }}
-          FormHelperTextProps={{ sx: { fontFamily: figmaFontFamilyStack.body, mx: 0 } }}
-          sx={draftInputSx}
+    <Box>
+      <TextField
+        ref={setAnchor}
+        size="small"
+        fullWidth
+        value={input}
+        autoFocus
+        placeholder="Search insured locations…"
+        helperText="Insured locations on this policy"
+        onChange={(event) => {
+          movedHighlight.current = false
+          setInput(event.target.value)
+          setOpen(true)
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onKeyDown={onKeyDown}
+        inputProps={{
+          'aria-label': 'Insured location',
+          role: 'combobox',
+          'aria-autocomplete': 'list',
+          'aria-expanded': open,
+          'aria-controls': listId,
+          'aria-activedescendant': open ? `${listId}-option-${active}` : undefined,
+        }}
+        FormHelperTextProps={{ sx: { fontFamily: figmaFontFamilyStack.body, mx: 0 } }}
+        sx={draftInputSx}
+      />
+      <Popper
+        open={open && anchor != null}
+        anchorEl={anchor}
+        placement="bottom-start"
+        modifiers={popperModifiers}
+        sx={{ zIndex: (theme) => theme.zIndex.modal, width: anchor?.clientWidth }}
+      >
+        <InsuredLocationList
+          options={options}
+          highlight={active}
+          listId={listId}
+          onHighlight={onHighlight}
+          onPick={onPick}
         />
-      )}
-      slotProps={{ listbox: { sx: { fontFamily: figmaFontFamilyStack.body, fontSize: '0.8125rem' } } }}
-    />
+      </Popper>
+    </Box>
   )
 }
 

@@ -79,10 +79,33 @@ function uniqueAddresses(addresses: (CustomerAddress | null)[]) {
   })
 }
 
+const ADDRESS_CACHE_LIMIT = 24
+const addressCache = new Map<string, CustomerAddress[]>()
+
+/** Last successful lookup for this line, so a repeated or backspaced query can render without another request. */
+export function cachedUsAddresses(query: string): CustomerAddress[] | null {
+  const key = query.trim().toLowerCase()
+  if (key.length < 3) return null
+  return addressCache.get(key) ?? null
+}
+
+function storeAddresses(key: string, results: CustomerAddress[]) {
+  addressCache.delete(key)
+  addressCache.set(key, results)
+  while (addressCache.size > ADDRESS_CACHE_LIMIT) {
+    const oldest = addressCache.keys().next().value
+    if (!oldest) break
+    addressCache.delete(oldest)
+  }
+}
+
 /** US street addresses matching a partial line. Throws on network failure so callers can fall back to free text. */
 export async function searchUsAddresses(query: string, signal?: AbortSignal): Promise<CustomerAddress[]> {
   const q = query.trim()
   if (q.length < 3) return []
+  const key = q.toLowerCase()
+  const cached = addressCache.get(key)
+  if (cached) return cached
   const params = new URLSearchParams({ q, limit: '10', lang: 'en', lat: '39.8', lon: '-98.6' })
   params.append('layer', 'house')
   params.append('layer', 'street')
@@ -93,7 +116,9 @@ export async function searchUsAddresses(query: string, signal?: AbortSignal): Pr
   const typed: TypedQuery = numberMatch
     ? { number: numberMatch[1]!, rest: numberMatch[2]!.toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ').trim() }
     : { number: null, rest: q.toLowerCase() }
-  return uniqueAddresses((data.features ?? []).map((feature) => toAddress(feature.properties ?? {}, typed))).slice(0, 6)
+  const results = uniqueAddresses((data.features ?? []).map((feature) => toAddress(feature.properties ?? {}, typed))).slice(0, 6)
+  if (!signal?.aborted) storeAddresses(key, results)
+  return results
 }
 
 export async function reverseGeocodeUs(latitude: number, longitude: number): Promise<CustomerAddress | null> {
