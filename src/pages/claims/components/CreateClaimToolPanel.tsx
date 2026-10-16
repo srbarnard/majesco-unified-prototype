@@ -8,15 +8,23 @@ import {
   setActiveClaimThread,
   useClaimDrawerRequest,
   useClaimThreads,
-  type CreateClaimSavedState,
+  type ClaimThread,
 } from '@/pages/claims/data/claimDrawerStore'
-import { getClaim, upsertClaim } from '@/pages/claims/data/claimsStore'
+import { getClaim, upsertClaim, type ClaimStatus } from '@/pages/claims/data/claimsStore'
+import { CLAIM_STATUS_TONES } from '@/pages/claims/data/claimStatusTones'
 import { recordFromDraft } from '@/pages/claims/data/createClaimDraft'
 
-function threadTitle({ draft }: CreateClaimSavedState) {
-  if (!draft) return 'New claim'
-  const insured = draft.policy?.insured ?? getClaim(draft.claimNumber)?.insured
-  return insured ? `${draft.claimNumber} · ${insured}` : draft.claimNumber
+function historyEntry({ id, state }: ClaimThread) {
+  const { draft, created } = state
+  const record = draft ? getClaim(draft.claimNumber) : null
+  const insured = draft?.policy?.insured ?? record?.insured ?? null
+  const status: ClaimStatus = record?.status ?? (created ? 'Reported' : 'Draft')
+  return {
+    id,
+    title: draft?.claimNumber ?? 'New claim',
+    subtitle: insured ?? draft?.description ?? '',
+    status: { label: status, tone: CLAIM_STATUS_TONES[status] },
+  }
 }
 
 /** Global Create claim drawer: opens from the rail, the Claims header, Create new → Claim, or a Claims row. */
@@ -39,11 +47,7 @@ export function CreateClaimToolPanel() {
       initialState={getActiveClaimThread()?.state ?? null}
       initialIntent={request.intent}
       openedFromHistory={openedFromHistory.current}
-      history={threads.map(({ id, state }) => ({
-        id,
-        title: threadTitle(state),
-        subtitle: state.created ? 'Created' : 'Draft',
-      }))}
+      history={threads.map(historyEntry)}
       onOpenHistory={(id) => {
         const thread = threads.find((entry) => entry.id === id)
         if (!thread) return

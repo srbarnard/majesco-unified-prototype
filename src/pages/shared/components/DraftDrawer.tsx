@@ -21,7 +21,7 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { StatusChip } from '@/design-system/components'
+import { StatusChip, type StatusChipProps } from '@/design-system/components'
 import { CopilotContentTransition } from '@/pages/policies/components/copilot/CopilotContentTransition'
 import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -307,7 +307,13 @@ export function DraftInlineTextEdit({
   )
 }
 
-export type DraftHistoryItem = { id: string; title: string; subtitle: string }
+export type DraftHistoryItem = {
+  id: string
+  title: string
+  subtitle: string
+  /** Existing Majesco One status tone. Omitted rows stay title and subtitle only. */
+  status?: { label: string; tone: StatusChipProps['status'] }
+}
 
 export function DraftHistoryList({
   entries,
@@ -347,16 +353,26 @@ export function DraftHistoryList({
             '&:hover': { bgcolor: 'action.hover' },
           }}
         >
-          <Typography variant="body2" noWrap sx={{ ...draftBodySx, fontWeight: 600 }}>
-            {entry.title}
-          </Typography>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.25 }}
-          >
-            {entry.subtitle}
-          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2" noWrap sx={{ ...draftBodySx, fontWeight: 600 }}>
+                {entry.title}
+              </Typography>
+              {entry.subtitle ? (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  noWrap
+                  sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.25 }}
+                >
+                  {entry.subtitle}
+                </Typography>
+              ) : null}
+            </Box>
+            {entry.status ? (
+              <StatusChip component="span" status={entry.status.tone} label={entry.status.label} sx={{ flexShrink: 0 }} />
+            ) : null}
+          </Stack>
         </Box>
       ))}
     </Stack>

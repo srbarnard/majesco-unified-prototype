@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { CreateClaimDraft } from '@/pages/claims/data/createClaimDraft'
 import { draftFromRecord } from '@/pages/claims/data/createClaimDraft'
-import type { ClaimRecord } from '@/pages/claims/data/claimsStore'
+import { getClaim, type ClaimRecord } from '@/pages/claims/data/claimsStore'
 
 export type CreateClaimSavedState = { draft: CreateClaimDraft | null; created: boolean }
 export type ClaimThread = { id: string; state: CreateClaimSavedState }
@@ -10,8 +10,19 @@ export type ClaimDrawerIntent = 'assign' | 'note' | 'task' | null
 
 type ClaimDrawerRequest = { key: number; claimNumber: string | null; intent: ClaimDrawerIntent }
 
+/** Completed claims of different lines, shown in Create claim History before anything is filed this session. */
+const EXAMPLE_HISTORY_CLAIMS = ['CA141274', 'CP141261', 'WC141249', 'GL141221', 'WC141208'] as const
+
+function exampleThreads(): ClaimThread[] {
+  return EXAMPLE_HISTORY_CLAIMS.flatMap((claimNumber) => {
+    const record = getClaim(claimNumber)
+    if (!record || record.status === 'Draft') return []
+    return [{ id: `claim-example-${claimNumber}`, state: { draft: draftFromRecord(record), created: true } }]
+  })
+}
+
 // Module scope survives the drawer unmounting between opens.
-let threads: ClaimThread[] = []
+let threads: ClaimThread[] = exampleThreads()
 /** The thread the drawer resumes on its next open. */
 let activeThread: ClaimThread | null = null
 let request: ClaimDrawerRequest = { key: 0, claimNumber: null, intent: null }
