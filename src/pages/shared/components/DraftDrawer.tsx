@@ -311,6 +311,8 @@ export type DraftHistoryItem = {
   id: string
   title: string
   subtitle: string
+  /** Secondary line under the subtitle, such as a claim type. */
+  detail?: string
   /** Existing Majesco One status tone. Omitted rows stay title and subtitle only. */
   status?: { label: string; tone: StatusChipProps['status'] }
 }
@@ -366,6 +368,16 @@ export function DraftHistoryList({
                   sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.25 }}
                 >
                   {entry.subtitle}
+                </Typography>
+              ) : null}
+              {entry.detail ? (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  noWrap
+                  sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.25 }}
+                >
+                  {entry.detail}
                 </Typography>
               ) : null}
             </Box>
