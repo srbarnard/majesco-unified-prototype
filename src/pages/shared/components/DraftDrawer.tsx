@@ -441,8 +441,7 @@ const BADGE_LABELS: Record<NeededBadgeTone, string> = {
   empty: 'Still needed',
 }
 
-function NeededStatusBadge({ tone, muted = false }: { tone: NeededBadgeTone; muted?: boolean }) {
-  const quiet = muted && tone === 'success'
+function NeededStatusBadge({ tone }: { tone: NeededBadgeTone }) {
   return (
     <Box
       aria-label={BADGE_LABELS[tone]}
@@ -466,14 +465,8 @@ function NeededStatusBadge({ tone, muted = false }: { tone: NeededBadgeTone; mut
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          bgcolor: quiet
-            ? 'action.disabledBackground'
-            : palette
-              ? isLight
-                ? palette[100]
-                : palette[900]
-              : 'action.hover',
-          color: quiet ? 'text.disabled' : palette ? (isLight ? palette[800] : palette[200]) : 'text.disabled',
+          bgcolor: palette ? (isLight ? palette[100] : palette[900]) : 'action.hover',
+          color: palette ? (isLight ? palette[800] : palette[200]) : 'text.disabled',
         }
       }}
     >
@@ -500,7 +493,6 @@ function NeededItem<F extends string>({
   expanded,
   openRowStyle,
   onToggle,
-  muted = false,
   sx,
   children,
 }: {
@@ -508,8 +500,6 @@ function NeededItem<F extends string>({
   expanded: boolean
   openRowStyle: DraftOpenRowStyle
   onToggle?: () => void
-  /** Grey check for a filled fact that cannot be edited. */
-  muted?: boolean
   sx?: SxProps<Theme>
   children?: ReactNode
 }) {
@@ -537,7 +527,7 @@ function NeededItem<F extends string>({
       {row.badge ? (
         <CategoryBadge badge={row.badge} />
       ) : (
-        <NeededStatusBadge tone={row.tone ?? (missing ? 'empty' : 'success')} muted={muted} />
+        <NeededStatusBadge tone={row.tone ?? (missing ? 'empty' : 'success')} />
       )}
       <Box sx={{ minWidth: 0, flex: 1 }}>
         <Typography
@@ -646,7 +636,6 @@ export function DraftNeededList<F extends string>({
   onToggle,
   renderEditor,
   rowSx,
-  muteFilled = false,
 }: {
   rows: DraftNeededRow<F>[]
   editingField: F | null
@@ -655,8 +644,6 @@ export function DraftNeededList<F extends string>({
   renderEditor: (field: F) => ReactNode
   /** Per-row extra styles (e.g. staggered entrance). */
   rowSx?: (index: number) => SxProps<Theme> | undefined
-  /** Filled checks use the disabled grey instead of green. */
-  muteFilled?: boolean
 }) {
   if (rows.length === 0) return null
   return (
@@ -671,7 +658,6 @@ export function DraftNeededList<F extends string>({
             expanded={expanded}
             openRowStyle={openRowStyle}
             onToggle={field ? () => onToggle(field) : undefined}
-            muted={muteFilled && row.tone == null && row.value != null}
             sx={rowSx?.(index)}
           >
             {expanded && field ? renderEditor(field) : null}
@@ -770,7 +756,6 @@ export function DraftAccordions<F extends string>({
   onKnownOpenChange,
   onGroupToggle,
   hideKnown = false,
-  muteFilled = false,
 }: {
   known: DraftNeededRow<F>[]
   attention: DraftNeededRow<F>[]
@@ -785,8 +770,6 @@ export function DraftAccordions<F extends string>({
   onGroupToggle?: () => void
   /** Leave out Known facts (e.g. once the record is filed). */
   hideKnown?: boolean
-  /** Known facts checks are grey when the claim cannot be edited. */
-  muteFilled?: boolean
 }) {
   const [knownOpenState, setKnownOpenState] = useState(false)
   const [attentionOpen, setAttentionOpen] = useState(true)
@@ -797,7 +780,7 @@ export function DraftAccordions<F extends string>({
   const showConsiderations = considerationsOpen || editingIn(considerations)
   if (known.length === 0 && attention.length === 0 && considerations.length === 0) return null
 
-  const rowList = (rows: DraftNeededRow<F>[], mute?: boolean) => (
+  const rowList = (rows: DraftNeededRow<F>[]) => (
     <Box
       sx={{
         // Rows pad their content by draftPanelPx; shift them so it lands on the label's left edge.
@@ -812,7 +795,6 @@ export function DraftAccordions<F extends string>({
         openRowStyle="none"
         onToggle={onToggle}
         renderEditor={renderEditor}
-        muteFilled={mute}
       />
     </Box>
   )
@@ -831,7 +813,7 @@ export function DraftAccordions<F extends string>({
             onGroupToggle?.()
           }}
         >
-          {rowList(known, muteFilled)}
+          {rowList(known)}
         </DraftAccordion>
       )}
       <DraftAccordion

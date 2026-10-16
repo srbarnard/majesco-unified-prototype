@@ -1169,20 +1169,45 @@ export function CreateClaimPanel({
     </Stack>
   ) : null
 
-  /** History of a created claim: the captured facts and what's left to do, without the submit summary. */
+  /** History of a created claim: editable claims keep Known facts; the rest use the confirmation rows. */
   const completedView = draft ? (
     <>
-      <DraftAccordions
-        known={factRows}
-        attention={[]}
-        knownOpen={knownOpen}
-        onKnownOpenChange={setKnownOpen}
-        editingField={editing}
-        onToggle={toggleEditing}
-        renderEditor={renderEditor}
-        onGroupToggle={() => setEditing(null)}
-        muteFilled={!historyFactsEditable}
-      />
+      {historyFactsEditable ? (
+        <DraftAccordions
+          known={factRows}
+          attention={[]}
+          knownOpen={knownOpen}
+          onKnownOpenChange={setKnownOpen}
+          editingField={editing}
+          onToggle={toggleEditing}
+          renderEditor={renderEditor}
+          onGroupToggle={() => setEditing(null)}
+        />
+      ) : (
+        <Box sx={{ width: '100%', textAlign: 'left' }}>
+          {factRows.map((row, index) =>
+            row.value ? (
+              <Stack
+                key={`${row.term}-${index}`}
+                direction="row"
+                spacing={1.5}
+                alignItems="baseline"
+                sx={{ px: 1.5, py: 1, borderRadius: '5px', bgcolor: index % 2 === 0 ? 'action.hover' : 'background.paper' }}
+              >
+                <Typography variant="caption" color="text.primary" sx={{ ...draftBodySx, fontWeight: 600, width: 84, flexShrink: 0 }}>
+                  {row.term}
+                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ ...draftBodySx, wordBreak: 'break-word' }}>
+                    {row.value}
+                  </Typography>
+                  {row.meta}
+                </Box>
+              </Stack>
+            ) : null,
+          )}
+        </Box>
+      )}
       <Box sx={{ mt: 2 }}>
         <CopilotQuickActions label="Suggested actions" actions={[ADD_NOTE, ADD_TASK]} onAction={handleThreadAction} />
         {threadEditors}
