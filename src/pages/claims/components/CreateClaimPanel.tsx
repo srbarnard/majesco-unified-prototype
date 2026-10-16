@@ -25,6 +25,7 @@ import {
   type ClaimDrawerIntent,
   type CreateClaimSavedState,
 } from '@/pages/claims/data/claimDrawerStore'
+import { CLAIM_STATUS_TONES } from '@/pages/claims/data/claimStatusTones'
 import { claimPrefix, getClaim, nextClaimNumber, updateClaim, useClaim } from '@/pages/claims/data/claimsStore'
 import { insuredLocations, matchingInsuredLocations } from '@/pages/claims/data/policyLocations'
 import {
@@ -1520,6 +1521,10 @@ export function CreateClaimPanel({
               backLabel="Back to history"
               arrowColor="secondary.main"
               onBack={() => setReviewingCompleted(false)}
+              status={{
+                label: record?.status ?? 'Reported',
+                tone: CLAIM_STATUS_TONES[record?.status ?? 'Reported'],
+              }}
             />
             {completedView}
           </>

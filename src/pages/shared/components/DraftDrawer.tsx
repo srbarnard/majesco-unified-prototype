@@ -871,6 +871,7 @@ export function DraftHeader({
   backLabel,
   onBack,
   arrowColor,
+  status,
 }: {
   title: string
   request?: ReactNode
@@ -879,13 +880,22 @@ export function DraftHeader({
   onBack?: () => void
   /** Back arrow color. The title stays the teal subtitle. */
   arrowColor?: string
+  /** Status chip on the title row, same tones as the History list. */
+  status?: { label: string; tone: StatusChipProps['status'] }
 }) {
   const hasBack = Boolean(onBack)
+  const titleColumn = hasBack ? 2 : 1
   return (
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: hasBack ? 'auto minmax(0, 1fr)' : 'minmax(0, 1fr)',
+        gridTemplateColumns: hasBack
+          ? status
+            ? 'auto minmax(0, 1fr) auto'
+            : 'auto minmax(0, 1fr)'
+          : status
+            ? 'minmax(0, 1fr) auto'
+            : 'minmax(0, 1fr)',
         columnGap: 0.5,
         alignItems: 'center',
         minHeight: 34,
@@ -893,18 +903,41 @@ export function DraftHeader({
       }}
     >
       {hasBack ? (
-        <IconButton size="small" onClick={onBack} aria-label={backLabel} sx={{ ml: -0.75, color: arrowColor }}>
+        <IconButton
+          size="small"
+          onClick={onBack}
+          aria-label={backLabel}
+          sx={{ gridColumn: 1, gridRow: 1, ml: -0.75, color: arrowColor }}
+        >
           <ArrowBackIcon fontSize="small" />
         </IconButton>
       ) : null}
-      <Typography variant="subtitle1" noWrap title={title} sx={{ ...copilotSubtitleSx, lineHeight: 1.35 }}>
+      <Typography
+        variant="subtitle1"
+        noWrap
+        title={title}
+        sx={{ ...copilotSubtitleSx, gridColumn: titleColumn, gridRow: 1, lineHeight: 1.35 }}
+      >
         {title}
       </Typography>
+      {status ? (
+        <StatusChip
+          status={status.tone}
+          label={status.label}
+          sx={{ gridColumn: titleColumn + 1, gridRow: 1, ml: 1, justifySelf: 'end' }}
+        />
+      ) : null}
       {request ? (
         <Typography
           variant="body2"
           color="text.secondary"
-          sx={{ ...draftBodySx, gridColumn: hasBack ? 2 : 1, lineHeight: 1.5, overflowWrap: 'anywhere' }}
+          sx={{
+            ...draftBodySx,
+            gridColumn: status ? `${titleColumn} / -1` : titleColumn,
+            gridRow: 2,
+            lineHeight: 1.5,
+            overflowWrap: 'anywhere',
+          }}
         >
           {request}
         </Typography>
