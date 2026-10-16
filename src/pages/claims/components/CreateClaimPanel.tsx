@@ -173,6 +173,49 @@ const threadLinkSx = (theme: Theme) => ({
   '&:active': { bgcolor: getFigmaColors(theme.palette.mode).primary.selected },
 })
 const REFER_COVERAGE = 'Refer to coverage'
+
+function sameClaimDraft(a: CreateClaimDraft | null, b: CreateClaimDraft | null) {
+  if (a == null || b == null) return a == null && b == null
+  return JSON.stringify(a) === JSON.stringify(b)
+}
+
+const TEXT_EDIT_KEYS = new Set<string>([
+  'dateOfLoss',
+  'location',
+  'description',
+  'claimantName',
+  'claimantEmail',
+  'reporter',
+  'policeReport',
+  'driver',
+  'vehicles',
+  'injuries',
+])
+
+function applyTextEdit(current: CreateClaimDraft, key: TextKey, value: string): CreateClaimDraft {
+  switch (key) {
+    case 'dateOfLoss':
+      return { ...current, dateOfLoss: parseLossDate(value) ?? current.dateOfLoss }
+    case 'location':
+      return { ...current, location: value }
+    case 'description':
+      return { ...current, description: value }
+    case 'claimantName':
+      return { ...current, claimant: { name: value, email: current.claimant?.email ?? null } }
+    case 'claimantEmail':
+      return current.claimant ? { ...current, claimant: { ...current.claimant, email: value } } : current
+    case 'reporter':
+      return { ...current, reporter: { name: value, method: current.reporter?.method ?? 'Phone' } }
+    case 'policeReport':
+      return { ...current, policeReport: value }
+    case 'driver':
+      return current.driver ? { ...current, driver: { ...current.driver, name: value } } : current
+    case 'vehicles':
+      return { ...current, vehicles: value.split('\n').map((line) => line.trim()).filter(Boolean) }
+    case 'injuries':
+      return { ...current, injuries: value }
+  }
+}
 const READING_MS = 1400
 
 const EDIT_LABELS: Record<TextKey, { label: string; helper: string }> = {
@@ -260,6 +303,12 @@ export function CreateClaimPanel({
   const [reviewingCompleted, setReviewingCompleted] = useState(
     () => openedFromHistory && Boolean(initialState?.created && initialState.draft),
   )
+  /** Facts as opened from History. Save writes this forward; Cancel restores it. */
+  const [historyBaseline, setHistoryBaseline] = useState<CreateClaimDraft | null>(() =>
+    openedFromHistory && initialState?.draft ? structuredClone(initialState.draft) : null,
+  )
+  /** A History fact editor has keystrokes that are not committed yet. */
+  const [historyInputDirty, setHistoryInputDirty] = useState(false)
   const [start, setStart] = useState<StartMode | null>(null)
   const [reading, setReading] = useState<string[] | null>(null)
   const [composerValue, setComposerValue] = useState('')
@@ -280,6 +329,8 @@ export function CreateClaimPanel({
   const filed = created || (record != null && record.status !== 'Draft')
   /** History detail edits only an Open claim. Other statuses stay read-only. */
   const historyFactsEditable = reviewingCompleted && record?.status === 'Open'
+  const historyChanged =
+    historyFactsEditable && (historyInputDirty || !sameClaimDraft(savedDraft, historyBaseline))
   /** A caller's account reads as it is typed; anything else typed fills the same facts. */
   const callerIntake = start === 'phone' || savedDraft?.reporter?.method === 'Phone'
   const [parsedComposerValue] = useDebouncedValue(composerValue)
@@ -309,14 +360,48 @@ export function CreateClaimPanel({
       composerRef.current?.querySelector<HTMLTextAreaElement>('textarea:not([aria-hidden="true"])')?.focus(),
     )
 
+  const draftRef = useRef(draft)
+  draftRef.current = draft
+  /** Latest keystrokes in the open History fact editor, committed by Save. */
+  const historyEditValue = useRef<string | null>(null)
+
   const updateDraft = (update: (current: CreateClaimDraft) => CreateClaimDraft) => {
     const next = update(draft ?? emptyClaimDraft())
+    draftRef.current = next
     setDraft(next)
-    if (!historyFactsEditable) return
+  }
+
+  const persistHistoryDraft = (next: CreateClaimDraft) => {
     replaceActiveClaimDraft(next)
     if (getClaim(next.claimNumber)) {
       updateClaim(next.claimNumber, (claim) => recordFromDraft(next, claim.status, claim))
     }
+    setHistoryBaseline(structuredClone(next))
+    setHistoryInputDirty(false)
+    setEditing(null)
+  }
+
+  const saveHistoryEdits = () => {
+    let next = draftRef.current
+    const pending = historyEditValue.current
+    if (next && editing && pending != null && pending.trim() && TEXT_EDIT_KEYS.has(editing)) {
+      next = applyTextEdit(next, editing as TextKey, pending.trim())
+      draftRef.current = next
+      setDraft(next)
+    }
+    if (!next) return
+    historyEditValue.current = null
+    persistHistoryDraft(next)
+  }
+
+  const cancelHistoryEdits = () => {
+    if (!historyBaseline) return
+    const restored = structuredClone(historyBaseline)
+    draftRef.current = restored
+    historyEditValue.current = null
+    setDraft(restored)
+    setHistoryInputDirty(false)
+    setEditing(null)
   }
 
   /** The next unanswered question of an item, in asking order. */
@@ -442,30 +527,8 @@ export function CreateClaimPanel({
   const commitEdit = (key: TextKey, value: string) => {
     // Claimant name and email edit together; the row stays open until dismissed.
     setEditing((current) => (current === 'claimant' ? current : null))
-    updateDraft((current) => {
-      switch (key) {
-        case 'dateOfLoss':
-          return { ...current, dateOfLoss: parseLossDate(value) ?? current.dateOfLoss }
-        case 'location':
-          return { ...current, location: value }
-        case 'description':
-          return { ...current, description: value }
-        case 'claimantName':
-          return { ...current, claimant: { name: value, email: current.claimant?.email ?? null } }
-        case 'claimantEmail':
-          return current.claimant ? { ...current, claimant: { ...current.claimant, email: value } } : current
-        case 'reporter':
-          return { ...current, reporter: { name: value, method: current.reporter?.method ?? 'Phone' } }
-        case 'policeReport':
-          return { ...current, policeReport: value }
-        case 'driver':
-          return current.driver ? { ...current, driver: { ...current.driver, name: value } } : current
-        case 'vehicles':
-          return { ...current, vehicles: value.split('\n').map((line) => line.trim()).filter(Boolean) }
-        case 'injuries':
-          return { ...current, injuries: value }
-      }
-    })
+    historyEditValue.current = null
+    updateDraft((current) => applyTextEdit(current, key, value))
   }
 
   const handleStartAction = (action: string) => {
@@ -572,7 +635,19 @@ export function CreateClaimPanel({
       type={key === 'claimantEmail' ? 'email' : 'text'}
       confirmable={!MULTILINE_KEYS.has(key)}
       onCommit={(value) => commitEdit(key, value)}
-      onDismiss={() => setEditing(null)}
+      onDismiss={() => {
+        historyEditValue.current = null
+        setEditing(null)
+        setHistoryInputDirty(false)
+      }}
+      onValueChange={
+        historyFactsEditable
+          ? (value) => {
+              historyEditValue.current = value
+              setHistoryInputDirty(value.trim() !== initialValue.trim())
+            }
+          : undefined
+      }
     />
   )
 
@@ -1174,16 +1249,45 @@ export function CreateClaimPanel({
   const completedView = draft ? (
     <>
       {historyFactsEditable ? (
-        <DraftAccordions
-          known={factRows}
-          attention={[]}
-          knownOpen={knownOpen}
-          onKnownOpenChange={setKnownOpen}
-          editingField={editing}
-          onToggle={toggleEditing}
-          renderEditor={renderEditor}
-          onGroupToggle={() => setEditing(null)}
-        />
+        <>
+          <DraftAccordions
+            known={factRows}
+            attention={[]}
+            knownOpen={knownOpen}
+            onKnownOpenChange={setKnownOpen}
+            editingField={editing}
+            onToggle={toggleEditing}
+            renderEditor={renderEditor}
+            onGroupToggle={() => {
+              setEditing(null)
+              setHistoryInputDirty(false)
+            }}
+          />
+          {historyChanged ? (
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 2 }}>
+              <DsButton
+                size="small"
+                variant="contained"
+                color="primary"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={saveHistoryEdits}
+              >
+                Save
+              </DsButton>
+              <Link
+                component="button"
+                type="button"
+                underline="hover"
+                color="primary.main"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={cancelHistoryEdits}
+                sx={{ ...draftBodySx, fontWeight: 500 }}
+              >
+                Cancel
+              </Link>
+            </Stack>
+          ) : null}
+        </>
       ) : (
         <Box sx={{ width: '100%', textAlign: 'left', pt: 2 }}>
           {factRows.map((row, index) =>
@@ -1266,9 +1370,6 @@ export function CreateClaimPanel({
             }))),
       ]
     : []
-
-  const draftRef = useRef(draft)
-  draftRef.current = draft
 
   const commitDamageRow = (field: string, value: string) => {
     const next = value.trim()

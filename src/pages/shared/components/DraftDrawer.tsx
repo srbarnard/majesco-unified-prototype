@@ -233,6 +233,7 @@ export function DraftInlineTextEdit({
   autoFocus = true,
   onCommit,
   onDismiss,
+  onValueChange,
 }: {
   initialValue: string
   multiline?: boolean
@@ -249,6 +250,8 @@ export function DraftInlineTextEdit({
   autoFocus?: boolean
   onCommit: (value: string) => void
   onDismiss: () => void
+  /** Reports each keystroke. Omitted callers keep the commit-on-blur field. */
+  onValueChange?: (value: string) => void
 }) {
   const [value, setValue] = useState(initialValue)
   const commit = () => {
@@ -266,7 +269,10 @@ export function DraftInlineTextEdit({
       placeholder={placeholder}
       helperText={helperText}
       autoFocus={autoFocus && prefersFinePointer()}
-      onChange={(event) => setValue(event.target.value)}
+      onChange={(event) => {
+        setValue(event.target.value)
+        onValueChange?.(event.target.value)
+      }}
       onBlur={commit}
       onKeyDown={(event) => {
         if (event.key === 'Escape') onDismiss()
