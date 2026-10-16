@@ -52,7 +52,7 @@ export function CreateClaimToolPanel() {
         const thread = threads.find((entry) => entry.id === id)
         if (!thread) return
         setActiveClaimThread(thread)
-        openedFromHistory.current = true
+        openedFromHistory.current = thread.state.created
         setSession((current) => current + 1)
       }}
       onStartOver={() => setActiveClaimThread(null)}

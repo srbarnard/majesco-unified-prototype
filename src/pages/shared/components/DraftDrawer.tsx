@@ -872,12 +872,15 @@ export function DraftHeader({
   request,
   backLabel,
   onBack,
+  arrowColor,
 }: {
   title: string
   request?: ReactNode
   /** Omit both to drop the ← (e.g. a drawer's top level). */
   backLabel?: string
   onBack?: () => void
+  /** Back arrow color. The title stays the teal subtitle. */
+  arrowColor?: string
 }) {
   const hasBack = Boolean(onBack)
   return (
@@ -892,7 +895,7 @@ export function DraftHeader({
       }}
     >
       {hasBack ? (
-        <IconButton size="small" onClick={onBack} aria-label={backLabel} sx={{ ml: -0.75 }}>
+        <IconButton size="small" onClick={onBack} aria-label={backLabel} sx={{ ml: -0.75, color: arrowColor }}>
           <ArrowBackIcon fontSize="small" />
         </IconButton>
       ) : null}

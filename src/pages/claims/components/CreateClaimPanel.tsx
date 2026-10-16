@@ -232,7 +232,7 @@ export function CreateClaimPanel({
   initialState?: CreateClaimSavedState | null
   /** Row action that opened the drawer on this claim (Assign, Add note, Add task). */
   initialIntent?: ClaimDrawerIntent
-  /** History reopened this mount. A created claim stays on its completed view. */
+  /** History reopened this mount on a created claim. The detail stays on the History tab. */
   openedFromHistory?: boolean
   history: DraftHistoryItem[]
   onOpenHistory: (id: string) => void
@@ -249,7 +249,7 @@ export function CreateClaimPanel({
   const navigate = useNavigate()
   const location = useLocation()
   const { openTool } = useRightToolDispatch()
-  const [tab, setTab] = useState<DraftTab>('new')
+  const [tab, setTab] = useState<DraftTab>(openedFromHistory ? 'history' : 'new')
   const [savedDraft, setDraft] = useState<CreateClaimDraft | null>(initialState?.draft ?? null)
   const [created, setCreated] = useState(initialState?.created ?? false)
   const [justCreated, setJustCreated] = useState(false)
@@ -1433,7 +1433,7 @@ export function CreateClaimPanel({
   const body = confirmed
     ? confirmationView
     : reviewingCompleted
-      ? completedView
+      ? null
       : filed
         ? filedView
         : level === 'damage'
@@ -1462,14 +1462,23 @@ export function CreateClaimPanel({
         if (created) startOver()
       }}
       history={
-        <DraftHistoryList
-          entries={history}
-          emptyText="Claims you start this session show up here."
-          onOpen={(id) => {
-            setTab('new')
-            onOpenHistory(id)
-          }}
-        />
+        reviewingCompleted && draft ? (
+          <>
+            <DraftHeader
+              title={[draft.claimNumber, insuredName].filter(Boolean).join(' · ')}
+              backLabel="Back to history"
+              arrowColor="secondary.main"
+              onBack={() => setReviewingCompleted(false)}
+            />
+            {completedView}
+          </>
+        ) : (
+          <DraftHistoryList
+            entries={history}
+            emptyText="Claims you start this session show up here."
+            onOpen={onOpenHistory}
+          />
+        )
       }
       composer={
         confirmed || reviewingCompleted ? null : (
