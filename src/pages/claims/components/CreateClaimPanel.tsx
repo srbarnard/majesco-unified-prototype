@@ -1155,10 +1155,9 @@ export function CreateClaimPanel({
     </Stack>
   ) : null
 
-  /** History of a created claim: the same confirmation, plus the facts captured for it. */
+  /** History of a created claim: the captured facts and what's left to do, without the submit summary. */
   const completedView = draft ? (
     <>
-      {confirmationView}
       <DraftAccordions
         known={factRows}
         attention={[]}
