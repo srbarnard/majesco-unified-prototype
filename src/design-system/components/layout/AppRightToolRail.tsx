@@ -15,7 +15,8 @@ import Tooltip from '@mui/material/Tooltip'
 import { useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
+import { FNOL_PATH } from '@/pages/claims/data/fnolConversation'
 import { CopilotMarkIcon } from '@/design-system/icons/CopilotMarkIcon'
 import { useRightTool, type RightToolId } from '@/app/contexts/RightToolContext'
 import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
@@ -103,7 +104,9 @@ export function AppRightToolRail() {
   const theme = useTheme()
   const location = useLocation()
   const isDesktopTools = useMediaQuery(theme.breakpoints.up('lg'))
+  const navigate = useNavigate()
   const { activeTool, toggleTool, filterContent, partiesContent, historyAvailable } = useRightTool()
+  const onFnol = location.pathname === FNOL_PATH
   const hideCopilotTool = location.pathname === '/copilot-studio'
   const [order, setOrder] = useState<RightToolId[]>(readStoredOrder)
   const [draggingId, setDraggingId] = useState<RightToolId | null>(null)
@@ -112,9 +115,11 @@ export function AppRightToolRail() {
     sessionStorage.setItem(TOOL_ORDER_STORAGE_KEY, JSON.stringify(order))
   }, [order])
 
+  const fnolRailTools = new Set<RightToolId>(['notes', 'email', 'newTask'])
   const reorderable = order
     .map((id) => REORDERABLE_TOOLS.find((tool) => tool.id === id))
     .filter((tool): tool is ToolDef => Boolean(tool))
+    .filter((tool) => !onFnol || fnolRailTools.has(tool.id))
 
   const contextTools: ToolDef[] = [
     ...(historyAvailable
@@ -168,7 +173,13 @@ export function AppRightToolRail() {
           <IconButton
             aria-label={tool.label}
             aria-pressed={active}
-            onClick={() => toggleTool(tool.id)}
+            onClick={() => {
+              if (tool.id === 'newClaim') {
+                navigate(FNOL_PATH)
+                return
+              }
+              toggleTool(tool.id)
+            }}
             sx={(theme) => ({
               width: 36,
               height: 36,
@@ -254,10 +265,10 @@ export function AppRightToolRail() {
           ...(isDesktopTools ? { flex: 1, minHeight: 0 } : {}),
         }}
       >
-        {hideCopilotTool ? null : renderTool(CHAT_TOOL)}
-        {reorderable.map((tool) => renderTool(tool, true))}
-        {contextTools.map((tool) => renderTool(tool))}
-        {filterTool ? (
+        {hideCopilotTool || onFnol ? null : renderTool(CHAT_TOOL)}
+        {reorderable.map((tool) => renderTool(tool, !onFnol))}
+        {onFnol ? null : contextTools.map((tool) => renderTool(tool))}
+        {!onFnol && filterTool ? (
           <Box
             sx={{
               display: 'flex',

@@ -62,6 +62,7 @@ import { useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useRightToolDispatch } from '@/app/contexts/RightToolContext'
+import { FNOL_PATH } from '@/pages/claims/data/fnolConversation'
 import {
   FIGMA_METRIC_LABELS,
   HOME_PAGE_SIZE,
@@ -2111,8 +2112,9 @@ function getGreeting() {
 
 const MY_CLAIMS = homeClaims.injury
 
-/** Joan's claims home. New Claim opens the shell's Create claim drawer, the same one as + → Claim. */
+/** Joan's claims home. New Claim opens the conversational FNOL page, the same place as + → Claim. */
 export function ClaimsHomePage() {
+  const navigate = useNavigate()
   const { openTool, closeTool } = useRightToolDispatch()
   const [sectionInsight, setSectionInsight] = useState<SectionInsight | null>(null)
   const openCopilot = () => {
@@ -2144,7 +2146,14 @@ export function ClaimsHomePage() {
           {`${getGreeting()}, ${HOME_PERSONA.name.split(' ')[0]}`}
         </Typography>
         <Box component="section" aria-label="Actions" sx={{ mb: 3 }}>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => openTool('newClaim')}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => {
+              closeTool()
+              navigate(FNOL_PATH)
+            }}
+          >
             New Claim
           </Button>
         </Box>

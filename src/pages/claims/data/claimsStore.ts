@@ -5,6 +5,7 @@ export type ClaimStatus = 'Draft' | 'Reported' | 'Open' | 'In review' | 'Coverag
 
 export type ClaimNote = { id: string; text: string; at: string }
 export type ClaimTask = { id: string; title: string; assignee: string; dueLabel: string }
+export type ClaimPartyRecord = { name: string; role: string; contact: string | null }
 
 export type ClaimRecord = {
   id: string
@@ -21,6 +22,8 @@ export type ClaimRecord = {
   hasAlert: boolean
   notes: ClaimNote[]
   tasks: ClaimTask[]
+  /** Parties captured while the claim was filed. Claim details adds the insured and adjuster itself. */
+  parties?: ClaimPartyRecord[]
 }
 
 export const CLAIM_ASSIGNEES = ['Jennifer Collins', 'James Anderson', 'Priya Shah', 'Marcus Lee', 'Elena Ruiz', 'Daniel Okafor']
