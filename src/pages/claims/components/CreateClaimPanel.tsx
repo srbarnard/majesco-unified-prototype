@@ -1181,6 +1181,7 @@ export function CreateClaimPanel({
         onToggle={toggleEditing}
         renderEditor={renderEditor}
         onGroupToggle={() => setEditing(null)}
+        muteFilled={!historyFactsEditable}
       />
       <Box sx={{ mt: 2 }}>
         <CopilotQuickActions label="Suggested actions" actions={[ADD_NOTE, ADD_TASK]} onAction={handleThreadAction} />
