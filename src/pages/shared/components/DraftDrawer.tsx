@@ -311,8 +311,6 @@ export type DraftHistoryItem = {
   id: string
   title: string
   subtitle: string
-  /** Secondary line under the subtitle, such as a claim type. */
-  detail?: string
   /** Existing Majesco One status tone. Omitted rows stay title and subtitle only. */
   status?: { label: string; tone: StatusChipProps['status'] }
 }
@@ -356,35 +354,23 @@ export function DraftHistoryList({
           }}
         >
           <Stack direction="row" spacing={1} alignItems="center">
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="body2" noWrap sx={{ ...draftBodySx, fontWeight: 600 }}>
-                {entry.title}
-              </Typography>
-              {entry.subtitle ? (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  noWrap
-                  sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.25 }}
-                >
-                  {entry.subtitle}
-                </Typography>
-              ) : null}
-              {entry.detail ? (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  noWrap
-                  sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.25 }}
-                >
-                  {entry.detail}
-                </Typography>
-              ) : null}
-            </Box>
+            <Typography variant="body2" noWrap sx={{ ...draftBodySx, fontWeight: 600, flex: 1, minWidth: 0 }}>
+              {entry.title}
+            </Typography>
             {entry.status ? (
               <StatusChip component="span" status={entry.status.tone} label={entry.status.label} sx={{ flexShrink: 0 }} />
             ) : null}
           </Stack>
+          {entry.subtitle ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              noWrap
+              sx={{ fontFamily: figmaFontFamilyStack.body, display: 'block', mt: 0.25 }}
+            >
+              {entry.subtitle}
+            </Typography>
+          ) : null}
         </Box>
       ))}
     </Stack>

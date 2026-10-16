@@ -20,11 +20,11 @@ function historyEntry({ id, state }: ClaimThread) {
   const insured = draft?.policy?.insured ?? record?.insured ?? null
   const product = draft?.policy?.product ?? record?.product ?? null
   const status: ClaimStatus = record?.status ?? (created ? 'Reported' : 'Draft')
+  const who = insured ?? draft?.description ?? ''
   return {
     id,
     title: draft?.claimNumber ?? 'New claim',
-    subtitle: insured ?? draft?.description ?? '',
-    ...(product ? { detail: product } : {}),
+    subtitle: [who, product].filter(Boolean).join(' · '),
     status: { label: status, tone: CLAIM_STATUS_TONES[status] },
   }
 }
