@@ -1184,7 +1184,7 @@ export function CreateClaimPanel({
           onGroupToggle={() => setEditing(null)}
         />
       ) : (
-        <Box sx={{ width: '100%', textAlign: 'left' }}>
+        <Box sx={{ width: '100%', textAlign: 'left', pt: 2 }}>
           {factRows.map((row, index) =>
             row.value ? (
               <Stack
@@ -1194,7 +1194,17 @@ export function CreateClaimPanel({
                 alignItems="baseline"
                 sx={{ px: 1.5, py: 1, borderRadius: '5px', bgcolor: index % 2 === 0 ? 'action.hover' : 'background.paper' }}
               >
-                <Typography variant="caption" color="text.primary" sx={{ ...draftBodySx, fontWeight: 600, width: 84, flexShrink: 0 }}>
+                <Typography
+                  variant="caption"
+                  color="text.primary"
+                  sx={{
+                    ...draftBodySx,
+                    fontWeight: 600,
+                    width: 112,
+                    flexShrink: 0,
+                    ...(row.term === 'What happened' ? { whiteSpace: 'nowrap' } : {}),
+                  }}
+                >
                   {row.term}
                 </Typography>
                 <Box sx={{ minWidth: 0 }}>
