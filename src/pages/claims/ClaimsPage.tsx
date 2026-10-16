@@ -30,11 +30,11 @@ import { DiscardClaimDialog } from '@/pages/claims/components/DiscardClaimDialog
 import {
   discardClaimThread,
   focusClaimInDrawer,
-  startNewClaimInDrawer,
   useClaimDrawerRequest,
 } from '@/pages/claims/data/claimDrawerStore'
 import { CLAIM_STATUS_TONES } from '@/pages/claims/data/claimStatusTones'
 import { formatLossDate } from '@/pages/claims/data/createClaimDraft'
+import { FNOL_PATH } from '@/pages/claims/data/fnolConversation'
 import { removeClaim, updateClaim, useClaims, type ClaimRecord } from '@/pages/claims/data/claimsStore'
 import { insuredIdFromName } from '@/pages/shared/insuredId'
 
@@ -229,10 +229,7 @@ export function ClaimsPage() {
             startIcon={<AddIcon />}
             aria-label="New claim"
             sx={listPageCreateButtonSx}
-            onClick={() => {
-              startNewClaimInDrawer()
-              openTool('newClaim')
-            }}
+            onClick={() => navigate(FNOL_PATH)}
           >
             <span className="create-btn-label">New claim</span>
           </Button>
