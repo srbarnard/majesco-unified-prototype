@@ -20,6 +20,7 @@ import { copilotSubtitleSx } from '@/pages/policies/components/copilot/copilotDr
 import { insuredIdFromName } from '@/pages/shared/insuredId'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import {
+  replaceActiveClaimDraft,
   stashClaimThread,
   type ClaimDrawerIntent,
   type CreateClaimSavedState,
@@ -35,6 +36,7 @@ import {
   applyClaimText,
   documentClaimDraft,
   emptyClaimDraft,
+  recordFromDraft,
   PROPERTY_DAMAGE_PREFIX,
   VEHICLE_DAMAGE_PREFIX,
   formatKnownLossDate,
@@ -275,6 +277,8 @@ export function CreateClaimPanel({
   const record = useClaim(savedDraft?.claimNumber)
   /** Submitted this session, or already filed in the Claims table. */
   const filed = created || (record != null && record.status !== 'Draft')
+  /** History detail edits only an Open claim. Other statuses stay read-only. */
+  const historyFactsEditable = reviewingCompleted && record?.status === 'Open'
   /** A caller's account reads as it is typed; anything else typed fills the same facts. */
   const callerIntake = start === 'phone' || savedDraft?.reporter?.method === 'Phone'
   const [parsedComposerValue] = useDebouncedValue(composerValue)
@@ -304,8 +308,15 @@ export function CreateClaimPanel({
       composerRef.current?.querySelector<HTMLTextAreaElement>('textarea:not([aria-hidden="true"])')?.focus(),
     )
 
-  const updateDraft = (update: (current: CreateClaimDraft) => CreateClaimDraft) =>
-    setDraft(update(draft ?? emptyClaimDraft()))
+  const updateDraft = (update: (current: CreateClaimDraft) => CreateClaimDraft) => {
+    const next = update(draft ?? emptyClaimDraft())
+    setDraft(next)
+    if (!historyFactsEditable) return
+    replaceActiveClaimDraft(next)
+    if (getClaim(next.claimNumber)) {
+      updateClaim(next.claimNumber, (claim) => recordFromDraft(next, claim.status, claim))
+    }
+  }
 
   /** The next unanswered question of an item, in asking order. */
   const nextDamageField = (item: DamageItem): DamageField | null => {
@@ -472,8 +483,11 @@ export function CreateClaimPanel({
   const assign = (assignee: string) => {
     setEditing(null)
     if (!draft) return
-    if (filed) updateClaim(draft.claimNumber, (claim) => ({ ...claim, assignee }))
-    else updateDraft((current) => ({ ...current, assignee }))
+    if (filed && !historyFactsEditable) {
+      updateClaim(draft.claimNumber, (claim) => ({ ...claim, assignee }))
+      return
+    }
+    updateDraft((current) => ({ ...current, assignee }))
   }
 
   const addNote = (text: string) => {
@@ -623,7 +637,7 @@ export function CreateClaimPanel({
     </Typography>
   )
 
-  const editable = !created
+  const editable = !created || historyFactsEditable
   const editableField = <F extends Field>(field: F) => (editable ? { field } : {})
   const insuredName = draft?.policy?.insured ?? record?.insured ?? null
   /** Who the claim is created assigned to: the draft's pick, the row's owner, or you. */
@@ -1465,7 +1479,8 @@ export function CreateClaimPanel({
         reviewingCompleted && draft ? (
           <>
             <DraftHeader
-              title={[draft.claimNumber, insuredName].filter(Boolean).join(' · ')}
+              title={draft.claimNumber}
+              request={[insuredName, draft.policy?.product ?? record?.product].filter(Boolean).join(' · ') || undefined}
               backLabel="Back to history"
               arrowColor="secondary.main"
               onBack={() => setReviewingCompleted(false)}

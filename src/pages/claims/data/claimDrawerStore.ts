@@ -58,6 +58,15 @@ export function setActiveClaimThread(thread: ClaimThread | null) {
   emit()
 }
 
+/** Writes the open History claim's draft back onto its row without moving it in the list. */
+export function replaceActiveClaimDraft(draft: CreateClaimDraft) {
+  if (!activeThread) return
+  const state = { ...activeThread.state, draft }
+  activeThread = { ...activeThread, state }
+  threads = threads.map((entry) => (entry.id === activeThread?.id ? activeThread : entry))
+  emit()
+}
+
 export function saveClaimThread(state: CreateClaimSavedState) {
   threadSeq += 1
   activeThread = { id: activeThread?.id ?? `claim-thread-${threadSeq}`, state }
