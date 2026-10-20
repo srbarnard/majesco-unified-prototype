@@ -93,10 +93,9 @@ const RAIL_TOOLS = new Set(['notes', 'email', 'newTask'])
 const FNOL_TALLY_WIDTH_KEY = 'fnol-tally-width'
 const FNOL_TALLY_DEFAULT = 360
 const FNOL_TALLY_MIN = 280
-const FNOL_TALLY_MAX = 520
 
 function clampTallyWidth(value: number) {
-  return Math.min(FNOL_TALLY_MAX, Math.max(FNOL_TALLY_MIN, value))
+  return Math.max(FNOL_TALLY_MIN, value)
 }
 
 function readTallyWidth() {
@@ -993,7 +992,6 @@ export function FnolConversationPage() {
               aria-label="Resize running tally"
               aria-valuenow={tallyWidth}
               aria-valuemin={FNOL_TALLY_MIN}
-              aria-valuemax={FNOL_TALLY_MAX}
               tabIndex={0}
               onMouseDown={(event) => startTallyResize(event.clientX)}
               onKeyDown={(event) => {
