@@ -8,6 +8,7 @@ import type { SxProps, Theme } from '@mui/material/styles'
 import { DataGridPremium, useGridApiRef, type GridColDef } from '@mui/x-data-grid-premium'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import {
   Button,
@@ -101,11 +102,16 @@ export function ClaimsPage() {
         headerName: 'Insured',
         flex: 1.4,
         minWidth: 200,
-        renderCell: ({ row }) => (
-          <ListDataGridLink to={`/insureds/${encodeURIComponent(insuredIdFromName(row.insured))}`} fontWeight={500}>
-            {row.insured}
-          </ListDataGridLink>
-        ),
+        renderCell: ({ row }) =>
+          CLAIMS_ONLY ? (
+            <Typography variant="body2" sx={cellTextSx}>
+              {row.insured}
+            </Typography>
+          ) : (
+            <ListDataGridLink to={`/insureds/${encodeURIComponent(insuredIdFromName(row.insured))}`} fontWeight={500}>
+              {row.insured}
+            </ListDataGridLink>
+          ),
       },
       {
         field: 'product',
@@ -295,6 +301,11 @@ export function ClaimsPage() {
               disableColumnPinning={disableColumnPinning}
               disableColumnReorder
               disableRowSelectionOnClick
+              onRowClick={(params, event) => {
+                const target = event.target as HTMLElement | null
+                if (target?.closest('button, a, input, [role="menuitem"]')) return
+                navigate(`/claims/${encodeURIComponent(params.row.claimNumber)}`)
+              }}
               columnHeaderHeight={40}
               getRowHeight={() => 'auto'}
               slotProps={getListDataGridSlotProps()}
