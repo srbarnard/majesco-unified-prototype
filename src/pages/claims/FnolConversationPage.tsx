@@ -30,7 +30,7 @@ import { useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
 import { CopilotQuickActions, EntityListHomeButton } from '@/design-system/components'
-import { chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { accentSubtle, chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -835,7 +835,7 @@ export function FnolConversationPage() {
   const partyForm = submitted ? null : (
     <Box
       sx={(theme) => ({
-        bgcolor: chatBubbleIncoming(theme),
+        bgcolor: accentSubtle(theme),
         borderRadius: `${layoutTokens.cardRadius}px`,
         p: 2,
       })}
