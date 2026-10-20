@@ -241,8 +241,8 @@ function FnolPartyForm({
         <PartyTextField label="Name" value={name} onChange={setName} autoFocus />
         <PartyTextField label="Phone or email" value={contact} onChange={setContact} />
       </Box>
-      <Stack direction="row" spacing={1} sx={{ pt: 1.5 }}>
-        <Button size="small" variant="contained" disabled={!name.trim()} onClick={submit}>
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ pt: 1.5 }}>
+        <Button variant="contained" disabled={!name.trim()} onClick={submit}>
           Add
         </Button>
         <Button size="small" color="inherit" onClick={onCancel}>
