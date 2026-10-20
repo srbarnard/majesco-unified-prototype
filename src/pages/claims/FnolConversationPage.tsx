@@ -1,9 +1,17 @@
+import AirlineSeatReclineNormalOutlinedIcon from '@mui/icons-material/AirlineSeatReclineNormalOutlined'
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline'
 import CloseIcon from '@mui/icons-material/Close'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
+import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
-import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined'
+import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined'
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
+import RecordVoiceOverOutlinedIcon from '@mui/icons-material/RecordVoiceOverOutlined'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import type { SvgIconComponent } from '@mui/icons-material'
 import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -22,7 +30,8 @@ import { useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
 import { CopilotQuickActions, EntityListHomeButton } from '@/design-system/components'
-import { chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
+import { accentSubtle, chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { ClaimDateOfLossEdit } from '@/pages/claims/components/ClaimLossEditors'
@@ -167,6 +176,73 @@ function PartyTextField({
   )
 }
 
+function PartyRoleOptions({
+  selected,
+  onPick,
+}: {
+  selected: FnolPartyRole
+  onPick: (role: FnolPartyRole) => void
+}) {
+  return (
+    <Box
+      role="group"
+      aria-label="Party role"
+      sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 1 }}
+    >
+      {FNOL_PARTY_ROLES.map((option) => {
+        const isSelected = option === selected
+        return (
+          <Box
+            key={option}
+            component="button"
+            type="button"
+            aria-pressed={isSelected}
+            onClick={() => onPick(option)}
+            sx={{
+              m: 0,
+              cursor: 'pointer',
+              textAlign: 'left',
+              font: 'inherit',
+              borderRadius: `${layoutTokens.cardRadius}px`,
+              borderWidth: isSelected ? 2 : 1,
+              borderStyle: 'solid',
+              borderColor: isSelected ? 'primary.main' : 'divider',
+              bgcolor: isSelected ? (theme) => accentSubtle(theme) : 'background.paper',
+              px: isSelected ? '15px' : 2,
+              py: isSelected ? '15px' : 2,
+              color: 'text.primary',
+              transition: 'border-color 0.15s ease, background-color 0.15s ease',
+              '&:hover': {
+                borderColor: isSelected ? 'primary.main' : 'text.secondary',
+                bgcolor: isSelected ? (theme) => accentSubtle(theme) : 'background.paper',
+              },
+              '&:focus-visible': {
+                outline: 2,
+                outlineColor: 'primary.main',
+                outlineOffset: 2,
+              },
+            }}
+          >
+            <Typography
+              component="span"
+              sx={{
+                display: 'block',
+                fontFamily: figmaFontFamilyStack.heading,
+                fontWeight: isSelected ? 600 : 500,
+                fontSize: '0.875rem',
+                lineHeight: 1.3,
+                color: isSelected ? 'primary.main' : 'text.primary',
+              }}
+            >
+              {option}
+            </Typography>
+          </Box>
+        )
+      })}
+    </Box>
+  )
+}
+
 function FnolPartyForm({
   seed,
   onSubmit,
@@ -184,7 +260,7 @@ function FnolPartyForm({
       <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.875rem' }}>
         Add party
       </Typography>
-      <DraftInlineOptions options={[...FNOL_PARTY_ROLES]} selected={role} onPick={(next) => setRole(next as FnolPartyRole)} />
+      <PartyRoleOptions selected={role} onPick={setRole} />
       <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
         <PartyTextField label="Name" value={name} onChange={setName} autoFocus />
         <PartyTextField label="Phone or email" value={contact} onChange={setContact} />
@@ -243,6 +319,17 @@ function AssistantTurn({ text, pending }: { text: string; pending?: boolean }) {
   )
 }
 
+const PARTY_ROLE_VISUAL: Record<FnolPartyRole, { icon: SvgIconComponent; tone: 'blue' | 'purple' | 'teal' | 'amber' | 'lightBlue' | 'red' | 'grey' | 'green' }> = {
+  Reporter: { icon: RecordVoiceOverOutlinedIcon, tone: 'blue' },
+  Claimant: { icon: PersonOutlinedIcon, tone: 'purple' },
+  Driver: { icon: DirectionsCarOutlinedIcon, tone: 'teal' },
+  Witness: { icon: VisibilityOutlinedIcon, tone: 'amber' },
+  Passenger: { icon: AirlineSeatReclineNormalOutlinedIcon, tone: 'lightBlue' },
+  Injured: { icon: LocalHospitalOutlinedIcon, tone: 'red' },
+  Other: { icon: MoreHorizIcon, tone: 'grey' },
+  Insured: { icon: BadgeOutlinedIcon, tone: 'green' },
+}
+
 function PartiesList({
   parties,
   readOnly,
@@ -253,46 +340,76 @@ function PartiesList({
   onRemove: (id: string) => void
 }) {
   if (parties.length === 0) return null
+  const radius = `${layoutTokens.cardRadius}px`
 
   return (
-    <Box
-      component="ul"
-      aria-label="Parties"
-      sx={{
-        listStyle: 'none',
-        m: 0,
-        p: 0,
-        border: 1,
-        borderColor: 'divider',
-        borderRadius: `${layoutTokens.cardRadius}px`,
-      }}
-    >
-      {parties.map((party) => (
-        <Stack
-          key={party.id}
-          component="li"
-          direction="row"
-          alignItems="center"
-          spacing={1}
-          sx={{ px: 1.5, py: 0.75, '& + &': { borderTop: 1, borderColor: 'divider' } }}
-        >
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.8125rem' }}>
-              {party.name}
-            </Typography>
-            <Typography sx={{ ...draftBodySx, color: 'text.secondary', fontSize: '0.75rem' }}>{party.role}</Typography>
-            <Typography sx={{ ...draftBodySx, color: 'text.secondary', fontSize: '0.75rem' }}>
-              {party.contact || 'No contact'}
-            </Typography>
-          </Box>
-          {readOnly || party.role === 'Insured' ? null : (
-            <IconButton size="small" aria-label={`Remove ${party.name}`} onClick={() => onRemove(party.id)}>
-              <CloseIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          )}
-        </Stack>
-      ))}
-    </Box>
+    <Stack component="ul" aria-label="Parties" spacing="3px" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+      {parties.map((party, index) => {
+        const visual = PARTY_ROLE_VISUAL[party.role]
+        const Icon = visual.icon
+        const isFirst = index === 0
+        const isLast = index === parties.length - 1
+        const contact = party.contact?.trim() ? party.contact : 'No contact'
+        return (
+          <Stack
+            key={party.id}
+            component="li"
+            direction="row"
+            alignItems="center"
+            spacing={1.25}
+            sx={{
+              py: 1.5,
+              px: 2,
+              borderTopLeftRadius: isFirst ? radius : 0,
+              borderTopRightRadius: isFirst ? radius : 0,
+              borderBottomLeftRadius: isLast ? radius : 0,
+              borderBottomRightRadius: isLast ? radius : 0,
+              bgcolor: (theme) => surfaceMuted(theme),
+            }}
+          >
+            <Box
+              sx={(theme) => {
+                const tone = theme.figmaPalette[visual.tone]
+                const isLight = theme.palette.mode === 'light'
+                return {
+                  width: 32,
+                  height: 32,
+                  borderRadius: `${figmaBorderRadius.borderRadius}px`,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  bgcolor: isLight ? tone[100] : tone[900],
+                  color: isLight ? tone[800] : tone[200],
+                }
+              }}
+            >
+              <Icon sx={{ fontSize: 18 }} />
+            </Box>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography
+                sx={{
+                  fontFamily: figmaFontFamilyStack.heading,
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  lineHeight: 1.35,
+                }}
+              >
+                {party.name}
+              </Typography>
+              <Typography sx={{ ...draftBodySx, color: 'text.secondary', fontSize: '0.8125rem', lineHeight: 1.4, mt: 0.25 }}>
+                {`${party.role} · ${contact}`}
+              </Typography>
+            </Box>
+            {readOnly || party.role === 'Insured' ? null : (
+              <IconButton size="small" aria-label={`Remove ${party.name}`} onClick={() => onRemove(party.id)} sx={{ flexShrink: 0 }}>
+                <CloseIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            )}
+          </Stack>
+        )
+      })}
+    </Stack>
   )
 }
 
@@ -307,8 +424,8 @@ export function FnolConversationPage() {
   const [mode, setMode] = useState<FnolIntakeMode>('narrative')
   const [editing, setEditing] = useState<string | null>(null)
   const [knownOpen, setKnownOpen] = useState(false)
-  const [addingParty, setAddingParty] = useState(false)
   const [partySeed, setPartySeed] = useState<FnolPartyRole>('Claimant')
+  const [partyFormGeneration, setPartyFormGeneration] = useState(0)
   const [policyLookupWhere, setPolicyLookupWhere] = useState<LookupWhere | null>(null)
   const [attachKey, setAttachKey] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
@@ -361,7 +478,7 @@ export function FnolConversationPage() {
 
   useEffect(() => {
     threadEnd.current?.scrollIntoView({ block: 'end' })
-  }, [messages, addingParty, policyLookupWhere])
+  }, [messages, policyLookupWhere])
 
   useEffect(
     () => () => {
@@ -380,7 +497,7 @@ export function FnolConversationPage() {
 
   const openPartyForm = (seed: FnolPartyRole = 'Claimant') => {
     setPartySeed(seed)
-    setAddingParty(true)
+    setPartyFormGeneration((generation) => generation + 1)
     setEditing(null)
     setColumnTab('parties')
     showConversation()
@@ -433,7 +550,6 @@ export function FnolConversationPage() {
         : []),
     ])
     setPolicyLookupWhere(null)
-    setAddingParty(false)
     const snapshot = { draft, parties, mode }
     const apply = () => ingestFnolTurn({ ...snapshot, text, files: names })
     if (!reading) {
@@ -457,8 +573,8 @@ export function FnolConversationPage() {
   }
 
   const submitParty = (input: { role: FnolPartyRole; name: string; contact: string }) => {
-    setAddingParty(false)
     finishTurn(addFnolParty(draft, parties, input))
+    setPartyFormGeneration((generation) => generation + 1)
   }
 
   const removeParty = (id: string) => {
@@ -489,7 +605,6 @@ export function FnolConversationPage() {
       parties: parties.map(({ name, role, contact }) => ({ name, role, contact })),
     })
     setSubmitted(true)
-    setAddingParty(false)
     setEditing(null)
     const owner = draft.assignee === CLAIM_CURRENT_USER || !draft.assignee ? 'you' : draft.assignee
     pushAssistant(`Claim ${draft.claimNumber} is submitted and assigned to ${owner}. Open it to continue handling.`)
@@ -687,18 +802,25 @@ export function FnolConversationPage() {
     return null
   }
 
-  const partyForm =
-    addingParty && !submitted ? (
-      <FnolPartyForm key={partySeed} seed={partySeed} onSubmit={submitParty} onCancel={() => setAddingParty(false)} />
-    ) : null
+  const partyForm = submitted ? null : (
+    <Box
+      sx={(theme) => ({
+        bgcolor: surfaceMuted(theme),
+        borderRadius: `${layoutTokens.cardRadius}px`,
+        p: 2,
+      })}
+    >
+      <FnolPartyForm
+        key={`${partySeed}-${partyFormGeneration}`}
+        seed={partySeed}
+        onSubmit={submitParty}
+        onCancel={() => setPartyFormGeneration((generation) => generation + 1)}
+      />
+    </Box>
+  )
 
   const selectColumnTab = (next: FnolColumnTab) => {
     setColumnTab(next)
-    if (next === 'parties' && parties.length === 0 && !submitted) {
-      setPartySeed('Claimant')
-      setAddingParty(true)
-      setEditing(null)
-    }
   }
 
   const conversationVisible = !stacked || pane === 'conversation'
@@ -800,26 +922,6 @@ export function FnolConversationPage() {
           {columnTab === 'parties' ? (
             <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: `${layoutTokens.contentPaddingX}px`, py: 2.5 }}>
               <Stack spacing={1.5}>
-                {submitted || parties.length === 0 ? null : (
-                  <Button
-                    size="small"
-                    color="inherit"
-                    startIcon={<PersonAddOutlinedIcon sx={{ fontSize: 18 }} />}
-                    onClick={() => openPartyForm()}
-                    disabled={busy}
-                    sx={{
-                      ...draftBodySx,
-                      textTransform: 'none',
-                      justifyContent: 'flex-start',
-                      alignSelf: 'flex-start',
-                      px: 0.75,
-                      ml: -0.75,
-                      color: 'text.primary',
-                    }}
-                  >
-                    Add party
-                  </Button>
-                )}
                 <PartiesList parties={parties} readOnly={submitted} onRemove={removeParty} />
                 {partyForm}
               </Stack>
