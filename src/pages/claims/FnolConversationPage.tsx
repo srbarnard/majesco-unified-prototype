@@ -1,6 +1,6 @@
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CloseIcon from '@mui/icons-material/Close'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
+import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined'
 import Avatar from '@mui/material/Avatar'
@@ -20,7 +20,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
-import { CopilotQuickActions } from '@/design-system/components'
+import { CopilotQuickActions, EntityListHomeButton } from '@/design-system/components'
 import { chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { AssistantNavigationOutlinedIcon } from '@/design-system/icons/AssistantNavigationOutlined'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -83,6 +83,17 @@ type FnolMessage = { id: string; role: 'user' | 'assistant'; text: string; pendi
 type LookupWhere = 'thread' | 'tally'
 type FnolColumnTab = 'chat' | 'parties'
 
+/** Outlined field with the label inside the border, including when it floats. */
+const partyFieldSx = {
+  '& .MuiInputLabel-root.MuiInputLabel-shrink': {
+    transform: 'translate(14px, 4px) scale(0.75)',
+  },
+  '& .MuiOutlinedInput-input': {
+    paddingTop: '18px',
+    paddingBottom: '6px',
+  },
+} as const
+
 const fnolColumnTabSx = {
   minHeight: 44,
   '& .MuiTabs-scrollButtons': { width: 28 },
@@ -126,20 +137,27 @@ function FnolPartyForm({
         Add party
       </Typography>
       <DraftInlineOptions options={[...FNOL_PARTY_ROLES]} selected={role} onPick={(next) => setRole(next as FnolPartyRole)} />
-      <Stack spacing={1} sx={{ mt: 1.25 }}>
+      <Stack spacing={1.5} sx={{ mt: 1.25 }}>
         <TextField
+          fullWidth
+          variant="outlined"
           size="small"
           label="Name"
           value={name}
           onChange={(event) => setName(event.target.value)}
           autoFocus
+          sx={partyFieldSx}
+          slotProps={{ input: { notched: false } }}
         />
         <TextField
+          fullWidth
+          variant="outlined"
           size="small"
           label="Phone or email"
           value={contact}
-          placeholder="Optional"
           onChange={(event) => setContact(event.target.value)}
+          sx={partyFieldSx}
+          slotProps={{ input: { notched: false } }}
         />
         <Stack direction="row" spacing={1}>
           <Button
@@ -637,45 +655,56 @@ export function FnolConversationPage() {
       <FnolPartyForm key={partySeed} seed={partySeed} onSubmit={submitParty} onCancel={() => setAddingParty(false)} />
     ) : null
 
+  const selectColumnTab = (next: FnolColumnTab) => {
+    setColumnTab(next)
+    if (next === 'parties' && parties.length === 0 && !submitted) {
+      setPartySeed('Claimant')
+      setAddingParty(true)
+      setEditing(null)
+    }
+  }
+
   const conversationVisible = !stacked || pane === 'conversation'
   const tallyVisible = !stacked || pane === 'tally'
 
+  const pageHeader = (
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent="space-between"
+      spacing={1.5}
+      sx={{ px: `${layoutTokens.contentPaddingX}px`, pt: layoutTokens.policyHeaderTopPadding, pb: 1.25, flexShrink: 0 }}
+    >
+      <Stack direction="row" alignItems="center" spacing={1.25} sx={{ minWidth: 0 }}>
+        <EntityListHomeButton to="/claims" label="All claims" icon={FileCopyOutlinedIcon} tone="submissions" />
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            variant="h5"
+            component="h1"
+            sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: { xs: '1.25rem', md: '1.375rem' }, lineHeight: 1.3 }}
+          >
+            First notice of loss
+          </Typography>
+          <Typography sx={{ ...draftBodySx, color: 'text.secondary' }} noWrap>
+            {`${draft.claimNumber} · ${insured ?? 'Policy not matched'}`}
+          </Typography>
+        </Box>
+      </Stack>
+      {submitted ? (
+        <Button variant="contained" onClick={() => navigate(`/claims/${encodeURIComponent(draft.claimNumber)}`)} sx={{ flexShrink: 0 }}>
+          Open claim
+        </Button>
+      ) : (
+        <Button variant="contained" disabled={!canSubmit || busy} onClick={submit} sx={{ flexShrink: 0 }}>
+          Submit claim
+        </Button>
+      )}
+    </Stack>
+  )
+
   return (
     <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        spacing={1.5}
-        sx={{ px: `${layoutTokens.contentPaddingX}px`, pt: layoutTokens.policyHeaderTopPadding, pb: 1.5, borderBottom: 1, borderColor: 'divider' }}
-      >
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
-          <IconButton size="small" aria-label="Back to Claims" onClick={() => navigate('/claims')}>
-            <ArrowBackIcon fontSize="small" />
-          </IconButton>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography
-              variant="h5"
-              component="h1"
-              sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: { xs: '1.25rem', md: '1.375rem' }, lineHeight: 1.3 }}
-            >
-              First notice of loss
-            </Typography>
-            <Typography sx={{ ...draftBodySx, color: 'text.secondary' }} noWrap>
-              {`${draft.claimNumber} · ${insured ?? 'Policy not matched'}`}
-            </Typography>
-          </Box>
-        </Stack>
-        {submitted ? (
-          <Button variant="contained" onClick={() => navigate(`/claims/${encodeURIComponent(draft.claimNumber)}`)}>
-            Open claim
-          </Button>
-        ) : (
-          <Button variant="contained" disabled={!canSubmit || busy} onClick={submit}>
-            Submit claim
-          </Button>
-        )}
-      </Stack>
+      {stacked ? pageHeader : null}
 
       {stacked ? (
         <Tabs
@@ -708,11 +737,12 @@ export function FnolConversationPage() {
             borderColor: 'divider',
           }}
         >
+          {stacked ? null : pageHeader}
           <Box sx={sectionTabRowBorderSx}>
             <Box sx={{ px: `${layoutTokens.contentPaddingX}px`, minHeight: 44, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
               <Tabs
                 value={columnTab}
-                onChange={(_, next: FnolColumnTab) => setColumnTab(next)}
+                onChange={(_, next: FnolColumnTab) => selectColumnTab(next)}
                 aria-label="FNOL conversation"
                 variant="scrollable"
                 scrollButtons="auto"
@@ -825,7 +855,7 @@ export function FnolConversationPage() {
             bgcolor: 'background.paper',
           }}
         >
-          <Box sx={{ px: 2, pt: 2, pb: 1 }}>
+          <Box sx={{ px: 2, pt: layoutTokens.policyHeaderTopPadding, pb: 1 }}>
             <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '1rem' }}>
               Running tally
             </Typography>
