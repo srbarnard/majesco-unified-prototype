@@ -1,12 +1,17 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import CloseIcon from '@mui/icons-material/Close'
-import PersonAddAltOutlinedIcon from '@mui/icons-material/PersonAddAltOutlined'
+import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
+import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined'
 import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
+import Link from '@mui/material/Link'
+import Menu from '@mui/material/Menu'
+import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
@@ -19,8 +24,7 @@ import { useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
 import { CopilotQuickActions } from '@/design-system/components'
-import { CopilotMarkIcon } from '@/design-system/icons/CopilotMarkIcon'
-import { chatAuthorAvatarSx, chatBubbleIncoming } from '@/design-system/theme/themeSurfaces'
+import { chatAuthorAvatarSx, chatBubbleIncoming, isDarkMode } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { ClaimDateOfLossEdit, ClaimInsuredLocationEdit } from '@/pages/claims/components/ClaimLossEditors'
@@ -58,6 +62,7 @@ import {
   type FnolPartyRole,
 } from '@/pages/claims/data/fnolConversation'
 import { insuredLocations } from '@/pages/claims/data/policyLocations'
+import { ComposerSendButton } from '@/pages/policies/components/ComposerSendButton'
 import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
 import type { CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
 import {
@@ -77,8 +82,14 @@ const ASSIGNEE_OPTIONS = [
 
 const RAIL_TOOLS = new Set(['notes', 'email', 'newTask'])
 
+const PARTY_PROMPT_IDEAS = [
+  'Who should be on this claim?',
+  'What contact details are still missing?',
+  'Summarize the parties mentioned so far.',
+]
+
 type FnolMessage = { id: string; role: 'user' | 'assistant'; text: string; pending?: boolean }
-type PartyWhere = 'thread' | 'tally'
+type LookupWhere = 'thread' | 'tally'
 
 function messageId() {
   return `fnol-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
@@ -155,15 +166,210 @@ function UserTurn({ text }: { text: string }) {
 
 function AssistantTurn({ text, pending }: { text: string; pending?: boolean }) {
   return (
-    <Box sx={{ mb: 3, maxWidth: 680 }}>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
-        <CopilotMarkIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-        <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.8125rem' }}>
-          FNOL
-        </Typography>
+    <Box sx={{ mb: 2.5, maxWidth: 680 }}>
+      <Typography variant="body2" sx={{ ...draftBodySx, lineHeight: 1.6, mb: 0.5, whiteSpace: 'pre-line' }}>
+        {text}
+      </Typography>
+      {pending ? (
+        <LinearProgress aria-label="Reading sources" sx={{ mt: 1.25, borderRadius: 1 }} />
+      ) : (
+        <IconButton
+          size="small"
+          aria-label="Copy response"
+          onClick={() => {
+            void navigator.clipboard?.writeText(text)
+          }}
+          sx={{ ml: -0.75 }}
+        >
+          <ContentCopyOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+        </IconButton>
+      )}
+    </Box>
+  )
+}
+
+function PartiesList({
+  parties,
+  readOnly,
+  onRemove,
+}: {
+  parties: FnolParty[]
+  readOnly: boolean
+  onRemove: (id: string) => void
+}) {
+  if (parties.length === 0) {
+    return (
+      <Typography sx={{ ...draftBodySx, color: 'text.secondary' }}>
+        No parties yet — add one here.
+      </Typography>
+    )
+  }
+
+  return (
+    <Box
+      component="ul"
+      aria-label="Parties"
+      sx={{
+        listStyle: 'none',
+        m: 0,
+        p: 0,
+        maxHeight: 160,
+        overflowY: 'auto',
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: `${layoutTokens.cardRadius}px`,
+      }}
+    >
+      {parties.map((party) => (
+        <Stack
+          key={party.id}
+          component="li"
+          direction="row"
+          alignItems="center"
+          spacing={1}
+          sx={{ px: 1.5, py: 0.75, '& + &': { borderTop: 1, borderColor: 'divider' } }}
+        >
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.8125rem' }}>
+              {party.name}
+            </Typography>
+            <Typography sx={{ ...draftBodySx, color: 'text.secondary', fontSize: '0.75rem' }}>{party.role}</Typography>
+            <Typography sx={{ ...draftBodySx, color: 'text.secondary', fontSize: '0.75rem' }}>
+              {party.contact || 'No contact'}
+            </Typography>
+          </Box>
+          {readOnly || party.role === 'Insured' ? null : (
+            <IconButton size="small" aria-label={`Remove ${party.name}`} onClick={() => onRemove(party.id)}>
+              <CloseIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          )}
+        </Stack>
+      ))}
+    </Box>
+  )
+}
+
+function PartiesComposer({
+  disabled,
+  onSend,
+  onAddParty,
+}: {
+  disabled?: boolean
+  onSend: (text: string) => void
+  onAddParty: () => void
+}) {
+  const [message, setMessage] = useState('')
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
+  const canSubmit = message.trim().length > 0 && !disabled
+
+  const submit = () => {
+    const trimmed = message.trim()
+    if (!trimmed || disabled) return
+    onSend(trimmed)
+    setMessage('')
+  }
+
+  return (
+    <Box
+      sx={(theme) => ({
+        border: `1px solid ${theme.palette.divider}`,
+        borderRadius: `${layoutTokens.cardRadius}px`,
+        bgcolor: 'background.paper',
+        boxShadow: isDarkMode(theme) ? 'none' : layoutTokens.cardShadow,
+        px: 2,
+        pt: 1.75,
+        pb: 1.25,
+        '&:focus-within': {
+          borderColor: 'primary.main',
+        },
+      })}
+    >
+      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 1 }}>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
+          <AutoAwesomeIcon sx={{ fontSize: 20, color: 'primary.main' }} />
+          <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '1rem', lineHeight: 1.3 }}>
+            How can I help you?
+          </Typography>
+        </Stack>
+        <Link
+          component="button"
+          type="button"
+          underline="hover"
+          onClick={(event) => setMenuAnchor(event.currentTarget)}
+          sx={{ ...draftBodySx, fontSize: '0.875rem', flexShrink: 0 }}
+        >
+          Prompt ideas
+        </Link>
+        <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
+          {PARTY_PROMPT_IDEAS.map((idea) => (
+            <MenuItem
+              key={idea}
+              onClick={() => {
+                setMessage(idea)
+                setMenuAnchor(null)
+              }}
+            >
+              {idea}
+            </MenuItem>
+          ))}
+        </Menu>
       </Stack>
-      <Typography sx={{ ...draftBodySx, lineHeight: 1.6 }}>{text}</Typography>
-      {pending ? <LinearProgress aria-label="Reading sources" sx={{ mt: 1.25, borderRadius: 1 }} /> : null}
+
+      <Button
+        size="small"
+        color="inherit"
+        startIcon={<PersonAddOutlinedIcon sx={{ fontSize: 18 }} />}
+        onClick={onAddParty}
+        disabled={disabled}
+        sx={{
+          ...draftBodySx,
+          textTransform: 'none',
+          justifyContent: 'flex-start',
+          px: 0.75,
+          mb: 0.75,
+          ml: -0.75,
+          color: 'text.primary',
+        }}
+      >
+        Add party
+      </Button>
+
+      <Box sx={{ position: 'relative' }}>
+        <TextField
+          fullWidth
+          multiline
+          minRows={4}
+          maxRows={8}
+          variant="standard"
+          placeholder="Ask a question about this document"
+          value={message}
+          disabled={disabled}
+          onChange={(event) => setMessage(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault()
+              submit()
+            }
+          }}
+          slotProps={{
+            input: {
+              disableUnderline: true,
+              sx: {
+                ...draftBodySx,
+                fontSize: '0.9375rem',
+                alignItems: 'flex-start',
+                pr: 5,
+                pb: 0.5,
+                '&.Mui-focused': { outline: 'none' },
+                '&:before, &:after': { display: 'none' },
+              },
+            },
+          }}
+        />
+        <Box sx={{ position: 'absolute', right: 0, bottom: 0 }}>
+          <ComposerSendButton canSubmit={canSubmit} onClick={submit} />
+        </Box>
+      </Box>
     </Box>
   )
 }
@@ -179,9 +385,9 @@ export function FnolConversationPage() {
   const [mode, setMode] = useState<FnolIntakeMode>('narrative')
   const [editing, setEditing] = useState<string | null>(null)
   const [knownOpen, setKnownOpen] = useState(false)
-  const [partyWhere, setPartyWhere] = useState<PartyWhere | null>(null)
+  const [addingParty, setAddingParty] = useState(false)
   const [partySeed, setPartySeed] = useState<FnolPartyRole>('Claimant')
-  const [policyLookupWhere, setPolicyLookupWhere] = useState<PartyWhere | null>(null)
+  const [policyLookupWhere, setPolicyLookupWhere] = useState<LookupWhere | null>(null)
   const [attachKey, setAttachKey] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -210,7 +416,7 @@ export function FnolConversationPage() {
 
   useEffect(() => {
     threadEnd.current?.scrollIntoView({ block: 'end' })
-  }, [messages, partyWhere, policyLookupWhere])
+  }, [messages, addingParty, policyLookupWhere])
 
   useEffect(
     () => () => {
@@ -227,11 +433,11 @@ export function FnolConversationPage() {
     if (stacked) setPane('conversation')
   }
 
-  const openPartyForm = (where: PartyWhere, seed: FnolPartyRole = 'Claimant') => {
+  const openPartyForm = (seed: FnolPartyRole = 'Claimant') => {
     setPartySeed(seed)
-    setPartyWhere(where)
+    setAddingParty(true)
     setEditing(null)
-    if (where === 'thread') showConversation()
+    showConversation()
   }
 
   const applyChange = (nextDraft: typeof draft, nextParties: FnolParty[] = parties) => {
@@ -276,7 +482,7 @@ export function FnolConversationPage() {
         : []),
     ])
     setPolicyLookupWhere(null)
-    setPartyWhere(null)
+    setAddingParty(false)
     const snapshot = { draft, parties, mode }
     const apply = () => ingestFnolTurn({ ...snapshot, text, files: names })
     if (!reading) {
@@ -300,7 +506,7 @@ export function FnolConversationPage() {
   }
 
   const submitParty = (input: { role: FnolPartyRole; name: string; contact: string }) => {
-    setPartyWhere(null)
+    setAddingParty(false)
     finishTurn(addFnolParty(draft, parties, input))
   }
 
@@ -332,7 +538,7 @@ export function FnolConversationPage() {
       parties: parties.map(({ name, role, contact }) => ({ name, role, contact })),
     })
     setSubmitted(true)
-    setPartyWhere(null)
+    setAddingParty(false)
     setEditing(null)
     const owner = draft.assignee === CLAIM_CURRENT_USER || !draft.assignee ? 'you' : draft.assignee
     pushAssistant(`Claim ${draft.claimNumber} is submitted and assigned to ${owner}. Open it to continue handling.`)
@@ -340,10 +546,6 @@ export function FnolConversationPage() {
 
   const onSuggestion = (action: string) => {
     if (submitted || busy) return
-    if (action === 'Add a party') {
-      openPartyForm('thread')
-      return
-    }
     if (action === 'Match a policy') {
       setPolicyLookupWhere('thread')
       setEditing(null)
@@ -382,8 +584,7 @@ export function FnolConversationPage() {
       return
     }
     if (field === 'witness') {
-      openPartyForm('tally', 'Witness')
-      if (stacked) setPane('tally')
+      openPartyForm('Witness')
       return
     }
     if (field === 'policy' && draft.policy == null) {
@@ -538,9 +739,9 @@ export function FnolConversationPage() {
     return null
   }
 
-  const partyForm = (where: PartyWhere) =>
-    partyWhere === where && !submitted ? (
-      <FnolPartyForm key={`${where}-${partySeed}`} seed={partySeed} onSubmit={submitParty} onCancel={() => setPartyWhere(null)} />
+  const partyForm =
+    addingParty && !submitted ? (
+      <FnolPartyForm key={partySeed} seed={partySeed} onSubmit={submitParty} onCancel={() => setAddingParty(false)} />
     ) : null
 
   const conversationVisible = !stacked || pane === 'conversation'
@@ -614,7 +815,7 @@ export function FnolConversationPage() {
             borderColor: 'divider',
           }}
         >
-          <Box role="log" aria-live="polite" aria-relevant="additions" aria-busy={busy} sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: `${layoutTokens.contentPaddingX}px`, py: 2.5 }}>
+          <Box role="log" aria-live="polite" aria-relevant="additions" aria-busy={busy} sx={{ flex: '1 1 auto', minHeight: 140, overflowY: 'auto', px: `${layoutTokens.contentPaddingX}px`, py: 2.5 }}>
             {messages.map((message) =>
               message.role === 'user' ? (
                 <UserTurn key={message.id} text={message.text} />
@@ -622,11 +823,30 @@ export function FnolConversationPage() {
                 <AssistantTurn key={message.id} text={message.text} pending={message.pending} />
               ),
             )}
-            {partyForm('thread')}
             {policyLookupWhere === 'thread' ? <Box sx={{ maxWidth: 480, mb: 2 }}>{policyLookup()}</Box> : null}
             <Box ref={threadEnd} />
           </Box>
-          <Box sx={{ flexShrink: 0, px: `${layoutTokens.contentPaddingX}px`, pt: 1, pb: 2, borderTop: 1, borderColor: 'divider' }}>
+          <Box
+            sx={{
+              flex: '0 1 auto',
+              minHeight: 0,
+              overflowY: 'auto',
+              px: `${layoutTokens.contentPaddingX}px`,
+              pt: 1.25,
+              pb: 1.25,
+              borderTop: 1,
+              borderColor: 'divider',
+            }}
+          >
+            <Stack spacing={1.25}>
+              <PartiesList parties={parties} readOnly={submitted} onRemove={removeParty} />
+              {partyForm}
+              {submitted ? null : (
+                <PartiesComposer disabled={busy} onSend={(text) => send(text)} onAddParty={() => openPartyForm()} />
+              )}
+            </Stack>
+          </Box>
+          <Box sx={{ flexShrink: 0, px: `${layoutTokens.contentPaddingX}px`, pt: 0.5, pb: 2 }}>
             {submitted ? (
               <Button variant="contained" onClick={() => navigate(`/claims/${encodeURIComponent(draft.claimNumber)}`)}>
                 Open claim
@@ -647,11 +867,7 @@ export function FnolConversationPage() {
                   minRows={2}
                   showDisclaimer={false}
                   showModeSelector={false}
-                  placeholder={
-                    mode === 'caller'
-                      ? 'Who is calling, and what happened?'
-                      : 'Describe the loss. You can add a party at any time.'
-                  }
+                  placeholder={mode === 'caller' ? 'Who is calling, and what happened?' : 'Describe the loss, or attach a notice.'}
                   attachRequestKey={attachKey}
                   onSubmit={send}
                 />
@@ -679,57 +895,7 @@ export function FnolConversationPage() {
               Known facts, needs attention, and considerations update as you talk.
             </Typography>
           </Box>
-          <Box sx={{ mx: 2, mb: 1, border: 1, borderColor: 'divider', borderRadius: `${layoutTokens.cardRadius}px` }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 1.5, py: 1 }}>
-              <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.875rem' }}>
-                {`Parties (${parties.length})`}
-              </Typography>
-              {submitted ? null : (
-                <Button
-                  size="small"
-                  startIcon={<PersonAddAltOutlinedIcon />}
-                  onClick={() => openPartyForm('tally')}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Add party
-                </Button>
-              )}
-            </Stack>
-            {parties.length === 0 ? (
-              <Typography sx={{ ...draftBodySx, color: 'text.secondary', px: 1.5, pb: 1.5 }}>
-                No parties yet. Add one here or from the conversation — this is not tied to a step.
-              </Typography>
-            ) : (
-              <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
-                {parties.map((party) => (
-                  <Stack
-                    key={party.id}
-                    component="li"
-                    direction="row"
-                    alignItems="center"
-                    spacing={1}
-                    sx={{ px: 1.5, py: 0.75, borderTop: 1, borderColor: 'divider' }}
-                  >
-                    <Box sx={{ minWidth: 0, flex: 1 }}>
-                      <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.8125rem' }}>
-                        {party.name}
-                      </Typography>
-                      <Typography sx={{ ...draftBodySx, color: 'text.secondary', fontSize: '0.75rem' }}>
-                        {party.contact ? `${party.role} · ${party.contact}` : party.role}
-                      </Typography>
-                    </Box>
-                    {submitted || party.role === 'Insured' ? null : (
-                      <IconButton size="small" aria-label={`Remove ${party.name}`} onClick={() => removeParty(party.id)}>
-                        <CloseIcon sx={{ fontSize: 16 }} />
-                      </IconButton>
-                    )}
-                  </Stack>
-                ))}
-              </Box>
-            )}
-            {partyWhere === 'tally' ? <Box sx={{ px: 1.5, pb: 1.5 }}>{partyForm('tally')}</Box> : null}
-            {policyLookupWhere === 'tally' ? <Box sx={{ px: 1.5, pb: 1.5 }}>{policyLookup()}</Box> : null}
-          </Box>
+          {policyLookupWhere === 'tally' ? <Box sx={{ px: 2, pb: 1.5 }}>{policyLookup()}</Box> : null}
           <DraftAccordions
             known={tally.known}
             attention={tally.attention}

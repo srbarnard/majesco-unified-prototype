@@ -563,7 +563,7 @@ export function fnolCanSubmit(draft: CreateClaimDraft, attention: FnolRow[]) {
 
 export function fnolSuggestions(draft: CreateClaimDraft, attention: FnolRow[], mode: FnolIntakeMode) {
   const fields = new Set(attention.map((row) => row.field))
-  const actions = ['Add a party']
+  const actions: string[] = []
   if (fields.has('driver')) actions.push('Refer to coverage')
   if (fields.has('airbag')) actions.push('Airbags deployed', 'Airbags did not deploy')
   if (!draft.policy) actions.push('Match a policy')
