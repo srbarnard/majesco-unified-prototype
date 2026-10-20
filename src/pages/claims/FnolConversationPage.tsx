@@ -1,3 +1,4 @@
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import AirlineSeatReclineNormalOutlinedIcon from '@mui/icons-material/AirlineSeatReclineNormalOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline'
@@ -7,6 +8,7 @@ import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
+import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined'
 import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -18,6 +20,7 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import MuiChip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
+import Link from '@mui/material/Link'
 import MenuItem from '@mui/material/MenuItem'
 import LinearProgress from '@mui/material/LinearProgress'
 import Stack from '@mui/material/Stack'
@@ -25,23 +28,28 @@ import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import { useTheme } from '@mui/material/styles'
+import { alpha, useTheme, type Theme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
+import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
-import { Chip, CopilotQuickActions, EntityListHomeButton } from '@/design-system/components'
+import { Button as DsButton, Chip, CopilotQuickActions, EntityListHomeButton } from '@/design-system/components'
 import { chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
+import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
+import { fadeSlideDownSx } from '@/design-system/tokens/motion'
 import { ClaimDateOfLossEdit } from '@/pages/claims/components/ClaimLossEditors'
 import { getClaim, upsertClaim } from '@/pages/claims/data/claimsStore'
 import {
   CLAIM_CURRENT_USER,
   CLAIM_QUEUES,
+  formatLossDate,
   recordFromDraft,
+  type CreateClaimDraft,
 } from '@/pages/claims/data/createClaimDraft'
 import {
   FNOL_OPENING,
@@ -75,6 +83,7 @@ import {
   type FnolParty,
   type FnolPartyRole,
 } from '@/pages/claims/data/fnolConversation'
+import { copilotSubtitleSx } from '@/pages/policies/components/copilot/copilotDrawerStyles'
 import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
 import type { CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
 import {
@@ -86,6 +95,7 @@ import {
   draftInputSx,
   draftPanelPx,
 } from '@/pages/shared/components/DraftDrawer'
+import { insuredIdFromName } from '@/pages/shared/insuredId'
 import { ADD_TASK_ASSIGNEES } from '@/pages/tasks/data/addTaskDraft'
 
 const ASSIGNEE_OPTIONS = [
@@ -93,6 +103,142 @@ const ASSIGNEE_OPTIONS = [
   ...CLAIM_QUEUES,
   ...ADD_TASK_ASSIGNEES.filter((name) => name !== CLAIM_CURRENT_USER && !/queue/i.test(name)),
 ]
+
+const START_ANOTHER_CLAIM = 'Create another claim'
+
+const confirmationLinkSx = (theme: Theme) => ({
+  ...draftBodySx,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 0.5,
+  px: 1,
+  py: 0.5,
+  borderRadius: 1.5,
+  transition: 'background-color 0.15s ease, color 0.15s ease',
+  '&:hover': {
+    bgcolor: getFigmaColors(theme.palette.mode).primary.hover,
+    color: 'primary.main',
+  },
+  '&:active': { bgcolor: getFigmaColors(theme.palette.mode).primary.selected },
+})
+
+function assigneeLabel(name: string) {
+  return name === CLAIM_CURRENT_USER ? 'You' : name
+}
+
+function FnolSubmitConfirmation({
+  draft,
+  insuredName,
+  onClose,
+  onStartAnother,
+  onOpen,
+}: {
+  draft: CreateClaimDraft
+  insuredName: string | null
+  onClose: () => void
+  onStartAnother: () => void
+  onOpen: (path: string) => void
+}) {
+  const assignedTo = draft.assignee ?? CLAIM_CURRENT_USER
+  const confirmationRows: { term: string; value: string; href?: string }[] = [
+    { term: 'Claim', value: draft.claimNumber, href: `/claims/${encodeURIComponent(draft.claimNumber)}` },
+    ...(insuredName
+      ? [
+          {
+            term: 'Insured',
+            value: insuredName,
+            href: CLAIMS_ONLY ? undefined : `/insureds/${insuredIdFromName(insuredName)}`,
+          },
+        ]
+      : []),
+    ...(draft.policy
+      ? [
+          {
+            term: 'Policy',
+            value: `${draft.policy.policyNumber} · ${draft.policy.product}`,
+            href: CLAIMS_ONLY ? undefined : `/policies/${encodeURIComponent(draft.policy.policyNumber)}`,
+          },
+        ]
+      : []),
+    ...(draft.dateOfLoss ? [{ term: 'Date of loss', value: formatLossDate(draft.dateOfLoss) }] : []),
+    { term: 'Assigned to', value: assigneeLabel(assignedTo) },
+  ]
+
+  return (
+    <Stack alignItems="center" sx={[{ pt: 4, pb: 2, textAlign: 'center' }, fadeSlideDownSx()]}>
+      <Box
+        aria-hidden
+        sx={(theme) => ({
+          width: 56,
+          height: 56,
+          borderRadius: '50%',
+          display: 'grid',
+          placeItems: 'center',
+          bgcolor: alpha(theme.palette.success.main, theme.palette.mode === 'dark' ? 0.2 : 0.12),
+          color: 'success.main',
+          mb: 1.5,
+        })}
+      >
+        <InventoryOutlinedIcon sx={{ fontSize: 28 }} />
+      </Box>
+      <Typography variant="subtitle1" sx={{ ...copilotSubtitleSx, lineHeight: 1.35 }}>
+        Claim submitted
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ ...draftBodySx, mt: 0.5 }}>
+        {`Claim ${draft.claimNumber} submitted and assigned to ${assignedTo === CLAIM_CURRENT_USER ? 'you' : assignedTo}.`}
+      </Typography>
+
+      <Box sx={{ width: '100%', maxWidth: 480, mt: 3, textAlign: 'left' }}>
+        {confirmationRows.map(({ term, value, href }, index) => (
+          <Stack
+            key={term}
+            direction="row"
+            spacing={1.5}
+            alignItems="baseline"
+            sx={{ px: 1.5, py: 1, borderRadius: '5px', bgcolor: index % 2 === 0 ? 'action.hover' : 'background.paper' }}
+          >
+            <Typography variant="caption" color="text.primary" sx={{ ...draftBodySx, fontWeight: 600, width: 84, flexShrink: 0 }}>
+              {term}
+            </Typography>
+            {href ? (
+              <Link
+                component="button"
+                type="button"
+                variant="body2"
+                underline="hover"
+                onClick={() => onOpen(href)}
+                sx={{ ...draftBodySx, minWidth: 0, textAlign: 'left', wordBreak: 'break-word' }}
+              >
+                {value}
+              </Link>
+            ) : (
+              <Typography variant="body2" sx={{ ...draftBodySx, minWidth: 0, wordBreak: 'break-word' }}>
+                {value}
+              </Typography>
+            )}
+          </Stack>
+        ))}
+      </Box>
+
+      <Stack direction="row" alignItems="center" justifyContent="center" flexWrap="wrap" gap={0.5} sx={{ mt: 3 }}>
+        <DsButton size="small" variant="contained" color="primary" onClick={onClose}>
+          Close
+        </DsButton>
+        <Link
+          component="button"
+          type="button"
+          underline="none"
+          color="text.primary"
+          onClick={onStartAnother}
+          sx={confirmationLinkSx}
+        >
+          <AddCircleOutlineIcon sx={{ fontSize: 16 }} />
+          {START_ANOTHER_CLAIM}
+        </Link>
+      </Stack>
+    </Stack>
+  )
+}
 
 const RAIL_TOOLS = new Set(['notes', 'email', 'newTask'])
 
@@ -773,8 +919,32 @@ export function FnolConversationPage() {
     })
     setSubmitted(true)
     setEditing(null)
-    const owner = draft.assignee === CLAIM_CURRENT_USER || !draft.assignee ? 'you' : draft.assignee
-    pushAssistant(`Claim ${draft.claimNumber} is submitted and assigned to ${owner}. Open it to continue handling.`)
+    setEditingPartyId(null)
+    setPolicyLookupWhere(null)
+    setColumnTab('chat')
+    showConversation()
+  }
+
+  const startAnotherClaim = () => {
+    setDraft(createFnolDraft())
+    setParties([])
+    setMessages([{ id: 'opening', role: 'assistant', text: FNOL_OPENING, elapsedSeconds: 0.42 }])
+    setMode('narrative')
+    setEditing(null)
+    setEditingPartyId(null)
+    setKnownOpen(false)
+    setPartySeed('Claimant')
+    setPartyFormGeneration((generation) => generation + 1)
+    setPolicyLookupWhere(null)
+    setAttachKey(null)
+    setBusy(false)
+    setSubmitted(false)
+    setColumnTab('chat')
+    showConversation()
+    if (readTimer.current != null) {
+      window.clearTimeout(readTimer.current)
+      readTimer.current = null
+    }
   }
 
   const onSuggestion = (action: string) => {
@@ -1061,11 +1231,7 @@ export function FnolConversationPage() {
           </Typography>
         </Box>
       </Stack>
-      {submitted ? (
-        <Button variant="contained" onClick={() => navigate(`/claims/${encodeURIComponent(draft.claimNumber)}`)} sx={{ flexShrink: 0 }}>
-          Open claim
-        </Button>
-      ) : (
+      {submitted ? null : (
         <Button variant="contained" disabled={!canSubmit || busy} onClick={submit} sx={{ flexShrink: 0 }}>
           Submit claim
         </Button>
@@ -1146,6 +1312,16 @@ export function FnolConversationPage() {
                 {partyForm}
               </Stack>
             </Box>
+          ) : submitted ? (
+            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: `${layoutTokens.contentPaddingX}px`, py: 2.5 }}>
+              <FnolSubmitConfirmation
+                draft={draft}
+                insuredName={insured}
+                onClose={() => navigate('/claims')}
+                onStartAnother={startAnotherClaim}
+                onOpen={(path) => navigate(path)}
+              />
+            </Box>
           ) : (
             <>
           <Box role="log" aria-live="polite" aria-relevant="additions" aria-busy={busy} sx={{ flex: '1 1 auto', minHeight: 140, overflowY: 'auto', px: `${layoutTokens.contentPaddingX}px`, py: 2.5 }}>
@@ -1166,11 +1342,6 @@ export function FnolConversationPage() {
           </Box>
           <Box sx={{ flexShrink: 0, px: `${layoutTokens.contentPaddingX}px`, pb: 2 }}>
             <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 1 }}>
-            {submitted ? (
-              <Button variant="contained" onClick={() => navigate(`/claims/${encodeURIComponent(draft.claimNumber)}`)}>
-                Open claim
-              </Button>
-            ) : (
               <Stack spacing={1.25}>
                 {mode === 'caller' ? (
                   <MuiChip label="Caller on the phone" onDelete={() => setMode('narrative')} sx={{ alignSelf: 'flex-start' }} />
@@ -1186,7 +1357,6 @@ export function FnolConversationPage() {
                   onSubmit={send}
                 />
               </Stack>
-            )}
             </Box>
           </Box>
             </>
