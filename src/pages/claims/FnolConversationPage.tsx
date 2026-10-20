@@ -30,7 +30,7 @@ import { useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
 import { CopilotQuickActions, EntityListHomeButton } from '@/design-system/components'
-import { accentSubtle, chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -183,62 +183,32 @@ function PartyRoleOptions({
   onPick: (role: FnolPartyRole) => void
 }) {
   return (
-    <Box
-      role="group"
-      aria-label="Party role"
-      sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 1 }}
-    >
+    <Stack direction="row" role="group" aria-label="Party role" flexWrap="wrap" useFlexGap spacing={1}>
       {FNOL_PARTY_ROLES.map((option) => {
         const isSelected = option === selected
         return (
-          <Box
+          <Chip
             key={option}
-            component="button"
-            type="button"
+            label={option}
             aria-pressed={isSelected}
             onClick={() => onPick(option)}
             sx={{
-              m: 0,
-              cursor: 'pointer',
-              textAlign: 'left',
-              font: 'inherit',
-              borderRadius: `${layoutTokens.cardRadius}px`,
-              borderWidth: isSelected ? 2 : 1,
-              borderStyle: 'solid',
+              fontFamily: figmaFontFamilyStack.body,
+              fontWeight: isSelected ? 600 : 500,
+              fontSize: '0.8125rem',
+              bgcolor: isSelected ? 'primary.main' : 'background.paper',
+              color: isSelected ? 'primary.contrastText' : 'text.secondary',
+              border: '1px solid',
               borderColor: isSelected ? 'primary.main' : 'divider',
-              bgcolor: isSelected ? (theme) => accentSubtle(theme) : 'background.paper',
-              px: isSelected ? '15px' : 2,
-              py: isSelected ? '15px' : 2,
-              color: 'text.primary',
-              transition: 'border-color 0.15s ease, background-color 0.15s ease',
               '&:hover': {
-                borderColor: isSelected ? 'primary.main' : 'text.secondary',
-                bgcolor: isSelected ? (theme) => accentSubtle(theme) : 'background.paper',
-              },
-              '&:focus-visible': {
-                outline: 2,
-                outlineColor: 'primary.main',
-                outlineOffset: 2,
+                bgcolor: isSelected ? 'primary.dark' : 'background.paper',
+                borderColor: isSelected ? 'primary.dark' : 'text.secondary',
               },
             }}
-          >
-            <Typography
-              component="span"
-              sx={{
-                display: 'block',
-                fontFamily: figmaFontFamilyStack.heading,
-                fontWeight: isSelected ? 600 : 500,
-                fontSize: '0.875rem',
-                lineHeight: 1.3,
-                color: isSelected ? 'primary.main' : 'text.primary',
-              }}
-            >
-              {option}
-            </Typography>
-          </Box>
+          />
         )
       })}
-    </Box>
+    </Stack>
   )
 }
 
