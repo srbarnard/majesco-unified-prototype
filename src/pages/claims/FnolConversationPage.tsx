@@ -17,7 +17,7 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
@@ -100,17 +100,6 @@ type FnolMessage = { id: string; role: 'user' | 'assistant'; text: string; pendi
 type LookupWhere = 'thread' | 'tally'
 type FnolColumnTab = 'chat' | 'parties'
 
-/** Outlined field with the label inside the border, including when it floats. */
-const partyFieldSx = {
-  '& .MuiInputLabel-root.MuiInputLabel-shrink': {
-    transform: 'translate(14px, 4px) scale(0.75)',
-  },
-  '& .MuiOutlinedInput-input': {
-    paddingTop: '18px',
-    paddingBottom: '6px',
-  },
-} as const
-
 const fnolColumnTabSx = {
   minHeight: 44,
   '& .MuiTabs-scrollButtons': { width: 28 },
@@ -136,6 +125,48 @@ function messageId() {
   return `fnol-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
 }
 
+function PartyTextField({
+  label,
+  value,
+  onChange,
+  autoFocus = false,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  autoFocus?: boolean
+}) {
+  const id = useId()
+  return (
+    <Box>
+      <Typography
+        component="label"
+        htmlFor={id}
+        sx={{
+          display: 'block',
+          mb: 0.5,
+          fontFamily: figmaFontFamilyStack.body,
+          fontWeight: 500,
+          fontSize: '0.875rem',
+          lineHeight: 1.4,
+          color: 'text.primary',
+        }}
+      >
+        {label}
+      </Typography>
+      <TextField
+        id={id}
+        fullWidth
+        variant="outlined"
+        size="small"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        autoFocus={autoFocus}
+      />
+    </Box>
+  )
+}
+
 function FnolPartyForm({
   seed,
   onSubmit,
@@ -149,48 +180,22 @@ function FnolPartyForm({
   const [name, setName] = useState('')
   const [contact, setContact] = useState('')
   return (
-    <Box sx={{ border: 1, borderColor: 'divider', borderRadius: `${layoutTokens.cardRadius}px`, p: 1.5 }}>
-      <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.875rem', mb: 1 }}>
+    <Stack spacing={1.5}>
+      <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.875rem' }}>
         Add party
       </Typography>
       <DraftInlineOptions options={[...FNOL_PARTY_ROLES]} selected={role} onPick={(next) => setRole(next as FnolPartyRole)} />
-      <Stack spacing={1.5} sx={{ mt: 1.25 }}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          size="small"
-          label="Name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          autoFocus
-          sx={partyFieldSx}
-          slotProps={{ input: { notched: false } }}
-        />
-        <TextField
-          fullWidth
-          variant="outlined"
-          size="small"
-          label="Phone or email"
-          value={contact}
-          onChange={(event) => setContact(event.target.value)}
-          sx={partyFieldSx}
-          slotProps={{ input: { notched: false } }}
-        />
-        <Stack direction="row" spacing={1}>
-          <Button
-            size="small"
-            variant="contained"
-            disabled={!name.trim()}
-            onClick={() => onSubmit({ role, name, contact })}
-          >
-            Add party
-          </Button>
-          <Button size="small" color="inherit" onClick={onCancel}>
-            Cancel
-          </Button>
-        </Stack>
+      <PartyTextField label="Name" value={name} onChange={setName} autoFocus />
+      <PartyTextField label="Phone or email" value={contact} onChange={setContact} />
+      <Stack direction="row" spacing={1}>
+        <Button size="small" variant="contained" disabled={!name.trim()} onClick={() => onSubmit({ role, name, contact })}>
+          Add party
+        </Button>
+        <Button size="small" color="inherit" onClick={onCancel}>
+          Cancel
+        </Button>
       </Stack>
-    </Box>
+    </Stack>
   )
 }
 
