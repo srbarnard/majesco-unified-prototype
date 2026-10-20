@@ -1,6 +1,7 @@
 import AirlineSeatReclineNormalOutlinedIcon from '@mui/icons-material/AirlineSeatReclineNormalOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline'
+import CheckIcon from '@mui/icons-material/Check'
 import CloseIcon from '@mui/icons-material/Close'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
@@ -17,6 +18,7 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
+import MenuItem from '@mui/material/MenuItem'
 import LinearProgress from '@mui/material/LinearProgress'
 import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
@@ -25,12 +27,12 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
 import { CopilotQuickActions, EntityListHomeButton } from '@/design-system/components'
-import { accentSubtle, chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
@@ -44,6 +46,7 @@ import {
 import {
   FNOL_OPENING,
   FNOL_PARTY_ROLES,
+  FNOL_STATE_CHOICES,
   FNOL_POLICY_NUMBERS,
   addFnolParty,
   assignFnolPolicy,
@@ -57,7 +60,6 @@ import {
   fnolPolicySearch,
   fnolPolicySubtitle,
   fnolReply,
-  fnolStateFromText,
   fnolStateLabel,
   formatFnolContact,
   fnolSuggestions,
@@ -80,6 +82,7 @@ import {
   DraftInlineOptions,
   DraftInlineTextEdit,
   draftBodySx,
+  draftInputSx,
   draftPanelPx,
 } from '@/pages/shared/components/DraftDrawer'
 import { ADD_TASK_ASSIGNEES } from '@/pages/tasks/data/addTaskDraft'
@@ -216,27 +219,31 @@ function PartyRoleOptions({
 
 function FnolPartyForm({
   seed,
-  initialName = '',
-  initialContact = '',
-  mode,
   onSubmit,
   onCancel,
 }: {
   seed: FnolPartyRole
-  initialName?: string
-  initialContact?: string
-  mode: 'add' | 'edit'
   onSubmit: (party: { role: FnolPartyRole; name: string; contact: string }) => void
   onCancel: () => void
 }) {
   const [role, setRole] = useState<FnolPartyRole>(seed === 'Insured' ? 'Claimant' : seed)
-  const [name, setName] = useState(initialName)
-  const [contact, setContact] = useState(initialContact)
-  const editing = mode === 'edit'
+  const [name, setName] = useState('')
+  const [contact, setContact] = useState('')
+  const submit = () => {
+    if (!name.trim()) return
+    onSubmit({ role, name, contact })
+  }
   return (
-    <Stack spacing={1.5}>
+    <Stack
+      spacing={1.5}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' || !(event.target instanceof HTMLInputElement)) return
+        event.preventDefault()
+        submit()
+      }}
+    >
       <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.875rem' }}>
-        {editing ? 'Edit party' : 'Add party'}
+        Add party
       </Typography>
       <PartyRoleOptions selected={role} onPick={setRole} />
       <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
@@ -244,14 +251,133 @@ function FnolPartyForm({
         <PartyTextField label="Phone or email" value={contact} onChange={setContact} />
       </Box>
       <Stack direction="row" spacing={1}>
-        <Button size="small" variant="contained" disabled={!name.trim()} onClick={() => onSubmit({ role, name, contact })}>
-          {editing ? 'Save' : 'Add party'}
+        <Button size="small" variant="contained" disabled={!name.trim()} onClick={submit}>
+          Add party
         </Button>
         <Button size="small" color="inherit" onClick={onCancel}>
           Cancel
         </Button>
       </Stack>
     </Stack>
+  )
+}
+
+function PartyInlineEdit({
+  party,
+  onSave,
+  onDismiss,
+}: {
+  party: FnolParty
+  onSave: (input: { role: FnolPartyRole; name: string; contact: string }) => void
+  onDismiss: () => void
+}) {
+  const [role, setRole] = useState<FnolPartyRole>(party.role === 'Insured' ? 'Claimant' : party.role)
+  const [name, setName] = useState(party.name)
+  const [contact, setContact] = useState(party.contact ? formatFnolContact(party.contact) : '')
+  const save = () => {
+    if (!name.trim()) {
+      onDismiss()
+      return
+    }
+    onSave({ role, name, contact })
+  }
+  return (
+    <Stack
+      spacing={1}
+      sx={{ pl: 7, pr: 2, pb: 1.5 }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') onDismiss()
+        if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
+          event.preventDefault()
+          save()
+        }
+      }}
+    >
+      <PartyRoleOptions selected={role} onPick={setRole} />
+      <TextField
+        size="small"
+        fullWidth
+        autoFocus
+        value={name}
+        helperText="Name"
+        onChange={(event) => setName(event.target.value)}
+        inputProps={{ 'aria-label': 'Name' }}
+        FormHelperTextProps={{ sx: { fontFamily: figmaFontFamilyStack.body, mx: 0 } }}
+        sx={draftInputSx}
+      />
+      <TextField
+        size="small"
+        fullWidth
+        value={contact}
+        helperText="Phone or email"
+        onChange={(event) => setContact(event.target.value)}
+        inputProps={{ 'aria-label': 'Phone or email' }}
+        FormHelperTextProps={{ sx: { fontFamily: figmaFontFamilyStack.body, mx: 0 } }}
+        sx={draftInputSx}
+        InputProps={{
+          endAdornment: (
+            <IconButton
+              size="small"
+              edge="end"
+              aria-label="Save party"
+              disabled={!name.trim()}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={save}
+              sx={{ color: 'primary.main' }}
+            >
+              <CheckIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          ),
+        }}
+      />
+    </Stack>
+  )
+}
+
+function FnolStateSelect({
+  code,
+  onCommit,
+  onDismiss,
+}: {
+  code: string
+  onCommit: (code: string) => void
+  onDismiss: () => void
+}) {
+  return (
+    <TextField
+      select
+      fullWidth
+      size="small"
+      value={code}
+      autoFocus
+      helperText="State"
+      onChange={(event) => {
+        if (event.target.value) onCommit(event.target.value)
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') onDismiss()
+      }}
+      SelectProps={{
+        displayEmpty: true,
+        defaultOpen: true,
+        renderValue: (selected) => {
+          const value = String(selected ?? '')
+          return value ? fnolStateLabel(value) : 'State'
+        },
+      }}
+      inputProps={{ 'aria-label': 'State' }}
+      FormHelperTextProps={{ sx: { fontFamily: figmaFontFamilyStack.body, mx: 0 } }}
+      sx={draftInputSx}
+    >
+      <MenuItem value="" disabled>
+        State
+      </MenuItem>
+      {FNOL_STATE_CHOICES.map((state) => (
+        <MenuItem key={state.code} value={state.code}>
+          {state.name}
+        </MenuItem>
+      ))}
+    </TextField>
   )
 }
 
@@ -314,12 +440,14 @@ function PartiesList({
   editingId,
   onEdit,
   onRemove,
+  renderEditor,
 }: {
   parties: FnolParty[]
   readOnly: boolean
   editingId: string | null
   onEdit: (id: string) => void
   onRemove: (id: string) => void
+  renderEditor: (party: FnolParty) => ReactNode
 }) {
   if (parties.length === 0) return null
   const radius = `${layoutTokens.cardRadius}px`
@@ -335,15 +463,10 @@ function PartiesList({
         const editable = !readOnly && party.role !== 'Insured'
         const selected = editingId === party.id
         return (
-          <Stack
+          <Box
             key={party.id}
             component="li"
-            direction="row"
-            alignItems="center"
-            spacing={0.5}
             sx={{
-              py: 0.5,
-              pr: 1,
               borderTopLeftRadius: isFirst ? radius : 0,
               borderTopRightRadius: isFirst ? radius : 0,
               borderBottomLeftRadius: isLast ? radius : 0,
@@ -352,6 +475,7 @@ function PartiesList({
               boxShadow: (theme) => (selected ? `inset 3px 0 0 ${theme.palette.primary.main}` : 'none'),
             }}
           >
+            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ py: 0.5, pr: 1 }}>
             <Box
               component={editable ? 'button' : 'div'}
               type={editable ? 'button' : undefined}
@@ -418,7 +542,9 @@ function PartiesList({
                 <CloseIcon sx={{ fontSize: 16 }} />
               </IconButton>
             ) : null}
-          </Stack>
+            </Stack>
+            {selected ? renderEditor(party) : null}
+          </Box>
         )
       })}
     </Stack>
@@ -517,11 +643,6 @@ export function FnolConversationPage() {
     showConversation()
   }
 
-  const resetPartyForm = () => {
-    setEditingPartyId(null)
-    setPartyFormGeneration((generation) => generation + 1)
-  }
-
   const editParty = (id: string) => {
     if (submitted) return
     const party = parties.find((item) => item.id === id)
@@ -600,9 +721,13 @@ export function FnolConversationPage() {
   }
 
   const submitParty = (input: { role: FnolPartyRole; name: string; contact: string }) => {
-    if (editingPartyId) finishTurn(updateFnolParty(draft, parties, editingPartyId, input))
-    else finishTurn(addFnolParty(draft, parties, input))
-    resetPartyForm()
+    finishTurn(addFnolParty(draft, parties, input))
+    setPartyFormGeneration((generation) => generation + 1)
+  }
+
+  const saveParty = (id: string, input: { role: FnolPartyRole; name: string; contact: string }) => {
+    finishTurn(updateFnolParty(draft, parties, id, input))
+    setEditingPartyId(null)
   }
 
   const removeParty = (id: string) => {
@@ -610,7 +735,7 @@ export function FnolConversationPage() {
     const result = removeFnolParty(draft, parties, id)
     setDraft(result.draft)
     setParties(result.parties)
-    if (editingPartyId === id) resetPartyForm()
+    if (editingPartyId === id) setEditingPartyId(null)
     if (!party) return
     const next = buildFnolTally(result.draft, result.parties, true).attention[0]
     pushAssistant(next ? `Removed ${party.name}. ${fnolAsk(next.field, next.term)}` : `Removed ${party.name}.`)
@@ -731,14 +856,13 @@ export function FnolConversationPage() {
       )
     }
     if (field === 'location') {
-      return textEdit('State', draft.location ? fnolStateLabel(draft.location) : '', (value) => {
-        const state = fnolStateFromText(value)
-        if (!state) {
-          setEditing(null)
-          return
-        }
-        applyChange({ ...draft, location: state })
-      })
+      return (
+        <FnolStateSelect
+          code={draft.location ?? ''}
+          onCommit={(state) => applyChange({ ...draft, location: state })}
+          onDismiss={() => setEditing(null)}
+        />
+      )
     }
     if (field === 'description') {
       return textEdit('What happened', draft.description ?? '', (description) => applyChange({ ...draft, description }), true)
@@ -831,23 +955,19 @@ export function FnolConversationPage() {
     return null
   }
 
-  const editingParty = parties.find((party) => party.id === editingPartyId) ?? null
   const partyForm = submitted ? null : (
     <Box
       sx={(theme) => ({
-        bgcolor: accentSubtle(theme),
+        bgcolor: surfaceMuted(theme),
         borderRadius: `${layoutTokens.cardRadius}px`,
         p: 2,
       })}
     >
       <FnolPartyForm
-        key={editingParty ? editingParty.id : `${partySeed}-${partyFormGeneration}`}
-        seed={editingParty?.role ?? partySeed}
-        initialName={editingParty?.name ?? ''}
-        initialContact={editingParty?.contact ? formatFnolContact(editingParty.contact) : ''}
-        mode={editingParty ? 'edit' : 'add'}
+        key={`${partySeed}-${partyFormGeneration}`}
+        seed={partySeed}
         onSubmit={submitParty}
-        onCancel={resetPartyForm}
+        onCancel={() => setPartyFormGeneration((generation) => generation + 1)}
       />
     </Box>
   )
@@ -958,9 +1078,17 @@ export function FnolConversationPage() {
                 <PartiesList
                   parties={parties}
                   readOnly={submitted}
-                  editingId={editingParty?.id ?? null}
+                  editingId={editingPartyId}
                   onEdit={editParty}
                   onRemove={removeParty}
+                  renderEditor={(party) => (
+                    <PartyInlineEdit
+                      key={party.id}
+                      party={party}
+                      onSave={(input) => saveParty(party.id, input)}
+                      onDismiss={() => setEditingPartyId(null)}
+                    />
+                  )}
                 />
                 {partyForm}
               </Stack>

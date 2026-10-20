@@ -272,6 +272,10 @@ const FNOL_STATE_NAMES: Record<string, string> = {
   WY: 'Wyoming',
 }
 
+export const FNOL_STATE_CHOICES = Object.entries(FNOL_STATE_NAMES)
+  .map(([code, name]) => ({ code, name }))
+  .sort((a, b) => a.name.localeCompare(b.name))
+
 const FNOL_STATE_NAME_PATTERN = new RegExp(
   `\\b(${Object.values(FNOL_STATE_NAMES)
     .sort((a, b) => b.length - a.length)
