@@ -245,7 +245,7 @@ function FnolPartyForm({
         <Button variant="contained" disabled={!name.trim()} onClick={submit}>
           Add
         </Button>
-        <Button size="small" color="inherit" onClick={onCancel}>
+        <Button color="inherit" onClick={onCancel}>
           Cancel
         </Button>
       </Stack>
