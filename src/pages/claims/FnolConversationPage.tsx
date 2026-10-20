@@ -16,7 +16,7 @@ import type { SvgIconComponent } from '@mui/icons-material'
 import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
+import MuiChip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import MenuItem from '@mui/material/MenuItem'
 import LinearProgress from '@mui/material/LinearProgress'
@@ -31,7 +31,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
-import { Chip as DesignChip, CopilotQuickActions, EntityListHomeButton } from '@/design-system/components'
+import { Chip, CopilotQuickActions, EntityListHomeButton } from '@/design-system/components'
 import { chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -192,12 +192,12 @@ function PartyRoleOptions({
       {FNOL_PARTY_ROLES.map((option) => {
         const isSelected = option === selected
         return (
-          <DesignChip
+          <Chip
             key={option}
             label={option}
             clickable
+            color="primary"
             variant={isSelected ? 'filled' : 'outlined'}
-            color={isSelected ? 'primary' : 'default'}
             aria-pressed={isSelected}
             onClick={() => onPick(option)}
           />
@@ -240,9 +240,9 @@ function FnolPartyForm({
         <PartyTextField label="Name" value={name} onChange={setName} autoFocus />
         <PartyTextField label="Phone or email" value={contact} onChange={setContact} />
       </Box>
-      <Stack direction="row" spacing={1}>
+      <Stack direction="row" spacing={1} sx={{ pt: 1.5 }}>
         <Button size="small" variant="contained" disabled={!name.trim()} onClick={submit}>
-          Add party
+          Add
         </Button>
         <Button size="small" color="inherit" onClick={onCancel}>
           Cancel
@@ -950,7 +950,7 @@ export function FnolConversationPage() {
       sx={(theme) => ({
         bgcolor: surfaceMuted(theme),
         borderRadius: `${layoutTokens.cardRadius}px`,
-        p: 2,
+        p: 3,
       })}
     >
       <FnolPartyForm
@@ -1105,7 +1105,7 @@ export function FnolConversationPage() {
             ) : (
               <Stack spacing={1.25}>
                 {mode === 'caller' ? (
-                  <Chip label="Caller on the phone" onDelete={() => setMode('narrative')} sx={{ alignSelf: 'flex-start' }} />
+                  <MuiChip label="Caller on the phone" onDelete={() => setMode('narrative')} sx={{ alignSelf: 'flex-start' }} />
                 ) : null}
                 <CopilotQuickActions actions={busy ? [] : suggestions} onAction={onSuggestion} />
                 {canSubmit ? (
