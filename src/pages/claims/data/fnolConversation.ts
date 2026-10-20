@@ -121,11 +121,27 @@ export function partiesFromText(text: string): Array<Omit<FnolParty, 'id'> & { i
   return found.map((party) => ({ ...party, contact }))
 }
 
+/** A 10-digit US phone number is stored as (212) 961-6346. Emails and other text stay as entered. */
+export function formatFnolContact(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed || trimmed.includes('@') || /[a-z]/i.test(trimmed)) return trimmed
+  const digits = trimmed.replace(/\D/g, '')
+  if (digits.length !== 10) return trimmed
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
+function storedContact(contact: string | null) {
+  if (!contact) return null
+  const formatted = formatFnolContact(contact)
+  return formatted || null
+}
+
 function ensureParty(parties: FnolParty[], role: FnolPartyRole, name: string, contact: string | null): FnolParty[] {
+  const nextContact = storedContact(contact)
   const existing = parties.find((party) => party.role === role && party.name.toLowerCase() === name.toLowerCase())
-  if (!existing) return [...parties, { id: fnolId('party'), role, name, contact }]
-  if (contact && existing.contact !== contact) {
-    return parties.map((party) => (party.id === existing.id ? { ...party, contact } : party))
+  if (!existing) return [...parties, { id: fnolId('party'), role, name, contact: nextContact }]
+  if (nextContact && existing.contact !== nextContact) {
+    return parties.map((party) => (party.id === existing.id ? { ...party, contact: nextContact } : party))
   }
   return parties
 }
@@ -472,12 +488,52 @@ export function addFnolParty(
   input: { role: FnolPartyRole; name: string; contact: string },
 ) {
   const name = input.name.trim()
-  const contact = input.contact.trim() || null
+  const contact = storedContact(input.contact)
   if (!name || input.role === 'Insured') return { draft, parties, captured: [] as string[] }
   const before = { draft, parties }
   const nextParties = ensureParty(parties, input.role, name, contact)
   const stored = nextParties.find((party) => party.role === input.role && party.name.toLowerCase() === name.toLowerCase())
   const nextDraft = stored ? applyPartyToDraft(draft, stored) : draft
+  const synced = syncFnolParties(nextDraft, nextParties)
+  return { draft: nextDraft, parties: synced, captured: fnolCaptured(before, { draft: nextDraft, parties: synced }) }
+}
+
+function clearPartyFromDraft(draft: CreateClaimDraft, party: FnolParty): CreateClaimDraft {
+  let next = draft
+  if (party.role === 'Reporter' && draft.reporter?.name === party.name) next = { ...next, reporter: null }
+  if (party.role === 'Claimant' && draft.claimant?.name === party.name) next = { ...next, claimant: null }
+  if (party.role === 'Driver' && draft.driver?.name === party.name) next = { ...next, driver: null }
+  if (party.role === 'Injured' && next.injuries?.includes(party.name)) {
+    const remaining = next.injuries.split('; ').filter((line) => !line.includes(party.name))
+    next = { ...next, injuries: remaining.length > 0 ? remaining.join('; ') : null }
+  }
+  return next
+}
+
+export function updateFnolParty(
+  draft: CreateClaimDraft,
+  parties: FnolParty[],
+  id: string,
+  input: { role: FnolPartyRole; name: string; contact: string },
+) {
+  const current = parties.find((party) => party.id === id)
+  const name = input.name.trim()
+  if (!current || current.role === 'Insured' || !name || input.role === 'Insured') {
+    return { draft, parties, captured: [] as string[] }
+  }
+  const contact = storedContact(input.contact)
+  const before = { draft, parties }
+  const identityChanged = current.role !== input.role || current.name.toLowerCase() !== name.toLowerCase()
+  let nextDraft = identityChanged ? clearPartyFromDraft(draft, current) : draft
+  const nextParties = parties.map((party) => (party.id === id ? { ...party, role: input.role, name, contact } : party))
+  const stored = nextParties.find((party) => party.id === id)
+  if (stored && identityChanged) nextDraft = applyPartyToDraft(nextDraft, stored)
+  if (stored && !identityChanged && current.role === 'Claimant' && current.contact !== contact) {
+    nextDraft = { ...nextDraft, claimant: { name, email: contact?.includes('@') ? contact : null } }
+  }
+  if (stored && !identityChanged && current.role === 'Injured' && current.contact !== contact) {
+    nextDraft = applyPartyToDraft(clearPartyFromDraft(nextDraft, current), stored)
+  }
   const synced = syncFnolParties(nextDraft, nextParties)
   return { draft: nextDraft, parties: synced, captured: fnolCaptured(before, { draft: nextDraft, parties: synced }) }
 }
@@ -491,15 +547,7 @@ export function setFnolPartyContact(draft: CreateClaimDraft, parties: FnolParty[
 export function removeFnolParty(draft: CreateClaimDraft, parties: FnolParty[], id: string) {
   const party = parties.find((item) => item.id === id)
   if (!party || party.role === 'Insured') return { draft, parties }
-  let next = draft
-  if (party.role === 'Reporter' && draft.reporter?.name === party.name) next = { ...next, reporter: null }
-  if (party.role === 'Claimant' && draft.claimant?.name === party.name) next = { ...next, claimant: null }
-  if (party.role === 'Driver' && draft.driver?.name === party.name) next = { ...next, driver: null }
-  if (party.role === 'Injured' && next.injuries?.includes(party.name)) {
-    const remaining = next.injuries.split('; ').filter((line) => !line.includes(party.name))
-    next = { ...next, injuries: remaining.length > 0 ? remaining.join('; ') : null }
-  }
-  return { draft: next, parties: parties.filter((item) => item.id !== id) }
+  return { draft: clearPartyFromDraft(draft, party), parties: parties.filter((item) => item.id !== id) }
 }
 
 export function referFnolDriver(draft: CreateClaimDraft): CreateClaimDraft {
