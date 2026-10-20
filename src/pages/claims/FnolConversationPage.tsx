@@ -1176,11 +1176,6 @@ export function FnolConversationPage() {
                   <MuiChip label="Caller on the phone" onDelete={() => setMode('narrative')} sx={{ alignSelf: 'flex-start' }} />
                 ) : null}
                 <CopilotQuickActions actions={busy ? [] : suggestions} onAction={onSuggestion} />
-                {canSubmit ? (
-                  <Button variant="contained" disabled={busy} onClick={submit} sx={{ alignSelf: 'flex-start' }}>
-                    Submit claim
-                  </Button>
-                ) : null}
                 <CopilotComposer
                   padded={false}
                   minRows={2}
