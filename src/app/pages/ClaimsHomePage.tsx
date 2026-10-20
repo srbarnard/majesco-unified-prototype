@@ -58,9 +58,10 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
 import { alpha, useTheme, type Theme } from '@mui/material/styles'
 import type { SvgIconComponent } from '@mui/icons-material'
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
 import { useRightToolDispatch } from '@/app/contexts/RightToolContext'
 import { FNOL_PATH } from '@/pages/claims/data/fnolConversation'
 import {
@@ -2117,6 +2118,11 @@ export function ClaimsHomePage() {
   const navigate = useNavigate()
   const { openTool, closeTool } = useRightToolDispatch()
   const [sectionInsight, setSectionInsight] = useState<SectionInsight | null>(null)
+
+  useEffect(() => {
+    if (!CLAIMS_ONLY) return
+    closeTool()
+  }, [closeTool])
   const openCopilot = () => {
     setSectionInsight(null)
     openTool('copilot')

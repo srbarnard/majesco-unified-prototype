@@ -16,6 +16,7 @@ import { useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
+import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
 import { FNOL_PATH } from '@/pages/claims/data/fnolConversation'
 import { CopilotMarkIcon } from '@/design-system/icons/CopilotMarkIcon'
 import { useRightTool, type RightToolId } from '@/app/contexts/RightToolContext'
@@ -107,6 +108,7 @@ export function AppRightToolRail() {
   const navigate = useNavigate()
   const { activeTool, toggleTool, filterContent, partiesContent, historyAvailable } = useRightTool()
   const onFnol = location.pathname === FNOL_PATH
+  const hideCreateTools = CLAIMS_ONLY && location.pathname === '/'
   const hideCopilotTool = location.pathname === '/copilot-studio'
   const [order, setOrder] = useState<RightToolId[]>(readStoredOrder)
   const [draggingId, setDraggingId] = useState<RightToolId | null>(null)
@@ -116,10 +118,12 @@ export function AppRightToolRail() {
   }, [order])
 
   const fnolRailTools = new Set<RightToolId>(['notes', 'email', 'newTask'])
+  const homeHiddenTools = new Set<RightToolId>(['newCustomer', 'newSubmission', 'newQuote', 'newClaim'])
   const reorderable = order
     .map((id) => REORDERABLE_TOOLS.find((tool) => tool.id === id))
     .filter((tool): tool is ToolDef => Boolean(tool))
     .filter((tool) => !onFnol || fnolRailTools.has(tool.id))
+    .filter((tool) => !hideCreateTools || !homeHiddenTools.has(tool.id))
 
   const contextTools: ToolDef[] = [
     ...(historyAvailable
