@@ -1,5 +1,4 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import CloseIcon from '@mui/icons-material/Close'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined'
@@ -9,9 +8,6 @@ import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
-import Link from '@mui/material/Link'
-import Menu from '@mui/material/Menu'
-import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
@@ -24,7 +20,7 @@ import { useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
 import { CopilotQuickActions } from '@/design-system/components'
-import { chatAuthorAvatarSx, chatBubbleIncoming, isDarkMode } from '@/design-system/theme/themeSurfaces'
+import { chatAuthorAvatarSx, chatBubbleIncoming } from '@/design-system/theme/themeSurfaces'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { ClaimDateOfLossEdit, ClaimInsuredLocationEdit } from '@/pages/claims/components/ClaimLossEditors'
@@ -62,7 +58,6 @@ import {
   type FnolPartyRole,
 } from '@/pages/claims/data/fnolConversation'
 import { insuredLocations } from '@/pages/claims/data/policyLocations'
-import { ComposerSendButton } from '@/pages/policies/components/ComposerSendButton'
 import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
 import type { CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
 import {
@@ -81,12 +76,6 @@ const ASSIGNEE_OPTIONS = [
 ]
 
 const RAIL_TOOLS = new Set(['notes', 'email', 'newTask'])
-
-const PARTY_PROMPT_IDEAS = [
-  'Who should be on this claim?',
-  'What contact details are still missing?',
-  'Summarize the parties mentioned so far.',
-]
 
 type FnolMessage = { id: string; role: 'user' | 'assistant'; text: string; pending?: boolean }
 type LookupWhere = 'thread' | 'tally'
@@ -245,131 +234,6 @@ function PartiesList({
           )}
         </Stack>
       ))}
-    </Box>
-  )
-}
-
-function PartiesComposer({
-  disabled,
-  onSend,
-  onAddParty,
-}: {
-  disabled?: boolean
-  onSend: (text: string) => void
-  onAddParty: () => void
-}) {
-  const [message, setMessage] = useState('')
-  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
-  const canSubmit = message.trim().length > 0 && !disabled
-
-  const submit = () => {
-    const trimmed = message.trim()
-    if (!trimmed || disabled) return
-    onSend(trimmed)
-    setMessage('')
-  }
-
-  return (
-    <Box
-      sx={(theme) => ({
-        border: `1px solid ${theme.palette.divider}`,
-        borderRadius: `${layoutTokens.cardRadius}px`,
-        bgcolor: 'background.paper',
-        boxShadow: isDarkMode(theme) ? 'none' : layoutTokens.cardShadow,
-        px: 2,
-        pt: 1.75,
-        pb: 1.25,
-        '&:focus-within': {
-          borderColor: 'primary.main',
-        },
-      })}
-    >
-      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 1 }}>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
-          <AutoAwesomeIcon sx={{ fontSize: 20, color: 'primary.main' }} />
-          <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '1rem', lineHeight: 1.3 }}>
-            How can I help you?
-          </Typography>
-        </Stack>
-        <Link
-          component="button"
-          type="button"
-          underline="hover"
-          onClick={(event) => setMenuAnchor(event.currentTarget)}
-          sx={{ ...draftBodySx, fontSize: '0.875rem', flexShrink: 0 }}
-        >
-          Prompt ideas
-        </Link>
-        <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
-          {PARTY_PROMPT_IDEAS.map((idea) => (
-            <MenuItem
-              key={idea}
-              onClick={() => {
-                setMessage(idea)
-                setMenuAnchor(null)
-              }}
-            >
-              {idea}
-            </MenuItem>
-          ))}
-        </Menu>
-      </Stack>
-
-      <Button
-        size="small"
-        color="inherit"
-        startIcon={<PersonAddOutlinedIcon sx={{ fontSize: 18 }} />}
-        onClick={onAddParty}
-        disabled={disabled}
-        sx={{
-          ...draftBodySx,
-          textTransform: 'none',
-          justifyContent: 'flex-start',
-          px: 0.75,
-          mb: 0.75,
-          ml: -0.75,
-          color: 'text.primary',
-        }}
-      >
-        Add party
-      </Button>
-
-      <Box sx={{ position: 'relative' }}>
-        <TextField
-          fullWidth
-          multiline
-          minRows={4}
-          maxRows={8}
-          variant="standard"
-          placeholder="Ask a question about this document"
-          value={message}
-          disabled={disabled}
-          onChange={(event) => setMessage(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
-              event.preventDefault()
-              submit()
-            }
-          }}
-          slotProps={{
-            input: {
-              disableUnderline: true,
-              sx: {
-                ...draftBodySx,
-                fontSize: '0.9375rem',
-                alignItems: 'flex-start',
-                pr: 5,
-                pb: 0.5,
-                '&.Mui-focused': { outline: 'none' },
-                '&:before, &:after': { display: 'none' },
-              },
-            },
-          }}
-        />
-        <Box sx={{ position: 'absolute', right: 0, bottom: 0 }}>
-          <ComposerSendButton canSubmit={canSubmit} onClick={submit} />
-        </Box>
-      </Box>
     </Box>
   )
 }
@@ -841,9 +705,6 @@ export function FnolConversationPage() {
             <Stack spacing={1.25}>
               <PartiesList parties={parties} readOnly={submitted} onRemove={removeParty} />
               {partyForm}
-              {submitted ? null : (
-                <PartiesComposer disabled={busy} onSend={(text) => send(text)} onAddParty={() => openPartyForm()} />
-              )}
             </Stack>
           </Box>
           <Box sx={{ flexShrink: 0, px: `${layoutTokens.contentPaddingX}px`, pt: 0.5, pb: 2 }}>
@@ -862,6 +723,24 @@ export function FnolConversationPage() {
                     Submit claim
                   </Button>
                 ) : null}
+                <Button
+                  size="small"
+                  color="inherit"
+                  startIcon={<PersonAddOutlinedIcon sx={{ fontSize: 18 }} />}
+                  onClick={() => openPartyForm()}
+                  disabled={busy}
+                  sx={{
+                    ...draftBodySx,
+                    textTransform: 'none',
+                    justifyContent: 'flex-start',
+                    alignSelf: 'flex-start',
+                    px: 0.75,
+                    ml: -0.75,
+                    color: 'text.primary',
+                  }}
+                >
+                  Add party
+                </Button>
                 <CopilotComposer
                   padded={false}
                   minRows={2}
