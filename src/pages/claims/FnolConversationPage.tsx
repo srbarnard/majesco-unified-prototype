@@ -185,8 +185,10 @@ function FnolPartyForm({
         Add party
       </Typography>
       <DraftInlineOptions options={[...FNOL_PARTY_ROLES]} selected={role} onPick={(next) => setRole(next as FnolPartyRole)} />
-      <PartyTextField label="Name" value={name} onChange={setName} autoFocus />
-      <PartyTextField label="Phone or email" value={contact} onChange={setContact} />
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+        <PartyTextField label="Name" value={name} onChange={setName} autoFocus />
+        <PartyTextField label="Phone or email" value={contact} onChange={setContact} />
+      </Box>
       <Stack direction="row" spacing={1}>
         <Button size="small" variant="contained" disabled={!name.trim()} onClick={() => onSubmit({ role, name, contact })}>
           Add party
@@ -250,13 +252,7 @@ function PartiesList({
   readOnly: boolean
   onRemove: (id: string) => void
 }) {
-  if (parties.length === 0) {
-    return (
-      <Typography sx={{ ...draftBodySx, color: 'text.secondary' }}>
-        No parties yet — add one here.
-      </Typography>
-    )
-  }
+  if (parties.length === 0) return null
 
   return (
     <Box
@@ -804,7 +800,7 @@ export function FnolConversationPage() {
           {columnTab === 'parties' ? (
             <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: `${layoutTokens.contentPaddingX}px`, py: 2.5 }}>
               <Stack spacing={1.5}>
-                {submitted ? null : (
+                {submitted || parties.length === 0 ? null : (
                   <Button
                     size="small"
                     color="inherit"
