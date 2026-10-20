@@ -1,4 +1,3 @@
-import { insuredLocations } from '@/pages/claims/data/policyLocations'
 import { claimPrefix, nextClaimNumber } from '@/pages/claims/data/claimsStore'
 import {
   CLAIM_CURRENT_USER,
@@ -14,6 +13,7 @@ import {
   type ClaimPolicy,
   type CreateClaimDraft,
 } from '@/pages/claims/data/createClaimDraft'
+import { getPolicyInsuredContact } from '@/pages/policies/data/mockPoliciesList'
 
 /** Conversational first notice. The claim is filed here, not in the Create claim drawer. */
 export const FNOL_PATH = '/claims/new'
@@ -185,7 +185,7 @@ export function assignFnolPolicy(draft: CreateClaimDraft, policyNumber: string):
   if (!policy) return null
   const prefix = claimPrefix(policy.product)
   const claimNumber = draft.claimNumber.startsWith(prefix) ? draft.claimNumber : nextClaimNumber(prefix)
-  return { ...draft, policy, claimNumber }
+  return withFnolState({ ...draft, policy, claimNumber })
 }
 
 function policeReportFrom(text: string): string | null {
@@ -201,10 +201,101 @@ function driverFrom(text: string): string | null {
   return match ? cleanName(match[1]) : null
 }
 
-/** The shared place parser can run into the next clause ("… IN our van rear-ended…"). Keep the place. */
-function trimFnolLocation(location: string) {
-  const cut = location.split(/\s+(?:our|my|the|a|an|his|her)\s+(?:van|car|truck|driver|vehicle|sedan|auto)\b/i)[0] ?? location
-  return cut.replace(/[.,\s]+$/g, '').trim() || location
+/** Postal abbreviations. FNOL stores a state, never a street address. */
+const FNOL_STATE_NAMES: Record<string, string> = {
+  AL: 'Alabama',
+  AK: 'Alaska',
+  AZ: 'Arizona',
+  AR: 'Arkansas',
+  CA: 'California',
+  CO: 'Colorado',
+  CT: 'Connecticut',
+  DE: 'Delaware',
+  DC: 'District of Columbia',
+  FL: 'Florida',
+  GA: 'Georgia',
+  HI: 'Hawaii',
+  ID: 'Idaho',
+  IL: 'Illinois',
+  IN: 'Indiana',
+  IA: 'Iowa',
+  KS: 'Kansas',
+  KY: 'Kentucky',
+  LA: 'Louisiana',
+  ME: 'Maine',
+  MD: 'Maryland',
+  MA: 'Massachusetts',
+  MI: 'Michigan',
+  MN: 'Minnesota',
+  MS: 'Mississippi',
+  MO: 'Missouri',
+  MT: 'Montana',
+  NE: 'Nebraska',
+  NV: 'Nevada',
+  NH: 'New Hampshire',
+  NJ: 'New Jersey',
+  NM: 'New Mexico',
+  NY: 'New York',
+  NC: 'North Carolina',
+  ND: 'North Dakota',
+  OH: 'Ohio',
+  OK: 'Oklahoma',
+  OR: 'Oregon',
+  PA: 'Pennsylvania',
+  RI: 'Rhode Island',
+  SC: 'South Carolina',
+  SD: 'South Dakota',
+  TN: 'Tennessee',
+  TX: 'Texas',
+  UT: 'Utah',
+  VT: 'Vermont',
+  VA: 'Virginia',
+  WA: 'Washington',
+  WV: 'West Virginia',
+  WI: 'Wisconsin',
+  WY: 'Wyoming',
+}
+
+const FNOL_STATE_NAME_PATTERN = new RegExp(
+  `\\b(${Object.values(FNOL_STATE_NAMES)
+    .sort((a, b) => b.length - a.length)
+    .join('|')})\\b`,
+  'gi',
+)
+
+const FNOL_NAME_TO_CODE = new Map(Object.entries(FNOL_STATE_NAMES).map(([code, name]) => [name.toLowerCase(), code]))
+
+/** A state name, a bare abbreviation, or a postal abbreviation. Street, city, and ZIP are ignored. */
+export function fnolStateFromText(text: string): string | null {
+  const trimmed = text.trim()
+  if (!trimmed) return null
+  if (/^[A-Za-z]{2}$/.test(trimmed) && FNOL_STATE_NAMES[trimmed.toUpperCase()]) return trimmed.toUpperCase()
+  const wholeName = FNOL_NAME_TO_CODE.get(trimmed.toLowerCase())
+  if (wholeName) return wholeName
+  const names = [...trimmed.matchAll(FNOL_STATE_NAME_PATTERN)]
+    .map((match) => FNOL_NAME_TO_CODE.get(match[1].toLowerCase()))
+    .filter((code): code is string => Boolean(code))
+  if (names.length > 0) return names[names.length - 1]
+  const codes = [...trimmed.matchAll(/,\s*([A-Z]{2})\b|\b([A-Z]{2})\s+\d{5}(?:-\d{4})?\b|\bin\s+([A-Z]{2})\b/g)]
+    .map((match) => match[1] ?? match[2] ?? match[3])
+    .filter((code) => FNOL_STATE_NAMES[code])
+  return codes.length > 0 ? codes[codes.length - 1] : null
+}
+
+export function fnolStateLabel(code: string) {
+  return FNOL_STATE_NAMES[code] ?? code
+}
+
+function policyPrimaryState(policy: ClaimPolicy): string | null {
+  return fnolStateFromText(getPolicyInsuredContact(policy.insured).cityStateZip)
+}
+
+/** A state named in the turn wins, then one already stored, then the matched policy's primary state. */
+function withFnolState(draft: CreateClaimDraft, text = ''): CreateClaimDraft {
+  const stated = (text ? fnolStateFromText(text) : null) ?? (draft.location ? fnolStateFromText(draft.location) : null)
+  const state = stated ?? (draft.policy ? policyPrimaryState(draft.policy) : null)
+  if (state === draft.location) return draft
+  return { ...draft, location: state }
 }
 
 /** A bumper line and a separate "van rear-ended" line still count as vehicle damage. */
@@ -232,7 +323,7 @@ function factsOf(draft: CreateClaimDraft, parties: FnolParty[]): Fact[] {
   const rows: Fact[] = [{ key: 'claim', label: `claim ${draft.claimNumber}` }]
   if (draft.policy) rows.push({ key: 'policy', label: draft.policy.insured })
   if (draft.dateOfLoss) rows.push({ key: 'date', label: formatKnownLossDate(draft.dateOfLoss) })
-  if (draft.location) rows.push({ key: `location:${draft.location}`, label: draft.location })
+  if (draft.location) rows.push({ key: `location:${draft.location}`, label: fnolStateLabel(draft.location) })
   if (draft.description) rows.push({ key: `description:${draft.description}`, label: 'what happened' })
   if (draft.reporter?.name) rows.push({ key: 'reporter', label: `${draft.reporter.name} as the reporter` })
   if (draft.claimant) {
@@ -294,7 +385,7 @@ export function fnolAsk(field: string | undefined, term: string) {
     case 'dateOfLoss':
       return 'When did the loss happen?'
     case 'location':
-      return 'Where did it happen?'
+      return 'Which state did the loss happen in?'
     case 'damage':
       return 'What was damaged, or who was hurt?'
     case 'claimantEmail':
@@ -348,10 +439,6 @@ export function ingestFnolTurn(input: {
     const caller =
       files.length === 0 && !partyCommand(text) && (input.mode === 'caller' || Boolean(phoneClaimDraft(text).reporter?.name))
     draft = caller ? applyCallerText(draft, text) : applyNarrative(draft, text, 'narrative')
-    if (draft.location) {
-      const location = trimFnolLocation(draft.location)
-      if (location !== draft.location) draft = { ...draft, location }
-    }
     draft = noteVehicleDamage(draft, text)
   }
   if (!draft.policy) {
@@ -374,6 +461,7 @@ export function ingestFnolTurn(input: {
     const stored = parties.find((item) => item.role === party.role && item.name.toLowerCase() === party.name.toLowerCase())
     if (stored) draft = applyPartyToDraft(draft, stored)
   }
+  draft = withFnolState(draft, text)
   parties = syncFnolParties(draft, parties)
   return { draft, parties, captured: fnolCaptured(before, { draft, parties }) }
 }
@@ -445,9 +533,6 @@ export function fnolLossStarted(draft: CreateClaimDraft, userTurns: number) {
 
 export function buildFnolTally(draft: CreateClaimDraft, parties: FnolParty[], started: boolean): FnolTally {
   const insuredName = draft.policy?.insured ?? null
-  const locations = draft.policy ? insuredLocations(draft.policy) : []
-  const locationOffSchedule =
-    draft.location != null && locations.length > 0 && !locations.some((location) => location.address === draft.location)
   const claimantParty = parties.find((party) => party.role === 'Claimant' && party.name === draft.claimant?.name)
   const claimantReachable = Boolean(draft.claimant?.email || claimantParty?.contact)
   const auto = looksLikeAuto(draft)
@@ -466,7 +551,7 @@ export function buildFnolTally(draft: CreateClaimDraft, parties: FnolParty[], st
       ? [{ term: 'Policy', value: `${draft.policy.policyNumber} · ${draft.policy.product}`, field: 'policy' }]
       : []),
     ...(draft.dateOfLoss ? [{ term: 'Date of loss', value: formatKnownLossDate(draft.dateOfLoss), field: 'dateOfLoss' }] : []),
-    ...(draft.location && !locationOffSchedule ? [{ term: 'Location', value: draft.location, field: 'location' }] : []),
+    ...(draft.location ? [{ term: 'State', value: fnolStateLabel(draft.location), field: 'location' }] : []),
     ...(draft.description ? [{ term: 'What happened', value: draft.description, field: 'description' }] : []),
     { term: 'Assigned to', value: draft.assignee === CLAIM_CURRENT_USER ? 'You' : (draft.assignee ?? 'You'), field: 'assignee' },
     ...(draft.claimant
@@ -516,7 +601,7 @@ export function buildFnolTally(draft: CreateClaimDraft, parties: FnolParty[], st
     ...(draft.policy == null ? [blocker('Policy', 'Not matched to a policy yet', 'policy')] : []),
     ...(draft.description == null ? [blocker('What happened', 'Not described yet', 'description')] : []),
     ...(draft.dateOfLoss == null ? [blocker('Date of loss', 'Not reported yet', 'dateOfLoss')] : []),
-    ...(draft.location == null ? [blocker('Location', 'Not reported yet', 'location')] : []),
+    ...(draft.location == null ? [blocker('State', 'Not reported yet', 'location')] : []),
     ...(draft.vehicles.length === 0 && draft.injuries == null
       ? [blocker('Damage or injuries', 'None added', 'damage', true)]
       : []),
@@ -537,9 +622,6 @@ export function buildFnolTally(draft: CreateClaimDraft, parties: FnolParty[], st
   }
   if (started && auto && !draft.driver && !parties.some((party) => party.role === 'Driver')) {
     considerations.push(consideration('Driver', 'Not named yet', 'driverName'))
-  }
-  if (started && locationOffSchedule && draft.location) {
-    considerations.push(consideration('Not an insured location', 'Worth a look against the policy schedule', 'location', draft.location))
   }
   if (
     started &&

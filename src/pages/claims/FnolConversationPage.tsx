@@ -1,3 +1,4 @@
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline'
 import CloseIcon from '@mui/icons-material/Close'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined'
@@ -22,10 +23,9 @@ import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
 import { CopilotQuickActions, EntityListHomeButton } from '@/design-system/components'
 import { chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
-import { AssistantNavigationOutlinedIcon } from '@/design-system/icons/AssistantNavigationOutlined'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
-import { ClaimDateOfLossEdit, ClaimInsuredLocationEdit } from '@/pages/claims/components/ClaimLossEditors'
+import { ClaimDateOfLossEdit } from '@/pages/claims/components/ClaimLossEditors'
 import { getClaim, upsertClaim } from '@/pages/claims/data/claimsStore'
 import {
   CLAIM_CURRENT_USER,
@@ -48,6 +48,8 @@ import {
   fnolPolicySearch,
   fnolPolicySubtitle,
   fnolReply,
+  fnolStateFromText,
+  fnolStateLabel,
   fnolSuggestions,
   ingestFnolTurn,
   referFnolDriver,
@@ -59,7 +61,6 @@ import {
   type FnolParty,
   type FnolPartyRole,
 } from '@/pages/claims/data/fnolConversation'
-import { insuredLocations } from '@/pages/claims/data/policyLocations'
 import { CopilotComposer } from '@/pages/policies/components/CopilotComposer'
 import type { CopilotAttachedFile } from '@/pages/policies/components/CopilotComposer'
 import {
@@ -180,7 +181,7 @@ function FnolPartyForm({
 function UserTurn({ text }: { text: string }) {
   return (
     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2.5 }}>
-      <Box sx={{ maxWidth: '85%' }}>
+      <Box sx={{ maxWidth: '100%', minWidth: 0 }}>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
           <Avatar sx={(theme) => chatAuthorAvatarSx(theme)}>CR</Avatar>
           <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.8125rem' }}>
@@ -188,7 +189,7 @@ function UserTurn({ text }: { text: string }) {
           </Typography>
         </Stack>
         <Box sx={(theme) => ({ px: 2, py: 1.5, borderRadius: 2, bgcolor: chatBubbleIncoming(theme) })}>
-          <Typography sx={{ ...draftBodySx, lineHeight: 1.55 }}>{text}</Typography>
+          <Typography sx={{ ...draftBodySx, lineHeight: 1.55, overflowWrap: 'break-word' }}>{text}</Typography>
         </Box>
       </Box>
     </Box>
@@ -197,8 +198,8 @@ function UserTurn({ text }: { text: string }) {
 
 function AssistantTurn({ text, pending }: { text: string; pending?: boolean }) {
   return (
-    <Box sx={{ mb: 2.5, maxWidth: 680 }}>
-      <Typography variant="body2" sx={{ ...draftBodySx, lineHeight: 1.6, mb: 0.5, whiteSpace: 'pre-line' }}>
+    <Box sx={{ mb: 2.5, maxWidth: '100%', minWidth: 0 }}>
+      <Typography variant="body2" sx={{ ...draftBodySx, lineHeight: 1.6, mb: 0.5, whiteSpace: 'pre-line', overflowWrap: 'break-word' }}>
         {text}
       </Typography>
       {pending ? (
@@ -547,17 +548,14 @@ export function FnolConversationPage() {
       )
     }
     if (field === 'location') {
-      const locations = draft.policy ? insuredLocations(draft.policy) : []
-      if (locations.length > 0) {
-        return (
-          <ClaimInsuredLocationEdit
-            locations={locations}
-            onCommit={(location) => applyChange({ ...draft, location })}
-            onDismiss={() => setEditing(null)}
-          />
-        )
-      }
-      return textEdit('Loss location', draft.location ?? '', (location) => applyChange({ ...draft, location }))
+      return textEdit('State', draft.location ? fnolStateLabel(draft.location) : '', (value) => {
+        const state = fnolStateFromText(value)
+        if (!state) {
+          setEditing(null)
+          return
+        }
+        applyChange({ ...draft, location: state })
+      })
     }
     if (field === 'description') {
       return textEdit('What happened', draft.description ?? '', (description) => applyChange({ ...draft, description }), true)
@@ -678,11 +676,17 @@ export function FnolConversationPage() {
       <Stack direction="row" alignItems="center" spacing={1.25} sx={{ minWidth: 0 }}>
         <EntityListHomeButton to="/claims" label="All claims" icon={FileCopyOutlinedIcon} tone="submissions" />
         <Box sx={{ minWidth: 0 }}>
-          <Typography
-            variant="h5"
-            component="h1"
-            sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: { xs: '1.25rem', md: '1.375rem' }, lineHeight: 1.3 }}
-          >
+            <Typography
+              variant="subtitle2"
+              component="h1"
+              sx={{
+                fontFamily: figmaFontFamilyStack.heading,
+                fontWeight: 600,
+                lineHeight: 1.3,
+                fontSize: { xs: '1rem', md: '1.0625rem' },
+                color: 'text.primary',
+              }}
+            >
             First notice of loss
           </Typography>
           <Typography sx={{ ...draftBodySx, color: 'text.secondary' }} noWrap>
@@ -749,7 +753,7 @@ export function FnolConversationPage() {
                 allowScrollButtonsMobile
                 sx={fnolColumnTabSx}
               >
-                <Tab icon={<AssistantNavigationOutlinedIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Chat" value="chat" />
+                <Tab icon={<ChatBubbleOutlineIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Chat" value="chat" />
                 <Tab icon={<GroupsOutlinedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Parties" value="parties" />
               </Tabs>
             </Box>
@@ -810,24 +814,6 @@ export function FnolConversationPage() {
                     Submit claim
                   </Button>
                 ) : null}
-                <Button
-                  size="small"
-                  color="inherit"
-                  startIcon={<PersonAddOutlinedIcon sx={{ fontSize: 18 }} />}
-                  onClick={() => openPartyForm()}
-                  disabled={busy}
-                  sx={{
-                    ...draftBodySx,
-                    textTransform: 'none',
-                    justifyContent: 'flex-start',
-                    alignSelf: 'flex-start',
-                    px: 0.75,
-                    ml: -0.75,
-                    color: 'text.primary',
-                  }}
-                >
-                  Add party
-                </Button>
                 <CopilotComposer
                   padded={false}
                   minRows={2}
