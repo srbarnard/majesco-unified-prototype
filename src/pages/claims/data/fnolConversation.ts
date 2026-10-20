@@ -334,6 +334,25 @@ function noteVehicleDamage(draft: CreateClaimDraft, text: string): CreateClaimDr
   return { ...draft, vehicles: [`Vehicle · ${line.replace(/[.]+$/g, '')}`] }
 }
 
+/**
+ * Captures a damage/injuries answer once that needs-attention item is active.
+ * Pattern matches first; otherwise the whole reply is stored so the question does not loop.
+ */
+export function applyFnolDamageAnswer(draft: CreateClaimDraft, text: string): CreateClaimDraft {
+  const trimmed = text.trim()
+  if (!trimmed) return draft
+  let next = applyClaimText(draft, trimmed)
+  next = noteVehicleDamage(next, trimmed)
+  if (next.vehicles.length > 0 || next.injuries != null) return next
+  if (/\b(no one (was )?(hurt|injured)|no injur|nobody (was )?hurt)\b/i.test(trimmed)) {
+    return { ...next, injuries: 'None reported' }
+  }
+  if (/\b(injur|hurt|pain|ambulance|hospital|whiplash|bleeding)\b/i.test(trimmed)) {
+    return { ...next, injuries: trimmed }
+  }
+  return { ...next, vehicles: [`Vehicle · ${trimmed.replace(/[.]+$/g, '')}`] }
+}
+
 function looksLikeAuto(draft: CreateClaimDraft) {
   if (/auto|vehicle/i.test(draft.policy?.product ?? '')) return true
   if (draft.driver) return true
@@ -445,6 +464,10 @@ export function ingestFnolTurn(input: {
   let draft = input.draft
   let parties = input.parties
   const files = input.files ?? []
+  const awaitingDamage =
+    draft.vehicles.length === 0 &&
+    draft.injuries == null &&
+    buildFnolTally(draft, parties, true).attention[0]?.field === 'damage'
   if (files.length > 0) {
     const names = [...new Set([...draft.sources, ...files])]
     // A file is the loss only when the conversation has not already matched a policy or described it.
@@ -461,6 +484,10 @@ export function ingestFnolTurn(input: {
       files.length === 0 && !partyCommand(text) && (input.mode === 'caller' || Boolean(phoneClaimDraft(text).reporter?.name))
     draft = caller ? applyCallerText(draft, text) : applyNarrative(draft, text, 'narrative')
     draft = noteVehicleDamage(draft, text)
+    // When Needs attention is asking for damage, capture a freeform reply so the question does not repeat.
+    if (awaitingDamage && draft.vehicles.length === 0 && draft.injuries == null) {
+      draft = applyFnolDamageAnswer(draft, text)
+    }
   }
   if (!draft.policy) {
     const policy = policyFromText(text)

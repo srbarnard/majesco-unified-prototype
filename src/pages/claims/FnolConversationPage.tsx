@@ -49,6 +49,7 @@ import {
   FNOL_STATE_CHOICES,
   FNOL_POLICY_NUMBERS,
   addFnolParty,
+  applyFnolDamageAnswer,
   assignFnolPolicy,
   buildFnolTally,
   createFnolDraft,
@@ -804,12 +805,6 @@ export function FnolConversationPage() {
 
   const onToggle = (field: string) => {
     if (submitted) return
-    if (field === 'damage') {
-      pushAssistant('What was damaged, or who was hurt?')
-      showChat()
-      setEditing(null)
-      return
-    }
     if (field === 'documents') {
       setAttachKey((current) => (current ?? 0) + 1)
       showChat()
@@ -829,13 +824,20 @@ export function FnolConversationPage() {
     setEditing((current) => (current === field ? null : field))
   }
 
-  const textEdit = (label: string, value: string, onCommit: (next: string) => void, multiline = false) => (
+  const textEdit = (
+    label: string,
+    value: string,
+    onCommit: (next: string) => void,
+    multiline = false,
+    autoFocus = true,
+  ) => (
     <DraftInlineTextEdit
       initialValue={value}
       label={label}
       helperText={label}
       multiline={multiline}
       confirmable={!multiline}
+      autoFocus={autoFocus}
       onCommit={onCommit}
       onDismiss={() => setEditing(null)}
     />
@@ -945,6 +947,34 @@ export function FnolConversationPage() {
     if (field === 'policeReport') {
       return textEdit('Police report', draft.policeReport === 'None filed' ? '' : (draft.policeReport ?? ''), (policeReport) =>
         applyChange({ ...draft, policeReport }),
+      )
+    }
+    if (field === 'damage') {
+      return (
+        <Stack spacing={1}>
+          {textEdit(
+            'What was damaged',
+            '',
+            (value) => {
+              const trimmed = value.trim()
+              if (!trimmed) return
+              applyChange(applyFnolDamageAnswer(draft, trimmed))
+            },
+            false,
+            true,
+          )}
+          {textEdit(
+            'Who was hurt',
+            draft.injuries ?? '',
+            (value) => {
+              const trimmed = value.trim()
+              if (!trimmed) return
+              applyChange({ ...draft, injuries: trimmed })
+            },
+            false,
+            false,
+          )}
+        </Stack>
       )
     }
     if (field === 'injuries') {
