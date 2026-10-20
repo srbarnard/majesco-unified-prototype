@@ -31,7 +31,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
-import { CopilotQuickActions, EntityListHomeButton } from '@/design-system/components'
+import { Chip as DesignChip, CopilotQuickActions, EntityListHomeButton } from '@/design-system/components'
 import { chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
 import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -192,24 +192,14 @@ function PartyRoleOptions({
       {FNOL_PARTY_ROLES.map((option) => {
         const isSelected = option === selected
         return (
-          <Chip
+          <DesignChip
             key={option}
             label={option}
+            clickable
+            variant={isSelected ? 'filled' : 'outlined'}
+            color={isSelected ? 'primary' : 'default'}
             aria-pressed={isSelected}
             onClick={() => onPick(option)}
-            sx={{
-              fontFamily: figmaFontFamilyStack.body,
-              fontWeight: isSelected ? 600 : 500,
-              fontSize: '0.8125rem',
-              bgcolor: isSelected ? 'primary.main' : 'background.paper',
-              color: isSelected ? 'primary.contrastText' : 'text.secondary',
-              border: '1px solid',
-              borderColor: isSelected ? 'primary.main' : 'divider',
-              '&:hover': {
-                bgcolor: isSelected ? 'primary.dark' : 'background.paper',
-                borderColor: isSelected ? 'primary.dark' : 'text.secondary',
-              },
-            }}
           />
         )
       })}
