@@ -274,7 +274,7 @@ function PartyInlineEdit({
   }
   return (
     <Stack
-      spacing={1}
+      spacing={1.5}
       sx={{ pl: 7, pr: 2, pb: 1.5 }}
       onKeyDown={(event) => {
         if (event.key === 'Escape') onDismiss()
@@ -285,42 +285,25 @@ function PartyInlineEdit({
       }}
     >
       <PartyRoleOptions selected={role} onPick={setRole} />
-      <TextField
-        size="small"
-        fullWidth
-        autoFocus
-        value={name}
-        helperText="Name"
-        onChange={(event) => setName(event.target.value)}
-        inputProps={{ 'aria-label': 'Name' }}
-        FormHelperTextProps={{ sx: { fontFamily: figmaFontFamilyStack.body, mx: 0 } }}
-        sx={draftInputSx}
-      />
-      <TextField
-        size="small"
-        fullWidth
-        value={contact}
-        helperText="Phone or email"
-        onChange={(event) => setContact(event.target.value)}
-        inputProps={{ 'aria-label': 'Phone or email' }}
-        FormHelperTextProps={{ sx: { fontFamily: figmaFontFamilyStack.body, mx: 0 } }}
-        sx={draftInputSx}
-        InputProps={{
-          endAdornment: (
-            <IconButton
-              size="small"
-              edge="end"
-              aria-label="Save party"
-              disabled={!name.trim()}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={save}
-              sx={{ color: 'primary.main' }}
-            >
-              <CheckIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          ),
-        }}
-      />
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
+        <PartyTextField label="Name" value={name} onChange={setName} autoFocus />
+        <PartyTextField label="Phone or email" value={contact} onChange={setContact} />
+      </Box>
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ pt: 1 }}>
+        <IconButton
+          size="small"
+          aria-label="Save party"
+          disabled={!name.trim()}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={save}
+          sx={{ color: 'primary.main' }}
+        >
+          <CheckIcon sx={{ fontSize: 18 }} />
+        </IconButton>
+        <Button color="inherit" onClick={onDismiss}>
+          Cancel
+        </Button>
+      </Stack>
     </Stack>
   )
 }
