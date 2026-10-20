@@ -237,11 +237,11 @@ function FnolPartyForm({
         Add party
       </Typography>
       <PartyRoleOptions selected={role} onPick={setRole} />
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
         <PartyTextField label="Name" value={name} onChange={setName} autoFocus />
         <PartyTextField label="Phone or email" value={contact} onChange={setContact} />
       </Box>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ pt: 1.5 }}>
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ pt: 1 }}>
         <Button variant="contained" disabled={!name.trim()} onClick={submit}>
           Add
         </Button>
