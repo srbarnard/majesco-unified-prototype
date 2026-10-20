@@ -69,6 +69,7 @@ import {
   DraftInlineOptions,
   DraftInlineTextEdit,
   draftBodySx,
+  draftPanelPx,
 } from '@/pages/shared/components/DraftDrawer'
 import { ADD_TASK_ASSIGNEES } from '@/pages/tasks/data/addTaskDraft'
 
@@ -79,6 +80,21 @@ const ASSIGNEE_OPTIONS = [
 ]
 
 const RAIL_TOOLS = new Set(['notes', 'email', 'newTask'])
+
+const FNOL_TALLY_WIDTH_KEY = 'fnol-tally-width'
+const FNOL_TALLY_DEFAULT = 360
+const FNOL_TALLY_MIN = 280
+const FNOL_TALLY_MAX = 520
+
+function clampTallyWidth(value: number) {
+  return Math.min(FNOL_TALLY_MAX, Math.max(FNOL_TALLY_MIN, value))
+}
+
+function readTallyWidth() {
+  if (typeof window === 'undefined') return FNOL_TALLY_DEFAULT
+  const parsed = Number(window.localStorage.getItem(FNOL_TALLY_WIDTH_KEY))
+  return Number.isFinite(parsed) ? clampTallyWidth(parsed) : FNOL_TALLY_DEFAULT
+}
 
 type FnolMessage = { id: string; role: 'user' | 'assistant'; text: string; pending?: boolean }
 type LookupWhere = 'thread' | 'tally'
@@ -297,6 +313,7 @@ export function FnolConversationPage() {
   const [busy, setBusy] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [pane, setPane] = useState<'conversation' | 'tally'>('conversation')
+  const [tallyWidth, setTallyWidth] = useState(readTallyWidth)
   const [columnTab, setColumnTab] = useState<FnolColumnTab>('chat')
   const threadEnd = useRef<HTMLDivElement>(null)
   const readTimer = useRef<number | null>(null)
@@ -319,6 +336,27 @@ export function FnolConversationPage() {
     const tool = activeToolRef.current
     if (tool && !RAIL_TOOLS.has(tool)) closeTool()
   }, [closeTool])
+
+  useEffect(() => {
+    window.localStorage.setItem(FNOL_TALLY_WIDTH_KEY, String(tallyWidth))
+  }, [tallyWidth])
+
+  const startTallyResize = (startX: number) => {
+    const startWidth = tallyWidth
+    const onMove = (event: MouseEvent) => {
+      setTallyWidth(clampTallyWidth(startWidth + (startX - event.clientX)))
+    }
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
 
   useEffect(() => {
     threadEnd.current?.scrollIntoView({ block: 'end' })
@@ -727,7 +765,7 @@ export function FnolConversationPage() {
           flex: 1,
           minHeight: 0,
           display: 'grid',
-          gridTemplateColumns: stacked ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) 360px',
+          gridTemplateColumns: stacked ? 'minmax(0, 1fr)' : `minmax(0, 1fr) ${tallyWidth}px`,
           gridTemplateRows: 'minmax(0, 1fr)',
         }}
       >
@@ -834,33 +872,70 @@ export function FnolConversationPage() {
           component="aside"
           aria-label="Running tally"
           sx={{
+            position: 'relative',
             minWidth: 0,
             minHeight: 0,
-            overflowY: 'auto',
-            display: tallyVisible ? 'block' : 'none',
+            overflow: 'hidden',
+            display: tallyVisible ? 'flex' : 'none',
+            flexDirection: 'column',
             bgcolor: 'background.paper',
           }}
         >
-          <Box sx={{ px: 2, pt: layoutTokens.policyHeaderTopPadding, pb: 1 }}>
-            <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '1rem' }}>
-              Running tally
-            </Typography>
-            <Typography sx={{ ...draftBodySx, color: 'text.secondary', fontSize: '0.8125rem' }}>
-              Known facts, needs attention, and considerations update as you talk.
-            </Typography>
+          {stacked ? null : (
+            <Box
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize running tally"
+              aria-valuenow={tallyWidth}
+              aria-valuemin={FNOL_TALLY_MIN}
+              aria-valuemax={FNOL_TALLY_MAX}
+              tabIndex={0}
+              onMouseDown={(event) => startTallyResize(event.clientX)}
+              onKeyDown={(event) => {
+                if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+                event.preventDefault()
+                const delta = event.key === 'ArrowLeft' ? 16 : -16
+                setTallyWidth((current) => clampTallyWidth(current + delta))
+              }}
+              sx={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 6,
+                cursor: 'col-resize',
+                zIndex: 2,
+                transform: 'translateX(-50%)',
+                '&:hover, &:active, &:focus-visible': {
+                  bgcolor: (t) => t.figmaPalette.blue[200],
+                },
+              }}
+            />
+          )}
+          <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            <Box sx={{ px: 2, pt: layoutTokens.policyHeaderTopPadding, pb: 1 }}>
+              <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '1rem' }}>
+                Running tally
+              </Typography>
+              <Typography sx={{ ...draftBodySx, color: 'text.secondary', fontSize: '0.8125rem' }}>
+                Known facts, needs attention, and considerations update as you talk.
+              </Typography>
+            </Box>
+            {policyLookupWhere === 'tally' ? <Box sx={{ px: 2, pb: 1.5 }}>{policyLookup()}</Box> : null}
+            <Box sx={{ px: draftPanelPx }}>
+              <DraftAccordions
+                known={tally.known}
+                attention={tally.attention}
+                considerations={tally.considerations}
+                editingField={submitted ? null : editing}
+                knownOpen={knownOpen}
+                onKnownOpenChange={setKnownOpen}
+                onToggle={onToggle}
+                onGroupToggle={() => setEditing(null)}
+                renderEditor={renderEditor}
+              />
+            </Box>
           </Box>
-          {policyLookupWhere === 'tally' ? <Box sx={{ px: 2, pb: 1.5 }}>{policyLookup()}</Box> : null}
-          <DraftAccordions
-            known={tally.known}
-            attention={tally.attention}
-            considerations={tally.considerations}
-            editingField={submitted ? null : editing}
-            knownOpen={knownOpen}
-            onKnownOpenChange={setKnownOpen}
-            onToggle={onToggle}
-            onGroupToggle={() => setEditing(null)}
-            renderEditor={renderEditor}
-          />
         </Box>
       </Box>
     </Box>
