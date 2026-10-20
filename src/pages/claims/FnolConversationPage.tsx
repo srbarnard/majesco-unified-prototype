@@ -200,6 +200,7 @@ function PartyRoleOptions({
             variant={isSelected ? 'filled' : 'outlined'}
             aria-pressed={isSelected}
             onClick={() => onPick(option)}
+            sx={{ borderRadius: '30px' }}
           />
         )
       })}
