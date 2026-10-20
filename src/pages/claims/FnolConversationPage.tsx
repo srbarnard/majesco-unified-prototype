@@ -1,6 +1,7 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CloseIcon from '@mui/icons-material/Close'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined'
 import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
@@ -20,7 +21,8 @@ import { useNavigate } from 'react-router'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
 import { CopilotQuickActions } from '@/design-system/components'
-import { chatAuthorAvatarSx, chatBubbleIncoming } from '@/design-system/theme/themeSurfaces'
+import { chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
+import { AssistantNavigationOutlinedIcon } from '@/design-system/icons/AssistantNavigationOutlined'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
 import { layoutTokens } from '@/design-system/tokens/layout'
 import { ClaimDateOfLossEdit, ClaimInsuredLocationEdit } from '@/pages/claims/components/ClaimLossEditors'
@@ -79,6 +81,28 @@ const RAIL_TOOLS = new Set(['notes', 'email', 'newTask'])
 
 type FnolMessage = { id: string; role: 'user' | 'assistant'; text: string; pending?: boolean }
 type LookupWhere = 'thread' | 'tally'
+type FnolColumnTab = 'chat' | 'parties'
+
+const fnolColumnTabSx = {
+  minHeight: 44,
+  '& .MuiTabs-scrollButtons': { width: 28 },
+  '& .MuiTabs-indicator': { height: 3, borderRadius: '3px 3px 0 0', bgcolor: 'primary.main' },
+  '& .MuiTab-root': {
+    minHeight: 44,
+    minWidth: 'auto',
+    px: { xs: 1.25, md: 1.75 },
+    py: 0.875,
+    textTransform: 'none',
+    fontWeight: 500,
+    fontSize: '0.875rem',
+    fontFamily: figmaFontFamilyStack.heading,
+    color: 'text.secondary',
+    transition: 'color 0.2s ease',
+    gap: '7px',
+  },
+  '& .MuiTab-root > .MuiTab-icon': { marginRight: 0 },
+  '& .Mui-selected': { color: 'primary.main', fontWeight: 600 },
+} as const
 
 function messageId() {
   return `fnol-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
@@ -202,8 +226,6 @@ function PartiesList({
         listStyle: 'none',
         m: 0,
         p: 0,
-        maxHeight: 160,
-        overflowY: 'auto',
         border: 1,
         borderColor: 'divider',
         borderRadius: `${layoutTokens.cardRadius}px`,
@@ -256,6 +278,7 @@ export function FnolConversationPage() {
   const [busy, setBusy] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [pane, setPane] = useState<'conversation' | 'tally'>('conversation')
+  const [columnTab, setColumnTab] = useState<FnolColumnTab>('chat')
   const threadEnd = useRef<HTMLDivElement>(null)
   const readTimer = useRef<number | null>(null)
   const activeToolRef = useRef(activeTool)
@@ -301,6 +324,12 @@ export function FnolConversationPage() {
     setPartySeed(seed)
     setAddingParty(true)
     setEditing(null)
+    setColumnTab('parties')
+    showConversation()
+  }
+
+  const showChat = () => {
+    setColumnTab('chat')
     showConversation()
   }
 
@@ -413,18 +442,18 @@ export function FnolConversationPage() {
     if (action === 'Match a policy') {
       setPolicyLookupWhere('thread')
       setEditing(null)
-      showConversation()
+      showChat()
       return
     }
     if (action === 'Attach a loss notice') {
       setAttachKey((current) => (current ?? 0) + 1)
-      showConversation()
+      showChat()
       return
     }
     if (action === 'Caller on the phone') {
       setMode('caller')
       pushAssistant('I am on the call with you. Who is calling, and what happened?')
-      showConversation()
+      showChat()
       return
     }
     if (action === 'Refer to coverage') {
@@ -438,13 +467,13 @@ export function FnolConversationPage() {
     if (submitted) return
     if (field === 'damage') {
       pushAssistant('What was damaged, or who was hurt?')
-      showConversation()
+      showChat()
       setEditing(null)
       return
     }
     if (field === 'documents') {
       setAttachKey((current) => (current ?? 0) + 1)
-      showConversation()
+      showChat()
       return
     }
     if (field === 'witness') {
@@ -679,6 +708,51 @@ export function FnolConversationPage() {
             borderColor: 'divider',
           }}
         >
+          <Box sx={sectionTabRowBorderSx}>
+            <Box sx={{ px: `${layoutTokens.contentPaddingX}px`, minHeight: 44, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+              <Tabs
+                value={columnTab}
+                onChange={(_, next: FnolColumnTab) => setColumnTab(next)}
+                aria-label="FNOL conversation"
+                variant="scrollable"
+                scrollButtons="auto"
+                allowScrollButtonsMobile
+                sx={fnolColumnTabSx}
+              >
+                <Tab icon={<AssistantNavigationOutlinedIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Chat" value="chat" />
+                <Tab icon={<GroupsOutlinedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Parties" value="parties" />
+              </Tabs>
+            </Box>
+          </Box>
+          {columnTab === 'parties' ? (
+            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: `${layoutTokens.contentPaddingX}px`, py: 2.5 }}>
+              <Stack spacing={1.5}>
+                {submitted ? null : (
+                  <Button
+                    size="small"
+                    color="inherit"
+                    startIcon={<PersonAddOutlinedIcon sx={{ fontSize: 18 }} />}
+                    onClick={() => openPartyForm()}
+                    disabled={busy}
+                    sx={{
+                      ...draftBodySx,
+                      textTransform: 'none',
+                      justifyContent: 'flex-start',
+                      alignSelf: 'flex-start',
+                      px: 0.75,
+                      ml: -0.75,
+                      color: 'text.primary',
+                    }}
+                  >
+                    Add party
+                  </Button>
+                )}
+                <PartiesList parties={parties} readOnly={submitted} onRemove={removeParty} />
+                {partyForm}
+              </Stack>
+            </Box>
+          ) : (
+            <>
           <Box role="log" aria-live="polite" aria-relevant="additions" aria-busy={busy} sx={{ flex: '1 1 auto', minHeight: 140, overflowY: 'auto', px: `${layoutTokens.contentPaddingX}px`, py: 2.5 }}>
             {messages.map((message) =>
               message.role === 'user' ? (
@@ -690,24 +764,7 @@ export function FnolConversationPage() {
             {policyLookupWhere === 'thread' ? <Box sx={{ maxWidth: 480, mb: 2 }}>{policyLookup()}</Box> : null}
             <Box ref={threadEnd} />
           </Box>
-          <Box
-            sx={{
-              flex: '0 1 auto',
-              minHeight: 0,
-              overflowY: 'auto',
-              px: `${layoutTokens.contentPaddingX}px`,
-              pt: 1.25,
-              pb: 1.25,
-              borderTop: 1,
-              borderColor: 'divider',
-            }}
-          >
-            <Stack spacing={1.25}>
-              <PartiesList parties={parties} readOnly={submitted} onRemove={removeParty} />
-              {partyForm}
-            </Stack>
-          </Box>
-          <Box sx={{ flexShrink: 0, px: `${layoutTokens.contentPaddingX}px`, pt: 0.5, pb: 2 }}>
+          <Box sx={{ flexShrink: 0, px: `${layoutTokens.contentPaddingX}px`, pt: 1, pb: 2, borderTop: 1, borderColor: 'divider' }}>
             {submitted ? (
               <Button variant="contained" onClick={() => navigate(`/claims/${encodeURIComponent(draft.claimNumber)}`)}>
                 Open claim
@@ -753,6 +810,8 @@ export function FnolConversationPage() {
               </Stack>
             )}
           </Box>
+            </>
+          )}
         </Box>
 
         <Box
