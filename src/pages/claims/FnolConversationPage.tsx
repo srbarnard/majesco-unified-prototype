@@ -835,7 +835,7 @@ export function FnolConversationPage() {
   const partyForm = submitted ? null : (
     <Box
       sx={(theme) => ({
-        bgcolor: surfaceMuted(theme),
+        bgcolor: chatBubbleIncoming(theme),
         borderRadius: `${layoutTokens.cardRadius}px`,
         p: 2,
       })}
