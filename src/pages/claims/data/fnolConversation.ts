@@ -164,8 +164,9 @@ function applyPartyToDraft(draft: CreateClaimDraft, party: Pick<FnolParty, 'role
       ) {
         return draft
       }
-      if (draft.driver && (draft.driver.status === 'off-schedule' || draft.driver.status === 'referred')) {
-        return { ...draft, driver: { ...draft.driver, name: party.name } }
+      // A corrected name clears the off-schedule blocker; a referred driver keeps that status.
+      if (draft.driver?.status === 'referred') {
+        return { ...draft, driver: { name: party.name, status: 'referred' } }
       }
       return { ...draft, driver: { name: party.name, status: 'scheduled' } }
     case 'Injured': {

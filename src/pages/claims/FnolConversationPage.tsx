@@ -109,9 +109,19 @@ function readTallyWidth() {
   return Number.isFinite(parsed) ? clampTallyWidth(parsed) : FNOL_TALLY_DEFAULT
 }
 
-type FnolMessage = { id: string; role: 'user' | 'assistant'; text: string; pending?: boolean }
+type FnolMessage = {
+  id: string
+  role: 'user' | 'assistant'
+  text: string
+  pending?: boolean
+  elapsedSeconds?: number
+}
 type LookupWhere = 'thread' | 'tally'
 type FnolColumnTab = 'chat' | 'parties'
+
+function fnolElapsedSeconds() {
+  return Math.round((0.55 + Math.random() * 1.35) * 100) / 100
+}
 
 const fnolColumnTabSx = {
   minHeight: 44,
@@ -373,7 +383,15 @@ function UserTurn({ text }: { text: string }) {
   )
 }
 
-function AssistantTurn({ text, pending }: { text: string; pending?: boolean }) {
+function AssistantTurn({
+  text,
+  pending,
+  elapsedSeconds,
+}: {
+  text: string
+  pending?: boolean
+  elapsedSeconds?: number
+}) {
   return (
     <Box sx={{ mb: 2.5, maxWidth: '100%', minWidth: 0 }}>
       <Typography variant="body2" sx={{ ...draftBodySx, lineHeight: 1.6, mb: 0.5, whiteSpace: 'pre-line', overflowWrap: 'break-word' }}>
@@ -382,16 +400,23 @@ function AssistantTurn({ text, pending }: { text: string; pending?: boolean }) {
       {pending ? (
         <LinearProgress aria-label="Reading sources" sx={{ mt: 1.25, borderRadius: 1 }} />
       ) : (
-        <IconButton
-          size="small"
-          aria-label="Copy response"
-          onClick={() => {
-            void navigator.clipboard?.writeText(text)
-          }}
-          sx={{ ml: -0.75 }}
-        >
-          <ContentCopyOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-        </IconButton>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <IconButton
+            size="small"
+            aria-label="Copy response"
+            onClick={() => {
+              void navigator.clipboard?.writeText(text)
+            }}
+            sx={{ ml: -0.75 }}
+          >
+            <ContentCopyOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+          </IconButton>
+          {elapsedSeconds != null ? (
+            <Typography variant="caption" color="text.secondary" sx={draftBodySx}>
+              {elapsedSeconds.toFixed(2)}s
+            </Typography>
+          ) : null}
+        </Stack>
       )}
     </Box>
   )
@@ -532,7 +557,9 @@ export function FnolConversationPage() {
   const { activeTool, closeTool } = useRightTool()
   const [draft, setDraft] = useState(createFnolDraft)
   const [parties, setParties] = useState<FnolParty[]>([])
-  const [messages, setMessages] = useState<FnolMessage[]>([{ id: 'opening', role: 'assistant', text: FNOL_OPENING }])
+  const [messages, setMessages] = useState<FnolMessage[]>([
+    { id: 'opening', role: 'assistant', text: FNOL_OPENING, elapsedSeconds: 0.42 },
+  ])
   const [mode, setMode] = useState<FnolIntakeMode>('narrative')
   const [editing, setEditing] = useState<string | null>(null)
   const [knownOpen, setKnownOpen] = useState(false)
@@ -601,7 +628,10 @@ export function FnolConversationPage() {
   )
 
   const pushAssistant = (text: string) => {
-    setMessages((current) => [...current, { id: messageId(), role: 'assistant', text }])
+    setMessages((current) => [
+      ...current,
+      { id: messageId(), role: 'assistant', text, elapsedSeconds: fnolElapsedSeconds() },
+    ])
   }
 
   const showConversation = () => {
@@ -649,7 +679,13 @@ export function FnolConversationPage() {
     setEditing(null)
     const text = fnolReply(result.captured, buildFnolTally(result.draft, result.parties, true).attention)
     if (pendingId) {
-      setMessages((current) => current.map((message) => (message.id === pendingId ? { ...message, pending: false, text } : message)))
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === pendingId
+            ? { ...message, pending: false, text, elapsedSeconds: fnolElapsedSeconds() }
+            : message,
+        ),
+      )
       return
     }
     pushAssistant(text)
@@ -718,7 +754,9 @@ export function FnolConversationPage() {
   const referDriver = () => {
     const next = referFnolDriver(draft)
     if (next === draft || !draft.driver) return
+    const synced = syncFnolParties(next, parties)
     setDraft(next)
+    setParties(synced)
     setEditing(null)
     pushAssistant(`${draft.driver.name} is referred to coverage, and a review task is on the claim.`)
   }
@@ -872,8 +910,19 @@ export function FnolConversationPage() {
       if (draft.driver?.status === 'off-schedule') {
         return (
           <Stack spacing={1}>
-            <DraftInlineOptions options={['Refer to coverage']} selected={null} onPick={referDriver} />
-            {textEdit('Driver', draft.driver.name, (name) => applyChange({ ...draft, driver: { ...draft.driver!, name } }))}
+            <DraftInlineOptions
+              options={['Refer to coverage']}
+              selected={null}
+              onPick={() => {
+                referDriver()
+              }}
+            />
+            {textEdit('Driver', draft.driver.name, (name) => {
+              const trimmed = name.trim()
+              if (!trimmed) return
+              // Confirming a corrected driver name clears the off-schedule attention item.
+              applyChange({ ...draft, driver: { name: trimmed, status: 'scheduled' } })
+            })}
           </Stack>
         )
       }
@@ -1074,7 +1123,12 @@ export function FnolConversationPage() {
               message.role === 'user' ? (
                 <UserTurn key={message.id} text={message.text} />
               ) : (
-                <AssistantTurn key={message.id} text={message.text} pending={message.pending} />
+                <AssistantTurn
+                  key={message.id}
+                  text={message.text}
+                  pending={message.pending}
+                  elapsedSeconds={message.elapsedSeconds}
+                />
               ),
             )}
             {policyLookupWhere === 'thread' ? <Box sx={{ maxWidth: 480, mb: 2 }}>{policyLookup()}</Box> : null}
