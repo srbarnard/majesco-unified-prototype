@@ -841,7 +841,8 @@ export function FnolConversationPage() {
             {policyLookupWhere === 'thread' ? <Box sx={{ maxWidth: 480, mb: 2 }}>{policyLookup()}</Box> : null}
             <Box ref={threadEnd} />
           </Box>
-          <Box sx={{ flexShrink: 0, px: `${layoutTokens.contentPaddingX}px`, pt: 1, pb: 2, borderTop: 1, borderColor: 'divider' }}>
+          <Box sx={{ flexShrink: 0, px: `${layoutTokens.contentPaddingX}px`, pb: 2 }}>
+            <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 1 }}>
             {submitted ? (
               <Button variant="contained" onClick={() => navigate(`/claims/${encodeURIComponent(draft.claimNumber)}`)}>
                 Open claim
@@ -868,6 +869,7 @@ export function FnolConversationPage() {
                 />
               </Stack>
             )}
+            </Box>
           </Box>
             </>
           )}
