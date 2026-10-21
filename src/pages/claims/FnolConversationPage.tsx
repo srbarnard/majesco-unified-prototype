@@ -2,6 +2,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import AirlineSeatReclineNormalOutlinedIcon from '@mui/icons-material/AirlineSeatReclineNormalOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline'
+import CheckIcon from '@mui/icons-material/Check'
 import CloseIcon from '@mui/icons-material/Close'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
@@ -299,11 +300,13 @@ function PartyTextField({
   value,
   onChange,
   autoFocus = false,
+  endAdornment,
 }: {
   label: string
   value: string
   onChange: (value: string) => void
   autoFocus?: boolean
+  endAdornment?: ReactNode
 }) {
   const id = useId()
   return (
@@ -331,6 +334,7 @@ function PartyTextField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         autoFocus={autoFocus}
+        InputProps={endAdornment ? { endAdornment } : undefined}
       />
     </Box>
   )
@@ -418,6 +422,7 @@ function PartyInlineEdit({
   onSave: (input: { role: FnolPartyRole; name: string; contact: string }) => void
   onDismiss: () => void
 }) {
+  const rootRef = useRef<HTMLDivElement>(null)
   const [role, setRole] = useState<FnolPartyRole>(party.role === 'Insured' ? 'Claimant' : party.role)
   const [name, setName] = useState(party.name)
   const [contact, setContact] = useState(party.contact ? formatFnolContact(party.contact) : '')
@@ -430,6 +435,7 @@ function PartyInlineEdit({
   }
   return (
     <Stack
+      ref={rootRef}
       spacing={1.5}
       sx={{ pl: 7, pr: 2, pb: 1.5 }}
       onKeyDown={(event) => {
@@ -439,20 +445,36 @@ function PartyInlineEdit({
           save()
         }
       }}
+      onBlur={() => {
+        // Defer so a row click can toggle or switch edit before dismiss runs.
+        requestAnimationFrame(() => {
+          if (rootRef.current?.contains(document.activeElement)) return
+          onDismiss()
+        })
+      }}
     >
       <PartyRoleOptions selected={role} onPick={setRole} />
       <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
         <PartyTextField label="Name" value={name} onChange={setName} autoFocus />
-        <PartyTextField label="Phone or email" value={contact} onChange={setContact} />
+        <PartyTextField
+          label="Phone or email"
+          value={contact}
+          onChange={setContact}
+          endAdornment={
+            <IconButton
+              size="small"
+              edge="end"
+              aria-label="Save party"
+              disabled={!name.trim()}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={save}
+              sx={{ color: 'primary.main' }}
+            >
+              <CheckIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          }
+        />
       </Box>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ pt: 1 }}>
-        <Button variant="contained" disabled={!name.trim()} onClick={save}>
-          Save
-        </Button>
-        <Button color="inherit" onClick={onDismiss}>
-          Cancel
-        </Button>
-      </Stack>
     </Stack>
   )
 }
@@ -1298,7 +1320,7 @@ export function FnolConversationPage() {
                       key={party.id}
                       party={party}
                       onSave={(input) => saveParty(party.id, input)}
-                      onDismiss={() => setEditingPartyId(null)}
+                      onDismiss={() => setEditingPartyId((current) => (current === party.id ? null : current))}
                     />
                   )}
                 />
