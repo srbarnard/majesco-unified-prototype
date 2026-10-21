@@ -1,9 +1,11 @@
+import AddIcon from '@mui/icons-material/Add'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import AirlineSeatReclineNormalOutlinedIcon from '@mui/icons-material/AirlineSeatReclineNormalOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline'
 import CheckIcon from '@mui/icons-material/Check'
 import CloseIcon from '@mui/icons-material/Close'
+import RemoveIcon from '@mui/icons-material/Remove'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined'
@@ -19,6 +21,7 @@ import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import MuiChip from '@mui/material/Chip'
+import Collapse from '@mui/material/Collapse'
 import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
 import MenuItem from '@mui/material/MenuItem'
@@ -36,7 +39,7 @@ import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { useRegisterRightToolRecordContext } from '@/app/hooks/useRightToolRegistration'
 import { Button as DsButton, Chip, CopilotQuickActions, EntityListHomeButton } from '@/design-system/components'
-import { chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx, surfaceMuted } from '@/design-system/theme/themeSurfaces'
+import { chatAuthorAvatarSx, chatBubbleIncoming, sectionTabRowBorderSx } from '@/design-system/theme/themeSurfaces'
 import { figmaBorderRadius } from '@/design-system/tokens/figma-border-radius'
 import { getFigmaColors } from '@/design-system/tokens/figma-colors'
 import { figmaFontFamilyStack } from '@/design-system/tokens/figma-typography'
@@ -372,10 +375,14 @@ function FnolPartyForm({
   seed,
   onSubmit,
   onCancel,
+  showTitle = true,
+  autoFocus = true,
 }: {
   seed: FnolPartyRole
   onSubmit: (party: { role: FnolPartyRole; name: string; contact: string }) => void
   onCancel: () => void
+  showTitle?: boolean
+  autoFocus?: boolean
 }) {
   const [role, setRole] = useState<FnolPartyRole>(seed === 'Insured' ? 'Claimant' : seed)
   const [name, setName] = useState('')
@@ -393,12 +400,14 @@ function FnolPartyForm({
         submit()
       }}
     >
-      <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.875rem' }}>
-        Add party
-      </Typography>
+      {showTitle ? (
+        <Typography sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600, fontSize: '0.875rem' }}>
+          Add party
+        </Typography>
+      ) : null}
       <PartyRoleOptions selected={role} onPick={setRole} />
       <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
-        <PartyTextField label="Name" value={name} onChange={setName} autoFocus />
+        <PartyTextField label="Name" value={name} onChange={setName} autoFocus={autoFocus} />
         <PartyTextField label="Phone or email" value={contact} onChange={setContact} />
       </Box>
       <Stack direction="row" spacing={1} alignItems="center" sx={{ pt: 1 }}>
@@ -723,6 +732,7 @@ export function FnolConversationPage() {
   const [partySeed, setPartySeed] = useState<FnolPartyRole>('Claimant')
   const [partyFormGeneration, setPartyFormGeneration] = useState(0)
   const [editingPartyId, setEditingPartyId] = useState<string | null>(null)
+  const [addPartyOpen, setAddPartyOpen] = useState(true)
   const [policyLookupWhere, setPolicyLookupWhere] = useState<LookupWhere | null>(null)
   const [attachKey, setAttachKey] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
@@ -755,6 +765,10 @@ export function FnolConversationPage() {
   useEffect(() => {
     window.localStorage.setItem(FNOL_TALLY_WIDTH_KEY, String(tallyWidth))
   }, [tallyWidth])
+
+  useEffect(() => {
+    setAddPartyOpen(!editingPartyId)
+  }, [editingPartyId])
 
   const startTallyResize = (startX: number) => {
     const startWidth = tallyWidth
@@ -1188,25 +1202,55 @@ export function FnolConversationPage() {
     return null
   }
 
-  const partyFormInactive = Boolean(editingPartyId)
   const partyForm = submitted ? null : (
     <Box
-      aria-disabled={partyFormInactive || undefined}
-      sx={(theme) => ({
-        bgcolor: surfaceMuted(theme),
+      sx={{
+        border: 1,
+        borderColor: 'divider',
         borderRadius: `${layoutTokens.cardRadius}px`,
-        p: 3,
-        opacity: partyFormInactive ? 0.45 : 1,
-        pointerEvents: partyFormInactive ? 'none' : 'auto',
-        transition: 'opacity 0.15s ease',
-      })}
+        bgcolor: 'background.paper',
+      }}
     >
-      <FnolPartyForm
-        key={`${partySeed}-${partyFormGeneration}`}
-        seed={partySeed}
-        onSubmit={submitParty}
-        onCancel={() => setPartyFormGeneration((generation) => generation + 1)}
-      />
+      <Stack direction="row" spacing={1} alignItems="flex-start" sx={{ p: 1.5 }}>
+        <IconButton
+          size="small"
+          aria-label={addPartyOpen ? 'Collapse Add party' : 'Expand Add party'}
+          aria-expanded={addPartyOpen}
+          disabled={Boolean(editingPartyId)}
+          onClick={() => setAddPartyOpen((open) => !open)}
+          sx={{ color: 'primary.main', mt: -0.25 }}
+        >
+          {addPartyOpen ? <RemoveIcon fontSize="small" /> : <AddIcon fontSize="small" />}
+        </IconButton>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            sx={{
+              fontFamily: figmaFontFamilyStack.heading,
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              lineHeight: 1.35,
+              color: 'text.primary',
+            }}
+          >
+            Add party
+          </Typography>
+          <Typography sx={{ ...draftBodySx, color: 'text.secondary', fontSize: '0.8125rem', lineHeight: 1.4, mt: 0.25 }}>
+            Role, name, and how to reach them
+          </Typography>
+        </Box>
+      </Stack>
+      <Collapse in={addPartyOpen} unmountOnExit={false}>
+        <Box sx={{ px: 1.5, pb: 1.5, pt: 0.5 }}>
+          <FnolPartyForm
+            key={`${partySeed}-${partyFormGeneration}`}
+            seed={partySeed}
+            showTitle={false}
+            autoFocus={addPartyOpen && !editingPartyId}
+            onSubmit={submitParty}
+            onCancel={() => setPartyFormGeneration((generation) => generation + 1)}
+          />
+        </Box>
+      </Collapse>
     </Box>
   )
 
