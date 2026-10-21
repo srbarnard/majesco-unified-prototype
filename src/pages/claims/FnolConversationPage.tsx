@@ -1391,7 +1391,7 @@ export function FnolConversationPage() {
           </Box>
           {columnTab === 'parties' ? (
             <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: `${layoutTokens.contentPaddingX}px`, py: 2.5 }}>
-              <Stack spacing={1.5}>
+              <Stack spacing="3px">
                 <PartiesList
                   parties={parties}
                   readOnly={submitted}
