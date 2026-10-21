@@ -732,7 +732,9 @@ export function FnolConversationPage() {
   const [partySeed, setPartySeed] = useState<FnolPartyRole>('Claimant')
   const [partyFormGeneration, setPartyFormGeneration] = useState(0)
   const [editingPartyId, setEditingPartyId] = useState<string | null>(null)
-  const [addPartyOpen, setAddPartyOpen] = useState(true)
+  // User pin for Add party; forced closed while a party row is being edited.
+  const [addPartyUserOpen, setAddPartyUserOpen] = useState(true)
+  const addPartyOpen = !editingPartyId && addPartyUserOpen
   const [policyLookupWhere, setPolicyLookupWhere] = useState<LookupWhere | null>(null)
   const [attachKey, setAttachKey] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
@@ -743,6 +745,7 @@ export function FnolConversationPage() {
   const threadEnd = useRef<HTMLDivElement>(null)
   const readTimer = useRef<number | null>(null)
   const activeToolRef = useRef(activeTool)
+  const prevEditingPartyId = useRef<string | null>(null)
   activeToolRef.current = activeTool
 
   const userTurns = messages.filter((message) => message.role === 'user').length
@@ -766,8 +769,12 @@ export function FnolConversationPage() {
     window.localStorage.setItem(FNOL_TALLY_WIDTH_KEY, String(tallyWidth))
   }, [tallyWidth])
 
+  // After inline edit ends, restore Add party so +/− and Collapse stay aligned.
   useEffect(() => {
-    setAddPartyOpen(!editingPartyId)
+    if (prevEditingPartyId.current && !editingPartyId) {
+      setAddPartyUserOpen(true)
+    }
+    prevEditingPartyId.current = editingPartyId
   }, [editingPartyId])
 
   const startTallyResize = (startX: number) => {
@@ -1217,7 +1224,10 @@ export function FnolConversationPage() {
           aria-label={addPartyOpen ? 'Collapse Add party' : 'Expand Add party'}
           aria-expanded={addPartyOpen}
           disabled={Boolean(editingPartyId)}
-          onClick={() => setAddPartyOpen((open) => !open)}
+          onClick={() => {
+            if (editingPartyId) return
+            setAddPartyUserOpen((open) => !open)
+          }}
           sx={{ color: 'primary.main', mt: -0.25 }}
         >
           {addPartyOpen ? <RemoveIcon fontSize="small" /> : <AddIcon fontSize="small" />}
