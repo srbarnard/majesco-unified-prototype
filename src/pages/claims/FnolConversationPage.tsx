@@ -1175,7 +1175,7 @@ export function FnolConversationPage() {
     return null
   }
 
-  const partyForm = submitted ? null : (
+  const partyForm = submitted || editingPartyId ? null : (
     <Box
       sx={(theme) => ({
         bgcolor: surfaceMuted(theme),
