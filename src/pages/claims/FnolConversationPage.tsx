@@ -1246,13 +1246,15 @@ export function FnolConversationPage() {
             size="small"
             aria-label={addPartyOpen ? 'Collapse Add party' : 'Expand Add party'}
             aria-expanded={addPartyOpen}
-            onClick={() => {
+            onClick={(event) => {
               if (editingPartyId) {
                 setEditingPartyId(null)
                 setAddPartyUserOpen(true)
-                return
+              } else {
+                setAddPartyUserOpen((open) => !open)
               }
-              setAddPartyUserOpen((open) => !open)
+              // Drop focus so hover/pressed styles do not stick after click.
+              event.currentTarget.blur()
             }}
             sx={{ color: 'primary.main' }}
           >
