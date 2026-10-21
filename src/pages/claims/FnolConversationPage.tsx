@@ -640,12 +640,20 @@ function PartiesList({
               bgcolor: 'background.paper',
             }}
           >
-            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ py: 0.5, pr: 1 }}>
+            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ pr: 1 }}>
             <Box
               component={editable ? 'button' : 'div'}
               type={editable ? 'button' : undefined}
               aria-pressed={editable ? selected : undefined}
               aria-label={editable ? `Edit ${party.name}` : undefined}
+              onMouseDown={
+                editable
+                  ? (event) => {
+                      // Keep the editor from blur-dismissing before this toggle runs.
+                      event.preventDefault()
+                    }
+                  : undefined
+              }
               onClick={editable ? () => onEdit(party.id) : undefined}
               sx={{
                 flex: 1,
@@ -654,7 +662,8 @@ function PartiesList({
                 alignItems: 'center',
                 gap: 1.25,
                 m: 0,
-                py: 1,
+                // Include former outer Stack py: 0.5 so the hit target fills the header.
+                py: 1.5,
                 pl: 2,
                 pr: 1,
                 border: 0,
