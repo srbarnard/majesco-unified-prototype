@@ -58,10 +58,12 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
 import { alpha, useTheme, type Theme } from '@mui/material/styles'
 import type { SvgIconComponent } from '@mui/icons-material'
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
 import { useRightToolDispatch } from '@/app/contexts/RightToolContext'
+import { FNOL_PATH } from '@/pages/claims/data/fnolConversation'
 import {
   FIGMA_METRIC_LABELS,
   HOME_PAGE_SIZE,
@@ -2111,10 +2113,16 @@ function getGreeting() {
 
 const MY_CLAIMS = homeClaims.injury
 
-/** Joan's claims home. New Claim opens the shell's Create claim drawer, the same one as + → Claim. */
+/** Joan's claims home. New Claim opens the conversational FNOL page, the same place as + → Claim. */
 export function ClaimsHomePage() {
+  const navigate = useNavigate()
   const { openTool, closeTool } = useRightToolDispatch()
   const [sectionInsight, setSectionInsight] = useState<SectionInsight | null>(null)
+
+  useEffect(() => {
+    if (!CLAIMS_ONLY) return
+    closeTool()
+  }, [closeTool])
   const openCopilot = () => {
     setSectionInsight(null)
     openTool('copilot')
@@ -2144,7 +2152,14 @@ export function ClaimsHomePage() {
           {`${getGreeting()}, ${HOME_PERSONA.name.split(' ')[0]}`}
         </Typography>
         <Box component="section" aria-label="Actions" sx={{ mb: 3 }}>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => openTool('newClaim')}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => {
+              closeTool()
+              navigate(FNOL_PATH)
+            }}
+          >
             New Claim
           </Button>
         </Box>

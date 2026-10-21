@@ -58,15 +58,15 @@ type NavOrder = Record<NavListId, string[]>
 const PINNED_TOP_LABEL = 'Home'
 const NAV_ORDER_STORAGE_KEY = 'leftNav.order'
 
-/** Claims opens the section landing. Home and every other item stay visible. */
-const CLAIMS_ONLY_NAVIGABLE = new Set(['Claims'])
+/** Home, Claims, and Tasks navigate. Activity and Favorites open side panels. */
+const CLAIMS_ONLY_NAVIGABLE = new Set(['Home', 'Activity', 'Favorites', 'Tasks', 'Claims'])
 
 function isClaimsOnlyNavigable(label: string) {
   return !CLAIMS_ONLY || CLAIMS_ONLY_NAVIGABLE.has(label)
 }
 
 const shellNavItems = CLAIMS_ONLY ? claimsOnlyShellNavItems : visibleAppShellNavItems
-const shellMoreItems = moreMenuItems
+const shellMoreItems = CLAIMS_ONLY ? [] : moreMenuItems
 
 const navItemsByLabel = new Map<string, NavItem>(
   [...shellNavItems, ...shellMoreItems].map((item) => [item.label, item]),
@@ -462,7 +462,7 @@ function SidebarContent({
         {homeItem && renderNavItem(homeItem)}
         {mainItems.map((item) => renderNavItem(item, 'main'))}
 
-        {isDrawer ? (
+        {moreItems.length > 0 && isDrawer ? (
           <>
             <Divider sx={{ my: 1 }} />
             <Typography
@@ -481,7 +481,7 @@ function SidebarContent({
             </Typography>
             {moreItems.map((item) => renderNavItem(item, 'more'))}
           </>
-        ) : (
+        ) : moreItems.length > 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 0.25, mb: 0.5 }}>
             <IconButton
               aria-label="More navigation options"
@@ -506,7 +506,7 @@ function SidebarContent({
               <MoreHorizIcon sx={{ fontSize: 28 }} />
             </IconButton>
           </Box>
-        )}
+        ) : null}
 
         <Box
           aria-hidden
