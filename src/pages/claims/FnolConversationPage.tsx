@@ -2,7 +2,6 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import AirlineSeatReclineNormalOutlinedIcon from '@mui/icons-material/AirlineSeatReclineNormalOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline'
-import CheckIcon from '@mui/icons-material/Check'
 import CloseIcon from '@mui/icons-material/Close'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
@@ -447,16 +446,9 @@ function PartyInlineEdit({
         <PartyTextField label="Phone or email" value={contact} onChange={setContact} />
       </Box>
       <Stack direction="row" spacing={1} alignItems="center" sx={{ pt: 1 }}>
-        <IconButton
-          size="small"
-          aria-label="Save party"
-          disabled={!name.trim()}
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={save}
-          sx={{ color: 'primary.main' }}
-        >
-          <CheckIcon sx={{ fontSize: 18 }} />
-        </IconButton>
+        <Button variant="contained" disabled={!name.trim()} onClick={save}>
+          Save
+        </Button>
         <Button color="inherit" onClick={onDismiss}>
           Cancel
         </Button>
@@ -615,7 +607,6 @@ function PartiesList({
               border: 1,
               borderColor: 'divider',
               bgcolor: 'background.paper',
-              boxShadow: (theme) => (selected ? `inset 3px 0 0 ${theme.palette.primary.main}` : 'none'),
             }}
           >
             <Stack direction="row" alignItems="center" spacing={0.5} sx={{ py: 0.5, pr: 1 }}>
