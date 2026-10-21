@@ -600,11 +600,9 @@ function PartiesList({
 
   return (
     <Stack component="ul" aria-label="Parties" spacing="3px" sx={{ listStyle: 'none', m: 0, p: 0 }}>
-      {parties.map((party, index) => {
+      {parties.map((party) => {
         const visual = PARTY_ROLE_VISUAL[party.role]
         const Icon = visual.icon
-        const isFirst = index === 0
-        const isLast = index === parties.length - 1
         const contact = party.contact?.trim() ? formatFnolContact(party.contact) : 'No contact'
         const editable = !readOnly && party.role !== 'Insured'
         const selected = editingId === party.id
@@ -613,11 +611,10 @@ function PartiesList({
             key={party.id}
             component="li"
             sx={{
-              borderTopLeftRadius: isFirst ? radius : 0,
-              borderTopRightRadius: isFirst ? radius : 0,
-              borderBottomLeftRadius: isLast ? radius : 0,
-              borderBottomRightRadius: isLast ? radius : 0,
-              bgcolor: (theme) => surfaceMuted(theme),
+              borderRadius: radius,
+              border: 1,
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
               boxShadow: (theme) => (selected ? `inset 3px 0 0 ${theme.palette.primary.main}` : 'none'),
             }}
           >
