@@ -1246,9 +1246,12 @@ export function FnolConversationPage() {
             size="small"
             aria-label={addPartyOpen ? 'Collapse Add party' : 'Expand Add party'}
             aria-expanded={addPartyOpen}
-            disabled={Boolean(editingPartyId)}
             onClick={() => {
-              if (editingPartyId) return
+              if (editingPartyId) {
+                setEditingPartyId(null)
+                setAddPartyUserOpen(true)
+                return
+              }
               setAddPartyUserOpen((open) => !open)
             }}
             sx={{ color: 'primary.main' }}
