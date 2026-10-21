@@ -1218,20 +1218,35 @@ export function FnolConversationPage() {
         bgcolor: 'background.paper',
       }}
     >
-      <Stack direction="row" spacing={1} alignItems="flex-start" sx={{ p: 1.5 }}>
-        <IconButton
-          size="small"
-          aria-label={addPartyOpen ? 'Collapse Add party' : 'Expand Add party'}
-          aria-expanded={addPartyOpen}
-          disabled={Boolean(editingPartyId)}
-          onClick={() => {
-            if (editingPartyId) return
-            setAddPartyUserOpen((open) => !open)
+      <Stack
+        direction="row"
+        alignItems="center"
+        sx={{ pl: 2, pr: 1.5, py: 1.5, gap: 1.25 }}
+      >
+        <Box
+          sx={{
+            width: 32,
+            height: 32,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
           }}
-          sx={{ color: 'primary.main', mt: -0.25 }}
         >
-          {addPartyOpen ? <RemoveIcon fontSize="small" /> : <AddIcon fontSize="small" />}
-        </IconButton>
+          <IconButton
+            size="small"
+            aria-label={addPartyOpen ? 'Collapse Add party' : 'Expand Add party'}
+            aria-expanded={addPartyOpen}
+            disabled={Boolean(editingPartyId)}
+            onClick={() => {
+              if (editingPartyId) return
+              setAddPartyUserOpen((open) => !open)
+            }}
+            sx={{ color: 'primary.main' }}
+          >
+            {addPartyOpen ? <RemoveIcon fontSize="small" /> : <AddIcon fontSize="small" />}
+          </IconButton>
+        </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
             sx={{
