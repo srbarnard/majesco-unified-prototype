@@ -1166,12 +1166,17 @@ export function FnolConversationPage() {
     return null
   }
 
-  const partyForm = submitted || editingPartyId ? null : (
+  const partyFormInactive = Boolean(editingPartyId)
+  const partyForm = submitted ? null : (
     <Box
+      aria-disabled={partyFormInactive || undefined}
       sx={(theme) => ({
         bgcolor: surfaceMuted(theme),
         borderRadius: `${layoutTokens.cardRadius}px`,
         p: 3,
+        opacity: partyFormInactive ? 0.45 : 1,
+        pointerEvents: partyFormInactive ? 'none' : 'auto',
+        transition: 'opacity 0.15s ease',
       })}
     >
       <FnolPartyForm
