@@ -185,7 +185,7 @@
   .subheader-actions #persistentAddPartyBtn[hidden]{display:none !important;}
   .add-party-toggle{white-space:nowrap;}
   .add-party-toggle .add-party-toggle-ic{
-    flex:0 0 auto;width:14px;height:14px;display:block;
+    flex:0 0 auto;width:20px;height:20px;display:block;
     transition:transform 150ms ease-out,opacity 150ms ease-out;
     transform-origin:center center;
   }
@@ -641,7 +641,7 @@
         <span class="spacer"></span>
         <div class="subheader-actions">
           <button class="btn btn-text add-party-toggle" type="button" id="persistentAddPartyBtn" aria-label="Add party" aria-expanded="false" aria-controls="persistentPartyInlineHost" hidden>
-            <svg class="add-party-toggle-ic" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <svg class="add-party-toggle-ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
             <span>Add party</span>
           </button>
           <span class="subheader-actions-divider" id="addPartyDivider" hidden aria-hidden="true"></span>
@@ -1243,8 +1243,19 @@
   function buildPartyInlineRow(){
     return `<div class="inline-add-row" data-row-type="party">
       <input class="row-input" data-field="name" placeholder="Name">
-      <input class="row-input" data-field="role" placeholder="Role">
-      <input class="row-input" data-field="type" placeholder="Type">
+      <select class="row-input" data-field="role" aria-label="Role">
+        <option value="" selected disabled>Role</option>
+        <option value="Named insured">Named insured</option>
+        <option value="Insured driver">Insured driver</option>
+        <option value="Claimant">Claimant</option>
+        <option value="Witness">Witness</option>
+        <option value="Other">Other</option>
+      </select>
+      <select class="row-input" data-field="type" aria-label="Type">
+        <option value="" selected disabled>Type</option>
+        <option value="Person">Person</option>
+        <option value="Organization">Organization</option>
+      </select>
       <input class="row-input" data-field="contact" placeholder="Contact">
       ${newRowActionIcons()}
     </div>`;
