@@ -80,8 +80,8 @@
   button{font-family:var(--font-body);cursor:pointer;}
 
   /* ============ SHELL ============ */
-  .app-frame{display:flex;align-items:stretch;height:100vh;min-width:1280px;overflow:hidden;background:var(--canvas);}
-  .shell{display:flex;flex-direction:column;flex:1 1 auto;min-width:0;height:100%;}
+  .app-frame{display:flex;flex-direction:column;height:100vh;min-width:1280px;overflow:hidden;background:var(--canvas);}
+  .shell{display:flex;flex-direction:column;flex:1 1 auto;min-width:0;min-height:0;height:100%;}
 
   /* ---- Top App Bar ---- */
   .appbar{
@@ -173,10 +173,11 @@
   .copilot-btn[aria-expanded="true"] .copilot-ic-default{display:none;}
   .copilot-btn[aria-expanded="true"] .copilot-ic-active{display:block;}
 
-  /* ---- Copilot right drawer (pushes main content; Majesco One) ---- */
+  /* ---- Copilot right drawer (below app bar; pushes page; Majesco One) ---- */
   .copilot-drawer{
     --copilot-w:360px;
-    flex:0 0 0;width:0;min-width:0;height:100%;overflow:hidden;
+    position:relative;align-self:stretch;
+    flex:0 0 0;width:0;min-width:0;height:auto;min-height:0;overflow:hidden;
     display:flex;flex-direction:column;background:var(--surface);
     border-left:1px solid transparent;box-sizing:border-box;
     transition:flex-basis 250ms ease-out,width 250ms ease-out,border-left-color 250ms ease-out;
@@ -185,8 +186,23 @@
     flex-basis:var(--copilot-w);width:var(--copilot-w);
     border-left-color:var(--divider);
   }
+  .copilot-drawer.is-resizing{transition:none !important;user-select:none;}
+  .copilot-drawer-resizer{
+    position:absolute;left:0;top:0;bottom:0;width:6px;z-index:3;
+    cursor:col-resize;touch-action:none;background:transparent;border:none;padding:0;
+    display:none;
+  }
+  .copilot-drawer.is-open .copilot-drawer-resizer{display:block;}
+  .copilot-drawer-resizer:hover,
+  .copilot-drawer.is-resizing .copilot-drawer-resizer{background:var(--primary-selected-bg);}
+  .copilot-drawer-resizer::after{
+    content:"";position:absolute;top:50%;left:1px;width:4px;height:32px;margin-top:-16px;
+    border-radius:2px;background:var(--divider);
+  }
+  .copilot-drawer-resizer:hover::after,
+  .copilot-drawer.is-resizing .copilot-drawer-resizer::after{background:var(--primary-main);}
   .copilot-drawer-inner{
-    width:var(--copilot-w);min-width:var(--copilot-w);height:100%;
+    width:var(--copilot-w);min-width:var(--copilot-w);height:100%;min-height:0;
     display:flex;flex-direction:column;background:var(--surface);box-sizing:border-box;
   }
   .copilot-drawer-header{
@@ -813,10 +829,9 @@
         </div>
       </div>
     </div>
-  </div>
-</div>
 
-<aside class="copilot-drawer" id="copilotDrawer" role="complementary" aria-labelledby="copilotDrawerTitle" aria-hidden="true">
+    <aside class="copilot-drawer" id="copilotDrawer" role="complementary" aria-labelledby="copilotDrawerTitle" aria-hidden="true">
+  <button type="button" class="copilot-drawer-resizer" id="copilotDrawerResizer" aria-label="Resize Copilot drawer" tabindex="-1"></button>
   <div class="copilot-drawer-inner">
   <div class="copilot-drawer-header">
     <h2 id="copilotDrawerTitle">Copilot</h2>
@@ -927,6 +942,8 @@
   </div>
   </div>
 </aside>
+  </div>
+</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1871,9 +1888,23 @@
 
   renderApp();
 
-  /* Copilot drawer — pushes main content; header button toggles open/closed. */
+  /* Copilot drawer — below app bar, pushes page; header toggles; left-edge resize. */
   const copilotBtn = document.getElementById('copilotBtn');
   const copilotDrawer = document.getElementById('copilotDrawer');
+  const copilotResizer = document.getElementById('copilotDrawerResizer');
+  const COPILOT_W_MIN = 280;
+  const COPILOT_W_MAX = 720;
+  const COPILOT_W_DEFAULT = 360;
+  function clampCopilotWidth(px){
+    const max = Math.min(COPILOT_W_MAX, Math.max(COPILOT_W_MIN, Math.floor(window.innerWidth * 0.55)));
+    return Math.max(COPILOT_W_MIN, Math.min(max, Math.round(px)));
+  }
+  function setCopilotWidth(px){
+    const w = clampCopilotWidth(px);
+    copilotDrawer.style.setProperty('--copilot-w', w + 'px');
+    return w;
+  }
+  setCopilotWidth(COPILOT_W_DEFAULT);
   function setCopilotOpen(open){
     copilotBtn.setAttribute('aria-expanded', String(open));
     copilotDrawer.classList.toggle('is-open', open);
@@ -1887,6 +1918,33 @@
   document.getElementById('copilotDrawerClose').addEventListener('click', ()=> setCopilotOpen(false));
   document.addEventListener('keydown', (e)=>{
     if(e.key==='Escape' && copilotBtn.getAttribute('aria-expanded')==='true') setCopilotOpen(false);
+  });
+  let copilotResizeActive = false;
+  function onCopilotResizeMove(e){
+    if(!copilotResizeActive) return;
+    const right = copilotDrawer.getBoundingClientRect().right;
+    setCopilotWidth(right - e.clientX);
+  }
+  function endCopilotResize(){
+    if(!copilotResizeActive) return;
+    copilotResizeActive = false;
+    copilotDrawer.classList.remove('is-resizing');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    window.removeEventListener('pointermove', onCopilotResizeMove);
+    window.removeEventListener('pointerup', endCopilotResize);
+    window.removeEventListener('pointercancel', endCopilotResize);
+  }
+  copilotResizer.addEventListener('pointerdown', (e)=>{
+    if(copilotBtn.getAttribute('aria-expanded') !== 'true') return;
+    e.preventDefault();
+    copilotResizeActive = true;
+    copilotDrawer.classList.add('is-resizing');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', onCopilotResizeMove);
+    window.addEventListener('pointerup', endCopilotResize);
+    window.addEventListener('pointercancel', endCopilotResize);
   });
   document.getElementById('copilotNewChat').addEventListener('click', ()=> toast('New chat'));
   document.getElementById('copilotViewAllPrompts').addEventListener('click', (e)=>{ e.preventDefault(); toast('Prompts & actions gallery'); });
