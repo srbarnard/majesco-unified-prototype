@@ -374,11 +374,11 @@
 
   /* ---- Persistent Add party panel (under subheader) ---- */
   .fnol-party-inline-host{
-    flex:0 0 auto;background:transparent;border-bottom:1px solid var(--divider);
+    flex:0 0 auto;background:var(--info-bg);border-bottom:1px solid var(--divider);
     padding:0;box-sizing:border-box;
   }
-  .fnol-party-inline-host:empty{display:none;padding:0;border:none;}
-  .fnol-party-add-band{background:var(--info-bg);}
+  .fnol-party-inline-host:empty{display:none;padding:0;border:none;background:transparent;}
+  .fnol-party-add-band{background:transparent;}
   .fnol-party-inline-host .inline-add-row{
     display:flex;flex-wrap:nowrap;align-items:center;gap:20px;
     width:100%;margin:0;padding:16px 32px;box-sizing:border-box;
@@ -389,7 +389,7 @@
   }
   .fnol-party-inline-host .inline-add-row .row-icons{flex:0 0 auto;margin-left:0;}
   .fnol-party-list{
-    list-style:none;margin:0;padding:4px 32px 8px;background:#fff;
+    list-style:none;margin:0;padding:4px 32px 12px;background:transparent;
   }
   .fnol-party-line{
     display:flex;align-items:center;gap:12px;padding:8px 0;
@@ -446,7 +446,8 @@
   .doc-card .dc-icon svg,.fnol-party-line .dc-icon svg{flex:0 0 auto;}
   .doc-card .dc-icon.tone-success,.fnol-party-line .dc-icon.tone-success{background:var(--success-bg);color:var(--success-main);}
   .doc-card .dc-icon.tone-secondary,.fnol-party-line .dc-icon.tone-secondary{background:#E6F0EF;color:var(--secondary-main);}
-  .doc-card .dc-icon.tone-info,.fnol-party-line .dc-icon.tone-info{background:var(--info-bg);color:var(--info-main);}
+  /* Organization: neutral gray (not info blue) so blue is not the org identifier; person stays tone-secondary */
+  .doc-card .dc-icon.tone-info,.fnol-party-line .dc-icon.tone-info{background:var(--action-disabled-bg);color:var(--gray-dark);}
   .doc-card .dc-action{display:block;width:100%;margin:12px 0 0;padding:10px 0 0;text-align:left;border:none;border-top:1px solid var(--divider);border-radius:0;font-size:12.5px;font-weight:500;color:var(--primary-main);background:none;cursor:pointer;font-family:var(--font-display);}
   .doc-card .dc-action:hover{text-decoration:underline;}
   .doc-card .dc-vehicle-head{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:4px 8px;}
