@@ -372,12 +372,13 @@
   .row-icons button.row-save:hover{background:var(--success-bg);}
   .row-icons button.row-cancel:hover{background:var(--error-bg);color:var(--error-main);}
 
-  /* ---- Persistent Add party inline host (under subheader; full-bleed info band) ---- */
+  /* ---- Persistent Add party panel (under subheader) ---- */
   .fnol-party-inline-host{
-    flex:0 0 auto;background:var(--info-bg);border-bottom:1px solid var(--divider);
+    flex:0 0 auto;background:transparent;border-bottom:1px solid var(--divider);
     padding:0;box-sizing:border-box;
   }
-  .fnol-party-inline-host:empty{display:none;padding:0;border:none;background:transparent;}
+  .fnol-party-inline-host:empty{display:none;padding:0;border:none;}
+  .fnol-party-add-band{background:var(--info-bg);}
   .fnol-party-inline-host .inline-add-row{
     display:flex;flex-wrap:nowrap;align-items:center;gap:20px;
     width:100%;margin:0;padding:16px 32px;box-sizing:border-box;
@@ -387,6 +388,17 @@
     flex:1 1 0;width:auto;min-width:0;
   }
   .fnol-party-inline-host .inline-add-row .row-icons{flex:0 0 auto;margin-left:0;}
+  .fnol-party-list{
+    list-style:none;margin:0;padding:4px 32px 8px;background:#fff;
+  }
+  .fnol-party-line{
+    display:flex;align-items:center;gap:16px;padding:8px 0;
+    border-bottom:1px solid var(--divider);font-family:var(--font-body);font-size:14px;line-height:20px;
+  }
+  .fnol-party-line:last-child{border-bottom:none;}
+  .fnol-party-name{flex:1 1 auto;min-width:0;color:var(--text-primary);font-weight:400;}
+  .fnol-party-meta{flex:0 1 auto;color:var(--text-secondary);white-space:nowrap;}
+  .fnol-party-line .trash-btn{flex:0 0 auto;margin-left:4px;}
 
   /* ---- Inline add-row inputs (FNOL repeating tables) ---- */
   tr.new-row td,
@@ -804,16 +816,13 @@
   /* =========================================================
      FNOL — Parties, vehicles & damages
      ========================================================= */
-  /* Shared party list so Add party from any FNOL substep survives navigation. */
+  /* Shared party list — managed only from the subheader Add party toggle. */
   const PARTIES = [
     {name:'Continental Delivery LLC', roleType:'Named insured · Organization', contact:'502-555-0178', type:'organization'},
     {name:'Dario Vasquez', roleType:'Insured driver · Person', contact:'502-555-0142', type:'person'},
     {name:'Marcus Aurelio Reyes', roleType:'Claimant · Person', contact:'', type:'person'},
     {name:'Alexis Monroe', roleType:'Witness · Person', contact:'502-555-0191', type:'person'}
   ];
-  function partiesCardsHtml(){
-    return PARTIES.map(p=>partyDocCard(p.name, p.roleType, p.contact, p.type)).join('');
-  }
   function partyFromInlineValues(v){
     const isOrg = /org/i.test(v.type||'');
     const type = isOrg ? 'organization' : 'person';
@@ -828,18 +837,10 @@
   function commitParty(v){
     const party = partyFromInlineValues(v);
     PARTIES.push(party);
-    const cards = document.getElementById('partiesCards');
-    if(cards) cards.insertAdjacentHTML('beforeend', partyDocCard(party.name, party.roleType, party.contact, party.type));
     return party;
   }
   function fnolParties(){
-    return sectionOpen('Parties', pillPopulated) + addToolbar('Add party', 'partiesCards') + `
-      <div class="doc-card-row cols-4" id="partiesCards">
-        ${partiesCardsHtml()}
-      </div>
-    ` + sectionClose +
-
-    sectionOpen('Vehicle details', pillPopulated) + addToolbar('Add vehicle', 'vehiclesCards') + `
+    return sectionOpen('Vehicle details', pillPopulated) + addToolbar('Add vehicle', 'vehiclesCards') + `
       <div class="doc-card-row" id="vehiclesCards">
         ${vehicleDocCard('2023 Isuzu NPR HD','Insured vehicle','JALE5W163P7K01422','Front bumper, grille and radiator support','No')}
         ${vehicleDocCard('2021 Toyota Camry','Third-party vehicle','4T1G11AK7MU521884','Rear bumper, deck lid and frame rail','No')}
@@ -1147,7 +1148,7 @@
     locations:{fields:[{key:'location',ph:'Location'},{key:'type',ph:'Type'},{key:'jurisdiction',ph:'Jurisdiction'},{key:'source',ph:'Source'}]}
   };
   const TBODY_TYPE_MAP = {injuredTbody:'injured', locationsTbody:'locations'};
-  const CARD_TARGET_MAP = {partiesCards:'party', vehiclesCards:'vehicle'};
+  const CARD_TARGET_MAP = {vehiclesCards:'vehicle'};
 
   function newRowActionIcons(){
     return `<div class="row-icons">
@@ -1241,11 +1242,7 @@
       settled = true;
       const v = {};
       row.querySelectorAll('[data-field]').forEach(inp=>{ v[inp.dataset.field] = inp.value.trim(); });
-      if(type==='party'){
-        commitParty(v);
-      } else {
-        container.insertAdjacentHTML('beforeend', vehicleDocCard(v.desc || 'Unnamed vehicle', v.vehicleType, v.vin, v.damage, v.drivable));
-      }
+      container.insertAdjacentHTML('beforeend', vehicleDocCard(v.desc || 'Unnamed vehicle', v.vehicleType, v.vin, v.damage, v.drivable));
       row.remove();
       finish();
     }
@@ -1266,13 +1263,13 @@
       existingRow.querySelector('.row-input')?.focus();
       return;
     }
-    container.insertAdjacentHTML('afterend', type==='party' ? buildPartyInlineRow() : buildVehicleInlineRow());
+    container.insertAdjacentHTML('afterend', buildVehicleInlineRow());
     const row = container.nextElementSibling;
     wireInlineRow(row, type, container);
     row.querySelector('.row-input')?.focus();
   }
 
-  /* Subheader Add party toggle — same inline row as Parties, under the subheader. */
+  /* Subheader Add party toggle — input row + compact party list under the subheader. */
   let addPartyOpen = false;
   function renderAddPartyToggle(){
     const btn = document.getElementById('persistentAddPartyBtn');
@@ -1284,6 +1281,64 @@
       btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add party</span>';
     }
   }
+  function partiesListHtml(){
+    if(!PARTIES.length) return '';
+    return `<ul class="fnol-party-list" role="list">${PARTIES.map((p,i)=>`
+      <li class="fnol-party-line">
+        <span class="fnol-party-name">${escHtml(p.name)}</span>
+        <span class="fnol-party-meta">${escHtml(p.roleType)}</span>
+        <button type="button" class="trash-btn" title="Remove ${escHtml(p.name)}" aria-label="Remove ${escHtml(p.name)}" data-party-remove="${i}">${mi('delete',20)}</button>
+      </li>`).join('')}</ul>`;
+  }
+  function wirePersistentPartyRow(row){
+    let settled = false;
+    function saveRow(){
+      if(settled) return;
+      settled = true;
+      const v = {};
+      row.querySelectorAll('[data-field]').forEach(inp=>{ v[inp.dataset.field] = inp.value.trim(); });
+      commitParty(v);
+      renderPersistentPartyPanel(true);
+    }
+    function cancelRow(){
+      if(settled) return;
+      settled = true;
+      renderPersistentPartyPanel(true);
+    }
+    row.querySelector('.row-save').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); saveRow(); });
+    row.querySelector('.row-cancel').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); cancelRow(); });
+    row.addEventListener('focusout', (e)=>{
+      if(settled) return;
+      const next = e.relatedTarget;
+      if(!next || !row.contains(next)){
+        /* Only auto-save when at least one field has a value; otherwise leave the blank row. */
+        const hasValue = [...row.querySelectorAll('[data-field]')].some(inp=>inp.value.trim());
+        if(hasValue) saveRow();
+      }
+    });
+  }
+  function wirePersistentPartyList(host){
+    host.querySelectorAll('[data-party-remove]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const i = Number(btn.dataset.partyRemove);
+        if(Number.isNaN(i) || i<0 || i>=PARTIES.length) return;
+        const [removed] = PARTIES.splice(i, 1);
+        toast(`${removed.name} removed`);
+        renderPersistentPartyPanel(true);
+      });
+    });
+  }
+  function renderPersistentPartyPanel(focusInput){
+    const host = document.getElementById('persistentPartyInlineHost');
+    if(!host || !addPartyOpen) return;
+    host.innerHTML = `<div class="fnol-party-add-band">${buildPartyInlineRow()}</div>${partiesListHtml()}`;
+    const row = host.querySelector('.inline-add-row');
+    wirePersistentPartyRow(row);
+    wirePersistentPartyList(host);
+    if(focusInput) row.querySelector('.row-input')?.focus();
+  }
   function closePersistentPartyInline(){
     addPartyOpen = false;
     const host = document.getElementById('persistentPartyInlineHost');
@@ -1291,18 +1346,13 @@
     renderAddPartyToggle();
   }
   function togglePersistentPartyInline(){
-    const host = document.getElementById('persistentPartyInlineHost');
-    if(!host) return;
     if(addPartyOpen){
       closePersistentPartyInline();
       return;
     }
     addPartyOpen = true;
     renderAddPartyToggle();
-    host.innerHTML = buildPartyInlineRow();
-    const row = host.firstElementChild;
-    wireInlineRow(row, 'party', host, ()=>{ closePersistentPartyInline(); });
-    row.querySelector('.row-input')?.focus();
+    renderPersistentPartyPanel(true);
   }
 
   function handleAddClick(targetId){
@@ -1340,13 +1390,11 @@
       closePersistentPartyInline();
     } else {
       renderAddPartyToggle();
-      /* Keep an open row across FNOL substeps; re-wire after renderApp if still open. */
+      /* Keep the open panel across FNOL substeps. */
       if(addPartyOpen){
         const host = document.getElementById('persistentPartyInlineHost');
         if(host && !host.querySelector('.inline-add-row')){
-          host.innerHTML = buildPartyInlineRow();
-          const row = host.firstElementChild;
-          wireInlineRow(row, 'party', host, ()=>{ closePersistentPartyInline(); });
+          renderPersistentPartyPanel(false);
         }
       }
     }
