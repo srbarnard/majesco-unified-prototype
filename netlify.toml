@@ -2,6 +2,13 @@
   command = "npm run build"
   publish = "dist"
 
+# Serve static prototype HTML as files; only fall back to the SPA for app routes.
+[[redirects]]
+  from = "/prototypes/*"
+  to = "/prototypes/:splat"
+  status = 200
+  force = false
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
