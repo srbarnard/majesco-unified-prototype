@@ -181,6 +181,8 @@
   .subheader .meta b{color:var(--text-primary);font-weight:400;}
   .subheader .meta a{font-weight:400;}
   .subheader .spacer{flex:1 1 auto;}
+  .subheader-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+  .subheader-actions #persistentAddPartyBtn[hidden]{display:none !important;}
   .btn{
     font-size:16px;font-weight:500;letter-spacing:0;border-radius:var(--radius-sm);padding:7px 16px;border:1px solid transparent;
     display:inline-flex;align-items:center;gap:8px;line-height:24px;height:40px;box-sizing:border-box;font-family:var(--font-display);
@@ -286,9 +288,9 @@
   body:not(.editing-active) input[type="time"].ctrl:not([readonly])::-webkit-calendar-picker-indicator{opacity:0;}
   body:not(.editing-active) .field.with-icon .icon-inline{display:none;}
   body:not(.editing-active) .field.with-icon .ctrl:not([readonly]){padding-right:11px;}
-  /* Add party / Add vehicle / Add injured party / Add location only make sense once editing is on */
+  /* Add vehicle / Add injured party / Add location only make sense once editing is on.
+     Persistent Add party in the subheader is available on every FNOL substep (view or edit). */
   body:not(.editing-active) .repeat-toolbar.edit-only{display:none;}
-  body:not(.editing-active) .fnol-add-party-bar{display:none !important;}
 
   .field.flagged{
     border:1px solid var(--warning-border);background:var(--warning-bg);border-radius:var(--radius);
@@ -364,14 +366,20 @@
   .row-icons button.row-save:hover{background:var(--success-bg);}
   .row-icons button.row-cancel:hover{background:var(--error-bg);color:var(--error-main);}
 
-  /* ---- Persistent Add party (visible on every FNOL substep; chrome, not step body) ---- */
-  .fnol-add-party-bar{
+  /* ---- Persistent Add party inline host (under subheader; compact, left-aligned) ---- */
+  .fnol-party-inline-host{
     flex:0 0 auto;background:#fff;border-bottom:1px solid var(--divider);
-    padding:10px 32px;display:flex;flex-direction:column;gap:0;
+    padding:0 32px 10px;
   }
-  .fnol-add-party-bar[hidden]{display:none !important;}
-  .fnol-add-party-bar .repeat-toolbar{margin-bottom:0;}
-  .fnol-add-party-bar .inline-add-row{margin-top:10px;}
+  .fnol-party-inline-host:empty{display:none;padding:0;border:none;}
+  .fnol-party-inline-host .inline-add-row{
+    display:inline-flex;flex-wrap:nowrap;align-items:center;gap:8px;
+    width:auto;max-width:100%;margin-top:0;padding:8px 10px;box-sizing:border-box;
+  }
+  .fnol-party-inline-host .inline-add-row .row-input{
+    flex:0 0 auto;width:132px;min-width:0;
+  }
+  .fnol-party-inline-host .inline-add-row .row-icons{flex:0 0 auto;margin-left:0;}
 
   /* ---- Inline add-row inputs (FNOL repeating tables) ---- */
   tr.new-row td,
@@ -585,18 +593,14 @@
         <span class="meta">Product: <b>Commercial Auto</b></span>
         <span class="meta">Insured: <a href="#">Continental Delivery LLC</a></span>
         <span class="spacer"></span>
-        <button type="button" class="btn btn-text edit-mode-link" id="editModeLink"></button>
-      </div>
-
-      <!-- Persistent Add party — available on every FNOL substep without leaving the current step -->
-      <div class="fnol-add-party-bar" id="fnolAddPartyBar" hidden>
-        <div class="repeat-toolbar edit-only">
-          <button class="btn btn-outlined" type="button" id="persistentAddPartyBtn" aria-label="Add party">
+        <div class="subheader-actions">
+          <button class="btn btn-outlined" type="button" id="persistentAddPartyBtn" aria-label="Add party" hidden>
             <svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add party
           </button>
+          <button type="button" class="btn btn-text edit-mode-link" id="editModeLink"></button>
         </div>
-        <div id="persistentPartyInlineHost"></div>
       </div>
+      <div class="fnol-party-inline-host" id="persistentPartyInlineHost"></div>
 
       <div class="content-row">
         <!-- ===== IN-PAGE SUB-STEP RAIL (populated by JS) ===== -->
@@ -1294,12 +1298,11 @@
     });
   }
 
-  function syncFnolAddPartyBar(){
-    const bar = document.getElementById('fnolAddPartyBar');
-    if(!bar) return;
+  function syncFnolAddPartyChrome(){
     const onFnol = STATE.stepper==='fnol';
-    bar.hidden = !onFnol;
-    if(!onFnol || !editingMode){
+    const btn = document.getElementById('persistentAddPartyBtn');
+    if(btn) btn.hidden = !onFnol;
+    if(!onFnol){
       const host = document.getElementById('persistentPartyInlineHost');
       if(host) host.innerHTML = '';
     }
@@ -1334,7 +1337,7 @@
     });
 
     renderRail();
-    syncFnolAddPartyBar();
+    syncFnolAddPartyChrome();
 
     const list = RAIL[STATE.stepper];
     document.getElementById('mainCol').innerHTML = list[STATE.subIndex].body();
@@ -1375,7 +1378,6 @@
   document.getElementById('backLink').addEventListener('click', (e)=>{e.preventDefault(); goBack();});
   document.getElementById('saveDraftBtn').addEventListener('click', ()=>toast('Draft saved — FNOL-2026-00418'));
   document.getElementById('persistentAddPartyBtn').addEventListener('click', ()=>{
-    if(!editingMode){ toast('Enter claim editing mode to add a party'); return; }
     openPersistentPartyInline();
   });
   let editingMode = false;
