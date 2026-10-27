@@ -388,18 +388,26 @@
     flex:1 1 0;width:auto;min-width:0;
   }
   .fnol-party-inline-host .inline-add-row .row-icons{flex:0 0 auto;margin-left:0;}
+  .fnol-party-list-wrap{
+    margin:0 32px 16px;padding:12px 16px 8px;box-sizing:border-box;
+    background:rgba(255,255,255,.72);border-radius:var(--radius);
+  }
+  .fnol-party-list-subhead{
+    margin:0 0 8px;font-family:var(--font-display);font-size:14px;font-weight:500;
+    line-height:20px;color:var(--text-primary);
+  }
   .fnol-party-list{
-    list-style:none;margin:0;padding:4px 32px 12px;background:transparent;
+    list-style:none;margin:0;padding:0;background:transparent;
   }
   .fnol-party-line{
     display:flex;align-items:center;gap:12px;padding:8px 0;
     border-bottom:1px solid var(--divider);font-family:var(--font-body);font-size:14px;line-height:20px;
   }
   .fnol-party-line:last-child{border-bottom:none;}
-  .fnol-party-main{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;flex:1 1 auto;min-width:0;}
-  .fnol-party-name{flex:0 1 auto;min-width:0;color:var(--text-primary);font-weight:400;}
-  .fnol-party-meta{flex:0 1 auto;color:var(--text-secondary);white-space:nowrap;}
-  .fnol-party-line .trash-btn{flex:0 0 auto;margin-left:auto;}
+  .fnol-party-main{display:flex;flex-direction:column;align-items:flex-start;gap:2px;flex:1 1 auto;min-width:0;}
+  .fnol-party-name{min-width:0;color:var(--text-primary);font-weight:400;font-size:14px;line-height:20px;}
+  .fnol-party-meta{color:var(--text-secondary);font-weight:400;font-size:14px;line-height:20px;}
+  .fnol-party-line .trash-btn{flex:0 0 auto;margin-left:auto;align-self:center;}
 
   /* ---- Inline add-row inputs (FNOL repeating tables) ---- */
   tr.new-row td,
@@ -1289,7 +1297,9 @@
   }
   function partiesListHtml(){
     if(!PARTIES.length) return '';
-    return `<ul class="fnol-party-list" role="list">${PARTIES.map((p,i)=>`
+    return `<div class="fnol-party-list-wrap">
+      <h3 class="fnol-party-list-subhead">Existing parties</h3>
+      <ul class="fnol-party-list" role="list">${PARTIES.map((p,i)=>`
       <li class="fnol-party-line">
         ${partyTypeIcon(p.type)}
         <span class="fnol-party-main">
@@ -1297,7 +1307,8 @@
           <span class="fnol-party-meta">${escHtml(p.roleType)}</span>
         </span>
         <button type="button" class="trash-btn" title="Remove ${escHtml(p.name)}" aria-label="Remove ${escHtml(p.name)}" data-party-remove="${i}">${mi('delete',20)}</button>
-      </li>`).join('')}</ul>`;
+      </li>`).join('')}</ul>
+    </div>`;
   }
   function wirePersistentPartyRow(row){
     let settled = false;
