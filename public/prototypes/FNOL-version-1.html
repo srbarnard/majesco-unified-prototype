@@ -184,7 +184,12 @@
   .subheader-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
   .subheader-actions #persistentAddPartyBtn[hidden]{display:none !important;}
   .add-party-toggle{white-space:nowrap;}
-  .add-party-toggle svg{flex:0 0 auto;}
+  .add-party-toggle .add-party-toggle-ic{
+    flex:0 0 auto;width:14px;height:14px;display:block;
+    transition:transform 150ms ease-out,opacity 150ms ease-out;
+    transform-origin:center center;
+  }
+  .add-party-toggle[aria-expanded="true"] .add-party-toggle-ic{transform:rotate(45deg);}
   .subheader-actions-divider{
     width:1px;height:24px;background:var(--divider);flex:0 0 auto;margin:0 4px;
   }
@@ -374,10 +379,15 @@
 
   /* ---- Persistent Add party panel (under subheader) ---- */
   .fnol-party-inline-host{
-    flex:0 0 auto;background:var(--info-bg);border-bottom:1px solid var(--divider);
+    display:grid;grid-template-rows:0fr;opacity:0;overflow:hidden;
+    flex:0 0 auto;background:var(--info-bg);border-bottom:1px solid transparent;
     padding:0;box-sizing:border-box;
+    transition:grid-template-rows 250ms ease-out,opacity 250ms ease-out,border-color 250ms ease-out;
   }
-  .fnol-party-inline-host:empty{display:none;padding:0;border:none;background:transparent;}
+  .fnol-party-inline-host.is-open{
+    grid-template-rows:1fr;opacity:1;border-bottom-color:var(--divider);
+  }
+  .fnol-party-panel-clip{overflow:hidden;min-height:0;}
   .fnol-party-panel-stack{display:flex;flex-direction:column;gap:12px;padding:16px 32px;box-sizing:border-box;}
   .fnol-party-section{
     padding:12px 16px;box-sizing:border-box;
@@ -402,12 +412,18 @@
   .fnol-party-line{
     display:flex;align-items:center;gap:12px;padding:8px 0;
     border-bottom:1px solid var(--divider);font-family:var(--font-body);font-size:14px;line-height:20px;
+    opacity:1;transition:opacity 200ms ease-out;
   }
+  .fnol-party-line.is-entering{opacity:0;}
   .fnol-party-line:last-child{border-bottom:none;}
   .fnol-party-main{display:flex;flex-direction:column;align-items:flex-start;gap:2px;flex:1 1 auto;min-width:0;}
   .fnol-party-name{min-width:0;color:var(--text-primary);font-weight:400;font-size:14px;line-height:20px;}
   .fnol-party-meta{color:var(--text-secondary);font-weight:400;font-size:14px;line-height:20px;}
   .fnol-party-line .trash-btn{flex:0 0 auto;margin-left:auto;align-self:center;}
+  @media (prefers-reduced-motion:reduce){
+    .fnol-party-inline-host,.add-party-toggle-ic,.fnol-party-line{transition:none !important;}
+    .add-party-toggle[aria-expanded="true"] .add-party-toggle-ic{transform:none;}
+  }
 
   /* ---- Inline add-row inputs (FNOL repeating tables) ---- */
   tr.new-row td,
@@ -624,7 +640,10 @@
         <span class="meta">Insured: <a href="#">Continental Delivery LLC</a></span>
         <span class="spacer"></span>
         <div class="subheader-actions">
-          <button class="btn btn-text add-party-toggle" type="button" id="persistentAddPartyBtn" aria-label="Add party" aria-expanded="false" aria-controls="persistentPartyInlineHost" hidden></button>
+          <button class="btn btn-text add-party-toggle" type="button" id="persistentAddPartyBtn" aria-label="Add party" aria-expanded="false" aria-controls="persistentPartyInlineHost" hidden>
+            <svg class="add-party-toggle-ic" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Add party</span>
+          </button>
           <span class="subheader-actions-divider" id="addPartyDivider" hidden aria-hidden="true"></span>
           <button type="button" class="btn btn-text edit-mode-link" id="editModeLink"></button>
         </div>
@@ -1285,22 +1304,18 @@
 
   /* Subheader Add party toggle — input row + compact party list under the subheader. */
   let addPartyOpen = false;
+  let partyPanelCloseTimer = null;
   function renderAddPartyToggle(){
     const btn = document.getElementById('persistentAddPartyBtn');
     if(!btn) return;
     btn.setAttribute('aria-expanded', String(addPartyOpen));
-    if(addPartyOpen){
-      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg><span>Add party</span>';
-    } else {
-      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add party</span>';
-    }
   }
-  function partiesListHtml(){
+  function partiesListHtml(highlightIndex){
     if(!PARTIES.length) return '';
     return `<section class="fnol-party-section">
       <h3 class="fnol-party-section-subhead">Existing parties</h3>
       <ul class="fnol-party-list" role="list">${PARTIES.map((p,i)=>`
-      <li class="fnol-party-line">
+      <li class="fnol-party-line${i===highlightIndex?' is-entering':''}">
         ${partyTypeIcon(p.type)}
         <span class="fnol-party-main">
           <span class="fnol-party-name">${escHtml(p.name)}</span>
@@ -1318,7 +1333,7 @@
       const v = {};
       row.querySelectorAll('[data-field]').forEach(inp=>{ v[inp.dataset.field] = inp.value.trim(); });
       commitParty(v);
-      renderPersistentPartyPanel(true);
+      renderPersistentPartyPanel(true, PARTIES.length - 1);
     }
     function cancelRow(){
       if(settled) return;
@@ -1350,30 +1365,57 @@
       });
     });
   }
-  function renderPersistentPartyPanel(focusInput){
+  function finishEnteringPartyLines(host){
+    const entering = host.querySelectorAll('.fnol-party-line.is-entering');
+    if(!entering.length) return;
+    requestAnimationFrame(()=>{
+      entering.forEach(el=>{ void el.offsetWidth; el.classList.remove('is-entering'); });
+    });
+  }
+  function renderPersistentPartyPanel(focusInput, highlightIndex){
     const host = document.getElementById('persistentPartyInlineHost');
     if(!host || !addPartyOpen) return;
-    host.innerHTML = `<div class="fnol-party-panel-stack">
+    if(partyPanelCloseTimer){ clearTimeout(partyPanelCloseTimer); partyPanelCloseTimer = null; }
+    const alreadyOpen = host.classList.contains('is-open');
+    host.innerHTML = `<div class="fnol-party-panel-clip"><div class="fnol-party-panel-stack">
       <section class="fnol-party-section">
         <h3 class="fnol-party-section-subhead">Add party</h3>
         ${buildPartyInlineRow()}
       </section>
-      ${partiesListHtml()}
-    </div>`;
+      ${partiesListHtml(highlightIndex)}
+    </div></div>`;
     const row = host.querySelector('.inline-add-row');
     wirePersistentPartyRow(row);
     wirePersistentPartyList(host);
+    finishEnteringPartyLines(host);
+    if(alreadyOpen){
+      host.classList.add('is-open');
+    } else {
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{ host.classList.add('is-open'); });
+      });
+    }
     if(focusInput) row.querySelector('.row-input')?.focus();
   }
-  function closePersistentPartyInline(){
+  function closePersistentPartyInline(immediate){
     addPartyOpen = false;
-    const host = document.getElementById('persistentPartyInlineHost');
-    if(host) host.innerHTML = '';
     renderAddPartyToggle();
+    const host = document.getElementById('persistentPartyInlineHost');
+    if(!host) return;
+    host.classList.remove('is-open');
+    if(partyPanelCloseTimer){ clearTimeout(partyPanelCloseTimer); partyPanelCloseTimer = null; }
+    if(immediate){
+      host.innerHTML = '';
+      return;
+    }
+    partyPanelCloseTimer = setTimeout(()=>{
+      partyPanelCloseTimer = null;
+      if(!addPartyOpen) host.innerHTML = '';
+    }, 260);
   }
   function togglePersistentPartyInline(){
     if(addPartyOpen){
-      closePersistentPartyInline();
+      closePersistentPartyInline(false);
       return;
     }
     addPartyOpen = true;
@@ -1413,7 +1455,7 @@
     if(btn) btn.hidden = !onFnol;
     if(divider) divider.hidden = !onFnol;
     if(!onFnol){
-      closePersistentPartyInline();
+      closePersistentPartyInline(true);
     } else {
       renderAddPartyToggle();
       /* Keep the open panel across FNOL substeps. */
@@ -1421,6 +1463,8 @@
         const host = document.getElementById('persistentPartyInlineHost');
         if(host && !host.querySelector('.inline-add-row')){
           renderPersistentPartyPanel(false);
+        } else if(host){
+          host.classList.add('is-open');
         }
       }
     }
