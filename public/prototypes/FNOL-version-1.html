@@ -231,7 +231,7 @@
   .copilot-view[hidden]{display:none !important;}
   .copilot-intro-hero{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:8px 0 4px;}
   .copilot-intro-brand{display:flex;align-items:center;gap:10px;}
-  .copilot-mark{width:28px;height:28px;flex:0 0 auto;display:block;}
+  .copilot-mark{width:28px;height:28px;flex:0 0 auto;display:block;object-fit:contain;}
   .copilot-intro-title{
     margin:0;font-family:var(--font-display);font-size:20px;font-weight:600;
     line-height:28px;color:var(--text-primary);
@@ -893,10 +893,7 @@
     <div class="copilot-view" id="copilotViewIntro">
       <div class="copilot-intro-hero">
         <div class="copilot-intro-brand">
-          <svg class="copilot-mark" viewBox="0 0 28 28" aria-hidden="true" focusable="false" style="stroke:none;">
-            <rect x="3.5" y="3.5" width="12" height="12" rx="1" transform="rotate(45 9.5 9.5)" fill="#57B7C3"/>
-            <rect x="12.5" y="3.5" width="12" height="12" rx="1" transform="rotate(45 18.5 9.5)" fill="#005DBF"/>
-          </svg>
+          <img class="copilot-mark" src="copilot-assistant-mark.png" width="28" height="28" alt="" aria-hidden="true">
           <h3 class="copilot-intro-title">Copilot assistant</h3>
         </div>
         <p class="copilot-intro-sub">Your go-to AI for getting work done</p>
