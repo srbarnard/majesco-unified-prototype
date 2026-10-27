@@ -185,7 +185,10 @@
   .subheader-actions #persistentAddPartyBtn[hidden]{display:none !important;}
   .add-party-toggle{white-space:nowrap;}
   .add-party-toggle svg{flex:0 0 auto;}
-  .add-party-toggle[aria-expanded="true"]{background:var(--primary-selected-bg);}
+  .subheader-actions-divider{
+    width:1px;height:24px;background:var(--divider);flex:0 0 auto;margin:0 4px;
+  }
+  .subheader-actions-divider[hidden]{display:none !important;}
   .btn{
     font-size:16px;font-weight:500;letter-spacing:0;border-radius:var(--radius-sm);padding:7px 16px;border:1px solid transparent;
     display:inline-flex;align-items:center;gap:8px;line-height:24px;height:40px;box-sizing:border-box;font-family:var(--font-display);
@@ -369,15 +372,16 @@
   .row-icons button.row-save:hover{background:var(--success-bg);}
   .row-icons button.row-cancel:hover{background:var(--error-bg);color:var(--error-main);}
 
-  /* ---- Persistent Add party inline host (under subheader; full-width single row) ---- */
+  /* ---- Persistent Add party inline host (under subheader; full-bleed info band) ---- */
   .fnol-party-inline-host{
-    flex:0 0 auto;background:#fff;border-bottom:1px solid var(--divider);
-    padding:0 32px 12px;
+    flex:0 0 auto;background:var(--info-bg);border-bottom:1px solid var(--divider);
+    padding:0;box-sizing:border-box;
   }
-  .fnol-party-inline-host:empty{display:none;padding:0;border:none;}
+  .fnol-party-inline-host:empty{display:none;padding:0;border:none;background:transparent;}
   .fnol-party-inline-host .inline-add-row{
-    display:flex;flex-wrap:nowrap;align-items:center;gap:10px;
-    width:100%;margin-top:0;padding:8px 10px;box-sizing:border-box;
+    display:flex;flex-wrap:nowrap;align-items:center;gap:20px;
+    width:100%;margin:0;padding:16px 32px;box-sizing:border-box;
+    background:transparent;border-radius:0;
   }
   .fnol-party-inline-host .inline-add-row .row-input{
     flex:1 1 0;width:auto;min-width:0;
@@ -598,6 +602,7 @@
         <span class="spacer"></span>
         <div class="subheader-actions">
           <button class="btn btn-text add-party-toggle" type="button" id="persistentAddPartyBtn" aria-label="Add party" aria-expanded="false" aria-controls="persistentPartyInlineHost" hidden></button>
+          <span class="subheader-actions-divider" id="addPartyDivider" hidden aria-hidden="true"></span>
           <button type="button" class="btn btn-text edit-mode-link" id="editModeLink"></button>
         </div>
       </div>
@@ -1328,7 +1333,9 @@
   function syncFnolAddPartyChrome(){
     const onFnol = STATE.stepper==='fnol';
     const btn = document.getElementById('persistentAddPartyBtn');
+    const divider = document.getElementById('addPartyDivider');
     if(btn) btn.hidden = !onFnol;
+    if(divider) divider.hidden = !onFnol;
     if(!onFnol){
       closePersistentPartyInline();
     } else {
