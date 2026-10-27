@@ -183,6 +183,9 @@
   .subheader .spacer{flex:1 1 auto;}
   .subheader-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
   .subheader-actions #persistentAddPartyBtn[hidden]{display:none !important;}
+  .add-party-toggle{white-space:nowrap;}
+  .add-party-toggle svg{flex:0 0 auto;}
+  .add-party-toggle[aria-expanded="true"]{background:var(--primary-selected-bg);}
   .btn{
     font-size:16px;font-weight:500;letter-spacing:0;border-radius:var(--radius-sm);padding:7px 16px;border:1px solid transparent;
     display:inline-flex;align-items:center;gap:8px;line-height:24px;height:40px;box-sizing:border-box;font-family:var(--font-display);
@@ -366,18 +369,18 @@
   .row-icons button.row-save:hover{background:var(--success-bg);}
   .row-icons button.row-cancel:hover{background:var(--error-bg);color:var(--error-main);}
 
-  /* ---- Persistent Add party inline host (under subheader; compact, left-aligned) ---- */
+  /* ---- Persistent Add party inline host (under subheader; full-width single row) ---- */
   .fnol-party-inline-host{
     flex:0 0 auto;background:#fff;border-bottom:1px solid var(--divider);
-    padding:0 32px 10px;
+    padding:0 32px 12px;
   }
   .fnol-party-inline-host:empty{display:none;padding:0;border:none;}
   .fnol-party-inline-host .inline-add-row{
-    display:inline-flex;flex-wrap:nowrap;align-items:center;gap:8px;
-    width:auto;max-width:100%;margin-top:0;padding:8px 10px;box-sizing:border-box;
+    display:flex;flex-wrap:nowrap;align-items:center;gap:10px;
+    width:100%;margin-top:0;padding:8px 10px;box-sizing:border-box;
   }
   .fnol-party-inline-host .inline-add-row .row-input{
-    flex:0 0 auto;width:132px;min-width:0;
+    flex:1 1 0;width:auto;min-width:0;
   }
   .fnol-party-inline-host .inline-add-row .row-icons{flex:0 0 auto;margin-left:0;}
 
@@ -594,9 +597,7 @@
         <span class="meta">Insured: <a href="#">Continental Delivery LLC</a></span>
         <span class="spacer"></span>
         <div class="subheader-actions">
-          <button class="btn btn-outlined" type="button" id="persistentAddPartyBtn" aria-label="Add party" hidden>
-            <svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add party
-          </button>
+          <button class="btn btn-text add-party-toggle" type="button" id="persistentAddPartyBtn" aria-label="Add party" aria-expanded="false" aria-controls="persistentPartyInlineHost" hidden></button>
           <button type="button" class="btn btn-text edit-mode-link" id="editModeLink"></button>
         </div>
       </div>
@@ -1219,12 +1220,16 @@
       ${newRowActionIcons()}
     </div>`;
   }
-  function wireInlineRow(row, type, container){
+  function wireInlineRow(row, type, container, onSettle){
     let settled = false;
+    function finish(){
+      if(typeof onSettle==='function') onSettle();
+    }
     function cancelRow(){
       if(settled) return;
       settled = true;
       row.remove();
+      finish();
     }
     function saveRow(){
       if(settled) return;
@@ -1237,6 +1242,7 @@
         container.insertAdjacentHTML('beforeend', vehicleDocCard(v.desc || 'Unnamed vehicle', v.vehicleType, v.vin, v.damage, v.drivable));
       }
       row.remove();
+      finish();
     }
     row.querySelector('.row-save').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); saveRow(); });
     row.querySelector('.row-cancel').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); cancelRow(); });
@@ -1261,15 +1267,36 @@
     row.querySelector('.row-input')?.focus();
   }
 
-  /* Same inline add-row used on Parties, hosted in the persistent FNOL chrome. */
-  function openPersistentPartyInline(){
+  /* Subheader Add party toggle — same inline row as Parties, under the subheader. */
+  let addPartyOpen = false;
+  function renderAddPartyToggle(){
+    const btn = document.getElementById('persistentAddPartyBtn');
+    if(!btn) return;
+    btn.setAttribute('aria-expanded', String(addPartyOpen));
+    if(addPartyOpen){
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg><span>Add party</span>';
+    } else {
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add party</span>';
+    }
+  }
+  function closePersistentPartyInline(){
+    addPartyOpen = false;
+    const host = document.getElementById('persistentPartyInlineHost');
+    if(host) host.innerHTML = '';
+    renderAddPartyToggle();
+  }
+  function togglePersistentPartyInline(){
     const host = document.getElementById('persistentPartyInlineHost');
     if(!host) return;
-    const existing = host.querySelector('.inline-add-row');
-    if(existing){ existing.querySelector('.row-input')?.focus(); return; }
+    if(addPartyOpen){
+      closePersistentPartyInline();
+      return;
+    }
+    addPartyOpen = true;
+    renderAddPartyToggle();
     host.innerHTML = buildPartyInlineRow();
     const row = host.firstElementChild;
-    wireInlineRow(row, 'party', host);
+    wireInlineRow(row, 'party', host, ()=>{ closePersistentPartyInline(); });
     row.querySelector('.row-input')?.focus();
   }
 
@@ -1303,8 +1330,18 @@
     const btn = document.getElementById('persistentAddPartyBtn');
     if(btn) btn.hidden = !onFnol;
     if(!onFnol){
-      const host = document.getElementById('persistentPartyInlineHost');
-      if(host) host.innerHTML = '';
+      closePersistentPartyInline();
+    } else {
+      renderAddPartyToggle();
+      /* Keep an open row across FNOL substeps; re-wire after renderApp if still open. */
+      if(addPartyOpen){
+        const host = document.getElementById('persistentPartyInlineHost');
+        if(host && !host.querySelector('.inline-add-row')){
+          host.innerHTML = buildPartyInlineRow();
+          const row = host.firstElementChild;
+          wireInlineRow(row, 'party', host, ()=>{ closePersistentPartyInline(); });
+        }
+      }
     }
   }
 
@@ -1378,7 +1415,7 @@
   document.getElementById('backLink').addEventListener('click', (e)=>{e.preventDefault(); goBack();});
   document.getElementById('saveDraftBtn').addEventListener('click', ()=>toast('Draft saved — FNOL-2026-00418'));
   document.getElementById('persistentAddPartyBtn').addEventListener('click', ()=>{
-    openPersistentPartyInline();
+    togglePersistentPartyInline();
   });
   let editingMode = false;
   function renderEditModeLink(){
