@@ -80,7 +80,8 @@
   button{font-family:var(--font-body);cursor:pointer;}
 
   /* ============ SHELL ============ */
-  .shell{display:flex;flex-direction:column;height:100vh;min-width:1280px;}
+  .app-frame{display:flex;align-items:stretch;height:100vh;min-width:1280px;overflow:hidden;background:var(--canvas);}
+  .shell{display:flex;flex-direction:column;flex:1 1 auto;min-width:0;height:100%;}
 
   /* ---- Top App Bar ---- */
   .appbar{
@@ -172,89 +173,91 @@
   .copilot-btn[aria-expanded="true"] .copilot-ic-default{display:none;}
   .copilot-btn[aria-expanded="true"] .copilot-ic-active{display:block;}
 
-  /* ---- Copilot right drawer (static Majesco Copilot UI) ---- */
-  .copilot-drawer-backdrop{
-    position:fixed;inset:0;background:rgba(33,33,33,.24);z-index:80;
-    opacity:0;pointer-events:none;transition:opacity 255ms cubic-bezier(0.32,0.72,0,1);
-  }
-  .copilot-drawer-backdrop.is-open{opacity:1;pointer-events:auto;}
+  /* ---- Copilot right drawer (pushes main content; Majesco One) ---- */
   .copilot-drawer{
-    position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);z-index:90;
-    display:flex;flex-direction:column;background:#fff;
-    border-left:1px solid var(--divider);
-    box-shadow:-8px 0 24px rgba(0,0,0,.08);
-    transform:translateX(100%);opacity:.96;
-    transition:transform 300ms cubic-bezier(0.32,0.72,0,1),opacity 300ms cubic-bezier(0.32,0.72,0,1);
-    pointer-events:none;
+    --copilot-w:360px;
+    flex:0 0 0;width:0;min-width:0;height:100%;overflow:hidden;
+    display:flex;flex-direction:column;background:var(--surface);
+    border-left:1px solid transparent;box-sizing:border-box;
+    transition:flex-basis 250ms ease-out,width 250ms ease-out,border-left-color 250ms ease-out;
   }
-  .copilot-drawer.is-open{transform:translateX(0);opacity:1;pointer-events:auto;}
+  .copilot-drawer.is-open{
+    flex-basis:var(--copilot-w);width:var(--copilot-w);
+    border-left-color:var(--divider);
+  }
+  .copilot-drawer-inner{
+    width:var(--copilot-w);min-width:var(--copilot-w);height:100%;
+    display:flex;flex-direction:column;background:var(--surface);box-sizing:border-box;
+  }
   .copilot-drawer-header{
     flex:0 0 auto;display:flex;align-items:center;gap:8px;
-    padding:14px 16px;border-bottom:1px solid var(--divider);background:#fff;
+    padding:12px 16px;border-bottom:1px solid var(--divider);background:var(--surface);
   }
   .copilot-drawer-header h2{
-    margin:0;flex:1 1 auto;font-family:var(--font-display);font-size:18px;font-weight:600;
-    line-height:28px;color:var(--text-primary);
+    margin:0;flex:1 1 auto;font-family:var(--font-display);font-size:16px;font-weight:500;
+    line-height:24px;color:var(--text-primary);
   }
   .copilot-drawer-icon-btn{
-    width:36px;height:36px;padding:0;border:none;border-radius:var(--radius);
+    width:32px;height:32px;padding:0;border:none;border-radius:var(--radius);
     background:transparent;color:var(--gray-dark);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
   }
   .copilot-drawer-icon-btn:hover{background:var(--action-hover);}
   .copilot-drawer-icon-btn svg{width:20px;height:20px;}
   .copilot-drawer-body{
-    flex:1 1 auto;min-height:0;overflow-y:auto;padding:16px 16px 8px;
-    display:flex;flex-direction:column;gap:20px;background:#fff;
+    flex:1 1 auto;min-height:0;overflow-y:auto;padding:16px;
+    display:flex;flex-direction:column;gap:16px;background:var(--surface);
   }
   .copilot-new-chat{
-    width:100%;height:40px;border:none;border-radius:100px;padding:0 18px;
+    width:100%;height:40px;border:none;border-radius:var(--radius);padding:0 16px;
     background:var(--primary-main);color:#fff;
     font-family:var(--font-display);font-size:14px;font-weight:500;line-height:20px;
     display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;
   }
   .copilot-new-chat:hover{background:var(--primary-dark);}
   .copilot-new-chat svg{width:18px;height:18px;stroke:#fff;}
-  .copilot-chat-block{display:flex;flex-direction:column;gap:8px;}
+  .copilot-chat-block{display:flex;flex-direction:column;gap:4px;}
   .copilot-chat-heading{
-    margin:0;font-family:var(--font-display);font-size:16px;font-weight:600;
-    line-height:24px;color:var(--text-primary);
+    margin:0 0 4px;font-family:var(--font-display);font-size:14px;font-weight:500;
+    line-height:20px;color:var(--text-primary);
   }
-  .copilot-chat-group{display:flex;flex-direction:column;gap:2px;margin-top:8px;}
+  .copilot-chat-group{display:flex;flex-direction:column;gap:0;margin-top:4px;}
   .copilot-chat-group-label{
     display:flex;align-items:center;justify-content:space-between;gap:8px;
-    padding:6px 8px 4px;font-family:var(--font-body);font-size:12px;font-weight:600;
+    padding:8px 12px 4px;font-family:var(--font-body);font-size:12px;font-weight:400;
     line-height:16px;color:var(--text-secondary);
   }
   .copilot-chat-group-label .search-ic{color:var(--text-secondary);display:inline-flex;}
   .copilot-chat-group-label .search-ic svg{width:16px;height:16px;}
   .copilot-chat-item{
     width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;
-    border:none;border-radius:100px;background:transparent;color:var(--text-primary);
+    border:1px solid transparent;border-radius:var(--radius);background:transparent;color:var(--text-primary);
     font-family:var(--font-body);font-size:14px;font-weight:400;line-height:20px;
-    text-align:left;cursor:pointer;
+    text-align:left;cursor:pointer;box-sizing:border-box;
   }
   .copilot-chat-item:hover{background:var(--action-hover);}
-  .copilot-chat-item.is-active{background:var(--primary-selected-bg);color:var(--primary-main);}
+  .copilot-chat-item.is-active{
+    background:var(--primary-selected-bg);border-color:var(--divider);color:var(--primary-main);
+  }
   .copilot-chat-item .chat-ic{flex:0 0 auto;display:inline-flex;color:inherit;}
   .copilot-chat-item .chat-ic svg{width:18px;height:18px;}
   .copilot-chat-item .chat-label{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .copilot-prompts-block{display:flex;flex-direction:column;gap:10px;}
+  .copilot-prompts-block{display:flex;flex-direction:column;gap:8px;}
   .copilot-prompts-head{
-    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 0 2px;
   }
   .copilot-prompts-head h3{
-    margin:0;font-family:var(--font-display);font-size:14px;font-weight:600;
+    margin:0;font-family:var(--font-display);font-size:14px;font-weight:500;
     line-height:20px;color:var(--text-primary);
   }
   .copilot-prompts-head a{
-    font-family:var(--font-body);font-size:13px;font-weight:500;color:var(--primary-main);white-space:nowrap;
+    font-family:var(--font-body);font-size:14px;font-weight:400;color:var(--primary-main);white-space:nowrap;
   }
   .copilot-prompt-card{
-    border:1px solid var(--divider);border-radius:12px;padding:12px 14px;background:#fff;
+    border:1px solid var(--divider);border-radius:var(--radius);padding:12px;background:var(--surface);
     display:flex;flex-direction:column;gap:6px;cursor:pointer;text-align:left;width:100%;
-    font:inherit;color:inherit;
+    font:inherit;color:inherit;box-sizing:border-box;
   }
-  .copilot-prompt-card:hover{border-color:var(--primary-light);background:var(--primary-hover-bg);}
+  .copilot-prompt-card:hover{background:var(--primary-hover-bg);}
   .copilot-prompt-card-top{display:flex;align-items:center;gap:8px;}
   .copilot-prompt-card-top .kind{
     display:inline-flex;align-items:center;gap:6px;min-width:0;
@@ -264,24 +267,25 @@
   .copilot-prompt-card-top .fav{margin-left:auto;color:var(--text-secondary);display:inline-flex;}
   .copilot-prompt-card-top .fav svg{width:18px;height:18px;}
   .copilot-prompt-card-title{
-    margin:0;font-family:var(--font-display);font-size:14px;font-weight:600;
+    margin:0;font-family:var(--font-body);font-size:14px;font-weight:500;
     line-height:20px;color:var(--text-primary);
   }
   .copilot-prompt-card-body{
-    margin:0;font-family:var(--font-body);font-size:13px;font-weight:400;
-    line-height:18px;color:var(--text-secondary);
+    margin:0;font-family:var(--font-body);font-size:14px;font-weight:400;
+    line-height:20px;color:var(--text-secondary);
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   }
   .copilot-drawer-footer{
-    flex:0 0 auto;padding:12px 16px 14px;border-top:1px solid var(--divider);background:#fff;
+    flex:0 0 auto;padding:12px 16px 16px;border-top:1px solid var(--divider);background:var(--surface);
     display:flex;flex-direction:column;gap:10px;
   }
   .copilot-composer{
-    border:1px solid var(--border);border-radius:16px;background:#fff;padding:12px 12px 10px;
-    display:flex;flex-direction:column;gap:10px;
+    border:1px solid var(--border);border-radius:var(--radius);background:var(--field-fill);padding:10px 12px;
+    display:flex;flex-direction:column;gap:8px;box-sizing:border-box;
   }
+  .copilot-composer:focus-within{border-color:var(--primary-main);box-shadow:0 0 0 3px var(--primary-selected-bg);}
   .copilot-composer-input{
-    width:100%;min-height:44px;max-height:96px;resize:none;border:none;outline:none;padding:0;
+    width:100%;min-height:40px;max-height:96px;resize:none;border:none;outline:none;padding:0;
     font-family:var(--font-body);font-size:14px;line-height:20px;color:var(--text-primary);background:transparent;
   }
   .copilot-composer-input::placeholder{color:var(--text-disabled);}
@@ -290,22 +294,22 @@
   .copilot-composer-tool{
     height:32px;padding:0 8px;border:none;border-radius:var(--radius);background:transparent;
     color:var(--gray-dark);display:inline-flex;align-items:center;gap:4px;cursor:pointer;
-    font-family:var(--font-body);font-size:13px;font-weight:500;
+    font-family:var(--font-body);font-size:14px;font-weight:400;
   }
   .copilot-composer-tool:hover{background:var(--action-hover);}
   .copilot-composer-tool svg{width:18px;height:18px;}
   .copilot-composer-send{
-    width:36px;height:36px;border:none;border-radius:50%;background:var(--primary-main);color:#fff;
+    width:32px;height:32px;border:none;border-radius:var(--radius);background:var(--primary-main);color:#fff;
     display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;
   }
   .copilot-composer-send:hover{background:var(--primary-dark);}
   .copilot-composer-send svg{width:18px;height:18px;stroke:#fff;}
   .copilot-drawer-disclaimer{
-    margin:0;text-align:center;font-family:var(--font-body);font-size:11px;line-height:16px;color:var(--text-secondary);
+    margin:0;text-align:center;font-family:var(--font-body);font-size:12px;line-height:16px;color:var(--text-secondary);
   }
-  .copilot-drawer-disclaimer a{font-weight:500;}
+  .copilot-drawer-disclaimer a{font-weight:400;color:var(--primary-main);}
   @media (prefers-reduced-motion:reduce){
-    .copilot-drawer,.copilot-drawer-backdrop{transition:none !important;}
+    .copilot-drawer{transition:none !important;}
   }
 
   /* ---- Sub-header (Quote-style meta row: plain text, no card) ---- */
@@ -676,6 +680,7 @@
 </style>
 </head>
 <body>
+<div class="app-frame">
 <div class="shell">
 
   <!-- ===== TOP APP BAR ===== -->
@@ -811,10 +816,8 @@
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
-
-<div class="copilot-drawer-backdrop" id="copilotDrawerBackdrop" hidden></div>
-<aside class="copilot-drawer" id="copilotDrawer" role="dialog" aria-modal="true" aria-labelledby="copilotDrawerTitle" aria-hidden="true">
+<aside class="copilot-drawer" id="copilotDrawer" role="complementary" aria-labelledby="copilotDrawerTitle" aria-hidden="true">
+  <div class="copilot-drawer-inner">
   <div class="copilot-drawer-header">
     <h2 id="copilotDrawerTitle">Copilot</h2>
     <button type="button" class="copilot-drawer-icon-btn" id="copilotDrawerClose" aria-label="Close Copilot">
@@ -922,7 +925,11 @@
     </div>
     <p class="copilot-drawer-disclaimer">Copilot uses AI. Check for mistakes. <a href="#">Terms &amp; conditions</a></p>
   </div>
+  </div>
 </aside>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
   function toast(msg){
@@ -1864,21 +1871,13 @@
 
   renderApp();
 
-  /* Copilot drawer — static UI; header button toggles open/closed. */
+  /* Copilot drawer — pushes main content; header button toggles open/closed. */
   const copilotBtn = document.getElementById('copilotBtn');
   const copilotDrawer = document.getElementById('copilotDrawer');
-  const copilotBackdrop = document.getElementById('copilotDrawerBackdrop');
   function setCopilotOpen(open){
     copilotBtn.setAttribute('aria-expanded', String(open));
     copilotDrawer.classList.toggle('is-open', open);
     copilotDrawer.setAttribute('aria-hidden', String(!open));
-    copilotBackdrop.hidden = false;
-    requestAnimationFrame(()=>{
-      copilotBackdrop.classList.toggle('is-open', open);
-      if(!open){
-        setTimeout(()=>{ if(copilotBtn.getAttribute('aria-expanded')!=='true') copilotBackdrop.hidden = true; }, 280);
-      }
-    });
     document.dispatchEvent(new CustomEvent('copilot:toggle', {detail:{open}}));
   }
   function toggleCopilotDrawer(){
@@ -1886,7 +1885,6 @@
   }
   copilotBtn.addEventListener('click', toggleCopilotDrawer);
   document.getElementById('copilotDrawerClose').addEventListener('click', ()=> setCopilotOpen(false));
-  copilotBackdrop.addEventListener('click', ()=> setCopilotOpen(false));
   document.addEventListener('keydown', (e)=>{
     if(e.key==='Escape' && copilotBtn.getAttribute('aria-expanded')==='true') setCopilotOpen(false);
   });
