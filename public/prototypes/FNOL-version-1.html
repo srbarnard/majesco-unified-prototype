@@ -766,6 +766,7 @@
   .status-row-card.attention .icon{background:var(--warning-bg);color:var(--warning-main);}
   .status-row-card .title{font-size:14px;font-weight:400;color:var(--text-primary);}
   .status-row-card .desc{font-size:12.5px;color:var(--text-secondary);line-height:1.45;}
+  .status-row-card .desc.intake-note{margin-top:4px;font-style:italic;}
   .status-row-card .icon svg{width:20px;height:20px;}
   .status-row-card .card-cta{align-self:flex-start;margin-top:auto;height:36px;padding:6px 8px;margin-left:-8px;font-size:14px;}
 
@@ -1863,14 +1864,26 @@
     if(n === 0) return '<span class="pill-muted">0 open</span>';
     return `<span class="pill-warning">${n} open</span>`;
   }
+  const INTAKE_RESOLVED_DESC = {
+    claimantEmail: 'Email added',
+    airbag: 'Airbag status recorded',
+    treatment: 'Treatment noted'
+  };
   function intakeHandoverCard(key){
     const meta = INTAKE_ITEMS[key];
     const st = INTAKE_STATE[key];
-    const noteHint = st.note ? ` title="${escHtml(st.note)}"` : '';
     if(st.resolved){
-      return `<div class="status-row-card done" data-intake-item="${key}"${noteHint}>
+      const confirm = INTAKE_RESOLVED_DESC[key] || 'Recorded';
+      const noteHtml = st.note
+        ? `<div class="desc intake-note">${escHtml(st.note)}</div>`
+        : '';
+      return `<div class="status-row-card done" data-intake-item="${key}">
           <span class="icon">${mi('check_circle',20)}</span>
-          <div><div class="title">${escHtml(meta.field)} is ${escHtml(st.value)}</div><div class="desc">${escHtml(meta.why)}</div></div>
+          <div>
+            <div class="title">${escHtml(meta.field)} is ${escHtml(st.value)}</div>
+            <div class="desc">${escHtml(confirm)}</div>
+            ${noteHtml}
+          </div>
           <button type="button" class="btn btn-text card-cta" data-open-dialog="resolveIntake" data-intake-item="${key}">Change</button>
         </div>`;
     }
