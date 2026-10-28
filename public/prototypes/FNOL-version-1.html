@@ -1088,12 +1088,20 @@
   }
   .claims-health-donut-svg .track{stroke:#E0E0E0;}
   .claims-health-donut-svg .value{
-    stroke:#55AEB1;stroke-dasharray:136.72 64.34;
+    stroke:#57B7C3;
+    stroke-dasharray:201.06;
+    stroke-dashoffset:201.06;
+  }
+  .claims-health-donut-svg .value.is-animated{
+    transition:stroke-dashoffset 800ms ease-out;
   }
   .claims-health-donut-pct{
     position:absolute;inset:0;display:grid;place-items:center;
     font-family:var(--font-display);font-size:18px;font-weight:700;
     line-height:24px;color:var(--text-primary);pointer-events:none;
+  }
+  @media (prefers-reduced-motion:reduce){
+    .claims-health-donut-svg .value.is-animated{transition:none;}
   }
   .claims-brief-list{
     margin:0;padding:0 0 0 18px;display:flex;flex-direction:column;gap:8px;min-width:0;
@@ -2412,14 +2420,38 @@
     };
     return `<span class="claims-overnight-ic">${icons[kind] || icons.plus}</span>`;
   }
+  const CLAIMS_HEALTH_PCT = 68;
+  const CLAIMS_HEALTH_DONUT_R = 32;
+  const CLAIMS_HEALTH_DONUT_C = +(2 * Math.PI * CLAIMS_HEALTH_DONUT_R).toFixed(2); // 201.06
   function claimsHealthDonutHtml(){
-    return `<div class="claims-health-donut" role="img" aria-label="Claims health 68 percent">
+    return `<div class="claims-health-donut" role="img" aria-label="Claims health ${CLAIMS_HEALTH_PCT} percent">
       <svg class="claims-health-donut-svg" viewBox="0 0 80 80" aria-hidden="true">
-        <circle class="track" cx="40" cy="40" r="32"></circle>
-        <circle class="value" cx="40" cy="40" r="32"></circle>
+        <circle class="track" cx="40" cy="40" r="${CLAIMS_HEALTH_DONUT_R}"></circle>
+        <circle class="value" cx="40" cy="40" r="${CLAIMS_HEALTH_DONUT_R}"
+          stroke-dasharray="${CLAIMS_HEALTH_DONUT_C}"
+          stroke-dashoffset="${CLAIMS_HEALTH_DONUT_C}"></circle>
       </svg>
-      <span class="claims-health-donut-pct">68%</span>
+      <span class="claims-health-donut-pct">${CLAIMS_HEALTH_PCT}%</span>
     </div>`;
+  }
+  function animateClaimsHealthDonut(){
+    const ring = document.querySelector('.claims-health-donut-svg .value');
+    if(!ring) return;
+    const target = CLAIMS_HEALTH_DONUT_C * (1 - CLAIMS_HEALTH_PCT / 100);
+    ring.style.strokeDasharray = String(CLAIMS_HEALTH_DONUT_C);
+    ring.style.strokeDashoffset = String(CLAIMS_HEALTH_DONUT_C);
+    ring.classList.remove('is-animated');
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce){
+      ring.style.strokeDashoffset = String(target);
+      return;
+    }
+    // Force first paint at empty, then ease-out to 68%.
+    void ring.getBoundingClientRect();
+    requestAnimationFrame(()=>{
+      ring.classList.add('is-animated');
+      ring.style.strokeDashoffset = String(target);
+    });
   }
   function claimsDashboardHtml(){
     const rows = CLAIMS_LIST.map(c=>`<tr>
@@ -3040,6 +3072,7 @@
       placeCopilotBtn(false); // park outside mainCol before innerHTML replace
       document.getElementById('mainCol').innerHTML = claimsDashboardHtml();
       placeCopilotBtn(true);
+      animateClaimsHealthDonut();
       document.getElementById('mainScroll').scrollTop = 0;
       const editModeLink = document.getElementById('editModeLink');
       if(editModeLink) editModeLink.hidden = true;
