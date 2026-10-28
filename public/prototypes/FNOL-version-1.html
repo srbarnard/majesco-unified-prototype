@@ -810,17 +810,29 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
   /* ---- MUI-style dialogs (Majesco One tokens) ---- */
+  /* Enter: 225ms ease-out fade + slight scale. Exit: 195ms ease-in fade. */
   .mui-dialog-root{
-    position:fixed;inset:0;z-index:1200;display:none;align-items:center;justify-content:center;
+    position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;
+    visibility:hidden;pointer-events:none;
   }
-  .mui-dialog-root.is-open{display:flex;}
+  .mui-dialog-root.is-open{visibility:visible;pointer-events:auto;}
   .mui-dialog-backdrop{
     position:absolute;inset:0;background:rgba(0,0,0,.5);border:none;padding:0;cursor:pointer;
+    opacity:0;transition:opacity 195ms ease-in;
+  }
+  .mui-dialog-root.is-open .mui-dialog-backdrop{
+    opacity:1;transition:opacity 225ms ease-out;
   }
   .mui-dialog-paper{
     position:relative;z-index:1;width:100%;max-width:444px;margin:32px;
     background:var(--surface);border-radius:var(--radius);box-shadow:0 11px 15px -7px rgba(0,0,0,.2),0 24px 38px 3px rgba(0,0,0,.14),0 9px 46px 8px rgba(0,0,0,.12);
     display:flex;flex-direction:column;max-height:calc(100% - 64px);outline:none;
+    opacity:0;transform:scale(0.95);
+    transition:opacity 195ms ease-in,transform 195ms ease-in;
+  }
+  .mui-dialog-root.is-open .mui-dialog-paper{
+    opacity:1;transform:scale(1);
+    transition:opacity 225ms ease-out,transform 225ms ease-out;
   }
   .mui-dialog-paper.wide{max-width:520px;}
   .mui-dialog-title{
@@ -864,7 +876,9 @@
   .mui-dialog-actions .btn{min-width:72px;}
   body.mui-dialog-open{overflow:hidden;}
   @media (prefers-reduced-motion:reduce){
-    .mui-dialog-root,.mui-dialog-paper{transition:none !important;}
+    .mui-dialog-backdrop,.mui-dialog-paper,.mui-dialog-root.is-open .mui-dialog-backdrop,.mui-dialog-root.is-open .mui-dialog-paper{
+      transition:none !important;
+    }
   }
 
   svg{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
@@ -2340,20 +2354,32 @@
     document.getElementById('assignToField').classList.remove('has-error');
     document.getElementById('assignToSelect').removeAttribute('aria-invalid');
   }
+  const DIALOG_EXIT_MS = 195;
+  let dialogCloseTimer = 0;
   function closeTriageDialog(){
     if(!openDialogKey) return;
     const root = TRIAGE_DIALOGS[openDialogKey];
+    openDialogKey = '';
     if(root){
       root.classList.remove('is-open');
       root.setAttribute('aria-hidden', 'true');
     }
-    openDialogKey = '';
-    document.body.classList.remove('mui-dialog-open');
+    clearTimeout(dialogCloseTimer);
+    dialogCloseTimer = setTimeout(()=>{
+      if(!openDialogKey) document.body.classList.remove('mui-dialog-open');
+    }, DIALOG_EXIT_MS);
   }
   function openTriageDialog(key){
     const root = TRIAGE_DIALOGS[key];
     if(!root) return;
-    if(openDialogKey && openDialogKey !== key) closeTriageDialog();
+    if(openDialogKey && openDialogKey !== key){
+      const prev = TRIAGE_DIALOGS[openDialogKey];
+      if(prev){
+        prev.classList.remove('is-open');
+        prev.setAttribute('aria-hidden', 'true');
+      }
+      openDialogKey = '';
+    }
     if(key === 'assignOwner'){
       document.getElementById('assignToSelect').value = '';
       clearAssignToError();
@@ -2364,12 +2390,19 @@
       document.getElementById('siuDecisionDate').value = '';
       syncSiuReasonVisibility();
     }
+    clearTimeout(dialogCloseTimer);
     openDialogKey = key;
-    root.classList.add('is-open');
+    root.classList.remove('is-open');
     root.setAttribute('aria-hidden', 'false');
     document.body.classList.add('mui-dialog-open');
-    const paper = root.querySelector('.mui-dialog-paper');
-    if(paper) paper.focus();
+    /* Reflow so the closed opacity/scale paints before the enter transition. */
+    void root.offsetWidth;
+    requestAnimationFrame(()=>{
+      if(openDialogKey !== key) return;
+      root.classList.add('is-open');
+      const paper = root.querySelector('.mui-dialog-paper');
+      if(paper) paper.focus();
+    });
   }
   function saveTriageDialog(key){
     if(key === 'assignOwner'){
