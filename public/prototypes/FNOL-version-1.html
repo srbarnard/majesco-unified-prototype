@@ -1067,24 +1067,55 @@
     padding:16px;border:1px solid var(--divider);border-radius:var(--radius);
     background:var(--primary-hover-bg);
   }
+  .claims-brief-grid{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 24px;
+  }
+  .claims-brief-col{min-width:0;padding:0 8px;}
+  .claims-brief-subtitle{
+    margin:0 0 8px;font-family:var(--font-display);font-size:16px;font-weight:600;
+    line-height:24px;color:var(--text-primary);
+  }
+  .claims-health-body{display:flex;align-items:center;gap:16px;}
+  .claims-health-donut{
+    position:relative;width:80px;height:80px;flex:0 0 80px;
+  }
+  .claims-health-donut-svg{
+    width:80px;height:80px;display:block;transform:rotate(-90deg);
+  }
+  .claims-health-donut-svg .track,
+  .claims-health-donut-svg .value{
+    fill:none;stroke-linecap:butt;stroke-width:12;
+  }
+  .claims-health-donut-svg .track{stroke:#E0E0E0;}
+  .claims-health-donut-svg .value{
+    stroke:#55AEB1;stroke-dasharray:136.72 64.34;
+  }
+  .claims-health-donut-pct{
+    position:absolute;inset:0;display:grid;place-items:center;
+    font-family:var(--font-display);font-size:18px;font-weight:700;
+    line-height:24px;color:var(--text-primary);pointer-events:none;
+  }
   .claims-brief-list{
-    margin:0;padding:0 0 0 18px;display:flex;flex-direction:column;gap:8px;
+    margin:0;padding:0 0 0 18px;display:flex;flex-direction:column;gap:8px;min-width:0;
   }
   .claims-brief-list li{
     font-family:var(--font-body);font-size:14px;line-height:20px;color:var(--text-primary);
   }
   .claims-brief-list b{font-weight:700;}
-  .claims-brief-attention{margin-top:16px;padding-top:4px;}
-  .claims-brief-subtitle{
-    margin:0 0 8px;font-family:var(--font-display);font-size:16px;font-weight:600;
-    line-height:24px;color:var(--text-primary);
+  .claims-overnight-list,
+  .claims-attention-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;}
+  .claims-overnight-row{
+    display:flex;align-items:flex-start;gap:8px;
+    font-family:var(--font-body);font-size:14px;line-height:20px;color:var(--text-primary);
   }
-  .claims-attention-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:0;}
+  .claims-overnight-ic{
+    flex:0 0 auto;width:20px;height:20px;margin-top:0;color:var(--primary-main);
+  }
+  .claims-overnight-ic svg{width:20px;height:20px;display:block;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
   .claims-attention-row{
-    display:flex;align-items:baseline;gap:12px;padding:10px 0;
-    border-bottom:1px solid var(--divider);font-size:14px;line-height:20px;
+    display:flex;align-items:baseline;gap:8px;
+    font-family:var(--font-body);font-size:14px;line-height:20px;
   }
-  .claims-attention-row:last-child{border-bottom:none;padding-bottom:0;}
   .claims-attention-claim{
     flex:0 0 auto;font-family:var(--font-display);font-weight:600;font-size:14px;
     color:var(--primary-main);text-decoration:none;
@@ -1125,6 +1156,8 @@
   .claims-table-shell .datagrid td.cov-name{font-weight:600;color:var(--text-primary);}
   @media (max-width:1100px){
     .claims-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .claims-brief-grid{grid-template-columns:1fr;}
+    .claims-brief-col{padding:0;}
   }
   @media (prefers-reduced-motion:reduce){
     .mui-dialog-backdrop,.mui-dialog-paper,.mui-dialog-root.is-open .mui-dialog-backdrop,.mui-dialog-root.is-open .mui-dialog-paper{
@@ -2348,6 +2381,12 @@
     {claim:'CL-90345612-221', reason:'Projected injury exposure is approaching the available policy limit.'},
     {claim:'CL-88213045-207', reason:'A newly ingested insured email contains language consistent with a service complaint.'}
   ];
+  const OVERNIGHT_ACTIVITY = [
+    {icon:'plus', bold:'6 new claims', rest:' were reported overnight; 2 are still unassigned'},
+    {icon:'storm', bold:'1 CAT event update', rest:' added 4 potentially affected claims'},
+    {icon:'payments', bold:'3 material reserve/payment changes', rest:' exceeded review thresholds'},
+    {icon:'gavel', bold:'2 new litigation/SIU signals', rest:' were generated for supervisor review'}
+  ];
   const KEY_METRICS = [
     {label:'Avg claim per adjuster', value:'18.5'},
     {label:'Avg claim per lifecycle', value:'42 days'},
@@ -2364,6 +2403,24 @@
       return 'Good afternoon, Jordan';
     }
   }
+  function overnightIcon(kind){
+    const icons = {
+      plus:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+      storm:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-2.8 2.4-4 5-4 7.5A4 4 0 0 0 12 15a4 4 0 0 0 4-4.5C16 8 14.8 5.4 12 3Z"/><path d="M10 15l-1.5 3M13 16l-1 3M16 15.5l-1 2.5"/></svg>',
+      payments:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>',
+      gavel:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 4 6 6"/><path d="m12.5 5.5 6 6"/><path d="m5 15 6-6"/><path d="M4 20h8"/><path d="m8 11 5 5"/></svg>'
+    };
+    return `<span class="claims-overnight-ic">${icons[kind] || icons.plus}</span>`;
+  }
+  function claimsHealthDonutHtml(){
+    return `<div class="claims-health-donut" role="img" aria-label="Claims health 68 percent">
+      <svg class="claims-health-donut-svg" viewBox="0 0 80 80" aria-hidden="true">
+        <circle class="track" cx="40" cy="40" r="32"></circle>
+        <circle class="value" cx="40" cy="40" r="32"></circle>
+      </svg>
+      <span class="claims-health-donut-pct">68%</span>
+    </div>`;
+  }
   function claimsDashboardHtml(){
     const rows = CLAIMS_LIST.map(c=>`<tr>
       <td class="cov-name">${escHtml(c.claimNumber)}</td>
@@ -2373,6 +2430,10 @@
       <td class="claim-status">${claimStatusChip(c.status)}</td>
       <td>${escHtml(c.assignedTo)}</td>
     </tr>`).join('');
+    const overnight = OVERNIGHT_ACTIVITY.map(o=>`<li class="claims-overnight-row">
+      ${overnightIcon(o.icon)}
+      <span><b>${escHtml(o.bold)}</b>${escHtml(o.rest)}</span>
+    </li>`).join('');
     const attention = NEEDS_ATTENTION.map(a=>`<li class="claims-attention-row">
       <span class="claims-attention-claim">${escHtml(a.claim)}</span>
       <span class="claims-attention-reason">${escHtml(a.reason)}</span>
@@ -2396,14 +2457,26 @@
         <div class="claims-section-head">
           <h3 class="claims-section-title" id="dailyBriefTitle">Daily Brief</h3>
         </div>
-        <ul class="claims-brief-list">
-          <li>Open inventory is <b>3 claims higher</b> than last week.</li>
-          <li><b>11 claims</b> are past target lifecycle; 3 need near-term review.</li>
-          <li>Large-loss exposure is concentrated in <b>6 claims</b>.</li>
-        </ul>
-        <div class="claims-brief-attention" aria-labelledby="needsAttentionTitle">
-          <h4 class="claims-brief-subtitle" id="needsAttentionTitle">Needs attention</h4>
-          <ul class="claims-attention-list">${attention}</ul>
+        <div class="claims-brief-grid">
+          <div class="claims-brief-col" aria-labelledby="claimsHealthTitle">
+            <h4 class="claims-brief-subtitle" id="claimsHealthTitle">Claims Health</h4>
+            <div class="claims-health-body">
+              ${claimsHealthDonutHtml()}
+              <ul class="claims-brief-list">
+                <li>Open inventory is <b>3 claims higher</b> than last week.</li>
+                <li><b>11 claims</b> are past target lifecycle; 3 need near-term review.</li>
+                <li>Large-loss exposure is concentrated in <b>6 claims</b>.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="claims-brief-col" aria-labelledby="overnightTitle">
+            <h4 class="claims-brief-subtitle" id="overnightTitle">Overnight activity (4)</h4>
+            <ul class="claims-overnight-list">${overnight}</ul>
+          </div>
+          <div class="claims-brief-col" aria-labelledby="needsAttentionTitle">
+            <h4 class="claims-brief-subtitle" id="needsAttentionTitle">Needs attention (3)</h4>
+            <ul class="claims-attention-list">${attention}</ul>
+          </div>
         </div>
       </section>
       <section class="claims-section" aria-labelledby="keyMetricsTitle">
