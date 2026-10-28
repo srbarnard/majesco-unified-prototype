@@ -1,0 +1,2770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>P&C Claims — First notice of loss</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ===== Majesco One tokens — confirmed from Figma "Majesco One Design" (palette / typography / spacing / shape, desktop mode) ===== */
+    --majesco-blue:#0A4E8B;
+    --majesco-teal:#57B7C3;
+    --majesco-green:#89BB58;
+
+    --primary-main:#005DBF;
+    --primary-dark:#0050A6;
+    --primary-light:#308EF2;
+    --primary-selected-bg:#E3EEFB;
+    --primary-hover-bg:#F1F6FC;
+
+    --secondary-main:#2E767D;
+
+    --success-main:#0F5C29;
+    --success-light:#2AC678;
+    --success-bg:#E8F5EC;
+
+    --warning-main:#FF6F00;
+    --warning-bg:#FFF1E0;
+    --warning-border:#FFC98A;
+
+    --error-main:#A82626;
+    --error-bg:#FBEAEA;
+    --error-border:#E3ABAB;
+
+    --info-main:#0277BD;
+    --info-bg:#E7F3FB;
+
+    --doc-chip-bg:#D8F0FF;
+    --doc-chip-fg:#0A5F91;
+    --policy-chip-bg:#E3F2E6;
+    --policy-chip-fg:#2A6B3B;
+
+    --text-primary:#212121;
+    --text-secondary:#6B6F76;
+    --text-disabled:#9AA0A6;
+
+    --divider:#E1E3E6;
+    --table-border:#BFBFBF;
+    --border:#D7DAE0;
+    --surface:#FFFFFF;
+    --canvas:#FFFFFF;
+    --surface-subtle:#F7F8FA;
+    --rail-bg:#F5F5F5;
+    --appbar-bg:#FAFAFA;   /* design system surface value; app bar and left rail share it */
+    --gray-dark:#595959;   /* icon + dark-gray text, from Create Quote Axure */
+
+    --action-hover:#F5F5F5;
+    --action-selected:#EDEDED;
+    --action-disabled-bg:#F0F1F2;
+    --field-fill:#FFFFFF;
+
+    /* shape/borderRadius = 4, shape/full = 100 */
+    --radius:4px;
+    --radius-sm:4px;
+    --radius-md:4px;
+    --radius-lg:4px;
+    --radius-pill:100px;
+
+    --font-display:'Poppins',sans-serif;
+    --font-body:'Open Sans',sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--canvas);font-family:var(--font-body);color:var(--text-primary);}
+  body{font-size:13px;-webkit-font-smoothing:antialiased;}
+
+  a{color:var(--primary-main);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+
+  button{font-family:var(--font-body);cursor:pointer;}
+
+  /* ============ SHELL ============ */
+  .app-frame{display:flex;flex-direction:column;height:100vh;min-width:1280px;overflow:hidden;background:var(--canvas);}
+  .shell{display:flex;flex-direction:column;flex:1 1 auto;min-width:0;min-height:0;height:100%;}
+
+  /* ---- Top App Bar ---- */
+  .appbar{
+    height:60px;flex:0 0 auto;display:flex;align-items:center;gap:0;
+    padding:0 20px;background:var(--appbar-bg);border-bottom:1px solid var(--divider);
+  }
+  .appbar .brand-wrap{position:relative;flex:0 0 auto;}
+  .appbar .brand{display:flex;align-items:center;gap:8px;font-family:var(--font-body);font-weight:700;font-size:14.5px;color:var(--text-primary);padding:6px 8px;}
+
+  /* Centre cluster: back / forward sit right against search; Create new follows search */
+  .appbar-center{flex:1 1 auto;min-width:0;display:flex;align-items:center;justify-content:center;margin:0 24px;}
+  .navchevrons{display:flex;align-items:center;gap:0;flex:0 0 auto;}
+  .appbar .searchwrap{flex:1 1 auto;max-width:880px;margin-left:10px;position:relative;}
+  .appbar .searchwrap input{
+    width:100%;height:40px;border-radius:var(--radius);border:1px solid var(--border);
+    background:#fff;padding:0 48px 0 16px;font-size:14px;color:var(--text-primary);font-family:var(--font-body);
+  }
+  .appbar .searchwrap input::placeholder{color:var(--text-secondary);}
+  .appbar .searchwrap input:focus{outline:none;border-color:var(--primary-main);}
+  .appbar .search-actions{position:absolute;right:0;top:0;bottom:0;display:flex;align-items:center;}
+  .appbar .right-group{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+  .iconbtn{width:40px;height:40px;border-radius:10px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--gray-dark);flex:0 0 auto;}
+  .iconbtn:hover{background:var(--primary-hover-bg);}
+  .btn-create{
+    display:flex;align-items:center;height:40px;padding:0 4px;margin-left:9px;border:none;background:transparent;
+    font-family:var(--font-display);font-size:16px;font-weight:500;color:var(--primary-main);white-space:nowrap;flex:0 0 auto;cursor:pointer;
+  }
+  .btn-create:hover{text-decoration:underline;}
+  .avatar{width:34px;height:34px;border-radius:50%;background:var(--secondary-main);color:#fff;font-size:14px;font-weight:400;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);}
+  svg.mi{fill:currentColor;stroke:none;}
+
+  /* ---- Body layout: app rail + page ---- */
+  .body-row{flex:1 1 auto;display:flex;min-height:0;}
+
+  /* ---- Left App Rail ---- */
+  .apprail{
+    width:88px;flex:0 0 auto;background:var(--appbar-bg);border-right:1px solid var(--divider);
+    display:flex;flex-direction:column;align-items:stretch;padding:8px 0 0;gap:4px;overflow-y:auto;
+  }
+  .rail-item{
+    width:calc(100% - 8px);margin:0 4px;height:60px;padding:10px 4px 0;display:flex;flex-direction:column;align-items:center;gap:4px;
+    color:var(--gray-dark);background:transparent;border:none;border-left:3px solid transparent;border-radius:var(--radius-sm);flex:0 0 auto;box-sizing:border-box;
+  }
+  .rail-item .ic{width:22px;height:22px;}
+  .rail-item .lbl{font-size:11px;font-weight:400;line-height:14px;font-family:var(--font-body);}
+  .rail-item:hover{background:var(--action-selected);}
+  .rail-item.active{background:var(--primary-selected-bg);border-left-color:var(--primary-main);color:var(--primary-main);}
+  .rail-item.active .lbl{font-weight:700;}
+  .rail-spacer{flex:1 1 auto;}
+  .rail-item-wide{height:auto;padding:14px 4px;border-top:1px solid var(--divider);border-left:none;margin:0;width:100%;border-radius:0;}
+  .rail-item-wide .lbl{line-height:14px;}
+
+  /* ---- Left rail drawers (Activity / Favorites) — under app bar, pushes page ---- */
+  .rail-drawer{
+    --rail-drawer-w:280px;
+    position:relative;align-self:stretch;
+    flex:0 0 0;width:0;min-width:0;height:auto;min-height:0;overflow:hidden;
+    display:flex;flex-direction:column;background:var(--surface);
+    border-right:1px solid transparent;box-sizing:border-box;
+    transition:flex-basis 250ms ease-out,width 250ms ease-out,border-right-color 250ms ease-out;
+  }
+  .rail-drawer.is-open{
+    flex-basis:var(--rail-drawer-w);width:var(--rail-drawer-w);
+    border-right-color:var(--divider);
+  }
+  .rail-drawer-inner{
+    width:var(--rail-drawer-w);min-width:var(--rail-drawer-w);height:100%;min-height:0;
+    display:flex;flex-direction:column;background:var(--surface);box-sizing:border-box;
+  }
+  .rail-drawer-header{
+    flex:0 0 auto;display:flex;align-items:center;gap:8px;
+    padding:12px 16px;border-bottom:1px solid var(--divider);background:var(--surface);
+  }
+  .rail-drawer-header h2{
+    margin:0;flex:1 1 auto;font-family:var(--font-display);font-size:16px;font-weight:500;
+    line-height:24px;color:var(--text-primary);
+  }
+  .rail-drawer-body{
+    flex:1 1 auto;min-height:0;overflow-y:auto;padding:8px 0 16px;background:var(--surface);
+  }
+  .rail-drawer-panel[hidden]{display:none !important;}
+  .rail-drawer-item{
+    width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+    padding:10px 16px;border:none;border-bottom:1px solid var(--divider);border-radius:0;
+    background:transparent;text-align:left;cursor:default;box-sizing:border-box;
+    font-family:var(--font-body);
+  }
+  .rail-drawer-item:last-child{border-bottom:none;}
+  .rail-drawer-item:hover{background:var(--action-hover);}
+  .rail-drawer-item-primary{
+    font-size:14px;font-weight:500;line-height:20px;color:var(--text-primary);
+  }
+  .rail-drawer-item-secondary{
+    font-size:14px;font-weight:400;line-height:20px;color:var(--text-secondary);
+  }
+  .rail-drawer-item-meta{
+    font-size:12px;font-weight:400;line-height:16px;color:var(--text-secondary);margin-top:2px;
+  }
+  .rail-drawer-item-row{display:flex;align-items:center;gap:8px;width:100%;min-width:0;}
+  .rail-drawer-item-row .rail-drawer-item-primary{flex:1 1 auto;min-width:0;}
+  .rail-status-chip{
+    flex:0 0 auto;font-family:var(--font-body);font-size:11px;font-weight:500;line-height:16px;
+    padding:2px 8px;border-radius:var(--radius);background:var(--info-bg);color:var(--info-main);
+  }
+  .rail-status-chip.tone-success{background:var(--success-bg);color:var(--success-main);}
+  .rail-status-chip.tone-warning{background:var(--warning-bg);color:var(--warning-main);}
+  @media (prefers-reduced-motion:reduce){
+    .rail-drawer{transition:none !important;}
+  }
+
+  /* ---- Page column ---- */
+  .page{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+
+  /* ---- Page header block ---- */
+  .page-head{padding:16px 32px 14px;flex:0 0 auto;background:#fff;border-bottom:1px solid var(--divider);}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--primary-main);font-family:var(--font-body);}
+  /* Title left · stepper centred · Copilot right (Create Quote header row) */
+  .titlebar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;column-gap:24px;margin-top:2px;}
+  .titlebar .title-cell{min-width:0;}
+  .titlebar .actions-cell{justify-self:end;display:flex;align-items:center;}
+  .titlebar h1{font-family:var(--font-display);font-weight:400;font-size:24px;line-height:32px;margin:0;color:var(--text-primary);}
+  .titlebar .sub{margin:4px 0 0;color:var(--text-secondary);font-size:12.5px;max-width:520px;line-height:1.5;}
+  /* ---- Horizontal page stepper (FNOL · Triage · Review) ---- */
+  /* Majesco One stepper: done = blue + check, current = blue + number, upcoming = gray */
+  .hstepper{display:flex;align-items:center;gap:12px;justify-self:center;}
+  .hstep{display:flex;align-items:center;gap:8px;cursor:pointer;}
+  .hstep .num{
+    width:24px;height:24px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;
+    font-family:var(--font-display);font-size:12px;font-weight:400;line-height:1;background:var(--text-disabled);color:#fff;border:none;
+  }
+  .hstep .num svg{width:14px;height:14px;stroke:#fff;stroke-width:2.6;}
+  .hstep .lbl{font-family:var(--font-display);font-size:14px;font-weight:400;line-height:20px;color:var(--text-secondary);white-space:nowrap;}
+  .hstep.current .num,.hstep.done .num{background:var(--primary-main);}
+  .hstep.current .lbl{color:var(--primary-main);font-weight:500;}
+  .hstep.done .lbl{color:var(--text-primary);font-weight:500;}
+  .hstep:hover .lbl{text-decoration:underline;}
+  .hstep:focus-visible{outline:2px solid var(--primary-main);outline-offset:4px;border-radius:var(--radius-sm);}
+  .hstep-line{width:48px;height:1px;background:var(--table-border);flex:0 0 auto;}
+
+  /* Copilot header text button (toggles the Copilot drawer) */
+  .copilot-btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 8px;border:none;border-radius:var(--radius);background:transparent;
+    font-family:var(--font-display);font-size:16px;font-weight:500;color:var(--gray-dark);white-space:nowrap;}
+  .copilot-btn:hover{background:var(--primary-hover-bg);}
+  .copilot-btn[aria-expanded="true"]{background:var(--primary-selected-bg);color:var(--primary-main);}
+  .copilot-btn svg{width:20px;height:20px;flex:0 0 auto;stroke:none;}
+  .copilot-btn .copilot-ic-active{display:none;}
+  .copilot-btn[aria-expanded="true"] .copilot-ic-default{display:none;}
+  .copilot-btn[aria-expanded="true"] .copilot-ic-active{display:block;}
+
+  /* ---- Copilot right drawer (below app bar; pushes page; Majesco One) ---- */
+  .copilot-drawer{
+    --copilot-w:360px;
+    position:relative;align-self:stretch;
+    flex:0 0 0;width:0;min-width:0;height:auto;min-height:0;overflow:hidden;
+    display:flex;flex-direction:column;background:var(--surface);
+    border-left:1px solid transparent;box-sizing:border-box;
+    transition:flex-basis 250ms ease-out,width 250ms ease-out,border-left-color 250ms ease-out;
+  }
+  .copilot-drawer.is-open{
+    flex-basis:var(--copilot-w);width:var(--copilot-w);
+    border-left-color:var(--divider);
+  }
+  .copilot-drawer.is-resizing{transition:none !important;user-select:none;}
+  .copilot-drawer-resizer{
+    position:absolute;left:0;top:0;bottom:0;width:6px;z-index:3;
+    cursor:col-resize;touch-action:none;background:transparent;border:none;padding:0;
+    display:none;
+  }
+  .copilot-drawer.is-open .copilot-drawer-resizer{display:block;}
+  .copilot-drawer-resizer:hover,
+  .copilot-drawer.is-resizing .copilot-drawer-resizer{background:var(--primary-selected-bg);}
+  .copilot-drawer-resizer::after{
+    content:"";position:absolute;top:50%;left:1px;width:4px;height:32px;margin-top:-16px;
+    border-radius:2px;background:var(--divider);
+  }
+  .copilot-drawer-resizer:hover::after,
+  .copilot-drawer.is-resizing .copilot-drawer-resizer::after{background:var(--primary-main);}
+  .copilot-drawer-inner{
+    width:var(--copilot-w);min-width:var(--copilot-w);height:100%;min-height:0;
+    display:flex;flex-direction:column;background:var(--surface);box-sizing:border-box;
+  }
+  .copilot-drawer-header{
+    flex:0 0 auto;display:flex;align-items:center;gap:8px;
+    padding:12px 16px;border-bottom:1px solid var(--divider);background:var(--surface);
+  }
+  .copilot-drawer-header h2{
+    margin:0;flex:1 1 auto;font-family:var(--font-display);font-size:16px;font-weight:500;
+    line-height:24px;color:var(--text-primary);
+  }
+  .copilot-drawer-header-actions{display:flex;align-items:center;gap:4px;flex:0 0 auto;}
+  .copilot-drawer-icon-btn{
+    width:32px;height:32px;padding:0;border:none;border-radius:var(--radius);
+    background:transparent;color:var(--gray-dark);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  .copilot-drawer-icon-btn:hover{background:var(--action-hover);}
+  .copilot-drawer-icon-btn svg{width:20px;height:20px;}
+  .copilot-drawer-body{
+    flex:1 1 auto;min-height:0;overflow-y:auto;padding:8px 16px 16px;
+    display:flex;flex-direction:column;gap:8px;background:var(--surface);position:relative;
+  }
+  .copilot-toolbar{display:flex;align-items:center;gap:8px;min-height:32px;margin:0;flex:0 0 auto;}
+  .copilot-toolbar .spacer{flex:1 1 auto;}
+  .copilot-toolbar-label{
+    font-family:var(--font-display);font-size:14px;font-weight:500;line-height:20px;color:var(--text-primary);
+  }
+  .copilot-drawer[data-view="history"] .copilot-drawer-body{padding:0;gap:0;overflow:hidden;}
+  .copilot-drawer[data-view="history"] .copilot-drawer-footer{display:none;}
+  .copilot-drawer[data-view="history"] .copilot-toolbar{
+    position:absolute;top:8px;right:8px;left:auto;z-index:2;margin:0;min-height:32px;width:auto;
+  }
+  .copilot-drawer[data-view="history"] .copilot-toolbar .spacer,
+  .copilot-drawer[data-view="history"] #copilotToolbarLabel,
+  .copilot-drawer[data-view="history"] #copilotNewChatIconBtn{display:none !important;}
+  .copilot-drawer[data-view="history"] #copilotMenuBtn{margin:0;}
+  .copilot-view{display:flex;flex-direction:column;align-items:stretch;gap:0;min-width:0;width:100%;}
+  .copilot-view[hidden]{display:none !important;}
+  #copilotViewHistory{
+    flex:1 1 auto;min-height:0;width:100%;box-sizing:border-box;
+    padding:16px;overflow-y:auto;background:var(--surface);
+  }
+  .copilot-history-head{
+    display:flex;align-items:center;gap:8px;min-height:32px;margin:0 40px 12px 0;
+  }
+  .copilot-history-head .copilot-chat-heading{margin:0;}
+  .copilot-intro-hero{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:0;margin:0 0 20px;}
+  .copilot-intro-brand{display:flex;align-items:center;gap:10px;}
+  .copilot-mark{width:28px;height:28px;flex:0 0 auto;display:block;object-fit:contain;}
+  .copilot-intro-title{
+    margin:0;font-family:var(--font-display);font-size:20px;font-weight:600;
+    line-height:28px;color:var(--text-primary);
+  }
+  .copilot-intro-sub{
+    margin:0;font-family:var(--font-body);font-size:14px;font-weight:400;
+    line-height:20px;color:var(--text-secondary);
+  }
+  .copilot-view-all{
+    align-self:flex-end;margin:20px 0 0;padding:0;text-align:right;
+    font-family:var(--font-body);font-size:14px;font-weight:400;
+    color:var(--primary-main);line-height:20px;
+  }
+  .copilot-tabs{
+    display:flex;align-items:stretch;gap:0;border-bottom:1px solid var(--divider);margin-top:12px;
+  }
+  .copilot-tab{
+    flex:1 1 0;height:40px;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;
+    background:transparent;color:var(--text-secondary);cursor:pointer;
+    font-family:var(--font-display);font-size:14px;font-weight:500;line-height:20px;
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 8px;
+  }
+  .copilot-tab svg{width:18px;height:18px;flex:0 0 auto;}
+  .copilot-tab.is-active{color:var(--primary-main);border-bottom-color:var(--primary-main);}
+  .copilot-tab:hover{background:var(--primary-hover-bg);}
+  .copilot-tab-panels{display:flex;flex-direction:column;gap:8px;margin-top:16px;}
+  .copilot-tab-panel{display:flex;flex-direction:column;gap:8px;}
+  .copilot-tab-panel[hidden]{display:none !important;}
+  .copilot-new-chat{
+    width:100%;height:40px;border:none;border-radius:var(--radius);padding:0 16px;
+    background:var(--primary-main);color:#fff;
+    font-family:var(--font-display);font-size:14px;font-weight:500;line-height:20px;
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;
+  }
+  .copilot-new-chat:hover{background:var(--primary-dark);}
+  .copilot-new-chat svg{width:18px;height:18px;stroke:#fff;}
+  .copilot-chat-block{display:flex;flex-direction:column;gap:4px;}
+  .copilot-chat-heading{
+    margin:0 0 4px;font-family:var(--font-display);font-size:14px;font-weight:500;
+    line-height:20px;color:var(--text-primary);
+  }
+  .copilot-chat-group{display:flex;flex-direction:column;gap:0;margin-top:4px;}
+  .copilot-chat-group-label{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:8px 12px 4px;font-family:var(--font-body);font-size:12px;font-weight:400;
+    line-height:16px;color:var(--text-secondary);
+  }
+  .copilot-chat-group-label .search-ic{color:var(--text-secondary);display:inline-flex;}
+  .copilot-chat-group-label .search-ic svg{width:16px;height:16px;}
+  .copilot-chat-item{
+    width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;
+    border:1px solid transparent;border-radius:var(--radius);background:transparent;color:var(--text-primary);
+    font-family:var(--font-body);font-size:14px;font-weight:400;line-height:20px;
+    text-align:left;cursor:pointer;box-sizing:border-box;
+  }
+  .copilot-chat-item:hover{background:var(--action-hover);}
+  .copilot-chat-item.is-active{
+    background:var(--primary-selected-bg);border-color:var(--divider);color:var(--primary-main);
+  }
+  .copilot-chat-item .chat-ic{flex:0 0 auto;display:inline-flex;color:inherit;}
+  .copilot-chat-item .chat-ic svg{width:18px;height:18px;}
+  .copilot-chat-item .chat-label{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .copilot-prompt-card{
+    border:1px solid var(--divider);border-radius:var(--radius);padding:12px;background:var(--surface);
+    display:flex;flex-direction:column;gap:6px;cursor:pointer;text-align:left;width:100%;
+    font:inherit;color:inherit;box-sizing:border-box;
+  }
+  .copilot-prompt-card:hover{background:var(--primary-hover-bg);}
+  .copilot-prompt-card-top{display:flex;align-items:center;gap:8px;}
+  .copilot-prompt-card-top .kind{
+    display:inline-flex;align-items:center;gap:6px;min-width:0;
+    font-family:var(--font-body);font-size:12px;font-weight:400;color:var(--text-secondary);
+  }
+  .copilot-prompt-card-top .kind svg{width:16px;height:16px;flex:0 0 auto;color:var(--text-secondary);}
+  .copilot-prompt-card-top .fav{margin-left:auto;color:var(--text-secondary);display:inline-flex;}
+  .copilot-prompt-card-top .fav svg{width:18px;height:18px;}
+  .copilot-prompt-card-title{
+    margin:0;font-family:var(--font-body);font-size:14px;font-weight:500;
+    line-height:20px;color:var(--text-primary);
+  }
+  .copilot-prompt-card-body{
+    margin:0;font-family:var(--font-body);font-size:14px;font-weight:400;
+    line-height:20px;color:var(--text-secondary);
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  .copilot-chat-thread{display:flex;flex-direction:column;gap:12px;padding:4px 0 8px;}
+  .copilot-msg-user{
+    align-self:flex-end;max-width:90%;padding:10px 12px;border-radius:var(--radius);
+    background:var(--action-disabled-bg);color:var(--text-primary);
+    font-family:var(--font-body);font-size:14px;line-height:20px;
+  }
+  .copilot-msg-assistant{
+    align-self:stretch;color:var(--text-primary);
+    font-family:var(--font-body);font-size:14px;line-height:20px;
+  }
+  .copilot-drawer-footer{
+    flex:0 0 auto;padding:12px 16px 16px;border-top:1px solid var(--divider);background:var(--surface);
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .copilot-drawer[data-view="intro"] .copilot-drawer-footer{border-top-color:transparent;padding-top:0;}
+  .copilot-drawer[data-view="intro"] #copilotFooterComposerHost{display:none;}
+  .copilot-drawer:not([data-view="intro"]) #copilotIntroComposerHost{display:none;}
+  .copilot-composer{
+    border:1px solid var(--border);border-radius:var(--radius);background:var(--field-fill);padding:10px 12px;
+    display:flex;flex-direction:column;gap:8px;box-sizing:border-box;
+  }
+  .copilot-composer:focus-within{border-color:var(--primary-main);box-shadow:0 0 0 3px var(--primary-selected-bg);}
+  .copilot-composer-input{
+    width:100%;min-height:40px;max-height:96px;resize:none;border:none;outline:none;padding:0;
+    font-family:var(--font-body);font-size:14px;line-height:20px;color:var(--text-primary);background:transparent;
+  }
+  .copilot-composer-input::placeholder{color:var(--text-disabled);}
+  .copilot-composer-toolbar{display:flex;align-items:center;gap:4px;}
+  .copilot-composer-toolbar .spacer{flex:1 1 auto;}
+  .copilot-composer-tool{
+    height:32px;padding:0 8px;border:none;border-radius:var(--radius);background:transparent;
+    color:var(--gray-dark);display:inline-flex;align-items:center;gap:4px;cursor:pointer;
+    font-family:var(--font-body);font-size:14px;font-weight:400;
+  }
+  .copilot-composer-tool:hover{background:transparent;color:var(--text-primary);}
+  .copilot-composer-tool.is-active{color:var(--text-primary);background:transparent;}
+  .copilot-composer-tool svg{width:18px;height:18px;}
+  .copilot-composer-send{
+    width:32px;height:32px;border:none;border-radius:var(--radius);background:var(--primary-main);color:#fff;
+    display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;
+  }
+  .copilot-composer-send:hover{background:var(--primary-dark);}
+  .copilot-composer-send svg{width:18px;height:18px;stroke:#fff;}
+  .copilot-drawer-disclaimer{
+    margin:0;text-align:center;font-family:var(--font-body);font-size:12px;line-height:16px;color:var(--text-secondary);
+  }
+  .copilot-drawer-disclaimer a{font-weight:400;color:var(--primary-main);}
+  @media (prefers-reduced-motion:reduce){
+    .copilot-drawer{transition:none !important;}
+  }
+
+  /* ---- Sub-header (Quote-style meta row: plain text, no card) ---- */
+  .subheader{
+    margin:0;background:#fff;border:none;border-bottom:1px solid var(--divider);border-radius:0;
+    padding:12px 32px;display:flex;align-items:center;gap:24px;flex:0 0 auto;
+  }
+  .subheader .meta{font-size:14px;color:var(--text-secondary);}
+  .subheader .meta b{color:var(--text-primary);font-weight:400;}
+  .subheader .meta a{font-weight:400;}
+  .subheader .spacer{flex:1 1 auto;}
+  .subheader-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+  .subheader-actions #persistentAddPartyBtn[hidden]{display:none !important;}
+  .add-party-toggle{white-space:nowrap;}
+  .add-party-toggle .add-party-toggle-ic{
+    flex:0 0 auto;width:20px;height:20px;display:block;
+    transition:transform 150ms ease-out,opacity 150ms ease-out;
+    transform-origin:center center;
+  }
+  .add-party-toggle[aria-expanded="true"] .add-party-toggle-ic{transform:rotate(45deg);}
+  .subheader-actions-divider{
+    width:1px;height:24px;background:var(--divider);flex:0 0 auto;margin:0 4px;
+  }
+  .subheader-actions-divider[hidden]{display:none !important;}
+  .btn{
+    font-size:16px;font-weight:500;letter-spacing:0;border-radius:var(--radius-sm);padding:7px 16px;border:1px solid transparent;
+    display:inline-flex;align-items:center;gap:8px;line-height:24px;height:40px;box-sizing:border-box;font-family:var(--font-display);
+  }
+  .btn svg{width:20px;height:20px;flex:0 0 auto;}
+  .btn-primary{background:var(--primary-main);color:#fff;}
+  .btn-primary:hover{background:var(--primary-dark);}
+  .btn-outlined:disabled{background:#fff;border-color:var(--action-disabled-bg);color:var(--text-disabled);cursor:not-allowed;}
+  .btn-primary:disabled{background:var(--action-disabled-bg);color:var(--text-disabled);cursor:not-allowed;}
+  .btn-outlined{background:#fff;border-color:var(--primary-main);color:var(--primary-main);}
+  .btn-outlined:hover{background:var(--primary-hover-bg);}
+  .btn-text{background:transparent;color:var(--primary-main);padding:6px 8px;}
+  .btn-text:hover{background:var(--action-hover);}
+
+  /* ---- Content shell: sub-step rail + main content ---- */
+  .content-row{flex:1 1 auto;display:flex;align-items:stretch;gap:0;margin-top:0;padding:0;min-height:0;overflow:hidden;}
+
+  .substep-rail{width:240px;flex:0 0 240px;align-self:stretch;height:100%;background:var(--rail-bg);border-right:1px solid var(--divider);padding:20px 20px 20px 32px;overflow-y:auto;box-sizing:border-box;}
+  .substep-rail .rail-title{font-size:12px;font-weight:400;letter-spacing:.05em;color:var(--text-secondary);text-transform:uppercase;margin:0 0 12px;padding:0 2px;}
+
+  /* Sub-nav Item (Majesco Patterns): 18px dot + 14px label, 8px gap. Variants: Nav item / Active / Error / Complete */
+  .substep-row{display:flex;align-items:center;gap:8px;padding:8px 2px;cursor:pointer;}
+  .substep-row .dot{width:18px;height:18px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .substep-row .txt{font-family:var(--font-body);font-size:14px;font-weight:400;line-height:20px;color:var(--text-primary);}
+  .substep-row.nav .dot{border:1.5px solid var(--text-secondary);background:transparent;}
+  .substep-row.current .dot{background:var(--primary-main);}
+  .substep-row.current .txt{font-family:var(--font-display);font-weight:500;}
+  .substep-row.error .dot{border:1.5px solid var(--error-main);background:transparent;color:var(--error-main);font-size:14px;line-height:1;}
+  .substep-row.complete .dot{background:var(--success-main);}
+  .substep-row.complete .dot svg{width:12px;height:12px;stroke:#fff;stroke-width:2.6;fill:none;}
+  .substep-row:focus-visible{outline:2px solid var(--primary-main);outline-offset:2px;border-radius:var(--radius-sm);}
+
+  /* Main panel = scrollable form + footer pinned to THIS column only (not under the rail) */
+  .main-panel{flex:1 1 auto;min-width:0;align-self:stretch;height:100%;display:flex;flex-direction:column;min-height:0;background:#fff;}
+  .main-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;}
+  .main-col{display:flex;flex-direction:column;gap:22px;padding:22px 32px 28px;background:#fff;box-sizing:border-box;}
+
+  /* ---- Plain sections (flat heading + fields, like Quote's Policy details) ---- */
+  .plain-section{padding-bottom:20px;}
+  .plain-section:last-of-type{padding-bottom:0;}
+  .section-head{display:flex;align-items:center;justify-content:flex-start;gap:12px;margin:0 0 14px;}
+  .section-head h4{font-size:18px;font-weight:400;line-height:27px;margin:0;font-family:var(--font-display);color:var(--text-primary);}
+  .section-desc{font-size:14px;font-family:var(--font-body);color:var(--text-primary);line-height:1.5;margin:-6px 0 24px;}
+  .section-desc b{font-weight:400;}
+  .section-head h2{font-size:18px;font-weight:400;line-height:27px;margin:0;font-family:var(--font-display);color:var(--text-primary);}
+  .subhead{font-size:16px;font-weight:400;line-height:25px;margin:0 0 6px;font-family:var(--font-display);color:var(--text-primary);}
+  .reporter-line{font-size:14px;line-height:1.5;color:var(--text-primary);margin:0 0 22px;}
+  .reporter-line .sep{color:var(--text-secondary);margin:0 6px;}
+  .plain-section.no-divider{border-bottom:none;}
+  .pill-muted{font-family:var(--font-display);font-size:13px;font-weight:400;color:var(--text-secondary);}
+  .pill-warning{display:inline-flex;align-items:center;font-family:var(--font-body);font-size:14px;font-weight:400;line-height:21px;color:#EB6600;background:#FFF4E5;border:none;padding:4px 12px;border-radius:var(--radius-pill);white-space:nowrap;}
+
+  .subsection-label{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--text-secondary);text-transform:uppercase;margin:0 0 8px;}
+  .mini-table{width:100%;border-collapse:collapse;margin-bottom:22px;}
+  .mini-table thead th{text-align:left;font-size:13px;font-weight:500;font-family:var(--font-body);color:var(--text-secondary);padding:8px 10px 12px;border-bottom:1px solid var(--divider);background:transparent;}
+  .mini-table tbody td{padding:14px 10px;font-size:14px;font-family:var(--font-body);color:var(--text-primary);border-bottom:1px solid var(--divider);}
+  .mini-table tbody tr:last-child td{border-bottom:none;}
+  .mini-table tbody tr:hover td{background:var(--action-hover);}
+  .mini-table .name{font-weight:400;}
+  .mini-table .edit-row{position:relative;}
+  .row-edit-btn{position:absolute;right:0;top:8px;background:transparent;border:none;color:var(--text-secondary);padding:4px;border-radius:4px;}
+  .row-edit-btn:hover{background:var(--action-hover);}
+
+  .field-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 16px;margin-bottom:18px;}
+  .field-grid.cols-3{grid-template-columns:repeat(3,1fr);}
+  .field-grid.cols-2{grid-template-columns:repeat(2,1fr);}
+  .field{display:flex;flex-direction:column;gap:5px;min-width:0;}
+  .field label{font-size:14px;font-weight:400;color:var(--text-primary);font-family:var(--font-body);display:flex;align-items:center;gap:6px;}
+  /* Status label chip (Majesco One status chip colours: success / warning / error / neutral) */
+  .label-chip{display:inline-block;font-family:var(--font-display);font-size:12px;font-weight:400;padding:2px 8px;border-radius:var(--radius-pill);line-height:1.5;white-space:nowrap;}
+  .label-chip.success{background:#EDF7ED;color:#004718;}
+  .label-chip.warning{background:#FFF4E5;color:#663C00;}
+  .label-chip.error{background:#FDEDED;color:#851C1C;}
+  .label-chip.neutral{background:#ECEFF1;color:#37474F;}
+  /* Evidence confidence chip popover (hover + keyboard focus) */
+  .conf-wrap{position:relative;display:inline-block;margin-top:8px;}
+  .conf-wrap .label-chip{cursor:default;}
+  .conf-tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-body);font-size:13px;line-height:20px;padding:2px 10px;}
+  .conf-tag svg{width:14px;height:14px;flex:0 0 auto;stroke:none;}
+  .conf-pop{position:absolute;left:0;top:calc(100% + 8px);width:240px;box-sizing:border-box;padding:8px 10px;background:#fff;border:1px solid var(--divider);border-radius:4px;font-family:var(--font-body);font-size:12px;font-weight:400;line-height:1.5;color:var(--text-primary);white-space:normal;text-align:left;z-index:30;
+    opacity:0;transform:scale(.95);transform-origin:top center;visibility:hidden;pointer-events:none;
+    transition:opacity .2s ease-out,transform .2s ease-out,visibility 0s linear .2s;}
+  .conf-wrap:hover .conf-pop,.conf-wrap:focus-within .conf-pop{opacity:1;transform:scale(1);visibility:visible;transition:opacity .2s ease-out,transform .2s ease-out,visibility 0s;}
+
+  .ctrl{
+    height:36px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 11px;font-size:14px;
+    color:var(--text-primary);background:var(--field-fill);font-family:var(--font-body);width:100%;
+  }
+  .ctrl:focus{outline:none;border-color:var(--primary-main);box-shadow:0 0 0 3px var(--primary-selected-bg);}
+  select.ctrl{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236B6F76'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:28px;}
+  .field.with-icon{position:relative;}
+  .field.with-icon .ctrl{padding-right:34px;}
+  .field.with-icon .icon-inline{position:absolute;right:10px;bottom:9px;color:var(--text-secondary);}
+
+  /* ---- View / edit mode field styling (Quote "Policy details" read-only pattern) ----
+     Fields that are always read-only (policy-sourced, e.g. fieldRO()) stay gray in both
+     modes. Editable fields show the gray read-only box by default (view mode) and switch
+     to a normal bordered, editable control only while claim editing mode is on. */
+  .ctrl[readonly]{background:var(--action-disabled-bg);border-color:transparent;color:var(--text-primary);pointer-events:none;}
+  body:not(.editing-active) .ctrl:not([readonly]){background:var(--action-disabled-bg);border-color:transparent;color:var(--text-primary);pointer-events:none;box-shadow:none;}
+  body:not(.editing-active) select.ctrl:not([readonly]){background-image:none;}
+  body:not(.editing-active) input[type="date"].ctrl:not([readonly])::-webkit-calendar-picker-indicator,
+  body:not(.editing-active) input[type="time"].ctrl:not([readonly])::-webkit-calendar-picker-indicator{opacity:0;}
+  body:not(.editing-active) .field.with-icon .icon-inline{display:none;}
+  body:not(.editing-active) .field.with-icon .ctrl:not([readonly]){padding-right:11px;}
+  /* Add vehicle / Add injured party / Add location only make sense once editing is on.
+     Persistent Add party in the subheader is available on every FNOL substep (view or edit). */
+  body:not(.editing-active) .repeat-toolbar.edit-only{display:none;}
+
+  .field.flagged{
+    border:1px solid var(--warning-border);background:var(--warning-bg);border-radius:var(--radius);
+    padding:9px 11px 10px;gap:6px;
+  }
+  .field.flagged label{color:#8A4B02;}
+  .field.flagged .ctrl{border-color:var(--warning-border);background:#fff;}
+  .field-help{font-size:11.5px;color:#8A4B02;display:flex;align-items:flex-start;gap:5px;margin-top:1px;line-height:1.4;}
+  .field-help svg{flex:0 0 auto;margin-top:1px;}
+
+  /* ---- Coverage data grid ---- */
+  .datagrid{width:100%;border-collapse:collapse;margin-top:22px;}
+  .datagrid thead th{
+    text-align:left;font-size:13px;font-weight:500;font-family:var(--font-body);color:var(--text-secondary);padding:8px 10px 12px;
+    border-bottom:1px solid var(--divider);background:transparent;
+  }
+  .datagrid th.num, .datagrid td.num, .mini-table th.num, .mini-table td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .datagrid tbody td{padding:14px 10px;font-size:14px;font-family:var(--font-body);border-bottom:1px solid var(--divider);color:var(--text-primary);}
+  .datagrid tbody tr:last-child td{border-bottom:none;}
+  .datagrid tbody tr:hover td{background:var(--action-hover);}
+  .datagrid tbody td.cov-name{font-weight:400;}
+  .status-error{display:inline-flex;align-items:center;gap:6px;color:var(--error-main);font-weight:400;}
+  .status-error svg{width:18px;height:18px;flex:0 0 auto;}
+  .status-chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:11px;display:inline-flex;align-items:center;gap:5px;}
+  .status-chip.required{background:var(--success-bg);color:var(--success-main);}
+  .status-chip.rejected{background:var(--error-bg);color:var(--error-main);}
+  .status-chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+  /* ---- Alerts ---- */
+  .alert{display:flex;align-items:flex-start;gap:12px;border-radius:var(--radius-sm);padding:14px 16px;font-size:14px;line-height:1.5;}
+  .alert svg{flex:0 0 auto;margin-top:1px;}
+  .alert.info{background:var(--info-bg);color:var(--text-primary);}
+  .alert.info>svg{color:var(--info-main);}
+  .alert.success{background:#EDF7ED;color:var(--text-primary);}
+  .alert.success>svg{color:var(--success-main);}
+  .alert>svg.mi{width:20px;height:20px;margin-top:0;}
+  .alert.warning{background:var(--warning-bg);color:#8A4B02;}
+  .alert .alert-title{font-weight:400;margin-bottom:2px;color:var(--text-primary);}
+  .alert .alert-action{margin-left:auto;flex:0 0 auto;font-weight:700;font-size:13px;white-space:nowrap;}
+
+  .signal-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;}
+  .signal-card{background:var(--surface-subtle);border:1px solid var(--divider);border-radius:var(--radius-sm);padding:12px 14px;}
+  .signal-card .k{font-size:11.5px;color:var(--text-secondary);font-weight:600;margin-bottom:4px;}
+  .signal-card .v{font-size:13.5px;font-weight:700;color:var(--text-primary);}
+  .signal-card .v.good{color:var(--success-main);}
+
+  /* ---- Sticky footer ---- */
+  .footer{
+    flex:0 0 auto;width:100%;box-sizing:border-box;display:flex;align-items:center;gap:16px;padding:14px 32px;background:#fff;
+    position:relative;
+  }
+  .footer::before{
+    content:'';position:absolute;top:0;left:32px;right:32px;height:1px;background:var(--divider);
+  }
+  .footer .back-link{display:flex;align-items:center;gap:6px;font-size:16px;font-weight:500;letter-spacing:0;color:var(--primary-main);background:none;border:none;padding:0;cursor:pointer;font-family:var(--font-display);}
+  .footer .back-link.disabled{color:var(--text-disabled);pointer-events:none;cursor:not-allowed;}
+  .footer .spacer{flex:1 1 auto;}
+
+  /* ---- Subheader "Enter claim editing mode" (same pattern as Create Quote) ---- */
+  .edit-mode-link{white-space:nowrap;}
+  .edit-mode-link svg{flex:0 0 auto;}
+
+  /* ---- Rail rows are clickable (jump to any sub-step) ---- */
+
+
+  /* ---- Repeating groups: outlined Add + data grid + row icons (FNOL-3 pattern) ---- */
+  .repeat-toolbar{display:flex;justify-content:flex-start;margin-bottom:10px;}
+  .row-icons{display:flex;gap:2px;justify-content:flex-end;}
+  .row-icons button{background:transparent;border:none;color:var(--text-secondary);padding:5px;border-radius:4px;display:inline-flex;cursor:pointer;}
+  .row-icons button:hover{background:var(--action-hover);}
+  .row-icons button.danger:hover{background:var(--error-bg);color:var(--error-main);}
+  .row-icons button.row-save{color:var(--success-main);}
+  .row-icons button.row-save:hover{background:var(--success-bg);}
+  .row-icons button.row-cancel:hover{background:var(--error-bg);color:var(--error-main);}
+
+  /* ---- Persistent Add party panel (under subheader) ---- */
+  .fnol-party-inline-host{
+    display:grid;grid-template-rows:0fr;opacity:0;overflow:hidden;
+    flex:0 0 auto;background:var(--info-bg);border-bottom:1px solid transparent;
+    padding:0;box-sizing:border-box;
+    transition:grid-template-rows 250ms ease-out,opacity 250ms ease-out,border-color 250ms ease-out;
+  }
+  .fnol-party-inline-host.is-open{
+    grid-template-rows:1fr;opacity:1;border-bottom-color:var(--divider);
+  }
+  .fnol-party-panel-clip{overflow:hidden;min-height:0;}
+  .fnol-party-panel-stack{display:flex;flex-direction:column;gap:12px;padding:16px 32px;box-sizing:border-box;}
+  .fnol-party-section{
+    padding:12px 16px;box-sizing:border-box;
+    background:rgba(255,255,255,.72);border-radius:var(--radius);
+  }
+  .fnol-party-section-subhead{
+    margin:0 0 8px;font-family:var(--font-display);font-size:14px;font-weight:500;
+    line-height:20px;color:var(--text-primary);
+  }
+  .fnol-party-inline-host .inline-add-row{
+    display:flex;flex-wrap:nowrap;align-items:flex-end;gap:20px;
+    width:100%;margin:0;padding:0;box-sizing:border-box;
+    background:transparent;border-radius:0;
+  }
+  .fnol-party-inline-host .inline-add-row .field{
+    flex:1 1 0;min-width:0;gap:5px;
+  }
+  .fnol-party-inline-host .inline-add-row .field .row-input{
+    flex:none;width:100%;min-width:0;
+  }
+  .fnol-party-inline-host .inline-add-row .row-icons{flex:0 0 auto;margin-left:0;align-self:flex-end;padding-bottom:0;}
+  .fnol-party-list{
+    list-style:none;margin:0;padding:0;background:transparent;
+  }
+  .fnol-party-line{
+    display:flex;align-items:center;gap:12px;padding:8px 0;
+    border-bottom:1px solid var(--divider);font-family:var(--font-body);font-size:14px;line-height:20px;
+    opacity:1;transition:opacity 200ms ease-out;
+  }
+  .fnol-party-line.is-entering{opacity:0;}
+  .fnol-party-line:last-child{border-bottom:none;}
+  .fnol-party-main{display:flex;flex-direction:column;align-items:flex-start;gap:2px;flex:1 1 auto;min-width:0;}
+  .fnol-party-name{min-width:0;color:var(--text-primary);font-weight:400;font-size:14px;line-height:20px;}
+  .fnol-party-meta{color:var(--text-secondary);font-weight:400;font-size:14px;line-height:20px;}
+  .fnol-party-line .trash-btn{flex:0 0 auto;margin-left:auto;align-self:center;}
+  @media (prefers-reduced-motion:reduce){
+    .fnol-party-inline-host,.add-party-toggle-ic,.fnol-party-line{transition:none !important;}
+    .add-party-toggle[aria-expanded="true"] .add-party-toggle-ic{transform:none;}
+  }
+
+  /* ---- Inline add-row inputs (FNOL repeating tables) ---- */
+  tr.new-row td,
+  .datagrid tbody tr.new-row td,
+  .mini-table tbody tr.new-row td{background:var(--info-bg);border:none;vertical-align:middle;padding:6px 10px;}
+  .row-input{height:32px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 9px;font-size:14px;color:var(--text-primary);background:#fff;font-family:var(--font-body);width:100%;}
+  .row-input:focus{outline:none;border-color:var(--primary-main);box-shadow:0 0 0 3px var(--primary-selected-bg);}
+  select.row-input{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236B6F76'/></svg>");background-repeat:no-repeat;background-position:right 9px center;padding-right:24px;}
+
+  /* ---- Inline add-row under card grids (Parties, Vehicle Details) ---- */
+  .inline-add-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;background:var(--info-bg);border:none;border-radius:var(--radius);}
+  .inline-add-row .row-input{flex:1 1 150px;min-width:120px;}
+  .inline-add-row .row-input.drivable-input{flex:0 1 120px;}
+  .inline-add-row .row-icons{flex:0 0 auto;margin-left:auto;}
+
+  /* ---- Upload dropzone (FNOL-4 / reference key pattern) ---- */
+  .upload-dropzone{display:flex;flex-direction:column;align-items:center;gap:0;border:2px dashed #D9D9D9;border-radius:var(--radius);padding:28px 24px;text-align:center;background:#fff;transition:background .15s ease,border-color .15s ease;}
+  .upload-dropzone.dragover{border-color:var(--primary-main);background:var(--primary-hover-bg);}
+  .upload-dropzone .dz-ic{width:32px;height:32px;color:var(--gray-dark);margin-bottom:8px;}
+  .upload-dropzone .dz-title{font-family:var(--font-display);font-size:18px;font-weight:400;line-height:27px;color:var(--text-primary);}
+  .upload-dropzone .dz-sub{font-size:14px;line-height:26px;color:var(--text-primary);}
+  .upload-dropzone .btn{margin-top:12px;}
+
+  /* ---- Column doc card (FNOL-4 / reference key pattern) ---- */
+  .doc-card-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;}
+  .doc-card-row.cols-4{grid-template-columns:repeat(4,1fr);}
+  .doc-card{border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;}
+  .doc-card .dc-head{display:flex;align-items:center;gap:8px;}
+  .doc-card .dc-head svg{flex:0 0 auto;}   /* file icon colour is set by .dc-file-ic; trash colour by .trash-btn */
+  .doc-card .dc-head .dc-file-ic{color:var(--gray-dark);width:20px;height:20px;}
+  .doc-card .dc-file-link{font-size:14px;font-weight:400;word-break:break-word;flex:1 1 auto;min-width:0;}
+  /* Shared trash / delete button (reference: Evidence card). Used on Evidence cards and table row remove. */
+  .trash-btn,.row-icons .trash-btn{width:32px;height:32px;padding:0;border:none;background:transparent;border-radius:var(--radius);color:var(--gray-dark);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;}
+  .trash-btn:hover,.row-icons .trash-btn:hover{background:var(--error-bg);color:var(--error-main);}
+  .trash-btn svg,.row-icons .trash-btn svg{width:20px;height:20px;color:inherit;}
+  .doc-card .trash-btn{margin-left:auto;flex:0 0 auto;}
+  .evidence-empty{font-size:14px;color:var(--text-secondary);margin-top:14px;}
+  .doc-card .dc-name{font-size:14px;font-weight:400;color:var(--text-primary);word-break:break-word;}
+  .doc-card .dc-subtitle{font-size:12px;color:var(--text-secondary);margin-top:5px;line-height:1.4;}
+  .doc-card .dc-meta{font-size:12px;color:var(--text-secondary);margin-top:6px;line-height:1.5;}
+  .doc-card .dc-chip{display:inline-block;margin-top:8px;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:var(--radius-pill);background:var(--doc-chip-bg);color:var(--doc-chip-fg);}
+  .doc-card .dc-icon,.fnol-party-line .dc-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--info-bg);border-radius:4px;color:var(--info-main);flex:0 0 auto;}
+  .doc-card .dc-icon{margin-bottom:8px;}
+  .doc-card .dc-icon svg,.fnol-party-line .dc-icon svg{flex:0 0 auto;}
+  .doc-card .dc-icon.tone-success,.fnol-party-line .dc-icon.tone-success{background:var(--success-bg);color:var(--success-main);}
+  .doc-card .dc-icon.tone-secondary,.fnol-party-line .dc-icon.tone-secondary{background:#E6F0EF;color:var(--secondary-main);}
+  /* Organization: neutral gray (not info blue) so blue is not the org identifier; person stays tone-secondary */
+  .doc-card .dc-icon.tone-info,.fnol-party-line .dc-icon.tone-info{background:var(--action-disabled-bg);color:var(--gray-dark);}
+  .doc-card .dc-action{display:block;width:100%;margin:12px 0 0;padding:10px 0 0;text-align:left;border:none;border-top:1px solid var(--divider);border-radius:0;font-size:12.5px;font-weight:500;color:var(--primary-main);background:none;cursor:pointer;font-family:var(--font-display);}
+  .doc-card .dc-action:hover{text-decoration:underline;}
+  .doc-card .dc-vehicle-head{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:4px 8px;}
+  .doc-card .dc-vehicle-head .dc-name{min-width:0;}
+  .doc-card .dc-vehicle-head .label-chip{flex:0 0 auto;}
+
+  /* ---- Triage Decisions grid ---- */
+  .triage-decisions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;}
+  
+  /* ---- Status row card (Triage-1 decisions pattern) ---- */
+  .status-row-card{display:flex;flex-direction:column;gap:10px;border:1px solid var(--divider);border-radius:var(--radius);padding:14px;}
+  .status-row-card>div{display:flex;flex-direction:column;gap:2px;}
+  .status-row-card .icon{width:30px;height:30px;border-radius:4px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;}
+  .status-row-card.done .icon{background:var(--success-bg);color:var(--success-main);}
+  .status-row-card.attention .icon{background:var(--warning-bg);color:var(--warning-main);}
+  .status-row-card .title{font-size:14px;font-weight:400;color:var(--text-primary);}
+  .status-row-card .desc{font-size:12.5px;color:var(--text-secondary);line-height:1.45;}
+  .status-row-card .icon svg{width:20px;height:20px;}
+  .status-row-card .card-cta{align-self:flex-start;margin-top:auto;height:36px;padding:6px 8px;margin-left:-8px;font-size:14px;}
+
+  /* ---- Checkbox card (Triage-2 routing & referrals pattern) ---- */
+  .checkbox-card-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .checkbox-card{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;cursor:pointer;}
+  .checkbox-card input{margin-top:2px;accent-color:var(--primary-main);width:16px;height:16px;flex:0 0 auto;}
+  .checkbox-card .title{font-size:14px;font-weight:400;color:var(--text-primary);}
+  .checkbox-card .desc{font-size:12px;color:var(--text-secondary);margin-top:3px;line-height:1.4;}
+
+  /* ---- Candidate / assignment card (Triage-2 claim assignment pattern) ---- */
+  .candidate-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:4px;}
+  .candidate-card{border:1px solid #D8D8D8;border-radius:4px;padding:20px;cursor:pointer;background:#fff;text-align:left;font-family:var(--font-body);display:grid;grid-template-columns:auto 1fr auto;column-gap:12px;row-gap:4px;align-items:start;position:relative;}
+  .candidate-card:hover{border-color:var(--primary-main);}
+  .candidate-card.selected{border:2px solid var(--primary-main);padding:19px;}
+  .candidate-card input[type=radio]{grid-row:1 / span 2;width:20px;height:20px;margin:2px 0 0;accent-color:var(--primary-main);cursor:pointer;}
+  .candidate-card .cc-name{font-family:var(--font-display);font-size:16px;font-weight:400;line-height:24px;color:var(--text-primary);}
+  .candidate-card .cc-role{grid-column:2;font-size:14px;color:var(--gray-dark);}
+  .candidate-card .cc-tag{grid-column:3;grid-row:1;font-size:13px;line-height:20px;padding:2px 10px;border-radius:var(--radius-pill);background:#fff;border:1px solid #D8D8D8;color:var(--text-primary);white-space:nowrap;}
+  /* Quote-pattern Recommended chip: light blue fill, Copilot mark, regular blue text */
+  .candidate-card .cc-recommend{
+    display:inline-flex;align-items:center;gap:6px;grid-column:3;grid-row:1;
+    font-family:var(--font-body);font-size:12px;font-weight:400;line-height:16px;
+    padding:4px 10px 4px 8px;border-radius:var(--radius-pill);border:none;
+    background:var(--info-bg);color:var(--primary-main);white-space:nowrap;
+  }
+  .candidate-card .cc-recommend img{
+    width:16px;height:16px;flex:0 0 auto;display:block;
+  }
+  .candidate-card .cc-kpis{grid-column:2 / span 2;display:flex;gap:24px;margin-top:10px;}
+  .candidate-card .cc-kpi{display:flex;align-items:baseline;gap:6px;}
+  .candidate-card .kpi-value{font-size:18px;font-weight:600;color:var(--text-primary);font-family:var(--font-display);}
+  .candidate-card .kpi-value.tone-success{color:var(--success-main);}
+  .candidate-card .kpi-value.tone-warning{color:var(--warning-main);}
+  .candidate-card .kpi-value.tone-error{color:var(--error-main);}
+  .candidate-card .kpi-label{font-size:14px;color:var(--gray-dark);display:inline-flex;align-items:center;gap:4px;}
+  .candidate-card .cc-specialty-info{
+    position:relative;display:inline-flex;align-items:center;justify-content:center;
+    width:16px;height:16px;padding:0;border:none;border-radius:50%;background:transparent;
+    color:var(--text-secondary);cursor:help;flex:0 0 auto;outline:none;
+  }
+  .candidate-card .cc-specialty-info:hover,
+  .candidate-card .cc-specialty-info:focus-visible{color:var(--primary-main);}
+  .candidate-card .cc-specialty-info svg{width:14px;height:14px;display:block;}
+  .candidate-card .cc-specialty-pop{
+    position:absolute;left:50%;top:calc(100% + 6px);z-index:40;width:220px;box-sizing:border-box;
+    padding:8px 10px;background:var(--surface);border:1px solid var(--divider);border-radius:var(--radius);
+    font-family:var(--font-body);font-size:12px;font-weight:400;line-height:1.45;color:var(--text-primary);
+    white-space:normal;text-align:left;box-shadow:0 4px 12px rgba(0,0,0,.08);
+    opacity:0;visibility:hidden;pointer-events:none;transform:translateX(-50%);
+    transition:opacity 150ms ease,visibility 0s linear 150ms;
+  }
+  .candidate-card:last-child .cc-specialty-pop{left:auto;right:0;transform:none;}
+  .candidate-card .cc-specialty-info:hover .cc-specialty-pop,
+  .candidate-card .cc-specialty-info:focus-visible .cc-specialty-pop{
+    opacity:1;visibility:visible;transition:opacity 150ms ease,visibility 0s;
+  }
+  @media (prefers-reduced-motion:reduce){
+    .candidate-card .cc-specialty-pop,
+    .candidate-card .cc-specialty-info:hover .cc-specialty-pop,
+    .candidate-card .cc-specialty-info:focus-visible .cc-specialty-pop{transition:none !important;}
+  }
+
+  .no-match-note{font-size:11.5px;font-style:italic;color:var(--text-secondary);padding:6px 0 0;}
+
+  /* ---- KPI Card (Majesco Patterns) ---- */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
+  .kpi-card{background:#fff;border:1px solid var(--divider);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:8px;}
+  .kpi-card .kpi-label{font-size:12px;font-family:var(--font-body);color:rgba(0,0,0,.6);}
+  .kpi-card .kpi-value{font-size:14px;font-family:var(--font-display);font-weight:600;color:rgba(0,0,0,.87);}
+  .kpi-card .kpi-value.tone-success{color:var(--success-main);}
+  .kpi-card .kpi-value.tone-warning{color:var(--warning-main);}
+
+  .toast{
+    position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:#212121;color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;
+    opacity:0;transition:opacity .2s ease, transform .2s ease;pointer-events:none;z-index:50;box-shadow:0 6px 20px rgba(0,0,0,.25);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ---- MUI-style dialogs (Majesco One tokens) ---- */
+  /* Enter: 225ms ease-out fade + slight scale. Exit: 195ms ease-in fade. */
+  .mui-dialog-root{
+    position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;
+    visibility:hidden;pointer-events:none;
+  }
+  .mui-dialog-root.is-open{visibility:visible;pointer-events:auto;}
+  .mui-dialog-backdrop{
+    position:absolute;inset:0;background:rgba(0,0,0,.5);border:none;padding:0;cursor:pointer;
+    opacity:0;transition:opacity 195ms ease-in;
+  }
+  .mui-dialog-root.is-open .mui-dialog-backdrop{
+    opacity:1;transition:opacity 225ms ease-out;
+  }
+  .mui-dialog-paper{
+    position:relative;z-index:1;width:100%;max-width:444px;margin:32px;
+    background:var(--surface);border-radius:var(--radius);box-shadow:0 11px 15px -7px rgba(0,0,0,.2),0 24px 38px 3px rgba(0,0,0,.14),0 9px 46px 8px rgba(0,0,0,.12);
+    display:flex;flex-direction:column;max-height:calc(100% - 64px);outline:none;
+    opacity:0;transform:scale(0.95);
+    transition:opacity 195ms ease-in,transform 195ms ease-in;
+  }
+  .mui-dialog-root.is-open .mui-dialog-paper{
+    opacity:1;transform:scale(1);
+    transition:opacity 225ms ease-out,transform 225ms ease-out;
+  }
+  .mui-dialog-paper.wide{max-width:520px;}
+  .mui-dialog-title{
+    margin:0;padding:16px 24px 8px;font-family:var(--font-display);font-size:18px;font-weight:600;
+    line-height:28px;color:var(--text-primary);
+  }
+  .mui-dialog-content{
+    padding:8px 24px 16px;overflow-y:auto;font-family:var(--font-body);font-size:14px;
+    line-height:20px;color:var(--text-primary);
+  }
+  .mui-dialog-content .field{margin-bottom:16px;}
+  .mui-dialog-content .field:last-child{margin-bottom:0;}
+  .mui-dialog-content .field[hidden]{display:none !important;}
+  .mui-dialog-content .field label .lbl-optional{
+    margin-left:6px;font-size:12px;font-weight:400;line-height:16px;color:var(--text-secondary);
+  }
+  .mui-dialog-content .field-error-text{
+    display:none;margin-top:4px;font-size:12px;line-height:16px;color:var(--error-main);font-family:var(--font-body);
+  }
+  .mui-dialog-content .field.has-error .ctrl{border-color:var(--error-main);box-shadow:none;}
+  .mui-dialog-content .field.has-error .field-error-text{display:block;}
+  /* Dialog controls stay editable even when claim editing mode is off. */
+  .mui-dialog-root .ctrl:not([readonly]),
+  body:not(.editing-active) .mui-dialog-root .ctrl:not([readonly]){
+    background:var(--field-fill);border:1px solid var(--border);pointer-events:auto;box-shadow:none;color:var(--text-primary);
+  }
+  body:not(.editing-active) .mui-dialog-root select.ctrl:not([readonly]){
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236B6F76'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center;
+  }
+  body:not(.editing-active) .mui-dialog-root input[type="date"].ctrl:not([readonly])::-webkit-calendar-picker-indicator{opacity:1;}
+  .mui-dialog-root .ctrl:not([readonly]):focus{
+    outline:none;border-color:var(--primary-main);box-shadow:0 0 0 3px var(--primary-selected-bg);
+  }
+  .mui-dialog-summary{display:flex;flex-direction:column;gap:12px;}
+  .mui-dialog-summary-row{display:grid;grid-template-columns:140px 1fr;gap:8px 12px;align-items:start;}
+  .mui-dialog-summary-label{font-family:var(--font-body);font-size:12px;font-weight:400;line-height:16px;color:var(--text-secondary);}
+  .mui-dialog-summary-value{font-family:var(--font-body);font-size:14px;font-weight:400;line-height:20px;color:var(--text-primary);}
+  .mui-dialog-actions{
+    display:flex;align-items:center;justify-content:flex-end;gap:8px;
+    padding:8px 24px 20px;
+  }
+  .mui-dialog-actions .btn{min-width:72px;}
+  body.mui-dialog-open{overflow:hidden;}
+  @media (prefers-reduced-motion:reduce){
+    .mui-dialog-backdrop,.mui-dialog-paper,.mui-dialog-root.is-open .mui-dialog-backdrop,.mui-dialog-root.is-open .mui-dialog-paper{
+      transition:none !important;
+    }
+  }
+
+  svg{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+</style>
+</head>
+<body>
+<div class="app-frame">
+<div class="shell">
+
+  <!-- ===== TOP APP BAR ===== -->
+  <div class="appbar">
+    <div class="brand-wrap" id="brandWrap">
+    <span class="brand" id="brandBtn">
+      <svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21.19 11.6" width="36" height="20" style="stroke:none;">
+        <defs>
+          <style>
+            .cls-1 {
+              fill: #90c06a;
+            }
+
+            .cls-1, .cls-2, .cls-3 {
+              isolation: isolate;
+              opacity: .94;
+            }
+
+            .cls-2 {
+              fill: #4fb9bd;
+            }
+
+            .cls-3 {
+              fill: #0d4d88;
+            }
+          </style>
+        </defs>
+        <g id="Group_52" data-name="Group 52">
+          <path id="Rectangle_14" data-name="Rectangle 14" class="cls-1" d="M10.95,.64h0c.85,.85,.85,2.23,0,3.08L3.71,10.96c-.85,.85-2.23,.85-3.08,0h0c-.85-.85-.85-2.23,0-3.08L7.88,.64c.85-.85,2.23-.85,3.08,0h-.01Z"/>
+          <path id="Rectangle_15" data-name="Rectangle 15" class="cls-2" d="M18.19,.64h0c.85,.85,.85,2.23,0,3.08l-7.24,7.24c-.85,.85-2.23,.85-3.08,0h0c-.85-.85-.85-2.23,0-3.08L15.11,.64c.85-.85,2.23-.85,3.08,0Z"/>
+          <path id="Rectangle_16" data-name="Rectangle 16" class="cls-3" d="M20.56,5.5h0c.85,.85,.85,2.23,0,3.08l-2.38,2.38c-.85,.85-2.23,.85-3.08,0h0c-.85-.85-.85-2.23,0-3.08l2.38-2.38c.85-.85,2.23-.85,3.08,0Z"/>
+        </g>
+      </svg>
+      P&amp;C Suite
+    </span>
+    </div>
+    <div class="appbar-center">
+      <div class="navchevrons">
+        <button class="iconbtn" title="Go back"><svg class="mi" width="24" height="24" viewBox="0 -960 960 960"><path d="M640-80 240-480l400-400 71 71-329 329 329 329-71 71Z"/></svg></button>
+        <button class="iconbtn" title="Go forward"><svg class="mi" width="24" height="24" viewBox="0 -960 960 960"><path d="m321-80-71-71 329-329-329-329 71-71 400 400L321-80Z"/></svg></button>
+      </div>
+      <div class="searchwrap">
+        <input type="text" id="globalSearch" placeholder="" aria-label="Search P&amp;C Suite">
+        <div class="search-actions">
+          <button class="iconbtn" title="Voice search"><svg class="mi" width="20" height="20" viewBox="0 -960 960 960"><path d="M395-435q-35-35-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35q-50 0-85-35Zm85-205Zm-40 520v-123q-104-14-172-93t-68-184h80q0 83 58.5 141.5T480-320q83 0 141.5-58.5T680-520h80q0 105-68 184t-172 93v123h-80Zm68.5-371.5Q520-503 520-520v-240q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760v240q0 17 11.5 28.5T480-480q17 0 28.5-11.5Z"/></svg></button>
+        </div>
+      </div>
+      <button class="btn-create">Create new</button>
+    </div>
+    <div class="right-group">
+      <button class="iconbtn" title="Notifications"><svg class="mi" width="22" height="22" viewBox="0 -960 960 960"><path d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z"/></svg></button>
+      <button class="iconbtn" title="Clipboard"><svg class="mi" width="22" height="22" viewBox="0 -960 960 960"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h167q11-35 43-57.5t70-22.5q38 0 70 22.5t43 57.5h167q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560h-80v120H280v-120h-80v560Zm280-560q17 0 28.5-11.5T520-800q0-17-11.5-28.5T480-840q-17 0-28.5 11.5T440-800q0 17 11.5 28.5T480-760Z"/></svg></button>
+      <button class="iconbtn" title="Administrator settings"><svg class="mi" width="22" height="22" viewBox="0 -960 960 960"><path d="m370-80-16-128q-13-5-24.5-12T307-235l-119 50L78-375l103-78q-1-7-1-13.5v-27q0-6.5 1-13.5L78-585l110-190 119 50q11-8 23-15t24-12l16-128h220l16 128q13 5 24.5 12t22.5 15l119-50 110 190-103 78q1 7 1 13.5v27q0 6.5-2 13.5l103 78-110 190-118-50q-11 8-23 15t-24 12L590-80H370Zm70-80h79l14-106q31-8 57.5-23.5T639-327l99 41 39-68-86-65q5-14 7-29.5t2-31.5q0-16-2-31.5t-7-29.5l86-65-39-68-99 42q-22-23-48.5-38.5T533-694l-13-106h-79l-14 106q-31 8-57.5 23.5T321-633l-99-41-39 68 86 64q-5 15-7 30t-2 32q0 16 2 31t7 30l-86 65 39 68 99-42q22 23 48.5 38.5T427-266l13 106Zm42-180q58 0 99-41t41-99q0-58-41-99t-99-41q-59 0-99.5 41T342-480q0 58 40.5 99t99.5 41Zm-2-140Z"/></svg></button>
+      <div class="avatar">JB</div>
+    </div>
+  </div>
+
+  <div class="body-row">
+    <!-- ===== LEFT APP RAIL ===== -->
+    <div class="apprail">
+      <button type="button" class="rail-item active" id="railHomeBtn" data-rail="home"><svg class="ic mi" viewBox="0 -960 960 960"><path d="M240-200h120v-240h240v240h120v-360L480-740 240-560v360Zm-80 80v-480l320-240 320 240v480H520v-240h-80v240H160Zm320-350Z"/></svg><span class="lbl">Home</span></button>
+      <button type="button" class="rail-item" id="railActivityBtn" data-rail="activity" aria-controls="railDrawer" aria-expanded="false"><svg class="ic mi" viewBox="0 -960 960 960"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480h80q0 134 93 227t227 93q134 0 227-93t93-227q0-134-93-227t-227-93q-69 0-129 32t-101 88h120v80H120v-240h80v94q51-64 124.5-103T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm112-192L440-440v-240h80v206l128 128-56 56Z"/></svg><span class="lbl">Activity</span></button>
+      <button type="button" class="rail-item" id="railFavoritesBtn" data-rail="favorites" aria-controls="railDrawer" aria-expanded="false"><svg class="ic mi" viewBox="0 -960 960 960"><path d="m354-287 126-76 126 77-33-144 111-96-146-13-58-136-58 135-146 13 111 97-33 143ZM233-120l65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Zm247-350Z"/></svg><span class="lbl">Favorites</span></button>
+      <button type="button" class="rail-item" data-rail="tasks"><svg class="ic mi" viewBox="0 -960 960 960"><path d="M655-200 513-342l56-56 85 85 170-170 56 57-225 226Zm0-320L513-662l56-56 85 85 170-170 56 57-225 226ZM80-280v-80h360v80H80Zm0-320v-80h360v80H80Z"/></svg><span class="lbl">Tasks</span></button>
+      <button type="button" class="rail-item" data-rail="claims"><svg class="ic mi" viewBox="0 -960 960 960"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg><span class="lbl">Claims</span></button>
+      <div class="rail-spacer"></div>
+      <button type="button" class="rail-item rail-item-wide" title="Customize sidebar">
+        <svg class="ic mi" viewBox="0 -960 960 960"><path d="M440-120v-240h80v80h240v80H520v80h-80Zm-320-80v-80h240v80H120Zm160-160v-80H120v-80h160v-80h80v240h-80Zm160-80v-80h400v80H440Zm160-160v-240h80v80h160v80H680v80h-80Zm-480-80v-80h400v80H120Z"/></svg>
+        <span class="lbl">Customize<br>sidebar</span>
+      </button>
+    </div>
+
+    <aside class="rail-drawer" id="railDrawer" role="complementary" aria-labelledby="railDrawerTitle" aria-hidden="true" data-panel="">
+      <div class="rail-drawer-inner">
+        <div class="rail-drawer-header">
+          <h2 id="railDrawerTitle">Activity</h2>
+          <button type="button" class="copilot-drawer-icon-btn" id="railDrawerClose" aria-label="Close panel">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="rail-drawer-body">
+          <div class="rail-drawer-panel" id="railPanelActivity">
+            <div class="rail-drawer-item">
+              <div class="rail-drawer-item-primary">FNOL-2026-00418</div>
+              <div class="rail-drawer-item-secondary">FNOL started — Commercial Auto rear-end loss</div>
+              <div class="rail-drawer-item-meta">Today · 10:14 AM</div>
+            </div>
+            <div class="rail-drawer-item">
+              <div class="rail-drawer-item-primary">CA141288</div>
+              <div class="rail-drawer-item-secondary">Coverage question routed to examiner</div>
+              <div class="rail-drawer-item-meta">Today · 9:02 AM</div>
+            </div>
+            <div class="rail-drawer-item">
+              <div class="rail-drawer-item-primary">CA140912</div>
+              <div class="rail-drawer-item-secondary">Police report attached to claim file</div>
+              <div class="rail-drawer-item-meta">Yesterday · 4:36 PM</div>
+            </div>
+            <div class="rail-drawer-item">
+              <div class="rail-drawer-item-primary">CA140771</div>
+              <div class="rail-drawer-item-secondary">Reserve updated after scene photos review</div>
+              <div class="rail-drawer-item-meta">Yesterday · 11:20 AM</div>
+            </div>
+            <div class="rail-drawer-item">
+              <div class="rail-drawer-item-primary">CA139540</div>
+              <div class="rail-drawer-item-secondary">SIU referral recorded — claim score threshold</div>
+              <div class="rail-drawer-item-meta">Mon · 3:48 PM</div>
+            </div>
+            <div class="rail-drawer-item">
+              <div class="rail-drawer-item-primary">FNOL-2026-00391</div>
+              <div class="rail-drawer-item-secondary">Draft FNOL saved — awaiting reporter callback</div>
+              <div class="rail-drawer-item-meta">Mon · 9:15 AM</div>
+            </div>
+          </div>
+          <div class="rail-drawer-panel" id="railPanelFavorites" hidden>
+            <div class="rail-drawer-item">
+              <div class="rail-drawer-item-row">
+                <div class="rail-drawer-item-primary">FNOL-2026-00418</div>
+                <span class="rail-status-chip tone-warning">In progress</span>
+              </div>
+              <div class="rail-drawer-item-secondary">Continental Delivery LLC</div>
+            </div>
+            <div class="rail-drawer-item">
+              <div class="rail-drawer-item-row">
+                <div class="rail-drawer-item-primary">CA141288</div>
+                <span class="rail-status-chip">Open</span>
+              </div>
+              <div class="rail-drawer-item-secondary">Atlantic Ridge Construction, LLC</div>
+            </div>
+            <div class="rail-drawer-item">
+              <div class="rail-drawer-item-row">
+                <div class="rail-drawer-item-primary">CA140912</div>
+                <span class="rail-status-chip tone-success">Assigned</span>
+              </div>
+              <div class="rail-drawer-item-secondary">Keystone Commercial Realty</div>
+            </div>
+            <div class="rail-drawer-item">
+              <div class="rail-drawer-item-row">
+                <div class="rail-drawer-item-primary">CA140771</div>
+                <span class="rail-status-chip">Open</span>
+              </div>
+              <div class="rail-drawer-item-secondary">Blue Harbor Logistics Inc.</div>
+            </div>
+            <div class="rail-drawer-item">
+              <div class="rail-drawer-item-row">
+                <div class="rail-drawer-item-primary">CA139540</div>
+                <span class="rail-status-chip tone-warning">SIU review</span>
+              </div>
+              <div class="rail-drawer-item-secondary">Harborview Transit Partners</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===== PAGE ===== -->
+    <div class="page">
+      <div class="page-head">
+        <div class="titlebar">
+          <div class="title-cell">
+            <h1 id="pageTitle">First notice of loss</h1>
+          </div>
+          <div class="hstepper">
+            <div class="hstep" id="hstep-fnol" data-key="fnol" role="button" tabindex="0"><span class="num">1</span><span class="lbl">FNOL</span></div>
+            <span class="hstep-line"></span>
+            <div class="hstep" id="hstep-triage" data-key="triage" role="button" tabindex="0"><span class="num">2</span><span class="lbl">Triage</span></div>
+            <span class="hstep-line"></span>
+            <div class="hstep" id="hstep-review" data-key="review" role="button" tabindex="0"><span class="num">3</span><span class="lbl">Review</span></div>
+          </div>
+          <div class="actions-cell">
+            <button type="button" class="copilot-btn" id="copilotBtn" aria-expanded="false" aria-controls="copilotDrawer" data-drawer="copilot">
+              <!-- Copilot line icons: copilot-line.svg (inactive) / copilot-line-active.svg (open) -->
+              <svg class="copilot-ic copilot-ic-default" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path fill="none" d="M16.8,8.8s0,0,0,0c-.7-1-1.6-2-2.6-3-1-1-2-1.9-3-2.6.7-.5,1.5-.8,2.2-1.1.9-.3,1.8-.5,2.5-.5s1.5.2,1.9.7c.8.8.9,2.4.1,4.4-.3.7-.6,1.4-1,2.1,0,0,0,0,0,0h0Z"/><path fill="none" d="M11.2,3.2c.7-.4,1.4-.8,2.1-1,.9-.3,1.8-.5,2.5-.5s1.4.2,1.9.6c.8.8.8,2.4.1,4.4-.3.7-.6,1.4-1,2.1-.7-1-1.6-2-2.6-3s-2-1.9-3-2.6Z"/><path fill="none" d="M4.2,18.4c-.8,0-1.5-.2-1.9-.7-1.1-1.1-.8-3.7.9-6.6.8,1.1,1.7,2.1,2.7,3,1,1,2,1.8,3,2.6-1.7,1.1-3.4,1.6-4.7,1.6Z"/><path fill="none" d="M8.8,16.8c-2.9,1.7-5.5,2-6.5.9s-.8-3.6.9-6.5c.7,1,1.6,2.1,2.6,3,1,1,2,1.9,3,2.6Z"/><path fill="#595959" d="M15.8,19.7c-.9,0-1.9-.2-3-.6-1-.4-1.9-.8-2.9-1.4-2.1,1.3-4.1,2-5.8,2s-2.1-.3-2.8-1c-.7-.7-1-1.6-1-2.8,0-1.7.7-3.7,2-5.9-.6-.9-1.1-1.9-1.4-2.8C0,4.6.1,2.6,1.3,1.3c.7-.7,1.6-1,2.8-1,1.7,0,3.7.7,5.9,2,.9-.6,1.9-1.1,2.8-1.4,1.1-.4,2.1-.6,3-.6s2.1.3,2.8,1c1.2,1.2,1.4,3.3.4,5.8-.4,1-.8,1.9-1.4,2.9,2.3,3.6,2.7,7,1,8.6-.7.7-1.6,1-2.8,1ZM3.2,11.3c-1.6,2.8-1.9,5.3-.9,6.4.4.4,1,.6,1.8.6,1.3,0,2.9-.5,4.6-1.5-1.1-.7-2.1-1.5-3.1-2.5-.9-.9-1.8-2-2.6-3ZM4.2,1.7c-.8,0-1.4.2-1.8.6-.8.8-.8,2.4-.1,4.3.3.7.6,1.4,1,2.1.2.4.5.8.7,1.2.8,1.1,1.7,2.2,2.8,3.3,1.1,1.1,2.2,2,3.3,2.8.4.3.8.5,1.2.7.7.4,1.4.8,2.1,1,.9.3,1.8.5,2.5.5s1.4-.2,1.8-.6c.4-.4.6-1,.6-1.8,0-1.3-.5-2.9-1.5-4.6-.2-.4-.5-.8-.7-1.2-.8-1.1-1.7-2.2-2.8-3.3s-2.2-2-3.3-2.8c-.4-.3-.8-.5-1.2-.7-1.7-1-3.3-1.5-4.6-1.5ZM15.8,1.7c-.7,0-1.6.2-2.5.5-.7.3-1.4.6-2.1,1,1,.6,2,1.5,3,2.5,1,1,1.9,2,2.6,3,.3-.7.7-1.4.9-2.1.7-2,.7-3.5-.1-4.3-.4-.4-1.1-.6-1.8-.6Z"/><path fill="#595959" d="M19,7.1c.9-2.5.8-4.5-.4-5.7S15.4,0,12.9,1c-1,.3-1.9.8-2.9,1.4C7.9,1.1,5.8.4,4.2.4s-2.1.3-2.8,1C.2,2.6,0,4.6,1,7.1c.3,1,.8,1.9,1.4,2.9C1.1,12.1.4,14.2.4,15.8s.3,2.1,1,2.8,1.7,1,2.8,1c1.7,0,3.7-.7,5.8-2,1,.6,1.9,1.1,2.9,1.4,1.1.4,2.1.6,3,.6s2.1-.3,2.8-1c1.7-1.7,1.2-5.1-1-8.6.6-1,1.1-1.9,1.4-2.9ZM2.3,17.7c-1.1-1.1-.8-3.6.9-6.5.7,1,1.6,2.1,2.6,3,1,1,2,1.9,3,2.6-2.9,1.7-5.5,2-6.5.9ZM18.3,15.8c0,.8-.2,1.5-.6,1.9-.8.8-2.4.8-4.4.1-.7-.3-1.4-.6-2.1-1-.4-.2-.8-.5-1.2-.7-1.1-.8-2.3-1.7-3.3-2.8s-2-2.2-2.8-3.3c-.3-.4-.5-.8-.7-1.2-.4-.7-.8-1.4-1-2.1-.7-2-.7-3.6.1-4.4.4-.4,1.1-.6,1.9-.6,1.2,0,2.9.5,4.7,1.5.4.2.8.5,1.2.8,1.1.7,2.2,1.7,3.3,2.8s2,2.2,2.8,3.3c.3.4.5.8.8,1.2,1,1.8,1.5,3.4,1.5,4.7ZM14.2,5.8c-1-1-2-1.9-3-2.6.7-.4,1.4-.8,2.1-1,.9-.3,1.8-.5,2.5-.5s1.4.2,1.9.6c.8.8.8,2.4.1,4.4-.3.7-.6,1.4-1,2.1-.7-1-1.6-2-2.6-3Z"/><path fill="#595959" d="M10,13.6c-2,0-3.6-1.6-3.6-3.6s1.6-3.6,3.6-3.6,3.6,1.6,3.6,3.6-1.6,3.6-3.6,3.6ZM10,7.8c-1.2,0-2.2,1-2.2,2.2s1,2.2,2.2,2.2,2.2-1,2.2-2.2-1-2.2-2.2-2.2Z"/><path fill="#595959" d="M10,13.5c-2,0-3.5-1.6-3.5-3.5s1.6-3.5,3.5-3.5,3.5,1.6,3.5,3.5-1.6,3.5-3.5,3.5ZM10,7.8c-1.2,0-2.2,1-2.2,2.2s1,2.2,2.2,2.2,2.2-1,2.2-2.2-1-2.2-2.2-2.2Z"/></svg>
+              <svg class="copilot-ic copilot-ic-active" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path fill="none" d="M16.8,8.8s0,0,0,0c-.7-1-1.6-2-2.6-3-1-1-2-1.9-3-2.6.7-.5,1.5-.8,2.2-1.1.9-.3,1.8-.5,2.5-.5s1.5.2,1.9.7c.8.8.9,2.4.1,4.4-.3.7-.6,1.4-1,2.1,0,0,0,0,0,0h0Z"/><path fill="none" d="M11.2,3.2c.7-.4,1.4-.8,2.1-1,.9-.3,1.8-.5,2.5-.5s1.4.2,1.9.6c.8.8.8,2.4.1,4.4-.3.7-.6,1.4-1,2.1-.7-1-1.6-2-2.6-3s-2-1.9-3-2.6Z"/><path fill="none" d="M4.2,18.4c-.8,0-1.5-.2-1.9-.7-1.1-1.1-.8-3.7.9-6.6.8,1.1,1.7,2.1,2.7,3,1,1,2,1.8,3,2.6-1.7,1.1-3.4,1.6-4.7,1.6Z"/><path fill="none" d="M8.8,16.8c-2.9,1.7-5.5,2-6.5.9s-.8-3.6.9-6.5c.7,1,1.6,2.1,2.6,3,1,1,2,1.9,3,2.6Z"/><path fill="#595959" d="M15.8,19.7c-.9,0-1.9-.2-3-.6-1-.4-1.9-.8-2.9-1.4-2.1,1.3-4.1,2-5.8,2s-2.1-.3-2.8-1c-.7-.7-1-1.6-1-2.8,0-1.7.7-3.7,2-5.9-.6-.9-1.1-1.9-1.4-2.8C0,4.6.1,2.6,1.3,1.3c.7-.7,1.6-1,2.8-1,1.7,0,3.7.7,5.9,2,.9-.6,1.9-1.1,2.8-1.4,1.1-.4,2.1-.6,3-.6s2.1.3,2.8,1c1.2,1.2,1.4,3.3.4,5.8-.4,1-.8,1.9-1.4,2.9,2.3,3.6,2.7,7,1,8.6-.7.7-1.6,1-2.8,1ZM3.2,11.3c-1.6,2.8-1.9,5.3-.9,6.4.4.4,1,.6,1.8.6,1.3,0,2.9-.5,4.6-1.5-1.1-.7-2.1-1.5-3.1-2.5-.9-.9-1.8-2-2.6-3ZM4.2,1.7c-.8,0-1.4.2-1.8.6-.8.8-.8,2.4-.1,4.3.3.7.6,1.4,1,2.1.2.4.5.8.7,1.2.8,1.1,1.7,2.2,2.8,3.3,1.1,1.1,2.2,2,3.3,2.8.4.3.8.5,1.2.7.7.4,1.4.8,2.1,1,.9.3,1.8.5,2.5.5s1.4-.2,1.8-.6c.4-.4.6-1,.6-1.8,0-1.3-.5-2.9-1.5-4.6-.2-.4-.5-.8-.7-1.2-.8-1.1-1.7-2.2-2.8-3.3s-2.2-2-3.3-2.8c-.4-.3-.8-.5-1.2-.7-1.7-1-3.3-1.5-4.6-1.5ZM15.8,1.7c-.7,0-1.6.2-2.5.5-.7.3-1.4.6-2.1,1,1,.6,2,1.5,3,2.5,1,1,1.9,2,2.6,3,.3-.7.7-1.4.9-2.1.7-2,.7-3.5-.1-4.3-.4-.4-1.1-.6-1.8-.6Z"/><path fill="#0250c5" d="M19,7.1c.9-2.5.8-4.5-.4-5.7S15.4,0,12.9,1c-1,.3-1.9.8-2.9,1.4C7.9,1.1,5.8.4,4.2.4s-2.1.3-2.8,1C.2,2.6,0,4.6,1,7.1c.3,1,.8,1.9,1.4,2.9C1.1,12.1.4,14.2.4,15.8s.3,2.1,1,2.8,1.7,1,2.8,1c1.7,0,3.7-.7,5.8-2,1,.6,1.9,1.1,2.9,1.4,1.1.4,2.1.6,3,.6s2.1-.3,2.8-1c1.7-1.7,1.2-5.1-1-8.6.6-1,1.1-1.9,1.4-2.9ZM2.3,17.7c-1.1-1.1-.8-3.6.9-6.5.7,1,1.6,2.1,2.6,3,1,1,2,1.9,3,2.6-2.9,1.7-5.5,2-6.5.9ZM18.3,15.8c0,.8-.2,1.5-.6,1.9-.8.8-2.4.8-4.4.1-.7-.3-1.4-.6-2.1-1-.4-.2-.8-.5-1.2-.7-1.1-.8-2.3-1.7-3.3-2.8s-2-2.2-2.8-3.3c-.3-.4-.5-.8-.7-1.2-.4-.7-.8-1.4-1-2.1-.7-2-.7-3.6.1-4.4.4-.4,1.1-.6,1.9-.6,1.2,0,2.9.5,4.7,1.5.4.2.8.5,1.2.8,1.1.7,2.2,1.7,3.3,2.8s2,2.2,2.8,3.3c.3.4.5.8.8,1.2,1,1.8,1.5,3.4,1.5,4.7ZM14.2,5.8c-1-1-2-1.9-3-2.6.7-.4,1.4-.8,2.1-1,.9-.3,1.8-.5,2.5-.5s1.4.2,1.9.6c.8.8.8,2.4.1,4.4-.3.7-.6,1.4-1,2.1-.7-1-1.6-2-2.6-3Z"/><path fill="#595959" d="M10,13.6c-2,0-3.6-1.6-3.6-3.6s1.6-3.6,3.6-3.6,3.6,1.6,3.6,3.6-1.6,3.6-3.6,3.6ZM10,7.8c-1.2,0-2.2,1-2.2,2.2s1,2.2,2.2,2.2,2.2-1,2.2-2.2-1-2.2-2.2-2.2Z"/><path fill="#0250c5" d="M10,13.5c-2,0-3.5-1.6-3.5-3.5s1.6-3.5,3.5-3.5,3.5,1.6,3.5,3.5-1.6,3.5-3.5,3.5ZM10,7.8c-1.2,0-2.2,1-2.2,2.2s1,2.2,2.2,2.2,2.2-1,2.2-2.2-1-2.2-2.2-2.2Z"/></svg>
+              <span>Copilot</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="subheader">
+        <span class="meta">Claim: <b>FNOL-2026-00418</b></span>
+        <span class="meta">Product: <b>Commercial Auto</b></span>
+        <span class="meta">Insured: <a href="#">Continental Delivery LLC</a></span>
+        <span class="spacer"></span>
+        <div class="subheader-actions">
+          <button class="btn btn-text add-party-toggle" type="button" id="persistentAddPartyBtn" aria-label="Add party" aria-expanded="false" aria-controls="persistentPartyInlineHost" hidden>
+            <svg class="add-party-toggle-ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Add party</span>
+          </button>
+          <span class="subheader-actions-divider" id="addPartyDivider" hidden aria-hidden="true"></span>
+          <button type="button" class="btn btn-text edit-mode-link" id="editModeLink"></button>
+        </div>
+      </div>
+      <div class="fnol-party-inline-host" id="persistentPartyInlineHost"></div>
+
+      <div class="content-row">
+        <!-- ===== IN-PAGE SUB-STEP RAIL (populated by JS) ===== -->
+        <div class="substep-rail" id="substepRail"></div>
+
+        <!-- ===== MAIN CONTENT (footer scrolls with content, not pinned) ===== -->
+        <div class="main-panel">
+        <div class="main-scroll" id="mainScroll">
+        <div class="main-col" id="mainCol"></div>
+        <!-- ===== FOOTER — normal flow, scrolls with the main column ===== -->
+        <div class="footer">
+          <button type="button" class="back-link" id="backLink"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
+          <div class="spacer"></div>
+          <button class="btn btn-outlined" id="saveDraftBtn">Save draft</button>
+          <button class="btn btn-primary" id="continueBtn">Next</button>
+        </div>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="copilot-drawer" id="copilotDrawer" data-view="intro" role="complementary" aria-labelledby="copilotDrawerTitle" aria-hidden="true">
+  <button type="button" class="copilot-drawer-resizer" id="copilotDrawerResizer" aria-label="Resize Copilot drawer" tabindex="-1"></button>
+  <div class="copilot-drawer-inner">
+  <div class="copilot-drawer-header">
+    <h2 id="copilotDrawerTitle">Copilot</h2>
+    <div class="copilot-drawer-header-actions">
+      <button type="button" class="copilot-drawer-icon-btn" id="copilotDrawerExpand" aria-label="Expand Copilot" title="Expand">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+      </button>
+      <button type="button" class="copilot-drawer-icon-btn" id="copilotDrawerPopout" aria-label="Pop out Copilot" title="Pop out">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4L10 14M9 5H5v14h14v-4"/></svg>
+      </button>
+      <button type="button" class="copilot-drawer-icon-btn" id="copilotDrawerClose" aria-label="Close Copilot">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="copilot-drawer-body">
+    <div class="copilot-toolbar">
+      <button type="button" class="copilot-drawer-icon-btn" id="copilotMenuBtn" aria-label="Chat history" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <span class="copilot-toolbar-label" id="copilotToolbarLabel" hidden>Assistant</span>
+      <span class="spacer"></span>
+      <button type="button" class="copilot-drawer-icon-btn" id="copilotNewChatIconBtn" aria-label="New chat" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v10H8l-3 3V5z"/><path d="M12 8v5M9.5 10.5h5"/></svg>
+      </button>
+    </div>
+
+    <div class="copilot-view" id="copilotViewIntro">
+      <div class="copilot-intro-hero">
+        <div class="copilot-intro-brand">
+          <img class="copilot-mark" src="copilot-assistant-mark.png" width="28" height="28" alt="" aria-hidden="true">
+          <h3 class="copilot-intro-title">Copilot assistant</h3>
+        </div>
+        <p class="copilot-intro-sub">Your go-to AI for getting work done</p>
+      </div>
+
+      <div id="copilotIntroComposerHost"></div>
+
+      <a href="#" class="copilot-view-all" id="copilotViewAllPrompts">View all prompts &amp; actions</a>
+
+      <div class="copilot-tabs" role="tablist" aria-label="Prompts and actions">
+        <button type="button" class="copilot-tab is-active" role="tab" id="copilotTabPrompts" aria-selected="true" aria-controls="copilotPanelPrompts" data-tab="prompts">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v10H8l-3 3V5z"/><path d="M8 9h8M8 12h5"/></svg>
+          Prompts
+        </button>
+        <button type="button" class="copilot-tab" role="tab" id="copilotTabActions" aria-selected="false" aria-controls="copilotPanelActions" data-tab="actions">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 9-12h-6l0-6z"/></svg>
+          Actions
+        </button>
+      </div>
+      <div class="copilot-tab-panels">
+        <div class="copilot-tab-panel" id="copilotPanelPrompts" role="tabpanel" aria-labelledby="copilotTabPrompts">
+          <button type="button" class="copilot-prompt-card" data-prompt="Can you summarize the billing status for policy [POLICY NUMBER]? Please include invoice balances and recent payments.">
+            <div class="copilot-prompt-card-top">
+              <span class="kind">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg>
+                Helper
+              </span>
+              <span class="fav" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-9.2C5 8 6.8 6.2 9 6.2c1.3 0 2.4.6 3 1.6.6-1 1.7-1.6 3-1.6 2.2 0 4 1.8 4 4.6C19 15.6 12 20 12 20z"/></svg></span>
+            </div>
+            <p class="copilot-prompt-card-title">Summarize the billing status</p>
+            <p class="copilot-prompt-card-body">Can you summarize the billing status for policy [POLICY NUMBER]? Please include invoice…</p>
+          </button>
+          <button type="button" class="copilot-prompt-card" data-prompt="Can you find policy [POLICY NUMBER]?">
+            <div class="copilot-prompt-card-top">
+              <span class="kind">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v10H8l-3 3V5z"/><path d="M8 9h8M8 12h5"/></svg>
+                System
+              </span>
+              <span class="fav" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-9.2C5 8 6.8 6.2 9 6.2c1.3 0 2.4.6 3 1.6.6-1 1.7-1.6 3-1.6 2.2 0 4 1.8 4 4.6C19 15.6 12 20 12 20z"/></svg></span>
+            </div>
+            <p class="copilot-prompt-card-title">Find policy</p>
+            <p class="copilot-prompt-card-body">Can you find policy [POLICY NUMBER]?</p>
+          </button>
+          <button type="button" class="copilot-prompt-card" data-prompt="Look up policy [POLICY NUMBER] and summarize coverage and status.">
+            <div class="copilot-prompt-card-top">
+              <span class="kind">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v10H8l-3 3V5z"/><path d="M8 9h8M8 12h5"/></svg>
+                System
+              </span>
+              <span class="fav" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-9.2C5 8 6.8 6.2 9 6.2c1.3 0 2.4.6 3 1.6.6-1 1.7-1.6 3-1.6 2.2 0 4 1.8 4 4.6C19 15.6 12 20 12 20z"/></svg></span>
+            </div>
+            <p class="copilot-prompt-card-title">Look up policy</p>
+            <p class="copilot-prompt-card-body">Look up policy [POLICY NUMBER] and summarize coverage and status.</p>
+          </button>
+        </div>
+        <div class="copilot-tab-panel" id="copilotPanelActions" role="tabpanel" aria-labelledby="copilotTabActions" hidden>
+          <button type="button" class="copilot-prompt-card" data-prompt="Create a note for claim FNOL-2026-00418 summarizing intake status.">
+            <div class="copilot-prompt-card-top">
+              <span class="kind">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 9-12h-6l0-6z"/></svg>
+                Action
+              </span>
+              <span class="fav" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-9.2C5 8 6.8 6.2 9 6.2c1.3 0 2.4.6 3 1.6.6-1 1.7-1.6 3-1.6 2.2 0 4 1.8 4 4.6C19 15.6 12 20 12 20z"/></svg></span>
+            </div>
+            <p class="copilot-prompt-card-title">Draft claim intake note</p>
+            <p class="copilot-prompt-card-body">Create a note for claim FNOL-2026-00418 summarizing intake status.</p>
+          </button>
+          <button type="button" class="copilot-prompt-card" data-prompt="Prepare a 360 view of claim FNOL-2026-00418.">
+            <div class="copilot-prompt-card-top">
+              <span class="kind">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 9-12h-6l0-6z"/></svg>
+                Action
+              </span>
+              <span class="fav" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-9.2C5 8 6.8 6.2 9 6.2c1.3 0 2.4.6 3 1.6.6-1 1.7-1.6 3-1.6 2.2 0 4 1.8 4 4.6C19 15.6 12 20 12 20z"/></svg></span>
+            </div>
+            <p class="copilot-prompt-card-title">360 view of claim</p>
+            <p class="copilot-prompt-card-body">Prepare a 360 view of claim FNOL-2026-00418.</p>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="copilot-view" id="copilotViewHistory" hidden>
+      <div class="copilot-history-head">
+        <h3 class="copilot-chat-heading">Chat</h3>
+      </div>
+      <button type="button" class="copilot-new-chat" id="copilotNewChat">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+        <span>New chat</span>
+      </button>
+      <div class="copilot-chat-block">
+        <div class="copilot-chat-group">
+          <div class="copilot-chat-group-label">
+            <span>Today</span>
+            <span class="search-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
+          </div>
+          <button type="button" class="copilot-chat-item is-active" data-chat-title="what are the exceptions in the atlantic ridge construction">
+            <span class="chat-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H8l-3 3V5z"/><path d="M8 9h8M8 12h5"/></svg></span>
+            <span class="chat-label">what are the exceptions in the at…</span>
+          </button>
+        </div>
+        <div class="copilot-chat-group">
+          <div class="copilot-chat-group-label"><span>Yesterday</span></div>
+          <button type="button" class="copilot-chat-item" data-chat-title="list all policies for PAS">
+            <span class="chat-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H8l-3 3V5z"/><path d="M8 9h8M8 12h5"/></svg></span>
+            <span class="chat-label">list all policies for PAS</span>
+          </button>
+          <button type="button" class="copilot-chat-item" data-chat-title="summarise policy 01-WK-000010">
+            <span class="chat-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H8l-3 3V5z"/><path d="M8 9h8M8 12h5"/></svg></span>
+            <span class="chat-label">summarise policy 01-WK-000010…</span>
+          </button>
+        </div>
+        <div class="copilot-chat-group">
+          <div class="copilot-chat-group-label"><span>This week</span></div>
+          <button type="button" class="copilot-chat-item" data-chat-title="Summarize Policy P01CA000010">
+            <span class="chat-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H8l-3 3V5z"/><path d="M8 9h8M8 12h5"/></svg></span>
+            <span class="chat-label">Summarize Policy P01CA000010…</span>
+          </button>
+          <button type="button" class="copilot-chat-item" data-chat-title="Summarize Policy P01CA000011">
+            <span class="chat-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H8l-3 3V5z"/><path d="M8 9h8M8 12h5"/></svg></span>
+            <span class="chat-label">Summarize Policy P01CA000011…</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="copilot-view" id="copilotViewChat" hidden>
+      <div class="copilot-chat-thread" id="copilotChatThread">
+        <div class="copilot-msg-user" id="copilotChatUserMsg">what are the exceptions in the atlantic ridge construction</div>
+        <div class="copilot-msg-assistant" id="copilotChatAssistantMsg">I specialize in insurance operations within Majesco Suite—claims, billing, and policy management. Is there something insurance-related I can help with?</div>
+      </div>
+    </div>
+  </div>
+  <div class="copilot-drawer-footer">
+    <div id="copilotFooterComposerHost"></div>
+    <div class="copilot-composer" id="copilotComposer">
+      <textarea class="copilot-composer-input" id="copilotComposerInput" rows="2" placeholder="Select a prompt or ask me anything" aria-label="Ask Copilot"></textarea>
+      <div class="copilot-composer-toolbar">
+        <button type="button" class="copilot-composer-tool" aria-label="Add attachment">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <button type="button" class="copilot-composer-tool is-active" id="copilotFastToggle" aria-pressed="true" aria-label="Response mode Fast">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 9-12h-6l0-6z"/></svg>
+          <span>Fast</span>
+        </button>
+        <span class="spacer"></span>
+        <button type="button" class="copilot-composer-send" id="copilotComposerSend" aria-label="Send">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
+      </div>
+    </div>
+    <p class="copilot-drawer-disclaimer">Copilot uses AI. Check for mistakes. <a href="#">Terms &amp; conditions</a></p>
+  </div>
+  </div>
+</aside>
+  </div>
+</div>
+</div>
+
+<!-- ===== Triage decision dialogs (MUI-style, Majesco One) ===== -->
+<div class="mui-dialog-root" id="dialogAssignOwner" role="presentation" aria-hidden="true" data-dialog="assignOwner">
+  <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
+  <div class="mui-dialog-paper" role="dialog" aria-modal="true" aria-labelledby="dialogAssignOwnerTitle" tabindex="-1">
+    <h2 class="mui-dialog-title" id="dialogAssignOwnerTitle">Assign owner</h2>
+    <div class="mui-dialog-content">
+      <div class="field" id="assignToField">
+        <label for="assignToSelect">Assign To</label>
+        <select class="ctrl" id="assignToSelect" required aria-required="true">
+          <option value="">Please select</option>
+          <option value="casey-morgan">Casey Morgan — SIU examiner</option>
+          <option value="riley-santos">Riley Santos — SIU examiner</option>
+          <option value="jordan-quinn">Jordan Quinn — SIU examiner</option>
+          <option value="avery-patel">Avery Patel — SIU senior examiner</option>
+          <option value="morgan-ellis">Morgan Ellis — SIU examiner</option>
+        </select>
+        <div class="field-error-text" id="assignToError">Assign To is required.</div>
+      </div>
+    </div>
+    <div class="mui-dialog-actions">
+      <button type="button" class="btn btn-text" data-dialog-dismiss>Cancel</button>
+      <button type="button" class="btn btn-primary" data-dialog-save="assignOwner">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="mui-dialog-root" id="dialogViewReferral" role="presentation" aria-hidden="true" data-dialog="viewReferral">
+  <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
+  <div class="mui-dialog-paper wide" role="dialog" aria-modal="true" aria-labelledby="dialogViewReferralTitle" tabindex="-1">
+    <h2 class="mui-dialog-title" id="dialogViewReferralTitle">SIU referral</h2>
+    <div class="mui-dialog-content">
+      <div class="mui-dialog-summary">
+        <div class="mui-dialog-summary-row">
+          <div class="mui-dialog-summary-label">Assignee</div>
+          <div class="mui-dialog-summary-value">Casey Morgan — SIU examiner</div>
+        </div>
+        <div class="mui-dialog-summary-row">
+          <div class="mui-dialog-summary-label">Claim impact</div>
+          <div class="mui-dialog-summary-value">Score 62 exceeds SIU review threshold (50). Commercial Auto rear-end with schedule mismatch and elevated reserve exposure.</div>
+        </div>
+        <div class="mui-dialog-summary-row">
+          <div class="mui-dialog-summary-label">SIU flag</div>
+          <div class="mui-dialog-summary-value">Active — claim score threshold</div>
+        </div>
+        <div class="mui-dialog-summary-row">
+          <div class="mui-dialog-summary-label">Referral created</div>
+          <div class="mui-dialog-summary-value">Oct 27, 2026 · 10:14 AM</div>
+        </div>
+        <div class="mui-dialog-summary-row">
+          <div class="mui-dialog-summary-label">Assigned</div>
+          <div class="mui-dialog-summary-value">Oct 27, 2026 · 11:02 AM</div>
+        </div>
+        <div class="mui-dialog-summary-row">
+          <div class="mui-dialog-summary-label">Due for review</div>
+          <div class="mui-dialog-summary-value">Oct 30, 2026</div>
+        </div>
+        <div class="mui-dialog-summary-row">
+          <div class="mui-dialog-summary-label">Status</div>
+          <div class="mui-dialog-summary-value">Pending SIU decision</div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:16px;">
+        <label for="coverageReferralDecision">Decision</label>
+        <select class="ctrl" id="coverageReferralDecision">
+          <option value="">Please select</option>
+          <option value="Resolved">Resolved</option>
+          <option value="Returned">Returned to examiner</option>
+          <option value="Needs follow-up">Needs follow-up</option>
+        </select>
+      </div>
+    </div>
+    <div class="mui-dialog-actions">
+      <button type="button" class="btn btn-text" data-dialog-dismiss>Cancel</button>
+      <button type="button" class="btn btn-primary" data-dialog-save="viewReferral">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="mui-dialog-root" id="dialogRecordDecision" role="presentation" aria-hidden="true" data-dialog="recordDecision">
+  <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
+  <div class="mui-dialog-paper" role="dialog" aria-modal="true" aria-labelledby="dialogRecordDecisionTitle" tabindex="-1">
+    <h2 class="mui-dialog-title" id="dialogRecordDecisionTitle">Record SIU decision</h2>
+    <div class="mui-dialog-content">
+      <div class="field">
+        <label for="siuDecisionStatus">Status</label>
+        <select class="ctrl" id="siuDecisionStatus">
+          <option value="Accepted" selected>Accepted</option>
+          <option value="Rejected">Rejected</option>
+          <option value="Returned">Returned to examiner</option>
+        </select>
+      </div>
+      <div class="field" id="siuDecisionReasonField" hidden>
+        <label for="siuDecisionReason">Reason</label>
+        <select class="ctrl" id="siuDecisionReason">
+          <option value="">Please select</option>
+          <option value="insufficient-indicators">Insufficient fraud indicators</option>
+          <option value="coverage-dispute">Coverage dispute — return to examiner</option>
+          <option value="documentation-incomplete">Documentation incomplete</option>
+          <option value="outside-siu-scope">Outside SIU scope</option>
+          <option value="duplicate-referral">Duplicate referral</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="siuDecisionDate">Decision date<span class="lbl-optional">Optional</span></label>
+        <input class="ctrl" type="date" id="siuDecisionDate">
+      </div>
+    </div>
+    <div class="mui-dialog-actions">
+      <button type="button" class="btn btn-text" data-dialog-dismiss>Cancel</button>
+      <button type="button" class="btn btn-primary" data-dialog-save="recordDecision">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function toast(msg){
+    const t=document.getElementById('toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    clearTimeout(window.__t);
+    window.__t=setTimeout(()=>t.classList.remove('show'), 2400);
+  }
+
+  /* =========================================================
+     Small render helpers (all reuse existing Majesco patterns)
+     ========================================================= */
+  function fieldRO(label, value, chip){
+    return `<div class="field"><label>${label}</label><input class="ctrl" type="text" value="${value}" readonly></div>`;
+  }
+  function fieldTxt(label, value, chip){
+    return `<div class="field"><label>${label}</label><input class="ctrl" type="text" value="${value}"></div>`;
+  }
+  function fieldDate(label, isoValue, chip){
+    return `<div class="field"><label>${label}</label><input class="ctrl" type="date" value="${isoValue}"></div>`;
+  }
+  function fieldTime(label, isoValue, chip){
+    return `<div class="field"><label>${label}</label><input class="ctrl" type="time" value="${isoValue}"></div>`;
+  }
+  function sectionOpen(title, pillHtml, noDivider){
+    return `<section class="plain-section${noDivider?' no-divider':''}"><div class="section-head"><h2>${title}</h2>${pillHtml}</div>`;
+  }
+  function sectionOpenH2(title, pillHtml, noDivider){
+    return `<section class="plain-section${noDivider?' no-divider':''}"><div class="section-head"><h2>${title}</h2>${pillHtml}</div>`;
+  }
+  const ICONS = {"check_circle": "m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z", "warning": "m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z", "error": "M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z", "info": "M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z", "upload_file": "M440-200h80v-167l64 64 56-57-160-160-160 160 57 56 63-63v167ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z", "description": "M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z", "delete": "M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"};
+  function mi(name, size){ size = size || 20; return `<svg class="mi" width="${size}" height="${size}" viewBox="0 -960 960 960"><path d="${ICONS[name]}"/></svg>`; }
+  function partyTypeIcon(type){
+    const orgIcon = `<svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>`;
+    const personIcon = `<svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
+    const icon = type==='organization' ? orgIcon : personIcon;
+    const iconTone = type==='organization' ? 'tone-info' : 'tone-secondary';
+    return `<div class="dc-icon ${iconTone}">${icon}</div>`;
+  }
+  function partyDocCard(name, roleType, contact, type){
+    return `<div class="doc-card">
+      ${partyTypeIcon(type)}
+      <div class="dc-name">${name}</div>
+      <div class="dc-subtitle">${roleType}</div>
+      <div class="dc-meta">${contact ? contact : 'No contact'}</div>
+      <button type="button" class="dc-action">View details</button>
+    </div>`;
+  }
+  function drivableTone(v){
+    const t=String(v||'').trim().toLowerCase();
+    return t==='no' ? 'error' : t==='yes' ? 'success' : 'neutral';
+  }
+  function vehicleDocCard(yearMakeModel, vehicleType, vin, damage, drivable){
+    return `<div class="doc-card">
+      <div class="dc-vehicle-head">
+        <div class="dc-name">${yearMakeModel}</div>
+        <span class="label-chip ${drivableTone(drivable)}">Drivable: ${drivable || '—'}</span>
+      </div>
+      <div class="dc-subtitle">${vehicleType}</div>
+      <div class="dc-meta">VIN ${vin || '—'}</div>
+      <div class="dc-meta">${damage || '—'}</div>
+    </div>`;
+  }
+  function kpiCard(label, value, tone){
+    const cls = tone ? ' tone-'+tone : '';
+    return `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value${cls}">${value}</div></div>`;
+  }
+  function kpiRow(items){
+    return `<div class="kpi-row">${items.join('')}</div>`;
+  }
+  const pillPopulated = '';
+  const sectionClose = '</section>';
+
+  function rowIcons(){
+    if(!editingMode) return `<div class="row-icons"></div>`;
+    return `<div class="row-icons">
+      <button class="trash-btn" type="button" title="Remove" aria-label="Remove" data-row-remove>${mi('delete',20)}</button>
+    </div>`;
+  }
+  function addToolbar(label, targetId, editOnly){
+    return `<div class="repeat-toolbar${editOnly?' edit-only':''}"><button class="btn btn-outlined" type="button" data-add-target="${targetId}"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>${label}</button></div>`;
+  }
+
+  /* =========================================================
+     FNOL — Policy & reporter
+     ========================================================= */
+  function fnolPolicyReporter(){
+    return sectionOpenH2('Getting started', pillPopulated, true) + `
+      <h3 class="subhead">Reported by</h3>
+      <p class="reporter-line"><b>Jamie Hart</b><span class="sep">·</span>Producer<span class="sep">·</span>502-555-0182<span class="sep">·</span><a href="mailto:jamie.hart@producer.example">jamie.hart@producer.example</a></p>
+      <div class="field-grid">
+        <div class="field"><label>Reporting method</label><select class="ctrl"><option>Phone</option><option selected>Email</option><option>Portal</option><option>Integration</option><option>Mail</option></select></div>
+        ${fieldDate('Date of loss','2026-07-14','doc')}
+        ${fieldTime('Time of loss','16:42','doc')}
+        <div class="field"><label>Report only</label><select class="ctrl"><option>No</option><option>Yes</option></select></div>
+      </div>
+      <div class="field-grid" style="margin-bottom:0;">
+        ${fieldDate('Reported date','2026-07-15','doc')}
+        ${fieldTime('Reported time','08:10','doc')}
+      </div>
+    ` + sectionClose +
+
+    sectionOpenH2('Policy and coverage validation', pillPopulated, true) + `
+      <div class="field-grid">
+        <div class="field with-icon"><label>Policy number</label>
+          <input class="ctrl" type="text" value="01-CA-000041792-0">
+          <span class="icon-inline"><svg width="15" height="15" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
+        </div>
+        ${fieldRO('Product','Commercial Auto','policy')}
+        ${fieldRO('Line of business','Commercial Auto','policy')}
+        ${fieldRO('Policy status on DOL','In force','policy')}
+      </div>
+      <div class="field-grid">
+        ${fieldRO('Effective period','01/01/2026 – 01/01/2027','policy')}
+        ${fieldRO('Named insured','Continental Delivery LLC','policy')}
+        ${fieldRO('Jurisdiction','Kentucky','policy')}
+      </div>
+      <table class="datagrid">
+        <thead><tr><th>Coverage</th><th class="num">Limit</th><th class="num">Deductible</th><th>Position</th><th>Basis</th></tr></thead>
+        <tbody>
+          <tr><td class="cov-name">Auto liability — BI</td><td class="num">$1,000,000 CSL</td><td class="num">—</td><td>Potential</td><td>Claimant injury exposure</td></tr>
+          <tr><td class="cov-name">Auto liability — PD</td><td class="num">$1,000,000 CSL</td><td class="num">—</td><td>Potential</td><td>Claimant vehicle damage</td></tr>
+          <tr><td class="cov-name">Collision</td><td class="num">ACV</td><td class="num">$1,000</td><td>Available</td><td>Insured unit physical damage</td></tr>
+          <tr><td class="cov-name">Medical payments</td><td class="num">$5,000</td><td class="num">—</td><td>Available</td><td>Insured driver</td></tr>
+          <tr><td class="cov-name">Uninsured / underinsured motorist</td><td class="num">$1,000,000 CSL</td><td class="num">—</td><td><span class="status-error"><svg class="mi" width="18" height="18" viewBox="0 -960 960 960"><path d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>Rejected</span></td><td>Signed form on file</td></tr>
+        </tbody>
+      </table>
+    ` + sectionClose +
+
+    sectionOpenH2('Risk &amp; duplicate analysis', '') + `
+      <div class="alert info" style="margin-bottom:14px;">
+        <svg class="mi" width="20" height="20" viewBox="0 -960 960 960"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
+        <div><div class="alert-title">Agent observation</div>No direct fraud indicator is firing. Most score contribution comes from the unscheduled driver and unspecified injury.</div>
+      </div>
+      ${kpiRow([
+        kpiCard('Possible duplicate','No match found','success'),
+        kpiCard('Prior claims on policy','2'),
+        kpiCard('Claim score','62 / 100','warning'),
+        kpiCard('SIU review threshold','50')
+      ])}
+    ` + sectionClose;
+  }
+
+  /* =========================================================
+     FNOL — Incident details
+     ========================================================= */
+  function fnolIncidentDetails(){
+    return sectionOpen('Claim / incident information', pillPopulated, true) + `
+      <div class="field-grid">
+        ${fieldTxt('Type of loss','Rear-end collision','doc')}
+        ${fieldTxt('Cause of loss','Failure to stop / lane closure','doc')}
+        ${fieldTxt('Police report number','TC-2026-88431','doc')}
+        ${fieldTxt('Citation issued','Yes — insured driver','doc')}
+        ${fieldTxt('Weather and road conditions','Clear / dry')}
+      </div>
+      <div class="field">
+        <label>Loss narrative</label>
+        <textarea class="ctrl" rows="3" style="height:auto;padding:9px 11px;resize:vertical;">Insured box truck failed to stop and struck the rear of the claimant vehicle, which was stationary in a queue behind an unsignalled lane closure. Both vehicles were towed from scene. Claimant transported by ground ambulance.</textarea>
+      </div>
+    ` + sectionClose +
+
+    sectionOpen('Loss location', pillPopulated) + addToolbar('Add location', 'locationsTbody') + `
+      <table class="mini-table">
+        <thead><tr><th>Location</th><th style="width:16%">Type</th><th style="width:16%">Jurisdiction</th><th style="width:16%">Source</th><th style="width:70px;"></th></tr></thead>
+        <tbody id="locationsTbody"><tr>
+          <td class="name">I-64 westbound near Louisville, KY</td><td>Loss location</td><td>Kentucky</td>
+          <td>Police report</td><td>${rowIcons()}</td>
+        </tr></tbody>
+      </table>
+    ` + sectionClose;
+  }
+
+  /* =========================================================
+     FNOL — Vehicles & damages
+     ========================================================= */
+  /* Shared party list — managed only from the subheader Add party toggle. */
+  const PARTIES = [
+    {name:'Continental Delivery LLC', roleType:'Named insured · Organization', contact:'502-555-0178', type:'organization'},
+    {name:'Dario Vasquez', roleType:'Insured driver · Person', contact:'502-555-0142', type:'person'},
+    {name:'Marcus Aurelio Reyes', roleType:'Claimant · Person', contact:'', type:'person'},
+    {name:'Alexis Monroe', roleType:'Witness · Person', contact:'502-555-0191', type:'person'}
+  ];
+  function partyFromInlineValues(v){
+    const isOrg = /org/i.test(v.type||'');
+    const type = isOrg ? 'organization' : 'person';
+    const typeLabel = isOrg ? 'Organization' : 'Person';
+    return {
+      name: v.name || 'Unnamed party',
+      roleType: `${v.role || 'Party'} · ${typeLabel}`,
+      contact: v.contact || '',
+      type
+    };
+  }
+  function commitParty(v){
+    const party = partyFromInlineValues(v);
+    PARTIES.push(party);
+    return party;
+  }
+  function fnolParties(){
+    return sectionOpen('Vehicle details', pillPopulated) + addToolbar('Add vehicle', 'vehiclesCards') + `
+      <div class="doc-card-row" id="vehiclesCards">
+        ${vehicleDocCard('2023 Isuzu NPR HD','Insured vehicle','JALE5W163P7K01422','Front bumper, grille and radiator support','No')}
+        ${vehicleDocCard('2021 Toyota Camry','Third-party vehicle','4T1G11AK7MU521884','Rear bumper, deck lid and frame rail','No')}
+      </div>
+    ` + sectionClose +
+
+    sectionOpen('Injured parties', pillPopulated) + addToolbar('Add injured party', 'injuredTbody') + `
+      <table class="datagrid">
+        <thead><tr><th>Injured party</th><th>Employee of insured</th><th>Injury details</th><th>Treatment</th><th style="width:80px;"></th></tr></thead>
+        <tbody id="injuredTbody">
+          <tr><td class="cov-name">Marcus Aurelio Reyes</td><td>No</td><td>Neck/back pain reported at scene</td><td>Transported by ground ambulance</td><td>${rowIcons()}</td></tr>
+        </tbody>
+      </table>
+    ` + sectionClose +
+
+    sectionOpen('Property damage details', pillPopulated) + `
+      <div class="field">
+        <label>Other property damaged</label>
+        <textarea class="ctrl" rows="2" style="height:auto;padding:9px 11px;resize:vertical;">Possible lane-control signage damage</textarea>
+      </div>
+    ` + sectionClose;
+  }
+
+  /* =========================================================
+     FNOL — Evidence
+     ========================================================= */
+  const CONFIDENCE_COPY = {
+    High:'Most extracted facts agree with the document. Safe to accept without a line-by-line check.',
+    Medium:'Some facts are inferred or only partly supported. Review the highlighted fields before accepting.',
+    Low:'The extract is thin or conflicts with the document. Treat the facts as unverified until someone confirms them.'
+  };
+  const CONFIDENCE_TONE = {High:'success', Medium:'warning', Low:'error'};
+  let EVIDENCE_SEQ = 3;
+  const EVIDENCE_DOCS = [
+    {id:'doc1', name:'Producer_Loss_Notice.pdf', meta:'Loss notice · Inbox · 18 facts', level:'High'},
+    {id:'doc2', name:'Jefferson_County_Police_Report.pdf', meta:'Police report · Inbox · 14 facts', level:'High'},
+    {id:'doc3', name:'Scene_Photos.zip', meta:'Photos · Inbox · 5 facts', level:'Medium'}
+  ];
+  function escHtml(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function evidenceCard(d){
+    const tag = d.level ? `<span class="conf-wrap"><span class="label-chip conf-tag ${CONFIDENCE_TONE[d.level]}" tabindex="0" aria-describedby="confPop-${d.id}">${d.level}</span><span class="conf-pop" role="tooltip" id="confPop-${d.id}">${CONFIDENCE_COPY[d.level]}</span></span>` : '';
+    return `<div class="doc-card" data-doc-id="${d.id}">
+      <div class="dc-head"><span class="dc-file-ic">${mi('description',20)}</span><a href="#" class="dc-file-link" data-doc-open="${d.id}">${escHtml(d.name)}</a><button type="button" class="trash-btn" title="Remove ${escHtml(d.name)}" aria-label="Remove ${escHtml(d.name)}" data-doc-remove="${d.id}">${mi('delete',20)}</button></div>
+      <div class="dc-meta">${escHtml(d.meta)}</div>
+      ${tag}
+    </div>`;
+  }
+  function evidenceCardsHtml(){
+    return EVIDENCE_DOCS.length ? EVIDENCE_DOCS.map(evidenceCard).join('') : '';
+  }
+  function fnolEvidence(){
+    return sectionOpen('Attachments / documents', pillPopulated) + `
+      <div class="upload-dropzone" id="evidenceDropzone">
+        <span class="dz-ic">${mi('upload_file',32)}</span>
+        <div class="dz-title">Drag and drop files here, or select a file to upload.</div>
+        <div class="dz-sub">You can upload doc, docx, pdf, jpg, png and zip files.</div>
+        <button type="button" class="btn btn-outlined" id="evidenceSelectBtn">Select file</button>
+        <input type="file" id="evidenceFileInput" multiple accept=".doc,.docx,.pdf,.jpg,.jpeg,.png,.zip" hidden>
+      </div>
+      <div class="doc-card-row" id="evidenceCards">${evidenceCardsHtml()}</div>
+      <p class="evidence-empty" id="evidenceEmpty"${EVIDENCE_DOCS.length?' hidden':''}>No documents attached yet.</p>
+    ` + sectionClose;
+  }
+  function refreshEvidence(){
+    const row=document.getElementById('evidenceCards'); if(!row) return;
+    row.innerHTML = evidenceCardsHtml();
+    document.getElementById('evidenceEmpty').hidden = EVIDENCE_DOCS.length>0;
+  }
+  function fileSizeLabel(bytes){
+    if(bytes<1024) return bytes+' B';
+    if(bytes<1024*1024) return Math.round(bytes/1024)+' KB';
+    return (bytes/1024/1024).toFixed(1)+' MB';
+  }
+  function addEvidenceFiles(fileList){
+    const files = Array.from(fileList||[]);
+    if(!files.length) return;
+    files.forEach(f=>{
+      EVIDENCE_SEQ++;
+      EVIDENCE_DOCS.push({id:'doc'+EVIDENCE_SEQ, name:f.name, meta:`Uploaded · ${fileSizeLabel(f.size)} · Not yet analyzed`, level:null});
+    });
+    refreshEvidence();
+    toast(files.length===1 ? `${files[0].name} attached` : `${files.length} files attached`);
+  }
+  function wireEvidence(){
+    const dz=document.getElementById('evidenceDropzone'); if(!dz) return;
+    const input=document.getElementById('evidenceFileInput');
+    document.getElementById('evidenceSelectBtn').addEventListener('click', ()=>input.click());
+    input.addEventListener('change', ()=>{ addEvidenceFiles(input.files); input.value=''; });
+    ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.add('dragover'); }));
+    ['dragleave','dragend'].forEach(ev=>dz.addEventListener(ev, e=>{ if(!dz.contains(e.relatedTarget)) dz.classList.remove('dragover'); }));
+    dz.addEventListener('drop', e=>{ e.preventDefault(); dz.classList.remove('dragover'); addEvidenceFiles(e.dataTransfer && e.dataTransfer.files); });
+  }
+
+  /* =========================================================
+     TRIAGE — Decisions & handover
+     ========================================================= */
+  const TRIAGE_CARD_STATE = {
+    ownerAssigned:false, assignedOwnerName:'', assignedOwnerValue:'',
+    referralResolved:false, referralDecision:'', referralDecisionLabel:'',
+    decisionRecorded:false, decisionStatus:'', decisionStatusLabel:'', decisionReason:'', decisionDate:''
+  };
+  function triageOpenCount(){
+    return (TRIAGE_CARD_STATE.ownerAssigned ? 0 : 1)
+      + (TRIAGE_CARD_STATE.referralResolved ? 0 : 1)
+      + (TRIAGE_CARD_STATE.decisionRecorded ? 0 : 1);
+  }
+  function triageOpenPill(){
+    const n = triageOpenCount();
+    if(n === 0) return '<span class="pill-muted">0 open</span>';
+    return `<span class="pill-warning">${n} open</span>`;
+  }
+  function triageOwnerCard(){
+    if(TRIAGE_CARD_STATE.ownerAssigned){
+      const name = TRIAGE_CARD_STATE.assignedOwnerName || 'owner';
+      return `<div class="status-row-card done" data-triage-card="assignOwner">
+          <span class="icon">${mi('check_circle',20)}</span>
+          <div><div class="title">Claim owner is ${name}</div><div class="desc">Assignment establishes ownership and starts downstream service expectations.</div></div>
+          <button type="button" class="btn btn-text card-cta" data-open-dialog="assignOwner">Change assignee</button>
+        </div>`;
+    }
+    return `<div class="status-row-card attention" data-triage-card="assignOwner">
+          <span class="icon">${mi('warning',20)}</span>
+          <div><div class="title">Set the claim owner</div><div class="desc">Assignment establishes ownership and starts downstream service expectations.</div></div>
+          <button type="button" class="btn btn-text card-cta" data-open-dialog="assignOwner">Assign owner</button>
+        </div>`;
+  }
+  function triageReferralCard(){
+    const referralDesc = 'Remains unresolved from FNOL. A decision is needed.';
+    if(TRIAGE_CARD_STATE.referralResolved){
+      const decision = TRIAGE_CARD_STATE.referralDecisionLabel || TRIAGE_CARD_STATE.referralDecision || 'resolved';
+      return `<div class="status-row-card done" data-triage-card="viewReferral">
+          <span class="icon">${mi('check_circle',20)}</span>
+          <div><div class="title">Coverage question is ${decision}</div><div class="desc">${referralDesc}</div></div>
+          <button type="button" class="btn btn-text card-cta" data-open-dialog="viewReferral">Change decision</button>
+        </div>`;
+    }
+    return `<div class="status-row-card attention" data-triage-card="viewReferral">
+          <span class="icon">${mi('warning',20)}</span>
+          <div><div class="title">Driver schedule mismatch</div><div class="desc">${referralDesc}</div></div>
+          <button type="button" class="btn btn-text card-cta" data-open-dialog="viewReferral">View referral</button>
+        </div>`;
+  }
+  function triageDecisionCard(){
+    if(TRIAGE_CARD_STATE.decisionRecorded){
+      const statusLabel = TRIAGE_CARD_STATE.decisionStatusLabel || 'recorded';
+      return `<div class="status-row-card done" data-triage-card="recordDecision">
+          <span class="icon">${mi('check_circle',20)}</span>
+          <div><div class="title">SIU decision is ${statusLabel}</div><div class="desc">Claim score is above the review threshold.</div></div>
+          <button type="button" class="btn btn-text card-cta" data-open-dialog="recordDecision">Change decision</button>
+        </div>`;
+    }
+    return `<div class="status-row-card attention" data-triage-card="recordDecision">
+          <span class="icon">${mi('warning',20)}</span>
+          <div><div class="title">Record SIU decision</div><div class="desc">Claim score is above the review threshold.</div></div>
+          <button type="button" class="btn btn-text card-cta" data-open-dialog="recordDecision">Record decision</button>
+        </div>`;
+  }
+  function triageDecisions(){
+    return sectionOpen('Triage decisions', triageOpenPill()) + `
+      <div class="triage-decisions-grid">
+        ${triageOwnerCard()}
+        ${triageReferralCard()}
+        ${triageDecisionCard()}
+      </div>
+    ` + sectionClose +
+
+    sectionOpen('Intake handover', '') + `
+      <div class="alert info" style="margin-bottom:14px;">
+        <svg class="mi" width="20" height="20" viewBox="0 -960 960 960"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
+        <div><div class="alert-title">Open intake items travel with the record</div>They do not block triage, but they become part of the assigned adjuster's work.</div>
+      </div>
+      <table class="datagrid">
+        <thead><tr><th>Field</th><th>Module</th><th>Why open</th><th>Impact</th></tr></thead>
+        <tbody>
+          <tr><td class="cov-name">Claimant email</td><td>Parties</td><td>Not in any source</td><td>Follow-up after assignment</td></tr>
+          <tr><td class="cov-name">Airbag deployment</td><td>Vehicle details</td><td>Not stated or visible in photos</td><td>Follow-up after assignment</td></tr>
+          <tr><td class="cov-name">Treatment received</td><td>Injured parties</td><td>No medical record yet</td><td>Follow-up after assignment</td></tr>
+        </tbody>
+      </table>
+    ` + sectionClose;
+  }
+
+  /* =========================================================
+     TRIAGE — Assignment, features & routing
+     ========================================================= */
+  const ASSIGNMENT_CANDIDATES = {
+    jordan: {name:'Jordan Blake', openClaims:14, specialty:'Yes', specialtyTone:'tone-success', recommended:true},
+    avery:  {name:'Avery Chen',   openClaims:9,  specialty:'Partial', specialtyTone:'tone-warning', recommended:false},
+    morgan: {name:'Morgan Lee',   openClaims:22, specialty:'No', specialtyTone:'tone-error', recommended:false}
+  };
+  const ASSIGNMENT_STATE = {key:'jordan', name:ASSIGNMENT_CANDIDATES.jordan.name};
+  function recommendChipHtml(){
+    return `<span class="cc-recommend"><img src="/prototypes/copilot-recommend-icon.png" alt="" width="14" height="14" decoding="async">Recommended</span>`;
+  }
+  function candidateCardHtml(key){
+    const c = ASSIGNMENT_CANDIDATES[key];
+    const selected = ASSIGNMENT_STATE.key === key;
+    return `<label class="candidate-card${selected?' selected':''}" data-candidate="${key}">
+          <input type="radio" name="claimOwner" value="${key}"${selected?' checked':''}>
+          <div class="cc-name">${c.name}</div>
+          ${c.recommended ? recommendChipHtml() : ''}
+          <div class="cc-role">Claims adjuster</div>
+          <div class="cc-kpis">
+            <div class="cc-kpi"><span class="kpi-value">${c.openClaims}</span><span class="kpi-label">Open claims</span></div>
+            <div class="cc-kpi">
+              <span class="kpi-value ${c.specialtyTone}">${c.specialty}</span>
+              <span class="kpi-label">Specialty match
+                <span class="cc-specialty-info" tabindex="0" role="button" aria-label="About Specialty match" aria-describedby="specialtyPop-${key}">
+                  ${mi('info',14)}
+                  <span class="cc-specialty-pop" role="tooltip" id="specialtyPop-${key}">Based on loss type, product, and prior claim experience.</span>
+                </span>
+              </span>
+            </div>
+          </div>
+        </label>`;
+  }
+  function triageAssignment(){
+    return sectionOpen('Claim assignment', '') + `
+      <p class="section-desc" style="margin:-6px 0 14px;">Recommended owner: <b>Jordan Blake</b>. Ranked using specialty match, open claims, and claim complexity.</p>
+      <div class="candidate-row" role="radiogroup" aria-label="Claim owner">
+        ${candidateCardHtml('jordan')}
+        ${candidateCardHtml('avery')}
+        ${candidateCardHtml('morgan')}
+      </div>
+    ` + sectionClose +
+
+    sectionOpen('Feature setup and assignment', pillPopulated) + `
+      <table class="datagrid">
+        <thead><tr><th>Type</th><th>Claimant / subject</th><th>Coverage</th><th class="num">Initial reserve</th><th>Assign to</th></tr></thead>
+        <tbody>
+          <tr><td class="cov-name">Injury</td><td>Marcus Aurelio Reyes</td><td>Bodily injury liability</td><td class="num">$65,000</td><td class="feature-owner">${ASSIGNMENT_STATE.name}</td></tr>
+          <tr><td class="cov-name">Property damage</td><td>2023 Isuzu NPR HD</td><td>Collision</td><td class="num">$14,200</td><td class="feature-owner">${ASSIGNMENT_STATE.name}</td></tr>
+          <tr><td class="cov-name">Property damage</td><td>2021 Toyota Camry</td><td>Property damage liability</td><td class="num">$12,400</td><td class="feature-owner">${ASSIGNMENT_STATE.name}</td></tr>
+        </tbody>
+      </table>
+    ` + sectionClose +
+
+    sectionOpen('Routing &amp; referrals', '') + `
+      <div class="checkbox-card-row">
+        <label class="checkbox-card"><input type="checkbox" checked><div><div class="title">Coverage Examiner</div><div class="desc">Driver schedule mismatch</div></div></label>
+        <label class="checkbox-card"><input type="checkbox"><div><div class="title">SIU</div><div class="desc">Score above review threshold</div></div></label>
+        <label class="checkbox-card"><input type="checkbox"><div><div class="title">Subrogation</div><div class="desc">Potential recovery from lane-control contractor</div></div></label>
+      </div>
+    ` + sectionClose;
+  }
+
+  /* =========================================================
+     TRIAGE — Loss file
+     ========================================================= */
+  function triageLossFile(){
+    return sectionOpen('Severity &amp; complexity', '') + `
+      <div class="field-grid">
+        <div class="field"><label for="lfSeverity">Severity</label><select class="ctrl" id="lfSeverity"><option>Minor</option><option selected>Moderate</option><option>Major</option><option>Severe</option></select></div>
+        <div class="field"><label for="lfComplexity">Complexity</label><select class="ctrl" id="lfComplexity"><option>Low</option><option>Medium</option><option selected>High</option></select></div>
+        ${fieldRO('Claim score','62')}
+        ${fieldRO('Projected incurred','$93,600')}
+      </div>
+    ` + sectionClose +
+
+    sectionOpen('Claim', pillPopulated) + `
+      <div class="field-grid">
+        ${fieldRO('Type of loss','Rear-end collision')}
+        ${fieldRO('Cause of loss','Failure to stop / lane closure')}
+        ${fieldRO('Police report number','TC-2026-88431')}
+        ${fieldRO('Citation issued','Yes — insured driver')}
+      </div>
+      <div class="field">
+        <label>Loss narrative</label>
+        <textarea class="ctrl" rows="3" style="height:auto;padding:9px 11px;resize:vertical;" readonly>Insured box truck failed to stop and struck the rear of the claimant vehicle, which was stationary in a queue behind an unsignalled lane closure. Both vehicles were towed from scene. Claimant transported by ground ambulance.</textarea>
+      </div>
+    ` + sectionClose +
+
+    sectionOpen('Parties', '') + `
+      <div class="doc-card-row cols-4">
+        ${partyDocCard('Continental Delivery LLC','Named insured · Organization','502-555-0178','organization')}
+        ${partyDocCard('Dario Vasquez','Insured driver · Person','502-555-0142','person')}
+        ${partyDocCard('Marcus Aurelio Reyes','Claimant · Person','','person')}
+        ${partyDocCard('Alexis Monroe','Witness · Person','502-555-0191','person')}
+      </div>
+    ` + sectionClose +
+
+    sectionOpen('Vehicle details', '') + `
+      <table class="datagrid">
+        <thead><tr><th>Vehicle type</th><th>Year / make / model</th><th>VIN</th><th>Damage</th><th>Drivable</th></tr></thead>
+        <tbody>
+          <tr><td class="cov-name">Insured vehicle</td><td>2023 Isuzu NPR HD</td><td>JALE5W163P7K01422</td><td>Front bumper, grille and radiator support</td><td>No</td></tr>
+          <tr><td class="cov-name">Third-party vehicle</td><td>2021 Toyota Camry</td><td>4T1G11AK7MU521884</td><td>Rear bumper, deck lid and frame rail</td><td>No</td></tr>
+        </tbody>
+      </table>
+    ` + sectionClose;
+  }
+
+  /* =========================================================
+     REVIEW — stub
+     ========================================================= */
+  function reviewStub(){
+    return sectionOpen('Claim review', '') + `
+      <div class="alert success">
+        <svg class="mi" width="20" height="20" viewBox="0 -960 960 960"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
+        <div><div class="alert-title">CA141288 is ready for review</div>This is a confirmation stub — the full Review experience will be built as its own step.</div>
+      </div>
+      <div class="field-grid" style="margin-top:16px;">
+        ${fieldRO('Claim','CA141288')}
+        ${fieldRO('Insured','Continental Delivery LLC')}
+        ${fieldRO('Assigned to','Jordan Blake')}
+        ${fieldRO('Status','Triage complete')}
+      </div>
+    ` + sectionClose;
+  }
+
+  /* =========================================================
+     App state machine
+     ========================================================= */
+  const STEP_ORDER = ['fnol','triage','review'];
+  const TITLES   = {fnol:'First notice of loss', triage:'Triage', review:'Review'};
+  const RAIL = {
+    fnol: [
+      {label:'Policy &amp; reporter', body:fnolPolicyReporter},
+      {label:'Incident details', body:fnolIncidentDetails},
+      {label:'Vehicles &amp; damages', body:fnolParties},
+      {label:'Evidence', body:fnolEvidence}
+    ],
+    triage: [
+      {label:'Decisions &amp; handover', body:triageDecisions},
+      {label:'Assignment, features &amp; routing', body:triageAssignment},
+      {label:'Loss file', body:triageLossFile}
+    ],
+    review: [
+      {label:'Confirmation', body:reviewStub}
+    ]
+  };
+
+  const STATE = {stepper:'fnol', subIndex:0};
+
+  const RAIL_TITLES = {fnol:'FNOL', triage:'TRIAGE', review:'REVIEW'};
+  function renderRail(){
+    const list = RAIL[STATE.stepper];
+    let html = `<div class="rail-title">${RAIL_TITLES[STATE.stepper]}</div>`;
+    list.forEach((item,i)=>{
+      const cls = item.error ? 'error' : i<STATE.subIndex ? 'complete' : i===STATE.subIndex ? 'current' : 'nav';
+      const dot = cls==='complete' ? '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 6"/></svg>' : cls==='error' ? '!' : '';
+      html += `<div class="substep-row ${cls}" data-idx="${i}" role="button" tabindex="0"${i===STATE.subIndex?' aria-current="step"':''}><span class="dot">${dot}</span><span class="txt">${item.label}</span></div>`;
+    });
+    const rail = document.getElementById('substepRail');
+    rail.innerHTML = html;
+    rail.querySelectorAll('.substep-row').forEach(row=>{
+      row.addEventListener('click', ()=>{ STATE.subIndex = Number(row.dataset.idx); renderApp(); });
+      row.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); STATE.subIndex = Number(row.dataset.idx); renderApp(); } });
+    });
+  }
+
+  /* =========================================================
+     Inline "Add row" behavior for FNOL repeating tables
+     (Parties, Vehicle Details, Injured Parties, Loss Location)
+     ========================================================= */
+  const ROW_CONFIGS = {
+    injured:  {fields:[{key:'name',ph:'Injured party'},{key:'employee',ph:'Employee of insured'},{key:'injury',ph:'Injury details'},{key:'treatment',ph:'Treatment'}]},
+    locations:{fields:[{key:'location',ph:'Location'},{key:'type',ph:'Type'},{key:'jurisdiction',ph:'Jurisdiction'},{key:'source',ph:'Source'}]}
+  };
+  const TBODY_TYPE_MAP = {injuredTbody:'injured', locationsTbody:'locations'};
+  const CARD_TARGET_MAP = {vehiclesCards:'vehicle'};
+
+  function newRowActionIcons(){
+    return `<div class="row-icons">
+      <button type="button" class="row-save" title="Save"><svg width="15" height="15" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></button>
+      <button type="button" class="row-cancel" title="Cancel"><svg width="15" height="15" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>`;
+  }
+  function buildNewRowHtml(type){
+    const cfg = ROW_CONFIGS[type];
+    const cells = cfg.fields.map(f=>`<td><input class="row-input" data-field="${f.key}" placeholder="${f.ph}"></td>`).join('');
+    return `<tr class="new-row">${cells}<td>${newRowActionIcons()}</td></tr>`;
+  }
+  function savedRowCells(type, v){
+    const nameClass = (type==='locations') ? 'name' : 'cov-name';
+    if(type==='injured')  return `<td class="${nameClass}">${v.name||'—'}</td><td>${v.employee||'—'}</td><td>${v.injury||'—'}</td><td>${v.treatment||'—'}</td>`;
+    if(type==='locations')return `<td class="${nameClass}">${v.location||'—'}</td><td>${v.type||'—'}</td><td>${v.jurisdiction||'—'}</td><td>${v.source||'—'}</td>`;
+  }
+  function wireNewRow(tr, type){
+    let settled = false;
+    function cancelRow(){
+      if(settled) return;
+      settled = true;
+      tr.remove();
+    }
+    function saveRow(){
+      if(settled) return;
+      settled = true;
+      const values = {};
+      tr.querySelectorAll('[data-field]').forEach(inp=>{ values[inp.dataset.field] = inp.value.trim(); });
+      tr.innerHTML = savedRowCells(type, values) + `<td>${rowIcons()}</td>`;
+      tr.classList.remove('new-row');
+    }
+    tr.querySelector('.row-save').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); saveRow(); });
+    tr.querySelector('.row-cancel').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); cancelRow(); });
+    tr.addEventListener('focusout', (e)=>{
+      if(settled) return;
+      const next = e.relatedTarget;
+      if(!next || !tr.contains(next)) saveRow();
+    });
+  }
+  function addNewRow(targetId){
+    const type = TBODY_TYPE_MAP[targetId];
+    const tbody = document.getElementById(targetId);
+    if(!type || !tbody) return;
+    const already = tbody.querySelector('tr.new-row');
+    if(already){ already.querySelector('.row-input')?.focus(); return; }
+    tbody.insertAdjacentHTML('beforeend', buildNewRowHtml(type));
+    const tr = tbody.lastElementChild;
+    wireNewRow(tr, type);
+    tr.querySelector('.row-input')?.focus();
+  }
+
+  /* =========================================================
+     Inline "Add row" behavior for FNOL card grids
+     (Parties, Vehicle Details) — a plain input row sits under the
+     existing cards (same pattern as Add location); on save it
+     appends a card and the row disappears.
+     ========================================================= */
+  function buildPartyInlineRow(){
+    return `<div class="inline-add-row" data-row-type="party">
+      <div class="field">
+        <label for="addPartyName">Name</label>
+        <input class="row-input" id="addPartyName" data-field="name" placeholder="">
+      </div>
+      <div class="field">
+        <label for="addPartyRole">Role</label>
+        <select class="row-input" id="addPartyRole" data-field="role">
+          <option value="" selected disabled>Please select</option>
+          <option value="Named insured">Named insured</option>
+          <option value="Insured driver">Insured driver</option>
+          <option value="Claimant">Claimant</option>
+          <option value="Witness">Witness</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="addPartyType">Type</label>
+        <select class="row-input" id="addPartyType" data-field="type">
+          <option value="" selected disabled>Please select</option>
+          <option value="Person">Person</option>
+          <option value="Organization">Organization</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="addPartyContact">Contact phone or email</label>
+        <input class="row-input" id="addPartyContact" data-field="contact" placeholder="">
+      </div>
+      ${newRowActionIcons()}
+    </div>`;
+  }
+  function buildVehicleInlineRow(){
+    return `<div class="inline-add-row" data-row-type="vehicle">
+      <input class="row-input" data-field="desc" placeholder="Year / Make / Model">
+      <input class="row-input" data-field="vehicleType" placeholder="Type">
+      <input class="row-input" data-field="vin" placeholder="VIN">
+      <input class="row-input" data-field="damage" placeholder="Damage">
+      <input class="row-input drivable-input" data-field="drivable" placeholder="Drivable">
+      ${newRowActionIcons()}
+    </div>`;
+  }
+  function wireInlineRow(row, type, container, onSettle){
+    let settled = false;
+    function finish(){
+      if(typeof onSettle==='function') onSettle();
+    }
+    function cancelRow(){
+      if(settled) return;
+      settled = true;
+      row.remove();
+      finish();
+    }
+    function saveRow(){
+      if(settled) return;
+      settled = true;
+      const v = {};
+      row.querySelectorAll('[data-field]').forEach(inp=>{ v[inp.dataset.field] = inp.value.trim(); });
+      container.insertAdjacentHTML('beforeend', vehicleDocCard(v.desc || 'Unnamed vehicle', v.vehicleType, v.vin, v.damage, v.drivable));
+      row.remove();
+      finish();
+    }
+    row.querySelector('.row-save').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); saveRow(); });
+    row.querySelector('.row-cancel').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); cancelRow(); });
+    row.addEventListener('focusout', (e)=>{
+      if(settled) return;
+      const next = e.relatedTarget;
+      if(!next || !row.contains(next)) saveRow();
+    });
+  }
+  function addNewCard(targetId){
+    const type = CARD_TARGET_MAP[targetId];
+    const container = document.getElementById(targetId);
+    if(!type || !container) return;
+    const existingRow = container.nextElementSibling;
+    if(existingRow && existingRow.classList.contains('inline-add-row')){
+      existingRow.querySelector('.row-input')?.focus();
+      return;
+    }
+    container.insertAdjacentHTML('afterend', buildVehicleInlineRow());
+    const row = container.nextElementSibling;
+    wireInlineRow(row, type, container);
+    row.querySelector('.row-input')?.focus();
+  }
+
+  /* Subheader Add party toggle — input row + compact party list under the subheader. */
+  let addPartyOpen = false;
+  let partyPanelCloseTimer = null;
+  function renderAddPartyToggle(){
+    const btn = document.getElementById('persistentAddPartyBtn');
+    if(!btn) return;
+    btn.setAttribute('aria-expanded', String(addPartyOpen));
+  }
+  function partiesListHtml(highlightIndex){
+    if(!PARTIES.length) return '';
+    return `<section class="fnol-party-section">
+      <h3 class="fnol-party-section-subhead">Existing parties</h3>
+      <ul class="fnol-party-list" role="list">${PARTIES.map((p,i)=>`
+      <li class="fnol-party-line${i===highlightIndex?' is-entering':''}">
+        ${partyTypeIcon(p.type)}
+        <span class="fnol-party-main">
+          <span class="fnol-party-name">${escHtml(p.name)}</span>
+          <span class="fnol-party-meta">${escHtml(p.roleType)}</span>
+        </span>
+        <button type="button" class="trash-btn" title="Remove ${escHtml(p.name)}" aria-label="Remove ${escHtml(p.name)}" data-party-remove="${i}">${mi('delete',20)}</button>
+      </li>`).join('')}</ul>
+    </section>`;
+  }
+  function wirePersistentPartyRow(row){
+    let settled = false;
+    function saveRow(){
+      if(settled) return;
+      settled = true;
+      const v = {};
+      row.querySelectorAll('[data-field]').forEach(inp=>{ v[inp.dataset.field] = inp.value.trim(); });
+      commitParty(v);
+      renderPersistentPartyPanel(true, PARTIES.length - 1);
+    }
+    function cancelRow(){
+      if(settled) return;
+      settled = true;
+      renderPersistentPartyPanel(true);
+    }
+    row.querySelector('.row-save').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); saveRow(); });
+    row.querySelector('.row-cancel').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); cancelRow(); });
+    row.addEventListener('focusout', (e)=>{
+      if(settled) return;
+      const next = e.relatedTarget;
+      if(!next || !row.contains(next)){
+        /* Only auto-save when at least one field has a value; otherwise leave the blank row. */
+        const hasValue = [...row.querySelectorAll('[data-field]')].some(inp=>inp.value.trim());
+        if(hasValue) saveRow();
+      }
+    });
+  }
+  function wirePersistentPartyList(host){
+    host.querySelectorAll('[data-party-remove]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const i = Number(btn.dataset.partyRemove);
+        if(Number.isNaN(i) || i<0 || i>=PARTIES.length) return;
+        const [removed] = PARTIES.splice(i, 1);
+        toast(`${removed.name} removed`);
+        renderPersistentPartyPanel(true);
+      });
+    });
+  }
+  function finishEnteringPartyLines(host){
+    const entering = host.querySelectorAll('.fnol-party-line.is-entering');
+    if(!entering.length) return;
+    requestAnimationFrame(()=>{
+      entering.forEach(el=>{ void el.offsetWidth; el.classList.remove('is-entering'); });
+    });
+  }
+  function renderPersistentPartyPanel(focusInput, highlightIndex){
+    const host = document.getElementById('persistentPartyInlineHost');
+    if(!host || !addPartyOpen) return;
+    if(partyPanelCloseTimer){ clearTimeout(partyPanelCloseTimer); partyPanelCloseTimer = null; }
+    const alreadyOpen = host.classList.contains('is-open');
+    host.innerHTML = `<div class="fnol-party-panel-clip"><div class="fnol-party-panel-stack">
+      <section class="fnol-party-section">
+        <h3 class="fnol-party-section-subhead">Add party</h3>
+        ${buildPartyInlineRow()}
+      </section>
+      ${partiesListHtml(highlightIndex)}
+    </div></div>`;
+    const row = host.querySelector('.inline-add-row');
+    wirePersistentPartyRow(row);
+    wirePersistentPartyList(host);
+    finishEnteringPartyLines(host);
+    if(alreadyOpen){
+      host.classList.add('is-open');
+    } else {
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{ host.classList.add('is-open'); });
+      });
+    }
+    if(focusInput) row.querySelector('.row-input')?.focus();
+  }
+  function closePersistentPartyInline(immediate){
+    addPartyOpen = false;
+    renderAddPartyToggle();
+    const host = document.getElementById('persistentPartyInlineHost');
+    if(!host) return;
+    host.classList.remove('is-open');
+    if(partyPanelCloseTimer){ clearTimeout(partyPanelCloseTimer); partyPanelCloseTimer = null; }
+    if(immediate){
+      host.innerHTML = '';
+      return;
+    }
+    partyPanelCloseTimer = setTimeout(()=>{
+      partyPanelCloseTimer = null;
+      if(!addPartyOpen) host.innerHTML = '';
+    }, 260);
+  }
+  function togglePersistentPartyInline(){
+    if(addPartyOpen){
+      closePersistentPartyInline(false);
+      return;
+    }
+    addPartyOpen = true;
+    renderAddPartyToggle();
+    renderPersistentPartyPanel(true);
+  }
+
+  function handleAddClick(targetId){
+    if(CARD_TARGET_MAP[targetId]) addNewCard(targetId);
+    else addNewRow(targetId);
+  }
+
+  function wireBodyEvents(){
+    document.querySelectorAll('.candidate-card input[type=radio]').forEach(radio=>{
+      radio.addEventListener('change', ()=>{
+        const key = radio.value;
+        const candidate = ASSIGNMENT_CANDIDATES[key];
+        if(!candidate) return;
+        ASSIGNMENT_STATE.key = key;
+        ASSIGNMENT_STATE.name = candidate.name;
+        const row = radio.closest('.candidate-row');
+        row.querySelectorAll('.candidate-card').forEach(c=>c.classList.toggle('selected', c.contains(radio)));
+        document.querySelectorAll('.feature-owner').forEach(td=>{ td.textContent = candidate.name; });
+        toast('Claim owner set to ' + candidate.name);
+      });
+    });
+    document.querySelectorAll('[data-open-dialog]').forEach(btn=>{
+      btn.addEventListener('click', ()=> openTriageDialog(btn.dataset.openDialog));
+    });
+    wireEvidence();
+    document.querySelectorAll('[data-add-target]').forEach(btn=>{
+      btn.addEventListener('click', ()=> handleAddClick(btn.dataset.addTarget));
+    });
+  }
+
+  function syncFnolAddPartyChrome(){
+    const onFnol = STATE.stepper==='fnol';
+    const btn = document.getElementById('persistentAddPartyBtn');
+    const divider = document.getElementById('addPartyDivider');
+    if(btn) btn.hidden = !onFnol;
+    if(divider) divider.hidden = !onFnol;
+    if(!onFnol){
+      closePersistentPartyInline(true);
+    } else {
+      renderAddPartyToggle();
+      /* Keep the open panel across FNOL substeps. */
+      if(addPartyOpen){
+        const host = document.getElementById('persistentPartyInlineHost');
+        if(host && !host.querySelector('.inline-add-row')){
+          renderPersistentPartyPanel(false);
+        } else if(host){
+          host.classList.add('is-open');
+        }
+      }
+    }
+  }
+
+  // Delegated: remove table rows (editing mode) and evidence documents
+  document.getElementById('mainCol').addEventListener('click', (e)=>{
+    const rowBtn = e.target.closest('[data-row-remove]');
+    if(rowBtn){ e.preventDefault(); const tr=rowBtn.closest('tr'); if(tr){ tr.remove(); toast('Row removed'); } return; }
+    const docBtn = e.target.closest('[data-doc-remove]');
+    if(docBtn){
+      e.preventDefault();
+      const i = EVIDENCE_DOCS.findIndex(d=>d.id===docBtn.dataset.docRemove);
+      if(i>-1){ const [d]=EVIDENCE_DOCS.splice(i,1); refreshEvidence(); toast(`${d.name} removed`); }
+      return;
+    }
+    const docLink = e.target.closest('[data-doc-open]');
+    if(docLink){ e.preventDefault(); toast(`Opening ${docLink.textContent} (prototype)`); }
+  });
+
+  function renderApp(){
+    document.getElementById('pageTitle').textContent = TITLES[STATE.stepper];
+
+    STEP_ORDER.forEach(key=>{
+      const el = document.getElementById('hstep-'+key);
+      el.classList.remove('current','done');
+      const done = STEP_ORDER.indexOf(key) < STEP_ORDER.indexOf(STATE.stepper);
+      if(key===STATE.stepper) el.classList.add('current');
+      else if(done) el.classList.add('done');
+      el.querySelector('.num').innerHTML = done ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 6"/></svg>' : String(STEP_ORDER.indexOf(key)+1);
+      if(key===STATE.stepper) el.setAttribute('aria-current','step'); else el.removeAttribute('aria-current');
+    });
+
+    renderRail();
+    syncFnolAddPartyChrome();
+
+    const list = RAIL[STATE.stepper];
+    document.getElementById('mainCol').innerHTML = list[STATE.subIndex].body();
+    document.getElementById('mainScroll').scrollTop = 0;
+    wireBodyEvents();
+
+    const isFirst = STATE.stepper==='fnol' && STATE.subIndex===0;
+    const isLastOfStepper = STATE.subIndex === list.length-1;
+    let nextLabel;
+    if(!isLastOfStepper) nextLabel = 'Next: '+list[STATE.subIndex+1].label;
+    else if(STATE.stepper==='fnol') nextLabel = 'Continue to triage';
+    else if(STATE.stepper==='triage') nextLabel = 'Complete triage';
+    else nextLabel = 'Finish';
+
+    const backLink = document.getElementById('backLink');
+    backLink.classList.toggle('disabled', isFirst);
+    backLink.disabled = isFirst;
+    document.getElementById('continueBtn').innerHTML = nextLabel;
+  }
+
+  function goNext(){
+    const list = RAIL[STATE.stepper];
+    if(STATE.subIndex < list.length-1){ STATE.subIndex++; }
+    else if(STATE.stepper==='fnol'){ STATE.stepper='triage'; STATE.subIndex=0; }
+    else if(STATE.stepper==='triage'){ toast('Claim CA141288 triaged — moving to Review'); STATE.stepper='review'; STATE.subIndex=0; }
+    else { toast('Review is a confirmation stub in this prototype'); return; }
+    renderApp();
+  }
+  function goBack(){
+    if(STATE.subIndex>0){ STATE.subIndex--; }
+    else if(STATE.stepper==='triage'){ STATE.stepper='fnol'; STATE.subIndex=RAIL.fnol.length-1; }
+    else if(STATE.stepper==='review'){ STATE.stepper='triage'; STATE.subIndex=RAIL.triage.length-1; }
+    else { return; }
+    renderApp();
+  }
+
+  document.getElementById('continueBtn').addEventListener('click', goNext);
+  document.getElementById('backLink').addEventListener('click', (e)=>{e.preventDefault(); goBack();});
+  document.getElementById('saveDraftBtn').addEventListener('click', ()=>toast('Draft saved — FNOL-2026-00418'));
+  document.getElementById('persistentAddPartyBtn').addEventListener('click', ()=>{
+    togglePersistentPartyInline();
+  });
+  let editingMode = false;
+  function renderEditModeLink(){
+    const el = document.getElementById('editModeLink');
+    document.body.classList.toggle('editing-active', editingMode);
+    if (editingMode){
+      el.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg><span>Exit claim editing mode</span>';
+    } else {
+      el.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg><span>Enter claim editing mode</span>';
+    }
+  }
+  /* Keep field edits across a view/edit toggle. renderApp() rebuilds the screen from templates,
+     so capture every .ctrl value first (keyed by its label + occurrence) and restore afterwards. */
+  function ctrlKey(el, counts){
+    const lab = el.closest('.field') && el.closest('.field').querySelector('label');
+    const base = lab ? lab.textContent.trim() : (el.id || el.tagName.toLowerCase());
+    counts[base] = (counts[base] || 0) + 1;
+    return base + '#' + counts[base];
+  }
+  function captureFieldValues(){
+    const vals = {}, counts = {};
+    document.querySelectorAll('#mainCol .ctrl').forEach(el=>{ vals[ctrlKey(el, counts)] = el.value; });
+    return vals;
+  }
+  function restoreFieldValues(vals){
+    const counts = {};
+    document.querySelectorAll('#mainCol .ctrl').forEach(el=>{
+      const key = ctrlKey(el, counts);
+      if(el.hasAttribute('readonly') || !(key in vals)) return;
+      el.value = vals[key];
+    });
+  }
+  document.getElementById('editModeLink').addEventListener('click', (e)=>{
+    e.preventDefault();
+    const savedValues = captureFieldValues();
+    editingMode = !editingMode;
+    renderEditModeLink();
+    toast(editingMode ? 'Claim editing mode on' : 'Claim editing mode off');
+    renderApp();
+    restoreFieldValues(savedValues);
+  });
+  renderEditModeLink();
+  STEP_ORDER.forEach(key=>{
+    const stepEl = document.getElementById('hstep-'+key);
+    stepEl.addEventListener('click', ()=>{ STATE.stepper=key; STATE.subIndex=0; renderApp(); });
+    stepEl.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); stepEl.click(); } });
+  });
+
+  renderApp();
+
+  /* Triage decision dialogs — Assign owner / View referral / Record decision. */
+  const TRIAGE_DIALOGS = {
+    assignOwner: document.getElementById('dialogAssignOwner'),
+    viewReferral: document.getElementById('dialogViewReferral'),
+    recordDecision: document.getElementById('dialogRecordDecision')
+  };
+  let openDialogKey = '';
+  function syncSiuReasonVisibility(){
+    const status = document.getElementById('siuDecisionStatus').value;
+    const reasonField = document.getElementById('siuDecisionReasonField');
+    const needsReason = status === 'Rejected' || status === 'Returned';
+    reasonField.hidden = !needsReason;
+    if(!needsReason) document.getElementById('siuDecisionReason').value = '';
+  }
+  function clearAssignToError(){
+    document.getElementById('assignToField').classList.remove('has-error');
+    document.getElementById('assignToSelect').removeAttribute('aria-invalid');
+  }
+  const DIALOG_EXIT_MS = 195;
+  let dialogCloseTimer = 0;
+  function closeTriageDialog(){
+    if(!openDialogKey) return;
+    const root = TRIAGE_DIALOGS[openDialogKey];
+    openDialogKey = '';
+    if(root){
+      root.classList.remove('is-open');
+      root.setAttribute('aria-hidden', 'true');
+    }
+    clearTimeout(dialogCloseTimer);
+    dialogCloseTimer = setTimeout(()=>{
+      if(!openDialogKey) document.body.classList.remove('mui-dialog-open');
+    }, DIALOG_EXIT_MS);
+  }
+  function openTriageDialog(key){
+    const root = TRIAGE_DIALOGS[key];
+    if(!root) return;
+    if(openDialogKey && openDialogKey !== key){
+      const prev = TRIAGE_DIALOGS[openDialogKey];
+      if(prev){
+        prev.classList.remove('is-open');
+        prev.setAttribute('aria-hidden', 'true');
+      }
+      openDialogKey = '';
+    }
+    if(key === 'assignOwner'){
+      document.getElementById('assignToSelect').value = TRIAGE_CARD_STATE.assignedOwnerValue || '';
+      clearAssignToError();
+    }
+    if(key === 'viewReferral'){
+      document.getElementById('coverageReferralDecision').value = TRIAGE_CARD_STATE.referralDecision || '';
+    }
+    if(key === 'recordDecision'){
+      document.getElementById('siuDecisionStatus').value = TRIAGE_CARD_STATE.decisionStatus || 'Accepted';
+      document.getElementById('siuDecisionReason').value = TRIAGE_CARD_STATE.decisionReason || '';
+      document.getElementById('siuDecisionDate').value = TRIAGE_CARD_STATE.decisionDate || '';
+      syncSiuReasonVisibility();
+    }
+    clearTimeout(dialogCloseTimer);
+    openDialogKey = key;
+    root.classList.remove('is-open');
+    root.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('mui-dialog-open');
+    /* Reflow so the closed opacity/scale paints before the enter transition. */
+    void root.offsetWidth;
+    requestAnimationFrame(()=>{
+      if(openDialogKey !== key) return;
+      root.classList.add('is-open');
+      const paper = root.querySelector('.mui-dialog-paper');
+      if(paper) paper.focus();
+    });
+  }
+  function saveTriageDialog(key){
+    if(key === 'assignOwner'){
+      const select = document.getElementById('assignToSelect');
+      const field = document.getElementById('assignToField');
+      if(!select.value){
+        field.classList.add('has-error');
+        select.setAttribute('aria-invalid', 'true');
+        select.focus();
+        return;
+      }
+      clearAssignToError();
+      const name = select.options[select.selectedIndex].textContent.split('—')[0].trim();
+      TRIAGE_CARD_STATE.ownerAssigned = true;
+      TRIAGE_CARD_STATE.assignedOwnerName = name;
+      TRIAGE_CARD_STATE.assignedOwnerValue = select.value;
+      toast('Owner assigned — ' + name);
+      closeTriageDialog();
+      renderApp();
+      return;
+    }
+    if(key === 'viewReferral'){
+      const decision = document.getElementById('coverageReferralDecision');
+      if(!decision.value){
+        toast('Select a decision for this referral');
+        decision.focus();
+        return;
+      }
+      const label = decision.options[decision.selectedIndex].textContent.trim();
+      TRIAGE_CARD_STATE.referralResolved = true;
+      TRIAGE_CARD_STATE.referralDecision = decision.value;
+      TRIAGE_CARD_STATE.referralDecisionLabel = label;
+      toast('Coverage question resolved — ' + label);
+      closeTriageDialog();
+      renderApp();
+      return;
+    }
+    if(key === 'recordDecision'){
+      const status = document.getElementById('siuDecisionStatus').value;
+      const reason = document.getElementById('siuDecisionReason').value;
+      if((status === 'Rejected' || status === 'Returned') && !reason){
+        toast('Select a reason for this decision');
+        document.getElementById('siuDecisionReason').focus();
+        return;
+      }
+      const label = status === 'Returned' ? 'Returned to examiner' : status;
+      TRIAGE_CARD_STATE.decisionRecorded = true;
+      TRIAGE_CARD_STATE.decisionStatus = status;
+      TRIAGE_CARD_STATE.decisionStatusLabel = label;
+      TRIAGE_CARD_STATE.decisionReason = reason;
+      TRIAGE_CARD_STATE.decisionDate = document.getElementById('siuDecisionDate').value;
+      toast('SIU decision recorded — ' + label);
+      closeTriageDialog();
+      renderApp();
+    }
+  }
+  document.getElementById('assignToSelect').addEventListener('change', clearAssignToError);
+  document.getElementById('siuDecisionStatus').addEventListener('change', syncSiuReasonVisibility);
+  Object.values(TRIAGE_DIALOGS).forEach(root=>{
+    root.addEventListener('click', (e)=>{
+      if(e.target.closest('[data-dialog-dismiss]')){ e.preventDefault(); closeTriageDialog(); return; }
+      const saveBtn = e.target.closest('[data-dialog-save]');
+      if(saveBtn){ e.preventDefault(); saveTriageDialog(saveBtn.dataset.dialogSave); }
+    });
+  });
+
+  /* Left rail drawers — Activity / Favorites (claim-oriented), under app bar. */
+  const railDrawer = document.getElementById('railDrawer');
+  const railDrawerTitle = document.getElementById('railDrawerTitle');
+  const railPanelActivity = document.getElementById('railPanelActivity');
+  const railPanelFavorites = document.getElementById('railPanelFavorites');
+  const railActivityBtn = document.getElementById('railActivityBtn');
+  const railFavoritesBtn = document.getElementById('railFavoritesBtn');
+  const railHomeBtn = document.getElementById('railHomeBtn');
+  let railPanel = '';
+  function setRailActive(panel){
+    document.querySelectorAll('.apprail .rail-item[data-rail]').forEach(btn=>{
+      const key = btn.dataset.rail;
+      const on = panel ? key === panel : key === 'home';
+      btn.classList.toggle('active', on);
+    });
+    railActivityBtn.setAttribute('aria-expanded', String(panel === 'activity'));
+    railFavoritesBtn.setAttribute('aria-expanded', String(panel === 'favorites'));
+  }
+  function setRailDrawer(panel){
+    const next = panel && panel === railPanel ? '' : (panel || '');
+    railPanel = next;
+    const open = Boolean(next);
+    railDrawer.classList.toggle('is-open', open);
+    railDrawer.setAttribute('aria-hidden', String(!open));
+    railDrawer.dataset.panel = next;
+    railDrawerTitle.textContent = next === 'favorites' ? 'Favorites' : 'Activity';
+    railPanelActivity.hidden = next !== 'activity';
+    railPanelFavorites.hidden = next !== 'favorites';
+    setRailActive(next);
+  }
+  railActivityBtn.addEventListener('click', ()=> setRailDrawer('activity'));
+  railFavoritesBtn.addEventListener('click', ()=> setRailDrawer('favorites'));
+  railHomeBtn.addEventListener('click', ()=> setRailDrawer(''));
+  document.getElementById('railDrawerClose').addEventListener('click', ()=> setRailDrawer(''));
+
+  /* Copilot drawer — below app bar, pushes page; header toggles; left-edge resize. */
+  const copilotBtn = document.getElementById('copilotBtn');
+  const copilotDrawer = document.getElementById('copilotDrawer');
+  const copilotResizer = document.getElementById('copilotDrawerResizer');
+  const COPILOT_W_MIN = 280;
+  const COPILOT_W_MAX = 720;
+  const COPILOT_W_DEFAULT = 360;
+  function clampCopilotWidth(px){
+    const max = Math.min(COPILOT_W_MAX, Math.max(COPILOT_W_MIN, Math.floor(window.innerWidth * 0.55)));
+    return Math.max(COPILOT_W_MIN, Math.min(max, Math.round(px)));
+  }
+  function setCopilotWidth(px){
+    const w = clampCopilotWidth(px);
+    copilotDrawer.style.setProperty('--copilot-w', w + 'px');
+    return w;
+  }
+  setCopilotWidth(COPILOT_W_DEFAULT);
+  function setCopilotOpen(open){
+    copilotBtn.setAttribute('aria-expanded', String(open));
+    copilotDrawer.classList.toggle('is-open', open);
+    copilotDrawer.setAttribute('aria-hidden', String(!open));
+    document.dispatchEvent(new CustomEvent('copilot:toggle', {detail:{open}}));
+  }
+  function toggleCopilotDrawer(){
+    setCopilotOpen(copilotBtn.getAttribute('aria-expanded') !== 'true');
+  }
+  copilotBtn.addEventListener('click', toggleCopilotDrawer);
+  document.getElementById('copilotDrawerClose').addEventListener('click', ()=> setCopilotOpen(false));
+  document.addEventListener('keydown', (e)=>{
+    if(e.key !== 'Escape') return;
+    if(openDialogKey){ closeTriageDialog(); return; }
+    if(copilotBtn.getAttribute('aria-expanded') === 'true'){ setCopilotOpen(false); return; }
+    if(railPanel) setRailDrawer('');
+  });
+  let copilotResizeActive = false;
+  function onCopilotResizeMove(e){
+    if(!copilotResizeActive) return;
+    const right = copilotDrawer.getBoundingClientRect().right;
+    setCopilotWidth(right - e.clientX);
+  }
+  function endCopilotResize(){
+    if(!copilotResizeActive) return;
+    copilotResizeActive = false;
+    copilotDrawer.classList.remove('is-resizing');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    window.removeEventListener('pointermove', onCopilotResizeMove);
+    window.removeEventListener('pointerup', endCopilotResize);
+    window.removeEventListener('pointercancel', endCopilotResize);
+  }
+  copilotResizer.addEventListener('pointerdown', (e)=>{
+    if(copilotBtn.getAttribute('aria-expanded') !== 'true') return;
+    e.preventDefault();
+    copilotResizeActive = true;
+    copilotDrawer.classList.add('is-resizing');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', onCopilotResizeMove);
+    window.addEventListener('pointerup', endCopilotResize);
+    window.addEventListener('pointercancel', endCopilotResize);
+  });
+  const copilotComposer = document.getElementById('copilotComposer');
+  const copilotIntroComposerHost = document.getElementById('copilotIntroComposerHost');
+  const copilotFooterComposerHost = document.getElementById('copilotFooterComposerHost');
+  const copilotViewIntro = document.getElementById('copilotViewIntro');
+  const copilotViewHistory = document.getElementById('copilotViewHistory');
+  const copilotViewChat = document.getElementById('copilotViewChat');
+  const copilotMenuBtn = document.getElementById('copilotMenuBtn');
+  const copilotToolbarLabel = document.getElementById('copilotToolbarLabel');
+  const copilotNewChatIconBtn = document.getElementById('copilotNewChatIconBtn');
+  const copilotComposerInput = document.getElementById('copilotComposerInput');
+  let copilotView = 'intro';
+  const COPILOT_ICON_MENU = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+  const COPILOT_ICON_CLOSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+  function placeCopilotComposer(view){
+    if(view === 'intro') copilotIntroComposerHost.appendChild(copilotComposer);
+    else copilotFooterComposerHost.appendChild(copilotComposer);
+  }
+  function setCopilotView(view){
+    copilotView = view;
+    copilotDrawer.dataset.view = view;
+    copilotViewIntro.hidden = view !== 'intro';
+    copilotViewHistory.hidden = view !== 'history';
+    copilotViewChat.hidden = view !== 'chat';
+    placeCopilotComposer(view);
+    const inChat = view === 'chat';
+    const inHistory = view === 'history';
+    copilotToolbarLabel.hidden = !inChat;
+    copilotNewChatIconBtn.hidden = !inChat;
+    copilotMenuBtn.setAttribute('aria-pressed', String(inHistory));
+    copilotMenuBtn.setAttribute('aria-label', inHistory ? 'Close chat menu' : 'Chat history');
+    copilotMenuBtn.innerHTML = inHistory ? COPILOT_ICON_CLOSE : COPILOT_ICON_MENU;
+  }
+  function startCopilotChat(message){
+    const text = String(message || '').trim();
+    if(!text){ toast('Enter a prompt or question'); return; }
+    document.getElementById('copilotChatUserMsg').textContent = text;
+    document.getElementById('copilotChatAssistantMsg').textContent =
+      'I specialize in insurance operations within Majesco Suite—claims, billing, and policy management. Is there something insurance-related I can help with?';
+    copilotComposerInput.value = '';
+    setCopilotView('chat');
+  }
+  placeCopilotComposer('intro');
+  setCopilotView('intro');
+  document.getElementById('copilotNewChat').addEventListener('click', ()=> setCopilotView('intro'));
+  copilotNewChatIconBtn.addEventListener('click', ()=> setCopilotView('intro'));
+  copilotMenuBtn.addEventListener('click', ()=>{
+    if(copilotView === 'history') setCopilotView('intro');
+    else setCopilotView('history');
+  });
+  document.getElementById('copilotViewAllPrompts').addEventListener('click', (e)=>{ e.preventDefault(); toast('Prompts & actions gallery'); });
+  document.querySelectorAll('.copilot-tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      const key = tab.dataset.tab;
+      document.querySelectorAll('.copilot-tab').forEach(t=>{
+        const on = t === tab;
+        t.classList.toggle('is-active', on);
+        t.setAttribute('aria-selected', String(on));
+      });
+      document.getElementById('copilotPanelPrompts').hidden = key !== 'prompts';
+      document.getElementById('copilotPanelActions').hidden = key !== 'actions';
+    });
+  });
+  document.getElementById('copilotFastToggle').addEventListener('click', ()=>{
+    const btn = document.getElementById('copilotFastToggle');
+    const on = btn.getAttribute('aria-pressed') !== 'true';
+    btn.setAttribute('aria-pressed', String(on));
+    btn.classList.toggle('is-active', on);
+    btn.querySelector('span').textContent = on ? 'Fast' : 'Thinking';
+  });
+  document.querySelectorAll('.copilot-chat-item').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      document.querySelectorAll('.copilot-chat-item.is-active').forEach(el=>el.classList.remove('is-active'));
+      item.classList.add('is-active');
+      startCopilotChat(item.dataset.chatTitle || item.querySelector('.chat-label')?.textContent || '');
+    });
+  });
+  document.querySelectorAll('.copilot-prompt-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      startCopilotChat(card.dataset.prompt || card.querySelector('.copilot-prompt-card-title')?.textContent || '');
+    });
+  });
+  document.getElementById('copilotComposerSend').addEventListener('click', ()=>{
+    startCopilotChat(copilotComposerInput.value);
+  });
+  copilotComposerInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); startCopilotChat(copilotComposerInput.value); }
+  });
+
+
+</script>
+</body>
+</html>

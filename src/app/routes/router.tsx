@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router'
 import { AppLayout } from '@/app/layouts/AppLayout'
 import { ClaimDetails } from '@/pages/claims/ClaimDetails'
 import { ClaimsPage } from '@/pages/claims/ClaimsPage'
+import { FnolPrototypePage } from '@/pages/claims/FnolPrototypePage'
 import { CustomerDetails } from '@/pages/customers/CustomerDetails'
 import { CustomersPage } from '@/pages/customers/CustomersPage'
 import { DashboardPage } from '@/app/pages/DashboardPage'
@@ -22,6 +23,8 @@ import { SubmissionDetails } from '@/pages/submissions/SubmissionDetails'
 import { TasksPage } from '@/pages/tasks/TasksPage'
 
 export const router = createBrowserRouter([
+  /** Standalone FNOL HTML prototype — full page, outside the app shell. */
+  { path: '/fnol', element: <FnolPrototypePage /> },
   {
     path: '/',
     element: <AppLayout />,
