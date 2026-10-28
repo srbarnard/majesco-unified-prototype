@@ -1038,21 +1038,60 @@
   .page.claims-view .titlebar{
     grid-template-columns:1fr auto;align-items:start;
   }
-  .page.claims-view .titlebar .actions-cell{align-self:center;}
+  .page.claims-view .titlebar .actions-cell{align-self:center;justify-self:end;}
+  .page.claims-view .title-cell{justify-self:start;text-align:left;}
   .page.claims-view .hstepper,
   .page.claims-view .subheader,
   .page.claims-view .fnol-party-inline-host,
   .page.claims-view .substep-rail,
   .page.claims-view .footer{display:none !important;}
-  .claims-table-wrap{padding-top:4px;}
-  .claims-table-wrap .datagrid{margin-top:0;}
-  .claims-table-wrap .datagrid tbody tr{cursor:default;}
-  .claims-table-wrap .datagrid td.claim-status{
-    vertical-align:middle;
+  .claims-tabs-row{
+    flex:0 0 auto;background:#fff;border-bottom:1px solid var(--divider);padding:0 32px;
   }
-  .claims-table-wrap .datagrid td.claim-status .label-chip{
+  .claims-tabs-row[hidden]{display:none !important;}
+  .claims-tabs{display:flex;align-items:stretch;gap:8px;min-height:44px;}
+  .claims-tab{
+    appearance:none;border:none;background:transparent;cursor:default;
+    font-family:var(--font-display);font-size:14px;font-weight:600;line-height:20px;
+    color:var(--primary-main);padding:12px 14px 10px;position:relative;
+  }
+  .claims-tab.is-active::after{
+    content:'';position:absolute;left:8px;right:8px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--primary-main);
+  }
+  .page.claims-view .content-row{background:var(--canvas);}
+  .page.claims-view .main-panel{background:var(--canvas);}
+  .page.claims-view .main-col{padding:16px 32px 32px;background:var(--canvas);gap:16px;}
+  .claims-home{display:flex;flex-direction:column;gap:16px;width:100%;min-width:0;}
+  .claims-home-toolbar{display:flex;align-items:center;justify-content:flex-start;gap:12px;}
+  .claims-search{
+    display:inline-flex;align-items:center;gap:8px;height:36px;min-width:220px;max-width:280px;width:100%;
+    padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;box-sizing:border-box;
+  }
+  .claims-search:focus-within{border-color:var(--primary-main);box-shadow:0 0 0 3px var(--primary-selected-bg);}
+  .claims-search svg{width:18px;height:18px;color:var(--text-secondary);flex:0 0 auto;}
+  .claims-search input{
+    flex:1 1 auto;min-width:0;border:none;outline:none;background:transparent;
+    font-family:var(--font-body);font-size:14px;line-height:20px;color:var(--text-primary);
+  }
+  .claims-search input::placeholder{color:var(--text-secondary);}
+  .claims-table-shell{
+    width:100%;background:#fff;border:1px solid var(--divider);border-radius:var(--radius);overflow:auto;
+  }
+  .claims-table-shell .datagrid{margin:0;width:100%;}
+  .claims-table-shell .datagrid thead th{
+    position:sticky;top:0;z-index:1;background:#fff;color:var(--text-secondary);
+    font-size:13px;font-weight:500;padding:10px 12px;border-bottom:1px solid var(--divider);
+  }
+  .claims-table-shell .datagrid tbody td{
+    padding:14px 12px;border-bottom:1px solid var(--divider);vertical-align:middle;
+  }
+  .claims-table-shell .datagrid tbody tr{cursor:default;}
+  .claims-table-shell .datagrid tbody tr:last-child td{border-bottom:none;}
+  .claims-table-shell .datagrid tbody tr:hover td{background:var(--action-hover);}
+  .claims-table-shell .datagrid td.claim-status .label-chip{
     display:inline-flex;align-items:center;vertical-align:middle;
   }
+  .claims-table-shell .datagrid td.cov-name{font-weight:600;color:var(--text-primary);}
   @media (prefers-reduced-motion:reduce){
     .mui-dialog-backdrop,.mui-dialog-paper,.mui-dialog-root.is-open .mui-dialog-backdrop,.mui-dialog-root.is-open .mui-dialog-paper{
       transition:none !important;
@@ -1224,7 +1263,7 @@
         <div class="titlebar">
           <div class="title-cell">
             <h1 id="pageTitle">Claims</h1>
-            <p class="titlebar-sub" id="pageSub">Open and recently submitted claims across your book of business.</p>
+            <p class="titlebar-sub" id="pageSub">Review open work and recently submitted claims across your book of business.</p>
           </div>
           <div class="hstepper">
             <div class="hstep" id="hstep-fnol" data-key="fnol" role="button" tabindex="0"><span class="num">1</span><span class="lbl">FNOL</span></div>
@@ -1241,6 +1280,12 @@
               <span>Copilot</span>
             </button>
           </div>
+        </div>
+      </div>
+
+      <div class="claims-tabs-row" id="claimsTabsRow">
+        <div class="claims-tabs" role="tablist" aria-label="Claims sections">
+          <button type="button" class="claims-tab is-active" role="tab" aria-selected="true">All Claims</button>
         </div>
       </div>
 
@@ -2235,10 +2280,15 @@
   const CLAIMS_SEED = [
     {claimNumber:'CA140912', insured:'Metro Freight Partners', product:'Commercial Auto', dateOfLoss:'Jul 02, 2026', status:'Open', assignedTo:'Casey Morgan'},
     {claimNumber:'CA140771', insured:'Blue Harbor Logistics Inc.', product:'Commercial Auto', dateOfLoss:'Jun 28, 2026', status:'Assigned', assignedTo:'Riley Santos'},
+    {claimNumber:'GL140660', insured:'Northstar Facilities Group', product:'General Liability', dateOfLoss:'Jun 22, 2026', status:'In review', assignedTo:'Jordan Blake'},
     {claimNumber:'CA140540', insured:'Summit Parcel Group', product:'Commercial Auto', dateOfLoss:'Jun 18, 2026', status:'Open', assignedTo:'Avery Patel'},
-    {claimNumber:'CA139540', insured:'Harborview Transit Partners', product:'Commercial Auto', dateOfLoss:'Jun 04, 2026', status:'SIU review', assignedTo:'Casey Morgan'}
+    {claimNumber:'WC140488', insured:'Keystone Warehouse Co.', product:"Workers' Compensation", dateOfLoss:'Jun 11, 2026', status:'Open', assignedTo:'Morgan Ellis'},
+    {claimNumber:'CA139540', insured:'Harborview Transit Partners', product:'Commercial Auto', dateOfLoss:'Jun 04, 2026', status:'SIU review', assignedTo:'Casey Morgan'},
+    {claimNumber:'CP139210', insured:'Lakeside Retail Holdings', product:'Commercial Property', dateOfLoss:'May 27, 2026', status:'Assigned', assignedTo:'Priya Shah'},
+    {claimNumber:'CA138904', insured:'Riverbend Distributing LLC', product:'Commercial Auto', dateOfLoss:'May 14, 2026', status:'Closed', assignedTo:'Riley Santos'}
   ];
   let CLAIMS_LIST = CLAIMS_SEED.map(c=>({...c}));
+  let CLAIMS_SEARCH = '';
   function nextClaimNumber(){
     REVIEW_CLAIM_SEQ += 1;
     REVIEW_CLAIM_NUMBER = 'CA' + String(REVIEW_CLAIM_SEQ);
@@ -2246,7 +2296,10 @@
   }
   function claimStatusChip(status){
     const s = String(status || '');
-    const tone = /siu/i.test(s) ? 'warning' : /assign/i.test(s) ? 'success' : 'neutral';
+    let tone = 'neutral';
+    if(/siu|review/i.test(s)) tone = 'warning';
+    else if(/assign|closed/i.test(s)) tone = 'success';
+    else if(/open|reported/i.test(s)) tone = 'neutral';
     return `<span class="label-chip ${tone}">${escHtml(s)}</span>`;
   }
   function ensureSubmittedClaimInList(){
@@ -2263,8 +2316,18 @@
     CLAIMS_LIST = CLAIMS_LIST.filter(c=>c.claimNumber !== num);
     CLAIMS_LIST.unshift(row);
   }
-  function claimsTableHtml(){
-    const rows = CLAIMS_LIST.map(c=>`<tr>
+  function filteredClaimsList(){
+    const q = CLAIMS_SEARCH.trim().toLowerCase();
+    if(!q) return CLAIMS_LIST;
+    return CLAIMS_LIST.filter(c =>
+      [c.claimNumber, c.insured, c.product, c.dateOfLoss, c.status, c.assignedTo]
+        .join(' ')
+        .toLowerCase()
+        .includes(q)
+    );
+  }
+  function claimsDashboardHtml(){
+    const rows = filteredClaimsList().map(c=>`<tr>
       <td class="cov-name">${escHtml(c.claimNumber)}</td>
       <td>${escHtml(c.insured)}</td>
       <td>${escHtml(c.product)}</td>
@@ -2272,21 +2335,47 @@
       <td class="claim-status">${claimStatusChip(c.status)}</td>
       <td>${escHtml(c.assignedTo)}</td>
     </tr>`).join('');
-    return `<div class="plain-section claims-table-wrap">
-      <table class="datagrid" aria-label="Claims">
-        <thead>
-          <tr>
-            <th>Claim number</th>
-            <th>Insured</th>
-            <th>Product</th>
-            <th>Date of loss</th>
-            <th>Status</th>
-            <th>Assigned to</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+    return `<div class="claims-home">
+      <div class="claims-home-toolbar">
+        <label class="claims-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input type="search" id="claimsSearchInput" placeholder="Search claims" value="${escHtml(CLAIMS_SEARCH)}" aria-label="Search claims">
+        </label>
+      </div>
+      <div class="claims-table-shell">
+        <table class="datagrid" aria-label="Claims">
+          <thead>
+            <tr>
+              <th>Claim number</th>
+              <th>Insured</th>
+              <th>Product</th>
+              <th>Date of loss</th>
+              <th>Status</th>
+              <th>Assigned to</th>
+            </tr>
+          </thead>
+          <tbody>${rows || `<tr><td colspan="6">No claims match this search.</td></tr>`}</tbody>
+        </table>
+      </div>
     </div>`;
+  }
+  function wireClaimsHomeEvents(){
+    const input = document.getElementById('claimsSearchInput');
+    if(!input) return;
+    input.addEventListener('input', ()=>{
+      CLAIMS_SEARCH = input.value || '';
+      const shell = document.querySelector('.claims-table-shell tbody');
+      if(!shell) return;
+      const rows = filteredClaimsList().map(c=>`<tr>
+        <td class="cov-name">${escHtml(c.claimNumber)}</td>
+        <td>${escHtml(c.insured)}</td>
+        <td>${escHtml(c.product)}</td>
+        <td>${escHtml(c.dateOfLoss)}</td>
+        <td class="claim-status">${claimStatusChip(c.status)}</td>
+        <td>${escHtml(c.assignedTo)}</td>
+      </tr>`).join('');
+      shell.innerHTML = rows || `<tr><td colspan="6">No claims match this search.</td></tr>`;
+    });
   }
   function reviewDash(v){
     const t = (v == null ? '' : String(v)).trim();
@@ -2792,12 +2881,14 @@
     if(page) page.classList.toggle('claims-view', onClaims);
 
     const pageSub = document.getElementById('pageSub');
+    const claimsTabsRow = document.getElementById('claimsTabsRow');
     if(onClaims){
       document.getElementById('pageTitle').textContent = 'Claims';
       if(pageSub){
         pageSub.hidden = false;
-        pageSub.textContent = 'Open and recently submitted claims across your book of business.';
+        pageSub.textContent = 'Review open work and recently submitted claims across your book of business.';
       }
+      if(claimsTabsRow) claimsTabsRow.hidden = false;
       STEP_ORDER.forEach(key=>{
         const el = document.getElementById('hstep-'+key);
         el.classList.remove('current','done');
@@ -2808,8 +2899,9 @@
       const contentRow = document.querySelector('.content-row');
       if(railEl){ railEl.hidden = true; railEl.innerHTML = ''; }
       if(contentRow) contentRow.classList.add('review-only');
-      document.getElementById('mainCol').innerHTML = claimsTableHtml();
+      document.getElementById('mainCol').innerHTML = claimsDashboardHtml();
       document.getElementById('mainScroll').scrollTop = 0;
+      wireClaimsHomeEvents();
       const editModeLink = document.getElementById('editModeLink');
       if(editModeLink) editModeLink.hidden = true;
       document.getElementById('continueBtn').hidden = true;
@@ -2822,6 +2914,7 @@
 
     document.getElementById('pageTitle').textContent = TITLES[STATE.stepper];
     if(pageSub){ pageSub.hidden = true; pageSub.textContent = ''; }
+    if(claimsTabsRow) claimsTabsRow.hidden = true;
     document.getElementById('continueBtn').hidden = false;
     document.getElementById('saveDraftBtn').hidden = false;
     document.getElementById('backLink').hidden = false;
