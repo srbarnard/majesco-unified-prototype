@@ -993,36 +993,17 @@
   .edit-mode-link[hidden]{display:none !important;}
   .substep-rail[hidden]{display:none !important;}
   .content-row.review-only .main-scroll{flex:1 1 auto;}
-  /* Apple-style submit success alert */
-  .mui-dialog-paper.apple-alert{
-    max-width:280px;margin:32px;border-radius:14px;overflow:hidden;
-    box-shadow:0 8px 28px rgba(0,0,0,.18);
-  }
-  .mui-dialog-paper.apple-alert .mui-dialog-content{
-    padding:22px 20px 16px;text-align:center;
-  }
-  .apple-alert-icon{
-    width:36px;height:36px;border-radius:50%;margin:0 auto 10px;
-    display:grid;place-items:center;background:rgba(15,92,41,.12);color:var(--success-main);
-  }
-  .apple-alert-icon svg{width:20px;height:20px;}
-  .apple-alert-title{
-    margin:0;font-family:var(--font-display);font-size:17px;font-weight:600;line-height:22px;color:var(--text-primary);
-  }
-  .apple-alert-body{
-    margin:6px 0 0;font-family:var(--font-body);font-size:13px;font-weight:400;line-height:18px;color:var(--text-secondary);
-  }
-  .apple-alert-claim{
-    margin:10px 0 0;font-family:var(--font-display);font-size:15px;font-weight:500;line-height:20px;color:var(--text-primary);
-  }
-  .mui-dialog-paper.apple-alert .mui-dialog-actions{
-    padding:0;border-top:1px solid var(--divider);justify-content:stretch;
-  }
-  .mui-dialog-paper.apple-alert .mui-dialog-actions .btn{
-    flex:1 1 auto;width:100%;min-width:0;height:44px;margin:0;border-radius:0;
-    font-size:16px;font-weight:600;justify-content:center;
-  }
-  .mui-dialog-paper.apple-alert .mui-dialog-actions .btn:hover{background:var(--primary-hover-bg);}
+  /* Submit confirmation — review-confirm content inside standard MUI dialog */
+  .mui-dialog-paper.submit-confirm-paper{max-width:440px;}
+  .mui-dialog-content .review-confirm.submit-confirm{padding:8px 0 4px;max-width:none;}
+  .page.claims-view .hstepper,
+  .page.claims-view .subheader,
+  .page.claims-view .fnol-party-inline-host,
+  .page.claims-view .substep-rail,
+  .page.claims-view .footer{display:none !important;}
+  .claims-table-wrap{padding-top:4px;}
+  .claims-table-wrap .datagrid{margin-top:0;}
+  .claims-table-wrap .datagrid tbody tr{cursor:default;}
   @media (prefers-reduced-motion:reduce){
     .mui-dialog-backdrop,.mui-dialog-paper,.mui-dialog-root.is-open .mui-dialog-backdrop,.mui-dialog-root.is-open .mui-dialog-paper{
       transition:none !important;
@@ -1608,15 +1589,18 @@
 
 <div class="mui-dialog-root" id="dialogSubmitConfirm" role="presentation" aria-hidden="true" data-dialog="submitConfirm">
   <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
-  <div class="mui-dialog-paper apple-alert" role="dialog" aria-modal="true" aria-labelledby="dialogSubmitConfirmTitle" tabindex="-1">
+  <div class="mui-dialog-paper submit-confirm-paper" role="dialog" aria-modal="true" aria-labelledby="dialogSubmitConfirmTitle" tabindex="-1">
     <div class="mui-dialog-content">
-      <div class="apple-alert-icon" aria-hidden="true"><svg class="mi" width="20" height="20" viewBox="0 -960 960 960"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg></div>
-      <h2 class="apple-alert-title" id="dialogSubmitConfirmTitle">Claim submitted</h2>
-      <p class="apple-alert-body">FNOL intake is complete. Downstream work can continue under this claim number.</p>
-      <p class="apple-alert-claim" id="submitSuccessClaimNo">CA141288</p>
+      <div class="review-confirm submit-confirm">
+        <div class="review-confirm-icon" aria-hidden="true"><svg class="mi" width="28" height="28" viewBox="0 -960 960 960"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg></div>
+        <h2 class="review-confirm-title" id="dialogSubmitConfirmTitle">Claim submitted</h2>
+        <p class="review-confirm-body">FNOL intake is complete. Downstream work can continue under this claim number.</p>
+        <p class="review-confirm-claim" id="submitSuccessClaimNo">CA141288</p>
+      </div>
     </div>
     <div class="mui-dialog-actions">
-      <button type="button" class="btn btn-text" data-dialog-dismiss>OK</button>
+      <button type="button" class="btn btn-text" data-submit-action="createAnother">Create another claim</button>
+      <button type="button" class="btn btn-primary" data-submit-action="ok">OK</button>
     </div>
   </div>
 </div>
@@ -2194,7 +2178,64 @@
      REVIEW — Version 2 confirmation pattern
      ========================================================= */
   const REVIEW_STATE = {submitted:false, claimNumber:''};
-  const REVIEW_CLAIM_NUMBER = 'CA141288';
+  let REVIEW_CLAIM_NUMBER = 'CA141288';
+  let REVIEW_CLAIM_SEQ = 141288;
+  const CLAIMS_SEED = [
+    {claimNumber:'CA140912', insured:'Metro Freight Partners', product:'Commercial Auto', dateOfLoss:'Jul 02, 2026', status:'Open', assignedTo:'Casey Morgan'},
+    {claimNumber:'CA140771', insured:'Blue Harbor Logistics Inc.', product:'Commercial Auto', dateOfLoss:'Jun 28, 2026', status:'Assigned', assignedTo:'Riley Santos'},
+    {claimNumber:'CA140540', insured:'Summit Parcel Group', product:'Commercial Auto', dateOfLoss:'Jun 18, 2026', status:'Open', assignedTo:'Avery Patel'},
+    {claimNumber:'CA139540', insured:'Harborview Transit Partners', product:'Commercial Auto', dateOfLoss:'Jun 04, 2026', status:'SIU review', assignedTo:'Casey Morgan'}
+  ];
+  let CLAIMS_LIST = CLAIMS_SEED.map(c=>({...c}));
+  function nextClaimNumber(){
+    REVIEW_CLAIM_SEQ += 1;
+    REVIEW_CLAIM_NUMBER = 'CA' + String(REVIEW_CLAIM_SEQ);
+    return REVIEW_CLAIM_NUMBER;
+  }
+  function claimStatusChip(status){
+    const s = String(status || '');
+    const tone = /siu/i.test(s) ? 'warning' : /assign/i.test(s) ? 'success' : 'neutral';
+    return `<span class="label-chip ${tone}">${escHtml(s)}</span>`;
+  }
+  function ensureSubmittedClaimInList(){
+    const num = REVIEW_STATE.claimNumber || REVIEW_CLAIM_NUMBER;
+    const assigned = ASSIGNMENT_STATE.name || reviewTriageOwnerLabel();
+    const row = {
+      claimNumber: num,
+      insured: 'Continental Delivery LLC',
+      product: 'Commercial Auto',
+      dateOfLoss: reviewDateOfLossLabel(),
+      status: 'Open',
+      assignedTo: assigned === 'Not set' ? 'Unassigned' : assigned
+    };
+    CLAIMS_LIST = CLAIMS_LIST.filter(c=>c.claimNumber !== num);
+    CLAIMS_LIST.unshift(row);
+  }
+  function claimsTableHtml(){
+    const rows = CLAIMS_LIST.map(c=>`<tr>
+      <td class="cov-name">${escHtml(c.claimNumber)}</td>
+      <td>${escHtml(c.insured)}</td>
+      <td>${escHtml(c.product)}</td>
+      <td>${escHtml(c.dateOfLoss)}</td>
+      <td>${claimStatusChip(c.status)}</td>
+      <td>${escHtml(c.assignedTo)}</td>
+    </tr>`).join('');
+    return `<div class="plain-section claims-table-wrap">
+      <table class="datagrid" aria-label="Claims">
+        <thead>
+          <tr>
+            <th>Claim number</th>
+            <th>Insured</th>
+            <th>Product</th>
+            <th>Date of loss</th>
+            <th>Status</th>
+            <th>Assigned to</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }
   function reviewDash(v){
     const t = (v == null ? '' : String(v)).trim();
     return t ? escHtml(t) : 'Not set';
@@ -2287,7 +2328,7 @@
     review: []
   };
 
-  const STATE = {stepper:'fnol', subIndex:0};
+  const STATE = {screen:'workflow', stepper:'fnol', subIndex:0};
 
   const RAIL_TITLES = {fnol:'FNOL', triage:'TRIAGE', review:'REVIEW'};
   function renderRail(){
@@ -2612,7 +2653,7 @@
   }
 
   function syncFnolAddPartyChrome(){
-    const onFnol = STATE.stepper==='fnol';
+    const onFnol = STATE.screen!=='claims' && STATE.stepper==='fnol';
     const btn = document.getElementById('persistentAddPartyBtn');
     const divider = document.getElementById('addPartyDivider');
     if(btn) btn.hidden = !onFnol;
@@ -2648,8 +2689,83 @@
     if(docLink){ e.preventDefault(); toast(`Opening ${docLink.textContent} (prototype)`); }
   });
 
+  function setClaimsRailActive(on){
+    document.querySelectorAll('.apprail .rail-item[data-rail]').forEach(btn=>{
+      const key = btn.dataset.rail;
+      if(on) btn.classList.toggle('active', key === 'claims');
+      else if(key === 'claims') btn.classList.remove('active');
+    });
+  }
+  function showClaimsScreen(){
+    STATE.screen = 'claims';
+    if(typeof setRailDrawer === 'function') setRailDrawer('');
+    setClaimsRailActive(true);
+    renderApp();
+  }
+  function showWorkflowScreen(){
+    STATE.screen = 'workflow';
+    setClaimsRailActive(false);
+    if(typeof setRailActive === 'function') setRailActive('');
+    renderApp();
+  }
+  function resetFnolWorkflow(){
+    Object.assign(TRIAGE_CARD_STATE, {
+      ownerAssigned:false, assignedOwnerName:'', assignedOwnerValue:'',
+      referralResolved:false, referralDecision:'', referralDecisionLabel:'',
+      decisionRecorded:false, decisionStatus:'', decisionStatusLabel:'', decisionReason:'', decisionDate:''
+    });
+    INTAKE_ITEM_ORDER.forEach(key=>{
+      INTAKE_STATE[key].resolved = false;
+      INTAKE_STATE[key].value = '';
+      INTAKE_STATE[key].note = '';
+      if('fileName' in INTAKE_STATE[key]) INTAKE_STATE[key].fileName = '';
+    });
+    ASSIGNMENT_STATE.key = 'jordan';
+    ASSIGNMENT_STATE.name = ASSIGNMENT_CANDIDATES.jordan.name;
+    REVIEW_STATE.submitted = false;
+    REVIEW_STATE.claimNumber = '';
+    nextClaimNumber();
+    editingMode = false;
+    document.body.classList.remove('editing-active');
+    STATE.screen = 'workflow';
+    STATE.stepper = 'fnol';
+    STATE.subIndex = 0;
+    setClaimsRailActive(false);
+    if(typeof setRailActive === 'function') setRailActive('');
+  }
   function renderApp(){
+    const page = document.querySelector('.page');
+    const onClaims = STATE.screen === 'claims';
+    if(page) page.classList.toggle('claims-view', onClaims);
+
+    if(onClaims){
+      document.getElementById('pageTitle').textContent = 'Claims';
+      STEP_ORDER.forEach(key=>{
+        const el = document.getElementById('hstep-'+key);
+        el.classList.remove('current','done');
+        el.querySelector('.num').textContent = String(STEP_ORDER.indexOf(key)+1);
+        el.removeAttribute('aria-current');
+      });
+      const railEl = document.getElementById('substepRail');
+      const contentRow = document.querySelector('.content-row');
+      if(railEl){ railEl.hidden = true; railEl.innerHTML = ''; }
+      if(contentRow) contentRow.classList.add('review-only');
+      document.getElementById('mainCol').innerHTML = claimsTableHtml();
+      document.getElementById('mainScroll').scrollTop = 0;
+      const editModeLink = document.getElementById('editModeLink');
+      if(editModeLink) editModeLink.hidden = true;
+      document.getElementById('continueBtn').hidden = true;
+      document.getElementById('saveDraftBtn').hidden = true;
+      document.getElementById('backLink').hidden = true;
+      syncFnolAddPartyChrome();
+      setClaimsRailActive(true);
+      return;
+    }
+
     document.getElementById('pageTitle').textContent = TITLES[STATE.stepper];
+    document.getElementById('continueBtn').hidden = false;
+    document.getElementById('saveDraftBtn').hidden = false;
+    document.getElementById('backLink').hidden = false;
 
     STEP_ORDER.forEach(key=>{
       const el = document.getElementById('hstep-'+key);
@@ -2707,7 +2823,7 @@
     }
     if(STATE.subIndex < list.length-1){ STATE.subIndex++; }
     else if(STATE.stepper==='fnol'){ STATE.stepper='triage'; STATE.subIndex=0; }
-    else if(STATE.stepper==='triage'){ toast('Claim CA141288 triaged — moving to Review'); STATE.stepper='review'; STATE.subIndex=0; }
+    else if(STATE.stepper==='triage'){ toast('Claim '+REVIEW_CLAIM_NUMBER+' triaged — moving to Review'); STATE.stepper='review'; STATE.subIndex=0; }
     else { return; }
     renderApp();
   }
@@ -2772,7 +2888,14 @@
   renderEditModeLink();
   STEP_ORDER.forEach(key=>{
     const stepEl = document.getElementById('hstep-'+key);
-    stepEl.addEventListener('click', ()=>{ STATE.stepper=key; STATE.subIndex=0; renderApp(); });
+    stepEl.addEventListener('click', ()=>{
+      STATE.screen = 'workflow';
+      STATE.stepper = key;
+      STATE.subIndex = 0;
+      setClaimsRailActive(false);
+      if(typeof setRailActive === 'function') setRailActive('');
+      renderApp();
+    });
     stepEl.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); stepEl.click(); } });
   });
 
@@ -2829,7 +2952,7 @@
     clearTimeout(dialogCloseTimer);
     dialogCloseTimer = setTimeout(()=>{
       if(!openDialogKey) document.body.classList.remove('mui-dialog-open');
-      if(closingKey === 'submitConfirm' && REVIEW_STATE.submitted) renderApp();
+      if(closingKey === 'submitConfirm' && REVIEW_STATE.submitted && STATE.screen === 'workflow') renderApp();
     }, DIALOG_EXIT_MS);
   }
   function openTriageDialog(key){
@@ -2876,7 +2999,10 @@
       if(!REVIEW_STATE.submitted){
         REVIEW_STATE.submitted = true;
         REVIEW_STATE.claimNumber = REVIEW_CLAIM_NUMBER;
+        ensureSubmittedClaimInList();
         toast('Claim ' + REVIEW_STATE.claimNumber + ' submitted');
+      } else {
+        ensureSubmittedClaimInList();
       }
       document.getElementById('submitSuccessClaimNo').textContent = REVIEW_STATE.claimNumber || REVIEW_CLAIM_NUMBER;
     }
@@ -3018,6 +3144,20 @@
   document.getElementById('siuDecisionStatus').addEventListener('change', syncSiuReasonVisibility);
   Object.values(TRIAGE_DIALOGS).forEach(root=>{
     root.addEventListener('click', (e)=>{
+      const submitAction = e.target.closest('[data-submit-action]');
+      if(submitAction){
+        e.preventDefault();
+        const action = submitAction.dataset.submitAction;
+        closeTriageDialog();
+        if(action === 'ok'){
+          showClaimsScreen();
+        } else if(action === 'createAnother'){
+          resetFnolWorkflow();
+          renderApp();
+          toast('Ready for another FNOL');
+        }
+        return;
+      }
       if(e.target.closest('[data-dialog-dismiss]')){ e.preventDefault(); closeTriageDialog(); return; }
       const saveBtn = e.target.closest('[data-dialog-save]');
       if(saveBtn){ e.preventDefault(); saveTriageDialog(saveBtn.dataset.dialogSave); }
@@ -3036,7 +3176,8 @@
   function setRailActive(panel){
     document.querySelectorAll('.apprail .rail-item[data-rail]').forEach(btn=>{
       const key = btn.dataset.rail;
-      const on = panel ? key === panel : key === 'home';
+      let on = panel ? key === panel : key === 'home';
+      if(!panel && STATE.screen === 'claims') on = key === 'claims';
       btn.classList.toggle('active', on);
     });
     railActivityBtn.setAttribute('aria-expanded', String(panel === 'activity'));
@@ -3056,7 +3197,14 @@
   }
   railActivityBtn.addEventListener('click', ()=> setRailDrawer('activity'));
   railFavoritesBtn.addEventListener('click', ()=> setRailDrawer('favorites'));
-  railHomeBtn.addEventListener('click', ()=> setRailDrawer(''));
+  railHomeBtn.addEventListener('click', ()=>{
+    setRailDrawer('');
+    if(STATE.screen === 'claims') showWorkflowScreen();
+  });
+  document.querySelector('.apprail .rail-item[data-rail="claims"]').addEventListener('click', ()=>{
+    setRailDrawer('');
+    showClaimsScreen();
+  });
   document.getElementById('railDrawerClose').addEventListener('click', ()=> setRailDrawer(''));
 
   /* Copilot drawer — below app bar, pushes page; header toggles; left-edge resize. */
