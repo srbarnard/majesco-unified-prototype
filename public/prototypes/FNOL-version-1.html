@@ -517,7 +517,13 @@
   .reporter-line .sep{color:var(--text-secondary);margin:0 6px;}
   .plain-section.no-divider{border-bottom:none;}
   .pill-muted{font-family:var(--font-display);font-size:13px;font-weight:400;color:var(--text-secondary);}
-  .pill-warning{display:inline-flex;align-items:center;font-family:var(--font-body);font-size:14px;font-weight:400;line-height:21px;color:#EB6600;background:#FFF4E5;border:none;padding:4px 12px;border-radius:var(--radius-pill);white-space:nowrap;}
+  .section-head-pills{display:inline-flex;align-items:center;flex-wrap:wrap;gap:8px;}
+  .pill-warning,.pill-success{
+    display:inline-flex;align-items:center;font-family:var(--font-body);font-size:14px;font-weight:400;line-height:21px;
+    border:none;padding:4px 12px;border-radius:var(--radius-pill);white-space:nowrap;
+  }
+  .pill-warning{color:#EB6600;background:#FFF4E5;}
+  .pill-success{color:var(--success-main);background:var(--success-bg);}
 
   .subsection-label{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--text-secondary);text-transform:uppercase;margin:0 0 8px;}
   .mini-table{width:100%;border-collapse:collapse;margin-bottom:22px;}
@@ -1836,10 +1842,20 @@
       + (TRIAGE_CARD_STATE.referralResolved ? 0 : 1)
       + (TRIAGE_CARD_STATE.decisionRecorded ? 0 : 1);
   }
+  function triageResolvedCount(){
+    return (TRIAGE_CARD_STATE.ownerAssigned ? 1 : 0)
+      + (TRIAGE_CARD_STATE.referralResolved ? 1 : 0)
+      + (TRIAGE_CARD_STATE.decisionRecorded ? 1 : 0);
+  }
+  function statusCountPills(openCount, resolvedCount){
+    const parts = [];
+    if(openCount > 0) parts.push(`<span class="pill-warning">${openCount} open</span>`);
+    if(resolvedCount > 0) parts.push(`<span class="pill-success">${resolvedCount} resolved</span>`);
+    if(!parts.length) return '';
+    return `<span class="section-head-pills">${parts.join('')}</span>`;
+  }
   function triageOpenPill(){
-    const n = triageOpenCount();
-    if(n === 0) return '<span class="pill-muted">0 open</span>';
-    return `<span class="pill-warning">${n} open</span>`;
+    return statusCountPills(triageOpenCount(), triageResolvedCount());
   }
   function triageOwnerCard(){
     if(TRIAGE_CARD_STATE.ownerAssigned){
@@ -1903,10 +1919,11 @@
   function intakeOpenCount(){
     return INTAKE_ITEM_ORDER.reduce((n, key)=> n + (INTAKE_STATE[key].resolved ? 0 : 1), 0);
   }
+  function intakeResolvedCount(){
+    return INTAKE_ITEM_ORDER.reduce((n, key)=> n + (INTAKE_STATE[key].resolved ? 1 : 0), 0);
+  }
   function intakeOpenPill(){
-    const n = intakeOpenCount();
-    if(n === 0) return '';
-    return `<span class="pill-warning">${n} open</span>`;
+    return statusCountPills(intakeOpenCount(), intakeResolvedCount());
   }
   const INTAKE_RESOLVED_DESC = {
     claimantEmail: 'Email added',
