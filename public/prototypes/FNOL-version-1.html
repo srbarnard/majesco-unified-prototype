@@ -1045,10 +1045,15 @@
   .page.claims-view .main-panel{background:#fff;}
   .page.claims-view .main-col{padding:24px 32px 40px;background:#fff;gap:0;}
   .claims-home{display:flex;flex-direction:column;width:100%;min-width:0;gap:0;}
-  .claims-greeting{
-    margin:0 0 16px;font-family:var(--font-display);font-size:28px;font-weight:600;
-    line-height:36px;letter-spacing:0;color:var(--text-primary);
+  .claims-top-row{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    margin:0 0 16px;min-width:0;
   }
+  .claims-greeting{
+    margin:0;font-family:var(--font-display);font-size:28px;font-weight:600;
+    line-height:36px;letter-spacing:0;color:var(--text-primary);min-width:0;
+  }
+  .claims-copilot-host{flex:0 0 auto;display:flex;align-items:center;}
   .claims-actions{margin:0 0 24px;}
   .claims-actions .btn svg{width:20px;height:20px;}
   .claims-section{margin:0 0 24px;}
@@ -1069,12 +1074,17 @@
     font-family:var(--font-body);font-size:14px;line-height:20px;color:var(--text-primary);
   }
   .claims-brief-list b{font-weight:700;}
+  .claims-brief-attention{margin-top:16px;padding-top:4px;}
+  .claims-brief-subtitle{
+    margin:0 0 8px;font-family:var(--font-display);font-size:16px;font-weight:600;
+    line-height:24px;color:var(--text-primary);
+  }
   .claims-attention-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:0;}
   .claims-attention-row{
-    display:flex;align-items:baseline;gap:12px;padding:12px 0;
+    display:flex;align-items:baseline;gap:12px;padding:10px 0;
     border-bottom:1px solid var(--divider);font-size:14px;line-height:20px;
   }
-  .claims-attention-row:last-child{border-bottom:none;}
+  .claims-attention-row:last-child{border-bottom:none;padding-bottom:0;}
   .claims-attention-claim{
     flex:0 0 auto;font-family:var(--font-display);font-weight:600;font-size:14px;
     color:var(--primary-main);text-decoration:none;
@@ -1296,7 +1306,7 @@
             <span class="hstep-line"></span>
             <div class="hstep" id="hstep-review" data-key="review" role="button" tabindex="0"><span class="num">3</span><span class="lbl">Review</span></div>
           </div>
-          <div class="actions-cell">
+          <div class="actions-cell" id="pageCopilotHost">
             <button type="button" class="copilot-btn" id="copilotBtn" aria-expanded="false" aria-controls="copilotDrawer" data-drawer="copilot">
               <!-- Copilot line icons: copilot-line.svg (inactive) / copilot-line-active.svg (open) -->
               <svg class="copilot-ic copilot-ic-default" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path fill="none" d="M16.8,8.8s0,0,0,0c-.7-1-1.6-2-2.6-3-1-1-2-1.9-3-2.6.7-.5,1.5-.8,2.2-1.1.9-.3,1.8-.5,2.5-.5s1.5.2,1.9.7c.8.8.9,2.4.1,4.4-.3.7-.6,1.4-1,2.1,0,0,0,0,0,0h0Z"/><path fill="none" d="M11.2,3.2c.7-.4,1.4-.8,2.1-1,.9-.3,1.8-.5,2.5-.5s1.4.2,1.9.6c.8.8.8,2.4.1,4.4-.3.7-.6,1.4-1,2.1-.7-1-1.6-2-2.6-3s-2-1.9-3-2.6Z"/><path fill="none" d="M4.2,18.4c-.8,0-1.5-.2-1.9-.7-1.1-1.1-.8-3.7.9-6.6.8,1.1,1.7,2.1,2.7,3,1,1,2,1.8,3,2.6-1.7,1.1-3.4,1.6-4.7,1.6Z"/><path fill="none" d="M8.8,16.8c-2.9,1.7-5.5,2-6.5.9s-.8-3.6.9-6.5c.7,1,1.6,2.1,2.6,3,1,1,2,1.9,3,2.6Z"/><path fill="#595959" d="M15.8,19.7c-.9,0-1.9-.2-3-.6-1-.4-1.9-.8-2.9-1.4-2.1,1.3-4.1,2-5.8,2s-2.1-.3-2.8-1c-.7-.7-1-1.6-1-2.8,0-1.7.7-3.7,2-5.9-.6-.9-1.1-1.9-1.4-2.8C0,4.6.1,2.6,1.3,1.3c.7-.7,1.6-1,2.8-1,1.7,0,3.7.7,5.9,2,.9-.6,1.9-1.1,2.8-1.4,1.1-.4,2.1-.6,3-.6s2.1.3,2.8,1c1.2,1.2,1.4,3.3.4,5.8-.4,1-.8,1.9-1.4,2.9,2.3,3.6,2.7,7,1,8.6-.7.7-1.6,1-2.8,1ZM3.2,11.3c-1.6,2.8-1.9,5.3-.9,6.4.4.4,1,.6,1.8.6,1.3,0,2.9-.5,4.6-1.5-1.1-.7-2.1-1.5-3.1-2.5-.9-.9-1.8-2-2.6-3ZM4.2,1.7c-.8,0-1.4.2-1.8.6-.8.8-.8,2.4-.1,4.3.3.7.6,1.4,1,2.1.2.4.5.8.7,1.2.8,1.1,1.7,2.2,2.8,3.3,1.1,1.1,2.2,2,3.3,2.8.4.3.8.5,1.2.7.7.4,1.4.8,2.1,1,.9.3,1.8.5,2.5.5s1.4-.2,1.8-.6c.4-.4.6-1,.6-1.8,0-1.3-.5-2.9-1.5-4.6-.2-.4-.5-.8-.7-1.2-.8-1.1-1.7-2.2-2.8-3.3s-2.2-2-3.3-2.8c-.4-.3-.8-.5-1.2-.7-1.7-1-3.3-1.5-4.6-1.5ZM15.8,1.7c-.7,0-1.6.2-2.5.5-.7.3-1.4.6-2.1,1,1,.6,2,1.5,3,2.5,1,1,1.9,2,2.6,3,.3-.7.7-1.4.9-2.1.7-2,.7-3.5-.1-4.3-.4-.4-1.1-.6-1.8-.6Z"/><path fill="#595959" d="M19,7.1c.9-2.5.8-4.5-.4-5.7S15.4,0,12.9,1c-1,.3-1.9.8-2.9,1.4C7.9,1.1,5.8.4,4.2.4s-2.1.3-2.8,1C.2,2.6,0,4.6,1,7.1c.3,1,.8,1.9,1.4,2.9C1.1,12.1.4,14.2.4,15.8s.3,2.1,1,2.8,1.7,1,2.8,1c1.7,0,3.7-.7,5.8-2,1,.6,1.9,1.1,2.9,1.4,1.1.4,2.1.6,3,.6s2.1-.3,2.8-1c1.7-1.7,1.2-5.1-1-8.6.6-1,1.1-1.9,1.4-2.9ZM2.3,17.7c-1.1-1.1-.8-3.6.9-6.5.7,1,1.6,2.1,2.6,3,1,1,2,1.9,3,2.6-2.9,1.7-5.5,2-6.5.9ZM18.3,15.8c0,.8-.2,1.5-.6,1.9-.8.8-2.4.8-4.4.1-.7-.3-1.4-.6-2.1-1-.4-.2-.8-.5-1.2-.7-1.1-.8-2.3-1.7-3.3-2.8s-2-2.2-2.8-3.3c-.3-.4-.5-.8-.7-1.2-.4-.7-.8-1.4-1-2.1-.7-2-.7-3.6.1-4.4.4-.4,1.1-.6,1.9-.6,1.2,0,2.9.5,4.7,1.5.4.2.8.5,1.2.8,1.1.7,2.2,1.7,3.3,2.8s2,2.2,2.8,3.3c.3.4.5.8.8,1.2,1,1.8,1.5,3.4,1.5,4.7ZM14.2,5.8c-1-1-2-1.9-3-2.6.7-.4,1.4-.8,2.1-1,.9-.3,1.8-.5,2.5-.5s1.4.2,1.9.6c.8.8.8,2.4.1,4.4-.3.7-.6,1.4-1,2.1-.7-1-1.6-2-2.6-3Z"/><path fill="#595959" d="M10,13.6c-2,0-3.6-1.6-3.6-3.6s1.6-3.6,3.6-3.6,3.6,1.6,3.6,3.6-1.6,3.6-3.6,3.6ZM10,7.8c-1.2,0-2.2,1-2.2,2.2s1,2.2,2.2,2.2,2.2-1,2.2-2.2-1-2.2-2.2-2.2Z"/><path fill="#595959" d="M10,13.5c-2,0-3.5-1.6-3.5-3.5s1.6-3.5,3.5-3.5,3.5,1.6,3.5,3.5-1.6,3.5-3.5,3.5ZM10,7.8c-1.2,0-2.2,1-2.2,2.2s1,2.2,2.2,2.2,2.2-1,2.2-2.2-1-2.2-2.2-2.2Z"/></svg>
@@ -2372,7 +2382,10 @@
       <div class="claims-metric-value">${escHtml(m.value)}</div>
     </div>`).join('');
     return `<div class="claims-home">
-      <h2 class="claims-greeting">${escHtml(claimsGreeting())}</h2>
+      <div class="claims-top-row">
+        <h2 class="claims-greeting">${escHtml(claimsGreeting())}</h2>
+        <div class="claims-copilot-host" id="claimsCopilotHost"></div>
+      </div>
       <div class="claims-actions">
         <button type="button" class="btn btn-outlined" id="newClaimBtn" data-new-claim>
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -2388,12 +2401,10 @@
           <li><b>11 claims</b> are past target lifecycle; 3 need near-term review.</li>
           <li>Large-loss exposure is concentrated in <b>6 claims</b>.</li>
         </ul>
-      </section>
-      <section class="claims-section" aria-labelledby="needsAttentionTitle">
-        <div class="claims-section-head">
-          <h3 class="claims-section-title" id="needsAttentionTitle">Needs attention</h3>
+        <div class="claims-brief-attention" aria-labelledby="needsAttentionTitle">
+          <h4 class="claims-brief-subtitle" id="needsAttentionTitle">Needs attention</h4>
+          <ul class="claims-attention-list">${attention}</ul>
         </div>
-        <ul class="claims-attention-list">${attention}</ul>
       </section>
       <section class="claims-section" aria-labelledby="keyMetricsTitle">
         <div class="claims-section-head">
@@ -2920,6 +2931,17 @@
     renderApp();
     toast('Starting new FNOL');
   }
+  function placeCopilotBtn(onClaims){
+    const btn = document.getElementById('copilotBtn');
+    if(!btn) return;
+    const homeHost = document.getElementById('claimsCopilotHost');
+    const pageHost = document.getElementById('pageCopilotHost');
+    if(onClaims && homeHost){
+      if(btn.parentElement !== homeHost) homeHost.appendChild(btn);
+      return;
+    }
+    if(pageHost && btn.parentElement !== pageHost) pageHost.appendChild(btn);
+  }
   function renderApp(){
     const page = document.querySelector('.page');
     const onClaims = STATE.screen === 'claims';
@@ -2942,7 +2964,9 @@
       const contentRow = document.querySelector('.content-row');
       if(railEl){ railEl.hidden = true; railEl.innerHTML = ''; }
       if(contentRow) contentRow.classList.add('review-only');
+      placeCopilotBtn(false); // park outside mainCol before innerHTML replace
       document.getElementById('mainCol').innerHTML = claimsDashboardHtml();
+      placeCopilotBtn(true);
       document.getElementById('mainScroll').scrollTop = 0;
       const editModeLink = document.getElementById('editModeLink');
       if(editModeLink) editModeLink.hidden = true;
@@ -2954,6 +2978,7 @@
       return;
     }
 
+    placeCopilotBtn(false);
     document.getElementById('pageTitle').textContent = TITLES[STATE.stepper];
     if(pageSub){ pageSub.hidden = true; pageSub.textContent = ''; }
     document.getElementById('continueBtn').hidden = false;
