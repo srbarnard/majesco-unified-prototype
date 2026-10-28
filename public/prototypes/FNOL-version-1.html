@@ -1712,8 +1712,8 @@
       const name = TRIAGE_CARD_STATE.assignedOwnerName || 'owner';
       return `<div class="status-row-card done" data-triage-card="assignOwner">
           <span class="icon">${mi('check_circle',20)}</span>
-          <div><div class="title">Owner assigned</div></div>
-          <button type="button" class="btn btn-text card-cta" data-open-dialog="assignOwner">Assigned to ${name} — change.</button>
+          <div><div class="title">Claim owner is ${name}</div><div class="desc">Assignment establishes ownership and starts downstream service expectations.</div></div>
+          <button type="button" class="btn btn-text card-cta" data-open-dialog="assignOwner">Change assignee</button>
         </div>`;
     }
     return `<div class="status-row-card attention" data-triage-card="assignOwner">
