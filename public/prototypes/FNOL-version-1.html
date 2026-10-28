@@ -770,11 +770,22 @@
   .status-row-card .desc.intake-file{margin-top:4px;color:var(--text-primary);}
   .status-row-card .icon svg{width:20px;height:20px;}
   .status-row-card .card-cta{align-self:flex-start;margin-top:auto;height:36px;padding:6px 8px;margin-left:-8px;font-size:14px;}
-  .mui-dialog-content .upload-dropzone{padding:20px 16px;}
-  .mui-dialog-content .upload-dropzone .dz-title{font-size:16px;line-height:24px;}
-  .mui-dialog-content .upload-dropzone .dz-sub{font-size:13px;line-height:20px;}
+  #dialogResolveIntake .mui-dialog-content{padding:4px 24px 12px;}
+  #dialogResolveIntake .mui-dialog-content .field{margin-bottom:12px;}
+  #dialogResolveIntake .mui-dialog-title{padding:16px 24px 4px;}
+  #dialogResolveIntake .mui-dialog-actions{padding:4px 24px 16px;}
+  #intakeTreatmentDropzone{
+    flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;
+    gap:8px 10px;padding:12px 14px;min-height:0;
+  }
+  #intakeTreatmentDropzone .dz-ic{width:20px;height:20px;margin:0;color:var(--gray-dark);}
+  #intakeTreatmentDropzone .dz-ic svg{width:20px;height:20px;display:block;}
+  #intakeTreatmentDropzone .dz-title{
+    font-family:var(--font-body);font-size:14px;font-weight:400;line-height:20px;color:var(--text-primary);
+  }
+  #intakeTreatmentDropzone .btn{margin-top:0;height:32px;padding:4px 12px;font-size:13px;}
   .intake-upload-filename{
-    margin-top:10px;font-family:var(--font-body);font-size:13px;line-height:18px;color:var(--text-primary);
+    margin-top:6px;font-family:var(--font-body);font-size:13px;line-height:18px;color:var(--text-primary);
   }
 
   /* ---- Checkbox card (Triage-2 routing & referrals pattern) ---- */
@@ -1483,9 +1494,8 @@
       <div class="field" id="intakeResolveTreatmentUploadField" hidden>
         <label>Supporting document</label>
         <div class="upload-dropzone" id="intakeTreatmentDropzone">
-          <span class="dz-ic"><svg class="mi" width="32" height="32" viewBox="0 -960 960 960"><path d="M440-200h80v-167l64 64 56-57-160-160-160 160 57 56 63-63v167ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z"/></svg></span>
-          <div class="dz-title">Drag and drop files here, or select a file to upload.</div>
-          <div class="dz-sub">You can upload doc, docx, pdf, jpg, png and zip files.</div>
+          <span class="dz-ic"><svg class="mi" width="20" height="20" viewBox="0 -960 960 960"><path d="M440-200h80v-167l64 64 56-57-160-160-160 160 57 56 63-63v167ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z"/></svg></span>
+          <div class="dz-title">Drop file or select</div>
           <button type="button" class="btn btn-outlined" id="intakeTreatmentSelectBtn">Select file</button>
           <input type="file" id="intakeTreatmentFileInput" accept=".doc,.docx,.pdf,.jpg,.jpeg,.png,.zip" hidden>
         </div>
@@ -1493,7 +1503,7 @@
       </div>
       <div class="field">
         <label for="intakeResolveNote">Note<span class="lbl-optional">Optional</span></label>
-        <textarea class="ctrl" id="intakeResolveNote" rows="3" placeholder="Add a short note" style="height:auto;padding:9px 11px;resize:vertical;"></textarea>
+        <textarea class="ctrl" id="intakeResolveNote" rows="2" placeholder="Add a short note" style="height:auto;min-height:56px;padding:9px 11px;resize:vertical;"></textarea>
       </div>
     </div>
     <div class="mui-dialog-actions">
