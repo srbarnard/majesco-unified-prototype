@@ -1047,9 +1047,62 @@
   .page.claims-view .footer{display:none !important;}
   .page.claims-view .content-row{background:#fff;}
   .page.claims-view .main-panel{background:#fff;}
-  .page.claims-view .main-col{padding:8px 32px 32px;background:#fff;gap:0;}
-  .claims-home{display:flex;flex-direction:column;width:100%;min-width:0;}
-  .claims-table-shell{width:100%;overflow:auto;}
+  .page.claims-view .main-col{padding:8px 32px 40px;background:#fff;gap:0;}
+  .page.claims-view .titlebar-sub{display:none !important;}
+  .claims-home{display:flex;flex-direction:column;width:100%;min-width:0;gap:0;}
+  .claims-greeting{
+    margin:8px 0 16px;font-family:var(--font-display);font-size:28px;font-weight:600;
+    line-height:36px;letter-spacing:0;color:var(--text-primary);
+  }
+  .claims-actions{margin:0 0 24px;}
+  .claims-actions .btn svg{width:20px;height:20px;}
+  .claims-section{margin:0 0 24px;}
+  .claims-section-head{
+    display:flex;align-items:center;gap:12px;min-height:40px;margin:0 0 12px;flex-wrap:wrap;
+  }
+  .claims-section-title{
+    margin:0;font-family:var(--font-display);font-size:20px;font-weight:600;line-height:28px;color:var(--text-primary);
+  }
+  .claims-brief{
+    padding:16px;border:1px solid var(--divider);border-radius:var(--radius);
+    background:var(--primary-hover-bg);
+  }
+  .claims-brief-list{
+    margin:0;padding:0 0 0 18px;display:flex;flex-direction:column;gap:8px;
+  }
+  .claims-brief-list li{
+    font-family:var(--font-body);font-size:14px;line-height:20px;color:var(--text-primary);
+  }
+  .claims-brief-list b{font-weight:700;}
+  .claims-attention-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:0;}
+  .claims-attention-row{
+    display:flex;align-items:baseline;gap:12px;padding:12px 0;
+    border-bottom:1px solid var(--divider);font-size:14px;line-height:20px;
+  }
+  .claims-attention-row:last-child{border-bottom:none;}
+  .claims-attention-claim{
+    flex:0 0 auto;font-family:var(--font-display);font-weight:600;font-size:14px;
+    color:var(--primary-main);text-decoration:none;
+  }
+  .claims-attention-claim:hover{text-decoration:underline;}
+  .claims-attention-reason{flex:1 1 auto;min-width:0;color:var(--text-primary);}
+  .claims-metrics{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;
+  }
+  .claims-metric-card{
+    border:1px solid var(--divider);border-radius:var(--radius);background:#fff;
+    padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0;
+  }
+  .claims-metric-label{
+    font-family:var(--font-display);font-size:13px;font-weight:500;line-height:18px;
+    color:var(--text-secondary);
+  }
+  .claims-metric-value{
+    font-family:var(--font-display);font-size:28px;font-weight:600;line-height:36px;
+    color:var(--text-primary);
+  }
+  .claims-table-section{margin:0;}
+  .claims-table-shell{width:100%;overflow:auto;border:1px solid var(--divider);border-radius:var(--radius);}
   .claims-table-shell .datagrid{margin:0;width:100%;}
   .claims-table-shell .datagrid thead th{
     background:#fff;color:var(--text-secondary);
@@ -1065,6 +1118,9 @@
     display:inline-flex;align-items:center;vertical-align:middle;
   }
   .claims-table-shell .datagrid td.cov-name{font-weight:600;color:var(--text-primary);}
+  @media (max-width:1100px){
+    .claims-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
   @media (prefers-reduced-motion:reduce){
     .mui-dialog-backdrop,.mui-dialog-paper,.mui-dialog-root.is-open .mui-dialog-backdrop,.mui-dialog-root.is-open .mui-dialog-paper{
       transition:none !important;
@@ -2282,6 +2338,27 @@
     CLAIMS_LIST = CLAIMS_LIST.filter(c=>c.claimNumber !== num);
     CLAIMS_LIST.unshift(row);
   }
+  const NEEDS_ATTENTION = [
+    {claim:'CL-23456789-064', reason:'Attorney representation was received more than 30 days after the claim opened.'},
+    {claim:'CL-90345612-221', reason:'Projected injury exposure is approaching the available policy limit.'},
+    {claim:'CL-88213045-207', reason:'A newly ingested insured email contains language consistent with a service complaint.'}
+  ];
+  const KEY_METRICS = [
+    {label:'Avg claim per adjuster', value:'18.5'},
+    {label:'Avg claim per lifecycle', value:'42 days'},
+    {label:'Open claims', value:'74'},
+    {label:'Claims past target lifecycle', value:'11'}
+  ];
+  function claimsGreeting(){
+    try{
+      const hour = Number(new Intl.DateTimeFormat('en-US', {hour:'numeric', hour12:false, timeZone:'America/New_York'}).format(new Date()));
+      if(hour < 12) return 'Good morning, Jordan';
+      if(hour < 17) return 'Good afternoon, Jordan';
+      return 'Good evening, Jordan';
+    }catch(_){
+      return 'Good afternoon, Jordan';
+    }
+  }
   function claimsDashboardHtml(){
     const rows = CLAIMS_LIST.map(c=>`<tr>
       <td class="cov-name">${escHtml(c.claimNumber)}</td>
@@ -2291,22 +2368,61 @@
       <td class="claim-status">${claimStatusChip(c.status)}</td>
       <td>${escHtml(c.assignedTo)}</td>
     </tr>`).join('');
+    const attention = NEEDS_ATTENTION.map(a=>`<li class="claims-attention-row">
+      <span class="claims-attention-claim">${escHtml(a.claim)}</span>
+      <span class="claims-attention-reason">${escHtml(a.reason)}</span>
+    </li>`).join('');
+    const metrics = KEY_METRICS.map(m=>`<div class="claims-metric-card">
+      <div class="claims-metric-label">${escHtml(m.label)}</div>
+      <div class="claims-metric-value">${escHtml(m.value)}</div>
+    </div>`).join('');
     return `<div class="claims-home">
-      <div class="claims-table-shell">
-        <table class="datagrid" aria-label="Claims">
-          <thead>
-            <tr>
-              <th>Claim number</th>
-              <th>Insured</th>
-              <th>Product</th>
-              <th>Date of loss</th>
-              <th>Status</th>
-              <th>Assigned to</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
+      <h2 class="claims-greeting">${escHtml(claimsGreeting())}</h2>
+      <div class="claims-actions">
+        <button type="button" class="btn btn-outlined" id="newClaimBtn" data-new-claim>
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          New Claim
+        </button>
       </div>
+      <section class="claims-section claims-brief" aria-labelledby="dailyBriefTitle">
+        <div class="claims-section-head">
+          <h3 class="claims-section-title" id="dailyBriefTitle">Daily Brief</h3>
+        </div>
+        <ul class="claims-brief-list">
+          <li>Open inventory is <b>3 claims higher</b> than last week.</li>
+          <li><b>11 claims</b> are past target lifecycle; 3 need near-term review.</li>
+          <li>Large-loss exposure is concentrated in <b>6 claims</b>.</li>
+        </ul>
+      </section>
+      <section class="claims-section" aria-labelledby="needsAttentionTitle">
+        <div class="claims-section-head">
+          <h3 class="claims-section-title" id="needsAttentionTitle">Needs attention</h3>
+        </div>
+        <ul class="claims-attention-list">${attention}</ul>
+      </section>
+      <section class="claims-section" aria-labelledby="keyMetricsTitle">
+        <div class="claims-section-head">
+          <h3 class="claims-section-title" id="keyMetricsTitle">Key Metrics</h3>
+        </div>
+        <div class="claims-metrics">${metrics}</div>
+      </section>
+      <section class="claims-table-section" aria-label="Claims">
+        <div class="claims-table-shell">
+          <table class="datagrid" aria-label="Claims">
+            <thead>
+              <tr>
+                <th>Claim number</th>
+                <th>Insured</th>
+                <th>Product</th>
+                <th>Date of loss</th>
+                <th>Status</th>
+                <th>Assigned to</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </section>
     </div>`;
   }
   function reviewDash(v){
@@ -2742,6 +2858,8 @@
 
   // Delegated: remove table rows (editing mode) and evidence documents
   document.getElementById('mainCol').addEventListener('click', (e)=>{
+    const newClaimBtn = e.target.closest('[data-new-claim]');
+    if(newClaimBtn){ e.preventDefault(); startNewFnol(); return; }
     const rowBtn = e.target.closest('[data-row-remove]');
     if(rowBtn){ e.preventDefault(); const tr=rowBtn.closest('tr'); if(tr){ tr.remove(); toast('Row removed'); } return; }
     const docBtn = e.target.closest('[data-doc-remove]');
@@ -2816,8 +2934,8 @@
     if(onClaims){
       document.getElementById('pageTitle').textContent = 'Claims';
       if(pageSub){
-        pageSub.hidden = false;
-        pageSub.textContent = 'Review open work and recently submitted claims across your book of business.';
+        pageSub.hidden = true;
+        pageSub.textContent = '';
       }
       STEP_ORDER.forEach(key=>{
         const el = document.getElementById('hstep-'+key);
