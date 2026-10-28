@@ -767,8 +767,15 @@
   .status-row-card .title{font-size:14px;font-weight:400;color:var(--text-primary);}
   .status-row-card .desc{font-size:12.5px;color:var(--text-secondary);line-height:1.45;}
   .status-row-card .desc.intake-note{margin-top:4px;font-style:italic;}
+  .status-row-card .desc.intake-file{margin-top:4px;color:var(--text-primary);}
   .status-row-card .icon svg{width:20px;height:20px;}
   .status-row-card .card-cta{align-self:flex-start;margin-top:auto;height:36px;padding:6px 8px;margin-left:-8px;font-size:14px;}
+  .mui-dialog-content .upload-dropzone{padding:20px 16px;}
+  .mui-dialog-content .upload-dropzone .dz-title{font-size:16px;line-height:24px;}
+  .mui-dialog-content .upload-dropzone .dz-sub{font-size:13px;line-height:20px;}
+  .intake-upload-filename{
+    margin-top:10px;font-family:var(--font-body);font-size:13px;line-height:18px;color:var(--text-primary);
+  }
 
   /* ---- Checkbox card (Triage-2 routing & referrals pattern) ---- */
   .checkbox-card-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
@@ -1473,6 +1480,17 @@
         <input class="ctrl" type="text" id="intakeResolveTreatment" autocomplete="off" placeholder="e.g. ER evaluation, outpatient follow-up">
         <div class="field-error-text" id="intakeResolveTreatmentError">Enter treatment received.</div>
       </div>
+      <div class="field" id="intakeResolveTreatmentUploadField" hidden>
+        <label>Supporting document</label>
+        <div class="upload-dropzone" id="intakeTreatmentDropzone">
+          <span class="dz-ic"><svg class="mi" width="32" height="32" viewBox="0 -960 960 960"><path d="M440-200h80v-167l64 64 56-57-160-160-160 160 57 56 63-63v167ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z"/></svg></span>
+          <div class="dz-title">Drag and drop files here, or select a file to upload.</div>
+          <div class="dz-sub">You can upload doc, docx, pdf, jpg, png and zip files.</div>
+          <button type="button" class="btn btn-outlined" id="intakeTreatmentSelectBtn">Select file</button>
+          <input type="file" id="intakeTreatmentFileInput" accept=".doc,.docx,.pdf,.jpg,.jpeg,.png,.zip" hidden>
+        </div>
+        <div class="intake-upload-filename" id="intakeTreatmentFileName" hidden></div>
+      </div>
       <div class="field">
         <label for="intakeResolveNote">Note<span class="lbl-optional">Optional</span></label>
         <textarea class="ctrl" id="intakeResolveNote" rows="3" placeholder="Add a short note" style="height:auto;padding:9px 11px;resize:vertical;"></textarea>
@@ -1853,15 +1871,16 @@
   const INTAKE_STATE = {
     claimantEmail: {resolved:false, value:'', note:''},
     airbag: {resolved:false, value:'', note:''},
-    treatment: {resolved:false, value:'', note:''}
+    treatment: {resolved:false, value:'', fileName:'', note:''}
   };
   let intakeActiveKey = '';
+  let intakeTreatmentPendingFile = '';
   function intakeOpenCount(){
     return INTAKE_ITEM_ORDER.reduce((n, key)=> n + (INTAKE_STATE[key].resolved ? 0 : 1), 0);
   }
   function intakeOpenPill(){
     const n = intakeOpenCount();
-    if(n === 0) return '<span class="pill-muted">0 open</span>';
+    if(n === 0) return '';
     return `<span class="pill-warning">${n} open</span>`;
   }
   const INTAKE_RESOLVED_DESC = {
@@ -1869,11 +1888,21 @@
     airbag: 'Airbag status recorded',
     treatment: 'Treatment noted'
   };
+  function setIntakeTreatmentFileLabel(name){
+    const label = document.getElementById('intakeTreatmentFileName');
+    if(!label) return;
+    const fileName = (name || '').trim();
+    label.hidden = !fileName;
+    label.textContent = fileName || '';
+  }
   function intakeHandoverCard(key){
     const meta = INTAKE_ITEMS[key];
     const st = INTAKE_STATE[key];
     if(st.resolved){
       const confirm = INTAKE_RESOLVED_DESC[key] || 'Recorded';
+      const fileHtml = st.fileName
+        ? `<div class="desc intake-file">${escHtml(st.fileName)}</div>`
+        : '';
       const noteHtml = st.note
         ? `<div class="desc intake-note">${escHtml(st.note)}</div>`
         : '';
@@ -1882,6 +1911,7 @@
           <div>
             <div class="title">${escHtml(meta.field)} is ${escHtml(st.value)}</div>
             <div class="desc">${escHtml(confirm)}</div>
+            ${fileHtml}
             ${noteHtml}
           </div>
           <button type="button" class="btn btn-text card-cta" data-open-dialog="resolveIntake" data-intake-item="${key}">Change</button>
@@ -2564,6 +2594,7 @@
     Object.entries(INTAKE_VALUE_FIELDS).forEach(([key, {fieldId}])=>{
       document.getElementById(fieldId).hidden = key !== activeKey;
     });
+    document.getElementById('intakeResolveTreatmentUploadField').hidden = activeKey !== 'treatment';
   }
   const DIALOG_EXIT_MS = 195;
   let dialogCloseTimer = 0;
@@ -2606,7 +2637,7 @@
     }
     if(key === 'resolveIntake'){
       const meta = INTAKE_ITEMS[intakeActiveKey];
-      const st = INTAKE_STATE[intakeActiveKey] || {value:'', note:''};
+      const st = INTAKE_STATE[intakeActiveKey] || {value:'', fileName:'', note:''};
       document.getElementById('dialogResolveIntakeTitle').textContent = meta
         ? ('Resolve ' + meta.field)
         : 'Resolve open item';
@@ -2614,6 +2645,9 @@
       document.getElementById('intakeResolveEmail').value = intakeActiveKey === 'claimantEmail' ? (st.value || '') : '';
       document.getElementById('intakeResolveAirbag').value = intakeActiveKey === 'airbag' ? (st.value || '') : '';
       document.getElementById('intakeResolveTreatment').value = intakeActiveKey === 'treatment' ? (st.value || '') : '';
+      intakeTreatmentPendingFile = intakeActiveKey === 'treatment' ? (st.fileName || '') : '';
+      setIntakeTreatmentFileLabel(intakeTreatmentPendingFile);
+      document.getElementById('intakeTreatmentFileInput').value = '';
       document.getElementById('intakeResolveNote').value = st.note || '';
       clearIntakeResolveError();
     }
@@ -2713,6 +2747,9 @@
       INTAKE_STATE[intakeActiveKey].resolved = true;
       INTAKE_STATE[intakeActiveKey].value = value;
       INTAKE_STATE[intakeActiveKey].note = note;
+      if(intakeActiveKey === 'treatment'){
+        INTAKE_STATE.treatment.fileName = intakeTreatmentPendingFile || '';
+      }
       toast(fieldName + ' — ' + value);
       closeTriageDialog();
       renderApp();
@@ -2723,6 +2760,28 @@
     document.getElementById(id).addEventListener('input', clearIntakeResolveError);
     document.getElementById(id).addEventListener('change', clearIntakeResolveError);
   });
+  (function wireIntakeTreatmentUpload(){
+    const dz = document.getElementById('intakeTreatmentDropzone');
+    const input = document.getElementById('intakeTreatmentFileInput');
+    const selectBtn = document.getElementById('intakeTreatmentSelectBtn');
+    if(!dz || !input || !selectBtn) return;
+    function applyTreatmentFile(fileList){
+      const file = Array.from(fileList || [])[0];
+      if(!file) return;
+      intakeTreatmentPendingFile = file.name;
+      setIntakeTreatmentFileLabel(intakeTreatmentPendingFile);
+      toast(file.name + ' selected');
+    }
+    selectBtn.addEventListener('click', ()=> input.click());
+    input.addEventListener('change', ()=>{ applyTreatmentFile(input.files); input.value = ''; });
+    ['dragenter','dragover'].forEach(ev=> dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.add('dragover'); }));
+    ['dragleave','dragend'].forEach(ev=> dz.addEventListener(ev, e=>{ if(!dz.contains(e.relatedTarget)) dz.classList.remove('dragover'); }));
+    dz.addEventListener('drop', e=>{
+      e.preventDefault();
+      dz.classList.remove('dragover');
+      applyTreatmentFile(e.dataTransfer && e.dataTransfer.files);
+    });
+  })();
   document.getElementById('siuDecisionStatus').addEventListener('change', syncSiuReasonVisibility);
   Object.values(TRIAGE_DIALOGS).forEach(root=>{
     root.addEventListener('click', (e)=>{
