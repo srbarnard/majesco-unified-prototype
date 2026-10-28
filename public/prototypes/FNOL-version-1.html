@@ -784,6 +784,17 @@
   .candidate-card .cc-name{font-family:var(--font-display);font-size:16px;font-weight:400;line-height:24px;color:var(--text-primary);}
   .candidate-card .cc-role{grid-column:2;font-size:14px;color:var(--gray-dark);}
   .candidate-card .cc-tag{grid-column:3;grid-row:1;font-size:13px;line-height:20px;padding:2px 10px;border-radius:var(--radius-pill);background:#fff;border:1px solid #D8D8D8;color:var(--text-primary);white-space:nowrap;}
+  /* Quote-pattern Recommended chip: light fill, Copilot mark, regular weight */
+  .candidate-card .cc-recommend{
+    display:inline-flex;align-items:center;gap:4px;grid-column:3;grid-row:1;
+    font-family:var(--font-body);font-size:12px;font-weight:400;line-height:16px;
+    padding:3px 8px 3px 6px;border-radius:var(--radius-pill);border:none;
+    background:var(--primary-selected-bg);color:var(--text-primary);white-space:nowrap;
+  }
+  .candidate-card .cc-recommend svg{
+    width:14px;height:14px;flex:0 0 auto;stroke:none;fill:none;
+  }
+  .candidate-card .cc-recommend svg path{fill:var(--primary-main);}
   .candidate-card .cc-kpis{grid-column:2 / span 2;display:flex;gap:24px;margin-top:10px;}
   .candidate-card .cc-kpi{display:flex;align-items:baseline;gap:6px;}
   .candidate-card .kpi-value{font-size:18px;font-weight:600;color:var(--text-primary);font-family:var(--font-display);}
@@ -1797,40 +1808,39 @@
   /* =========================================================
      TRIAGE — Assignment, features & routing
      ========================================================= */
+  const ASSIGNMENT_CANDIDATES = {
+    jordan: {name:'Jordan Blake', openClaims:14, specialty:'Yes', specialtyTone:'tone-success', recommended:true},
+    avery:  {name:'Avery Chen',   openClaims:9,  specialty:'Partial', specialtyTone:'tone-warning', recommended:false},
+    morgan: {name:'Morgan Lee',   openClaims:22, specialty:'No', specialtyTone:'tone-error', recommended:false}
+  };
+  const ASSIGNMENT_STATE = {key:'jordan', name:ASSIGNMENT_CANDIDATES.jordan.name};
+  function recommendChipHtml(){
+    return `<span class="cc-recommend"><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M15.8,19.7c-.9,0-1.9-.2-3-.6-1-.4-1.9-.8-2.9-1.4-2.1,1.3-4.1,2-5.8,2s-2.1-.3-2.8-1c-.7-.7-1-1.6-1-2.8,0-1.7.7-3.7,2-5.9-.6-.9-1.1-1.9-1.4-2.8C0,4.6.1,2.6,1.3,1.3c.7-.7,1.6-1,2.8-1,1.7,0,3.7.7,5.9,2,.9-.6,1.9-1.1,2.8-1.4,1.1-.4,2.1-.6,3-.6s2.1.3,2.8,1c1.2,1.2,1.4,3.3.4,5.8-.4,1-.8,1.9-1.4,2.9,2.3,3.6,2.7,7,1,8.6-.7.7-1.6,1-2.8,1ZM10,13.5c-2,0-3.5-1.6-3.5-3.5s1.6-3.5,3.5-3.5,3.5,1.6,3.5,3.5-1.6,3.5-3.5,3.5Z"/></svg>Recommended</span>`;
+  }
+  function candidateCardHtml(key){
+    const c = ASSIGNMENT_CANDIDATES[key];
+    const selected = ASSIGNMENT_STATE.key === key;
+    return `<label class="candidate-card${selected?' selected':''}" data-candidate="${key}">
+          <input type="radio" name="claimOwner" value="${key}"${selected?' checked':''}>
+          <div class="cc-name">${c.name}</div>
+          ${c.recommended ? recommendChipHtml() : ''}
+          <div class="cc-role">Claims adjuster</div>
+          <div class="cc-kpis">
+            <div class="cc-kpi"><span class="kpi-value">${c.openClaims}</span><span class="kpi-label">Open claims</span></div>
+            <div class="cc-kpi"><span class="kpi-value ${c.specialtyTone}">${c.specialty}</span><span class="kpi-label">Specialty match</span></div>
+          </div>
+        </label>`;
+  }
   function triageAssignment(){
-    return sectionOpen('Claim assignment', '<span class="pill-warning">Unassigned</span>') + `
-      <p class="section-desc" style="margin:-6px 0 14px;">Recommended owner: <b>Jordan Blake</b>. Ranked using skill match, current open inventory and claim complexity.</p>
+    const assignPill = ASSIGNMENT_STATE.name
+      ? `<span class="pill-muted">${ASSIGNMENT_STATE.name}</span>`
+      : '<span class="pill-warning">Unassigned</span>';
+    return sectionOpen('Claim assignment', assignPill) + `
+      <p class="section-desc" style="margin:-6px 0 14px;">Recommended owner: <b>Jordan Blake</b>. Ranked using specialty match, open claims, and claim complexity.</p>
       <div class="candidate-row" role="radiogroup" aria-label="Claim owner">
-        <label class="candidate-card selected" data-candidate="jordan">
-          <input type="radio" name="claimOwner" value="jordan" checked>
-          <div class="cc-name">Jordan Blake</div>
-          <span class="cc-tag">Recommended</span>
-          <div class="cc-role">Claims adjuster</div>
-          <div class="cc-kpis">
-            <div class="cc-kpi"><span class="kpi-value tone-success">94%</span><span class="kpi-label">Skill</span></div>
-            <div class="cc-kpi"><span class="kpi-value ">82%</span><span class="kpi-label">Workload</span></div>
-          </div>
-        </label>
-        <label class="candidate-card" data-candidate="avery">
-          <input type="radio" name="claimOwner" value="avery">
-          <div class="cc-name">Avery Chen</div>
-          
-          <div class="cc-role">Claims adjuster</div>
-          <div class="cc-kpis">
-            <div class="cc-kpi"><span class="kpi-value ">88%</span><span class="kpi-label">Skill</span></div>
-            <div class="cc-kpi"><span class="kpi-value tone-success">61%</span><span class="kpi-label">Workload</span></div>
-          </div>
-        </label>
-        <label class="candidate-card" data-candidate="morgan">
-          <input type="radio" name="claimOwner" value="morgan">
-          <div class="cc-name">Morgan Lee</div>
-          
-          <div class="cc-role">Claims adjuster</div>
-          <div class="cc-kpis">
-            <div class="cc-kpi"><span class="kpi-value tone-success">91%</span><span class="kpi-label">Skill</span></div>
-            <div class="cc-kpi"><span class="kpi-value tone-error">93%</span><span class="kpi-label">Workload</span></div>
-          </div>
-        </label>
+        ${candidateCardHtml('jordan')}
+        ${candidateCardHtml('avery')}
+        ${candidateCardHtml('morgan')}
       </div>
     ` + sectionClose +
 
@@ -1838,9 +1848,9 @@
       <table class="datagrid">
         <thead><tr><th>Type</th><th>Claimant / subject</th><th>Coverage</th><th class="num">Initial reserve</th><th>Assign to</th></tr></thead>
         <tbody>
-          <tr><td class="cov-name">Injury</td><td>Marcus Aurelio Reyes</td><td>Bodily injury liability</td><td class="num">$65,000</td><td>Jordan Blake</td></tr>
-          <tr><td class="cov-name">Property damage</td><td>2023 Isuzu NPR HD</td><td>Collision</td><td class="num">$14,200</td><td>Jordan Blake</td></tr>
-          <tr><td class="cov-name">Property damage</td><td>2021 Toyota Camry</td><td>Property damage liability</td><td class="num">$12,400</td><td>Jordan Blake</td></tr>
+          <tr><td class="cov-name">Injury</td><td>Marcus Aurelio Reyes</td><td>Bodily injury liability</td><td class="num">$65,000</td><td class="feature-owner">${ASSIGNMENT_STATE.name}</td></tr>
+          <tr><td class="cov-name">Property damage</td><td>2023 Isuzu NPR HD</td><td>Collision</td><td class="num">$14,200</td><td class="feature-owner">${ASSIGNMENT_STATE.name}</td></tr>
+          <tr><td class="cov-name">Property damage</td><td>2021 Toyota Camry</td><td>Property damage liability</td><td class="num">$12,400</td><td class="feature-owner">${ASSIGNMENT_STATE.name}</td></tr>
         </tbody>
       </table>
     ` + sectionClose +
@@ -2241,8 +2251,23 @@
   function wireBodyEvents(){
     document.querySelectorAll('.candidate-card input[type=radio]').forEach(radio=>{
       radio.addEventListener('change', ()=>{
+        const key = radio.value;
+        const candidate = ASSIGNMENT_CANDIDATES[key];
+        if(!candidate) return;
+        ASSIGNMENT_STATE.key = key;
+        ASSIGNMENT_STATE.name = candidate.name;
         const row = radio.closest('.candidate-row');
         row.querySelectorAll('.candidate-card').forEach(c=>c.classList.toggle('selected', c.contains(radio)));
+        document.querySelectorAll('.feature-owner').forEach(td=>{ td.textContent = candidate.name; });
+        const assignHead = document.querySelector('#mainCol .plain-section .section-head');
+        if(assignHead && assignHead.querySelector('h2') && assignHead.querySelector('h2').textContent === 'Claim assignment'){
+          const pill = assignHead.querySelector('.pill-warning, .pill-muted');
+          if(pill){
+            pill.className = 'pill-muted';
+            pill.textContent = candidate.name;
+          }
+        }
+        toast('Claim owner set to ' + candidate.name);
       });
     });
     document.querySelectorAll('[data-open-dialog]').forEach(btn=>{
