@@ -961,7 +961,7 @@
   /* Version 2 confirmation pattern — centered hero + zebra detail rows */
   .review-confirm{
     display:flex;flex-direction:column;align-items:center;text-align:center;
-    padding:24px 0 8px;max-width:640px;margin:0 auto;
+    padding:28px 0 12px;max-width:920px;width:100%;margin:0 auto;box-sizing:border-box;
   }
   .review-confirm-icon{
     width:56px;height:56px;border-radius:50%;display:grid;place-items:center;
@@ -969,30 +969,32 @@
   }
   .review-confirm-icon svg{width:28px;height:28px;}
   .review-confirm-title{
-    font-family:var(--font-display);font-size:16px;font-weight:500;line-height:22px;color:var(--text-primary);margin:0;
+    font-family:var(--font-display);font-size:18px;font-weight:500;line-height:28px;color:var(--text-primary);margin:0;
   }
   .review-confirm-body{
-    font-family:var(--font-body);font-size:14px;font-weight:400;line-height:20px;color:var(--text-secondary);margin:4px 0 0;max-width:420px;
+    font-family:var(--font-body);font-size:15px;font-weight:400;line-height:22px;color:var(--text-secondary);margin:6px 0 0;max-width:520px;
   }
   .review-confirm-claim{
-    font-family:var(--font-display);font-size:16px;font-weight:500;line-height:24px;color:var(--text-primary);margin:8px 0 0;
+    font-family:var(--font-display);font-size:18px;font-weight:500;line-height:28px;color:var(--text-primary);margin:10px 0 0;
   }
-  .confirm-stripe-list{width:100%;margin-top:24px;text-align:left;}
+  .confirm-stripe-list{width:100%;margin-top:28px;text-align:left;}
   .confirm-stripe-row{
-    display:flex;align-items:baseline;gap:12px;
-    padding:8px 12px;border-radius:5px;
+    display:flex;align-items:flex-start;gap:16px;
+    padding:14px 18px;border-radius:5px;min-height:48px;box-sizing:border-box;
   }
   .confirm-stripe-row:nth-child(odd){background:var(--action-hover);}
   .confirm-stripe-row:nth-child(even){background:var(--surface);}
   .confirm-stripe-term{
-    flex:0 0 120px;width:120px;font-family:var(--font-body);font-size:12px;font-weight:600;line-height:16px;color:var(--text-primary);
+    flex:0 0 148px;width:148px;font-family:var(--font-body);font-size:14px;font-weight:600;line-height:22px;color:var(--text-primary);
   }
   .confirm-stripe-value{
-    flex:1 1 auto;min-width:0;font-family:var(--font-body);font-size:14px;font-weight:400;line-height:20px;color:var(--text-primary);word-break:break-word;
+    flex:1 1 auto;min-width:0;font-family:var(--font-body);font-size:15px;font-weight:400;line-height:22px;color:var(--text-primary);word-break:break-word;
   }
-  .review-confirm-actions{width:100%;display:flex;justify-content:center;margin-top:24px;}
+  .review-confirm-actions{width:100%;display:flex;justify-content:center;margin-top:28px;}
+  .mui-dialog-paper.review-submit-paper{max-width:720px;}
   .mui-dialog-content .confirm-stripe-list{margin-top:8px;}
   .mui-dialog-content .review-confirm{padding:8px 0 0;max-width:none;}
+  .edit-mode-link[hidden]{display:none !important;}
   @media (prefers-reduced-motion:reduce){
     .mui-dialog-backdrop,.mui-dialog-paper,.mui-dialog-root.is-open .mui-dialog-backdrop,.mui-dialog-root.is-open .mui-dialog-paper{
       transition:none !important;
@@ -1578,18 +1580,19 @@
 
 <div class="mui-dialog-root" id="dialogSubmitConfirm" role="presentation" aria-hidden="true" data-dialog="submitConfirm">
   <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
-  <div class="mui-dialog-paper wide" role="dialog" aria-modal="true" aria-labelledby="dialogSubmitConfirmTitle" tabindex="-1">
+  <div class="mui-dialog-paper wide review-submit-paper" role="dialog" aria-modal="true" aria-labelledby="dialogSubmitConfirmTitle" tabindex="-1">
     <h2 class="mui-dialog-title" id="dialogSubmitConfirmTitle">Submit claim</h2>
     <div class="mui-dialog-content">
       <div id="submitConfirmView">
-        <p style="margin:0 0 8px;font-family:var(--font-body);font-size:14px;line-height:20px;color:var(--text-secondary);">Confirm the following will be submitted.</p>
+        <p style="margin:0 0 8px;font-family:var(--font-body);font-size:15px;line-height:22px;color:var(--text-secondary);">Confirm the following will be submitted.</p>
         <div class="confirm-stripe-list" id="submitConfirmSummary"></div>
       </div>
       <div id="submitSuccessView" class="review-confirm" hidden>
         <div class="review-confirm-icon" aria-hidden="true"><svg class="mi" width="28" height="28" viewBox="0 -960 960 960"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg></div>
         <h3 class="review-confirm-title">Claim submitted</h3>
-        <p class="review-confirm-body">FNOL intake is complete. Use the claim number below for follow-up work.</p>
+        <p class="review-confirm-body">FNOL intake is complete. Downstream work can continue under this claim number.</p>
         <p class="review-confirm-claim" id="submitSuccessClaimNo">CA141288</p>
+        <div class="confirm-stripe-list" id="submitSuccessSummary"></div>
       </div>
     </div>
     <div class="mui-dialog-actions" id="submitConfirmActions">
@@ -2677,9 +2680,12 @@
     backLink.disabled = isFirst;
     const continueBtn = document.getElementById('continueBtn');
     continueBtn.innerHTML = nextLabel;
-    continueBtn.disabled = onReview && REVIEW_STATE.submitted;
-    continueBtn.hidden = onReview && !REVIEW_STATE.submitted;
-    if(!onReview) continueBtn.hidden = false;
+    continueBtn.disabled = false;
+    continueBtn.hidden = onReview;
+    const editModeLink = document.getElementById('editModeLink');
+    if(editModeLink) editModeLink.hidden = onReview;
+    if(onReview) document.body.classList.remove('editing-active');
+    else renderEditModeLink();
   }
 
   function goNext(){
@@ -2712,6 +2718,10 @@
   let editingMode = false;
   function renderEditModeLink(){
     const el = document.getElementById('editModeLink');
+    if(!el || el.hidden){
+      document.body.classList.toggle('editing-active', editingMode && STATE.stepper!=='review');
+      return;
+    }
     document.body.classList.toggle('editing-active', editingMode);
     if (editingMode){
       el.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg><span>Exit claim editing mode</span>';
@@ -2866,7 +2876,9 @@
       clearIntakeResolveError();
     }
     if(key === 'submitConfirm'){
-      document.getElementById('submitConfirmSummary').innerHTML = reviewStripeRowsHtml();
+      const rows = reviewStripeRowsHtml();
+      document.getElementById('submitConfirmSummary').innerHTML = rows;
+      document.getElementById('submitSuccessSummary').innerHTML = rows;
       document.getElementById('submitSuccessClaimNo').textContent = REVIEW_STATE.claimNumber || REVIEW_CLAIM_NUMBER;
       setSubmitDialogMode(REVIEW_STATE.submitted ? 'success' : 'confirm');
     }
@@ -2978,6 +2990,7 @@
       REVIEW_STATE.submitted = true;
       REVIEW_STATE.claimNumber = REVIEW_CLAIM_NUMBER;
       document.getElementById('submitSuccessClaimNo').textContent = REVIEW_STATE.claimNumber;
+      document.getElementById('submitSuccessSummary').innerHTML = reviewStripeRowsHtml();
       setSubmitDialogMode('success');
       toast('Claim ' + REVIEW_STATE.claimNumber + ' submitted');
     }
