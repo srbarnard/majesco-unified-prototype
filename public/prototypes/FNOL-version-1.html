@@ -801,6 +801,25 @@
   .candidate-card .kpi-value.tone-warning{color:var(--warning-main);}
   .candidate-card .kpi-value.tone-error{color:var(--error-main);}
   .candidate-card .kpi-label{font-size:14px;color:var(--gray-dark);}
+  .candidate-card .cc-specialty-wrap{position:relative;display:inline-flex;align-items:baseline;outline:none;}
+  .candidate-card .cc-specialty-pop{
+    position:absolute;left:0;top:calc(100% + 6px);z-index:40;width:220px;box-sizing:border-box;
+    padding:8px 10px;background:var(--surface);border:1px solid var(--divider);border-radius:var(--radius);
+    font-family:var(--font-body);font-size:12px;font-weight:400;line-height:1.45;color:var(--text-primary);
+    white-space:normal;text-align:left;box-shadow:0 4px 12px rgba(0,0,0,.08);
+    opacity:0;visibility:hidden;pointer-events:none;
+    transition:opacity 150ms ease,visibility 0s linear 150ms;
+  }
+  .candidate-card:last-child .cc-specialty-pop{left:auto;right:0;}
+  .candidate-card .cc-specialty-wrap:hover .cc-specialty-pop,
+  .candidate-card .cc-specialty-wrap:focus-within .cc-specialty-pop{
+    opacity:1;visibility:visible;transition:opacity 150ms ease,visibility 0s;
+  }
+  @media (prefers-reduced-motion:reduce){
+    .candidate-card .cc-specialty-pop,
+    .candidate-card .cc-specialty-wrap:hover .cc-specialty-pop,
+    .candidate-card .cc-specialty-wrap:focus-within .cc-specialty-pop{transition:none !important;}
+  }
 
   .no-match-note{font-size:11.5px;font-style:italic;color:var(--text-secondary);padding:6px 0 0;}
 
@@ -1826,15 +1845,18 @@
           <div class="cc-role">Claims adjuster</div>
           <div class="cc-kpis">
             <div class="cc-kpi"><span class="kpi-value">${c.openClaims}</span><span class="kpi-label">Open claims</span></div>
-            <div class="cc-kpi"><span class="kpi-value ${c.specialtyTone}">${c.specialty}</span><span class="kpi-label">Specialty match</span></div>
+            <div class="cc-kpi">
+              <span class="cc-specialty-wrap" tabindex="0" aria-describedby="specialtyPop-${key}">
+                <span class="kpi-value ${c.specialtyTone}">${c.specialty}</span>
+                <span class="cc-specialty-pop" role="tooltip" id="specialtyPop-${key}">Based on loss type, product, and prior claim experience.</span>
+              </span>
+              <span class="kpi-label">Specialty match</span>
+            </div>
           </div>
         </label>`;
   }
   function triageAssignment(){
-    const assignPill = ASSIGNMENT_STATE.name
-      ? `<span class="pill-muted">${ASSIGNMENT_STATE.name}</span>`
-      : '<span class="pill-warning">Unassigned</span>';
-    return sectionOpen('Claim assignment', assignPill) + `
+    return sectionOpen('Claim assignment', '') + `
       <p class="section-desc" style="margin:-6px 0 14px;">Recommended owner: <b>Jordan Blake</b>. Ranked using specialty match, open claims, and claim complexity.</p>
       <div class="candidate-row" role="radiogroup" aria-label="Claim owner">
         ${candidateCardHtml('jordan')}
@@ -2258,14 +2280,6 @@
         const row = radio.closest('.candidate-row');
         row.querySelectorAll('.candidate-card').forEach(c=>c.classList.toggle('selected', c.contains(radio)));
         document.querySelectorAll('.feature-owner').forEach(td=>{ td.textContent = candidate.name; });
-        const assignHead = document.querySelector('#mainCol .plain-section .section-head');
-        if(assignHead && assignHead.querySelector('h2') && assignHead.querySelector('h2').textContent === 'Claim assignment'){
-          const pill = assignHead.querySelector('.pill-warning, .pill-muted');
-          if(pill){
-            pill.className = 'pill-muted';
-            pill.textContent = candidate.name;
-          }
-        }
         toast('Claim owner set to ' + candidate.name);
       });
     });
