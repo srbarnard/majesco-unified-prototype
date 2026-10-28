@@ -791,10 +791,9 @@
     padding:3px 8px 3px 6px;border-radius:var(--radius-pill);border:none;
     background:var(--primary-selected-bg);color:var(--text-primary);white-space:nowrap;
   }
-  .candidate-card .cc-recommend svg{
-    width:14px;height:14px;flex:0 0 auto;stroke:none;fill:none;
+  .candidate-card .cc-recommend img{
+    width:14px;height:14px;flex:0 0 auto;display:block;
   }
-  .candidate-card .cc-recommend svg path{fill:var(--primary-main);}
   .candidate-card .cc-kpis{grid-column:2 / span 2;display:flex;gap:24px;margin-top:10px;}
   .candidate-card .cc-kpi{display:flex;align-items:baseline;gap:6px;}
   .candidate-card .kpi-value{font-size:18px;font-weight:600;color:var(--text-primary);font-family:var(--font-display);}
@@ -1815,7 +1814,7 @@
   };
   const ASSIGNMENT_STATE = {key:'jordan', name:ASSIGNMENT_CANDIDATES.jordan.name};
   function recommendChipHtml(){
-    return `<span class="cc-recommend"><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M15.8,19.7c-.9,0-1.9-.2-3-.6-1-.4-1.9-.8-2.9-1.4-2.1,1.3-4.1,2-5.8,2s-2.1-.3-2.8-1c-.7-.7-1-1.6-1-2.8,0-1.7.7-3.7,2-5.9-.6-.9-1.1-1.9-1.4-2.8C0,4.6.1,2.6,1.3,1.3c.7-.7,1.6-1,2.8-1,1.7,0,3.7.7,5.9,2,.9-.6,1.9-1.1,2.8-1.4,1.1-.4,2.1-.6,3-.6s2.1.3,2.8,1c1.2,1.2,1.4,3.3.4,5.8-.4,1-.8,1.9-1.4,2.9,2.3,3.6,2.7,7,1,8.6-.7.7-1.6,1-2.8,1ZM10,13.5c-2,0-3.5-1.6-3.5-3.5s1.6-3.5,3.5-3.5,3.5,1.6,3.5,3.5-1.6,3.5-3.5,3.5Z"/></svg>Recommended</span>`;
+    return `<span class="cc-recommend"><img src="/prototypes/copilot-recommend-icon.png" alt="" width="14" height="14" decoding="async">Recommended</span>`;
   }
   function candidateCardHtml(key){
     const c = ASSIGNMENT_CANDIDATES[key];
