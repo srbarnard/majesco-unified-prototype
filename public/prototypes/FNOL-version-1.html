@@ -596,6 +596,16 @@
   .datagrid tbody tr:last-child td{border-bottom:none;}
   .datagrid tbody tr:hover td{background:var(--action-hover);}
   .datagrid tbody td.cov-name{font-weight:400;}
+  .datagrid tbody td.row-action{white-space:nowrap;vertical-align:middle;}
+  .datagrid tbody td.row-action .btn{height:36px;padding:6px 8px;margin-left:-8px;font-size:14px;}
+  .datagrid tbody tr.is-resolved td{color:var(--text-secondary);}
+  .datagrid tbody tr.is-resolved td.cov-name{color:var(--text-primary);}
+  .datagrid .intake-resolved-label{
+    display:inline-flex;align-items:center;gap:6px;margin-right:4px;
+    font-family:var(--font-body);font-size:14px;font-weight:400;color:var(--success-main);
+  }
+  .datagrid .intake-resolved-label.dismissed{color:var(--text-secondary);}
+  .datagrid .intake-resolved-label svg{width:16px;height:16px;flex:0 0 auto;}
   .status-error{display:inline-flex;align-items:center;gap:6px;color:var(--error-main);font-weight:400;}
   .status-error svg{width:18px;height:18px;flex:0 0 auto;}
   .status-chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:11px;display:inline-flex;align-items:center;gap:5px;}
@@ -1446,6 +1456,32 @@
   </div>
 </div>
 
+<div class="mui-dialog-root" id="dialogResolveIntake" role="presentation" aria-hidden="true" data-dialog="resolveIntake">
+  <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
+  <div class="mui-dialog-paper" role="dialog" aria-modal="true" aria-labelledby="dialogResolveIntakeTitle" tabindex="-1">
+    <h2 class="mui-dialog-title" id="dialogResolveIntakeTitle">Resolve open item</h2>
+    <div class="mui-dialog-content">
+      <div class="field" id="intakeResolveStatusField">
+        <label for="intakeResolveStatus">Status</label>
+        <select class="ctrl" id="intakeResolveStatus" required aria-required="true">
+          <option value="">Please select</option>
+          <option value="Resolved">Resolved</option>
+          <option value="Dismissed">Dismissed</option>
+        </select>
+        <div class="field-error-text" id="intakeResolveStatusError">Status is required.</div>
+      </div>
+      <div class="field">
+        <label for="intakeResolveNote">Note<span class="lbl-optional">Optional</span></label>
+        <textarea class="ctrl" id="intakeResolveNote" rows="3" placeholder="Add a short note" style="height:auto;padding:9px 11px;resize:vertical;"></textarea>
+      </div>
+    </div>
+    <div class="mui-dialog-actions">
+      <button type="button" class="btn btn-text" data-dialog-dismiss>Cancel</button>
+      <button type="button" class="btn btn-primary" data-dialog-save="resolveIntake">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1805,6 +1841,55 @@
           <button type="button" class="btn btn-text card-cta" data-open-dialog="recordDecision">Record decision</button>
         </div>`;
   }
+  const INTAKE_ITEMS = {
+    claimantEmail: {field:'Claimant email', module:'Parties', why:'Not in any source', impact:'Follow-up after assignment'},
+    airbag: {field:'Airbag deployment', module:'Vehicle details', why:'Not stated or visible in photos', impact:'Follow-up after assignment'},
+    treatment: {field:'Treatment received', module:'Injured parties', why:'No medical record yet', impact:'Follow-up after assignment'}
+  };
+  const INTAKE_ITEM_ORDER = ['claimantEmail', 'airbag', 'treatment'];
+  const INTAKE_STATE = {
+    claimantEmail: {resolved:false, status:'', note:''},
+    airbag: {resolved:false, status:'', note:''},
+    treatment: {resolved:false, status:'', note:''}
+  };
+  let intakeActiveKey = '';
+  function intakeOpenCount(){
+    return INTAKE_ITEM_ORDER.reduce((n, key)=> n + (INTAKE_STATE[key].resolved ? 0 : 1), 0);
+  }
+  function intakeOpenPill(){
+    const n = intakeOpenCount();
+    if(n === 0) return '<span class="pill-muted">0 open</span>';
+    return `<span class="pill-warning">${n} open</span>`;
+  }
+  function intakeHandoverRow(key){
+    const meta = INTAKE_ITEMS[key];
+    const st = INTAKE_STATE[key];
+    if(st.resolved){
+      const dismissed = st.status === 'Dismissed';
+      const labelClass = dismissed ? 'intake-resolved-label dismissed' : 'intake-resolved-label';
+      const icon = dismissed ? mi('info', 16) : mi('check_circle', 16);
+      const noteHint = st.note ? ` title="${escHtml(st.note)}"` : '';
+      return `<tr class="is-resolved" data-intake-item="${key}">
+          <td class="cov-name">${meta.field}</td>
+          <td>${meta.module}</td>
+          <td>${meta.why}</td>
+          <td>${meta.impact}</td>
+          <td class="row-action">
+            <span class="${labelClass}"${noteHint}>${icon}${escHtml(st.status)}</span>
+            <button type="button" class="btn btn-text" data-open-dialog="resolveIntake" data-intake-item="${key}">Change</button>
+          </td>
+        </tr>`;
+    }
+    return `<tr data-intake-item="${key}">
+          <td class="cov-name">${meta.field}</td>
+          <td>${meta.module}</td>
+          <td>${meta.why}</td>
+          <td>${meta.impact}</td>
+          <td class="row-action">
+            <button type="button" class="btn btn-text" data-open-dialog="resolveIntake" data-intake-item="${key}">Resolve</button>
+          </td>
+        </tr>`;
+  }
   function triageDecisions(){
     return sectionOpen('Triage decisions', triageOpenPill()) + `
       <div class="triage-decisions-grid">
@@ -1814,17 +1899,15 @@
       </div>
     ` + sectionClose +
 
-    sectionOpen('Intake handover', '') + `
+    sectionOpen('Intake handover', intakeOpenPill()) + `
       <div class="alert info" style="margin-bottom:14px;">
         <svg class="mi" width="20" height="20" viewBox="0 -960 960 960"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
         <div><div class="alert-title">Open intake items travel with the record</div>They do not block triage, but they become part of the assigned adjuster's work.</div>
       </div>
       <table class="datagrid">
-        <thead><tr><th>Field</th><th>Module</th><th>Why open</th><th>Impact</th></tr></thead>
+        <thead><tr><th>Field</th><th>Module</th><th>Why open</th><th>Impact</th><th>Action</th></tr></thead>
         <tbody>
-          <tr><td class="cov-name">Claimant email</td><td>Parties</td><td>Not in any source</td><td>Follow-up after assignment</td></tr>
-          <tr><td class="cov-name">Airbag deployment</td><td>Vehicle details</td><td>Not stated or visible in photos</td><td>Follow-up after assignment</td></tr>
-          <tr><td class="cov-name">Treatment received</td><td>Injured parties</td><td>No medical record yet</td><td>Follow-up after assignment</td></tr>
+          ${INTAKE_ITEM_ORDER.map(intakeHandoverRow).join('')}
         </tbody>
       </table>
     ` + sectionClose;
@@ -2293,7 +2376,10 @@
       });
     });
     document.querySelectorAll('[data-open-dialog]').forEach(btn=>{
-      btn.addEventListener('click', ()=> openTriageDialog(btn.dataset.openDialog));
+      btn.addEventListener('click', ()=>{
+        if(btn.dataset.intakeItem) intakeActiveKey = btn.dataset.intakeItem;
+        openTriageDialog(btn.dataset.openDialog);
+      });
     });
     wireEvidence();
     document.querySelectorAll('[data-add-target]').forEach(btn=>{
@@ -2444,11 +2530,12 @@
 
   renderApp();
 
-  /* Triage decision dialogs — Assign owner / View referral / Record decision. */
+  /* Triage decision dialogs — Assign owner / View referral / Record decision / Resolve intake. */
   const TRIAGE_DIALOGS = {
     assignOwner: document.getElementById('dialogAssignOwner'),
     viewReferral: document.getElementById('dialogViewReferral'),
-    recordDecision: document.getElementById('dialogRecordDecision')
+    recordDecision: document.getElementById('dialogRecordDecision'),
+    resolveIntake: document.getElementById('dialogResolveIntake')
   };
   let openDialogKey = '';
   function syncSiuReasonVisibility(){
@@ -2461,6 +2548,10 @@
   function clearAssignToError(){
     document.getElementById('assignToField').classList.remove('has-error');
     document.getElementById('assignToSelect').removeAttribute('aria-invalid');
+  }
+  function clearIntakeResolveError(){
+    document.getElementById('intakeResolveStatusField').classList.remove('has-error');
+    document.getElementById('intakeResolveStatus').removeAttribute('aria-invalid');
   }
   const DIALOG_EXIT_MS = 195;
   let dialogCloseTimer = 0;
@@ -2500,6 +2591,16 @@
       document.getElementById('siuDecisionReason').value = TRIAGE_CARD_STATE.decisionReason || '';
       document.getElementById('siuDecisionDate').value = TRIAGE_CARD_STATE.decisionDate || '';
       syncSiuReasonVisibility();
+    }
+    if(key === 'resolveIntake'){
+      const meta = INTAKE_ITEMS[intakeActiveKey];
+      const st = INTAKE_STATE[intakeActiveKey] || {status:'', note:''};
+      document.getElementById('dialogResolveIntakeTitle').textContent = meta
+        ? ('Resolve ' + meta.field)
+        : 'Resolve open item';
+      document.getElementById('intakeResolveStatus').value = st.status || '';
+      document.getElementById('intakeResolveNote').value = st.note || '';
+      clearIntakeResolveError();
     }
     clearTimeout(dialogCloseTimer);
     openDialogKey = key;
@@ -2568,9 +2669,35 @@
       toast('SIU decision recorded — ' + label);
       closeTriageDialog();
       renderApp();
+      return;
+    }
+    if(key === 'resolveIntake'){
+      const statusEl = document.getElementById('intakeResolveStatus');
+      const field = document.getElementById('intakeResolveStatusField');
+      if(!intakeActiveKey || !INTAKE_STATE[intakeActiveKey]){
+        toast('Select an intake item to resolve');
+        return;
+      }
+      if(!statusEl.value){
+        field.classList.add('has-error');
+        statusEl.setAttribute('aria-invalid', 'true');
+        statusEl.focus();
+        return;
+      }
+      clearIntakeResolveError();
+      const status = statusEl.value;
+      const note = document.getElementById('intakeResolveNote').value.trim();
+      const fieldName = INTAKE_ITEMS[intakeActiveKey].field;
+      INTAKE_STATE[intakeActiveKey].resolved = true;
+      INTAKE_STATE[intakeActiveKey].status = status;
+      INTAKE_STATE[intakeActiveKey].note = note;
+      toast(fieldName + ' — ' + status);
+      closeTriageDialog();
+      renderApp();
     }
   }
   document.getElementById('assignToSelect').addEventListener('change', clearAssignToError);
+  document.getElementById('intakeResolveStatus').addEventListener('change', clearIntakeResolveError);
   document.getElementById('siuDecisionStatus').addEventListener('change', syncSiuReasonVisibility);
   Object.values(TRIAGE_DIALOGS).forEach(root=>{
     root.addEventListener('click', (e)=>{
