@@ -964,15 +964,15 @@
     padding:28px 0 12px;max-width:920px;width:100%;margin:0 auto;box-sizing:border-box;
   }
   .review-confirm-icon{
-    width:56px;height:56px;border-radius:50%;display:grid;place-items:center;
-    background:rgba(15,92,41,.12);color:var(--success-main);margin-bottom:12px;
+    width:48px;height:48px;border-radius:var(--radius);display:grid;place-items:center;
+    background:var(--success-bg);color:var(--success-main);margin-bottom:16px;
   }
   .review-confirm-icon svg{width:28px;height:28px;}
   .review-confirm-title{
     font-family:var(--font-display);font-size:18px;font-weight:500;line-height:28px;color:var(--text-primary);margin:0;
   }
   .review-confirm-body{
-    font-family:var(--font-body);font-size:15px;font-weight:400;line-height:22px;color:var(--text-secondary);margin:6px 0 0;max-width:520px;
+    font-family:var(--font-body);font-size:15px;font-weight:400;line-height:22px;color:var(--text-secondary);margin:8px 0 0;max-width:520px;
   }
   .review-confirm-claim{
     font-family:var(--font-display);font-size:18px;font-weight:500;line-height:28px;color:var(--text-primary);margin:10px 0 0;
@@ -993,18 +993,34 @@
   .edit-mode-link[hidden]{display:none !important;}
   .substep-rail[hidden]{display:none !important;}
   .content-row.review-only .main-scroll{flex:1 1 auto;}
-  /* Submit confirmation — review-confirm content inside standard MUI dialog */
-  .mui-dialog-paper.submit-confirm-paper{max-width:560px;width:calc(100% - 64px);}
-  .mui-dialog-content .review-confirm.submit-confirm{padding:16px 8px 12px;max-width:none;}
-  .submit-confirm .review-confirm-icon{
-    width:72px;height:72px;margin-bottom:20px;
+  /* Submit confirmation dialog — distinct from Review (info icon, wider paper) */
+  .mui-dialog-paper.submit-confirm-paper{max-width:640px;width:calc(100% - 64px);}
+  .mui-dialog-content .submit-confirm{padding:20px 12px 8px;max-width:none;}
+  .submit-confirm{
+    display:flex;flex-direction:column;align-items:center;text-align:center;
   }
-  .submit-confirm .review-confirm-icon svg{width:36px;height:36px;}
-  .submit-confirm .review-confirm-title{margin:0 0 16px;}
-  .submit-confirm .review-confirm-body{margin:0;max-width:none;}
-  .submit-confirm .review-confirm-claim{margin:14px 0 0;}
+  .submit-confirm-icon{
+    width:48px;height:48px;border-radius:var(--radius);display:grid;place-items:center;
+    background:var(--info-bg);color:var(--info-main);margin:0 0 20px;
+  }
+  .submit-confirm-icon svg{width:28px;height:28px;}
+  .submit-confirm-title{
+    margin:0 0 16px;font-family:var(--font-display);font-size:18px;font-weight:500;line-height:28px;color:var(--text-primary);
+  }
+  .submit-confirm-body{
+    margin:0;font-family:var(--font-body);font-size:15px;font-weight:400;line-height:22px;color:var(--text-secondary);max-width:none;
+  }
+  .submit-confirm-claim{
+    margin:14px 0 0;font-family:var(--font-display);font-size:18px;font-weight:500;line-height:28px;color:var(--text-primary);
+  }
   .submit-confirm-paper .mui-dialog-actions{
-    justify-content:flex-end;gap:16px;padding:8px 24px 20px;
+    display:flex;justify-content:flex-end;align-items:center;gap:16px;padding:8px 24px 20px;
+  }
+  .submit-confirm-paper .mui-dialog-actions .btn{
+    height:40px;margin:0;align-self:center;
+  }
+  .submit-confirm-paper .mui-dialog-actions .btn-text{
+    padding:7px 8px;line-height:24px;
   }
   .page.claims-view .hstepper,
   .page.claims-view .subheader,
@@ -1601,11 +1617,11 @@
   <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
   <div class="mui-dialog-paper submit-confirm-paper" role="dialog" aria-modal="true" aria-labelledby="dialogSubmitConfirmTitle" tabindex="-1">
     <div class="mui-dialog-content">
-      <div class="review-confirm submit-confirm">
-        <div class="review-confirm-icon" aria-hidden="true"><svg class="mi" width="36" height="36" viewBox="0 -960 960 960"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg></div>
-        <h2 class="review-confirm-title" id="dialogSubmitConfirmTitle">Claim submitted</h2>
-        <p class="review-confirm-body">FNOL intake is complete. Downstream work can continue under this claim number.</p>
-        <p class="review-confirm-claim" id="submitSuccessClaimNo">CA141288</p>
+      <div class="submit-confirm">
+        <div class="submit-confirm-icon" aria-hidden="true"><svg class="mi" width="28" height="28" viewBox="0 -960 960 960"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg></div>
+        <h2 class="submit-confirm-title" id="dialogSubmitConfirmTitle">Claim submitted</h2>
+        <p class="submit-confirm-body">FNOL intake is complete. Downstream work can continue under this claim number.</p>
+        <p class="submit-confirm-claim" id="submitSuccessClaimNo">CA141288</p>
       </div>
     </div>
     <div class="mui-dialog-actions">
@@ -2298,18 +2314,9 @@
     ].join('');
   }
   function reviewConfirmIcon(){
-    return `<div class="review-confirm-icon" aria-hidden="true"><svg class="mi" width="28" height="28" viewBox="0 -960 960 960"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg></div>`;
+    return `<div class="review-confirm-icon" aria-hidden="true">${mi('check_circle',28)}</div>`;
   }
   function reviewSummary(){
-    if(REVIEW_STATE.submitted){
-      return `<div class="review-confirm">
-        ${reviewConfirmIcon()}
-        <h2 class="review-confirm-title">Claim submitted</h2>
-        <p class="review-confirm-body">FNOL intake is complete. Downstream work can continue under this claim number.</p>
-        <p class="review-confirm-claim">${escHtml(REVIEW_STATE.claimNumber)}</p>
-        <div class="confirm-stripe-list">${reviewStripeRowsHtml()}</div>
-      </div>`;
-    }
     return `<div class="review-confirm">
       ${reviewConfirmIcon()}
       <h2 class="review-confirm-title">Ready to submit</h2>
