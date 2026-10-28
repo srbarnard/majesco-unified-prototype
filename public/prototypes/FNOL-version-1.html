@@ -482,7 +482,7 @@
   .btn-primary:disabled{background:var(--action-disabled-bg);color:var(--text-disabled);cursor:not-allowed;}
   .btn-outlined{background:#fff;border-color:var(--primary-main);color:var(--primary-main);}
   .btn-outlined:hover{background:var(--primary-hover-bg);}
-  .btn-text{background:transparent;color:var(--primary-main);padding:6px 8px;}
+  .btn-text{background:transparent;color:var(--primary-main);padding:7px 8px;}
   .btn-text:hover{background:var(--action-hover);}
 
   /* ---- Content shell: sub-step rail + main content ---- */
@@ -1018,13 +1018,22 @@
     margin:14px 0 0;font-family:var(--font-display);font-size:18px;font-weight:500;line-height:28px;color:var(--text-primary);text-align:left;
   }
   .submit-confirm-paper .mui-dialog-actions{
-    display:flex;justify-content:flex-end;align-items:center;gap:16px;padding:8px 24px 20px;
+    display:flex;justify-content:flex-end;align-items:center;padding:8px 24px 20px;
   }
-  .submit-confirm-paper .mui-dialog-actions .btn{
-    height:40px;margin:0;align-self:center;
+  .submit-confirm-actions{
+    display:inline-flex;align-items:center;gap:16px;
   }
-  .submit-confirm-paper .mui-dialog-actions .btn-text{
-    padding:7px 8px;line-height:24px;
+  .submit-confirm-actions .btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    box-sizing:border-box;height:40px;min-height:40px;margin:0;
+    padding:7px 16px;font-size:16px;font-weight:500;line-height:24px;
+    font-family:var(--font-display);border:1px solid transparent;border-radius:var(--radius-sm);
+  }
+  .submit-confirm-actions .btn-text{
+    padding:7px 8px;background:transparent;color:var(--primary-main);
+  }
+  .submit-confirm-actions .btn-primary{
+    background:var(--primary-main);color:#fff;
   }
   .page.claims-view .titlebar{
     grid-template-columns:1fr auto;align-items:start;
@@ -1640,8 +1649,10 @@
       </div>
     </div>
     <div class="mui-dialog-actions">
-      <button type="button" class="btn btn-text" data-submit-action="createAnother">Create another claim</button>
-      <button type="button" class="btn btn-primary" data-submit-action="ok">OK</button>
+      <div class="submit-confirm-actions">
+        <button type="button" class="btn btn-text" data-submit-action="createAnother">Create another claim</button>
+        <button type="button" class="btn btn-primary" data-submit-action="ok">OK</button>
+      </div>
     </div>
   </div>
 </div>
