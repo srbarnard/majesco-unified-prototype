@@ -1452,14 +1452,25 @@
   <div class="mui-dialog-paper" role="dialog" aria-modal="true" aria-labelledby="dialogResolveIntakeTitle" tabindex="-1">
     <h2 class="mui-dialog-title" id="dialogResolveIntakeTitle">Resolve open item</h2>
     <div class="mui-dialog-content">
-      <div class="field" id="intakeResolveStatusField">
-        <label for="intakeResolveStatus">Status</label>
-        <select class="ctrl" id="intakeResolveStatus" required aria-required="true">
+      <div class="field" id="intakeResolveEmailField" hidden>
+        <label for="intakeResolveEmail">Claimant email</label>
+        <input class="ctrl" type="email" id="intakeResolveEmail" autocomplete="off" placeholder="name@example.com">
+        <div class="field-error-text" id="intakeResolveEmailError">Enter a claimant email.</div>
+      </div>
+      <div class="field" id="intakeResolveAirbagField" hidden>
+        <label for="intakeResolveAirbag">Airbag deployment</label>
+        <select class="ctrl" id="intakeResolveAirbag">
           <option value="">Please select</option>
-          <option value="Resolved">Resolved</option>
-          <option value="Dismissed">Dismissed</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+          <option value="Unknown">Unknown</option>
         </select>
-        <div class="field-error-text" id="intakeResolveStatusError">Status is required.</div>
+        <div class="field-error-text" id="intakeResolveAirbagError">Select Yes, No, or Unknown.</div>
+      </div>
+      <div class="field" id="intakeResolveTreatmentField" hidden>
+        <label for="intakeResolveTreatment">Treatment received</label>
+        <input class="ctrl" type="text" id="intakeResolveTreatment" autocomplete="off" placeholder="e.g. ER evaluation, outpatient follow-up">
+        <div class="field-error-text" id="intakeResolveTreatmentError">Enter treatment received.</div>
       </div>
       <div class="field">
         <label for="intakeResolveNote">Note<span class="lbl-optional">Optional</span></label>
@@ -1839,9 +1850,9 @@
   };
   const INTAKE_ITEM_ORDER = ['claimantEmail', 'airbag', 'treatment'];
   const INTAKE_STATE = {
-    claimantEmail: {resolved:false, status:'', note:''},
-    airbag: {resolved:false, status:'', note:''},
-    treatment: {resolved:false, status:'', note:''}
+    claimantEmail: {resolved:false, value:'', note:''},
+    airbag: {resolved:false, value:'', note:''},
+    treatment: {resolved:false, value:'', note:''}
   };
   let intakeActiveKey = '';
   function intakeOpenCount(){
@@ -1859,7 +1870,7 @@
     if(st.resolved){
       return `<div class="status-row-card done" data-intake-item="${key}"${noteHint}>
           <span class="icon">${mi('check_circle',20)}</span>
-          <div><div class="title">${escHtml(meta.field)} is ${escHtml(st.status)}</div><div class="desc">${escHtml(meta.why)}</div></div>
+          <div><div class="title">${escHtml(meta.field)} is ${escHtml(st.value)}</div><div class="desc">${escHtml(meta.why)}</div></div>
           <button type="button" class="btn btn-text card-cta" data-open-dialog="resolveIntake" data-intake-item="${key}">Change</button>
         </div>`;
     }
@@ -2525,9 +2536,21 @@
     document.getElementById('assignToField').classList.remove('has-error');
     document.getElementById('assignToSelect').removeAttribute('aria-invalid');
   }
+  const INTAKE_VALUE_FIELDS = {
+    claimantEmail: {fieldId:'intakeResolveEmailField', inputId:'intakeResolveEmail'},
+    airbag: {fieldId:'intakeResolveAirbagField', inputId:'intakeResolveAirbag'},
+    treatment: {fieldId:'intakeResolveTreatmentField', inputId:'intakeResolveTreatment'}
+  };
   function clearIntakeResolveError(){
-    document.getElementById('intakeResolveStatusField').classList.remove('has-error');
-    document.getElementById('intakeResolveStatus').removeAttribute('aria-invalid');
+    Object.values(INTAKE_VALUE_FIELDS).forEach(({fieldId, inputId})=>{
+      document.getElementById(fieldId).classList.remove('has-error');
+      document.getElementById(inputId).removeAttribute('aria-invalid');
+    });
+  }
+  function syncIntakeResolveFields(activeKey){
+    Object.entries(INTAKE_VALUE_FIELDS).forEach(([key, {fieldId}])=>{
+      document.getElementById(fieldId).hidden = key !== activeKey;
+    });
   }
   const DIALOG_EXIT_MS = 195;
   let dialogCloseTimer = 0;
@@ -2570,11 +2593,14 @@
     }
     if(key === 'resolveIntake'){
       const meta = INTAKE_ITEMS[intakeActiveKey];
-      const st = INTAKE_STATE[intakeActiveKey] || {status:'', note:''};
+      const st = INTAKE_STATE[intakeActiveKey] || {value:'', note:''};
       document.getElementById('dialogResolveIntakeTitle').textContent = meta
         ? ('Resolve ' + meta.field)
         : 'Resolve open item';
-      document.getElementById('intakeResolveStatus').value = st.status || '';
+      syncIntakeResolveFields(intakeActiveKey);
+      document.getElementById('intakeResolveEmail').value = intakeActiveKey === 'claimantEmail' ? (st.value || '') : '';
+      document.getElementById('intakeResolveAirbag').value = intakeActiveKey === 'airbag' ? (st.value || '') : '';
+      document.getElementById('intakeResolveTreatment').value = intakeActiveKey === 'treatment' ? (st.value || '') : '';
       document.getElementById('intakeResolveNote').value = st.note || '';
       clearIntakeResolveError();
     }
@@ -2648,32 +2674,42 @@
       return;
     }
     if(key === 'resolveIntake'){
-      const statusEl = document.getElementById('intakeResolveStatus');
-      const field = document.getElementById('intakeResolveStatusField');
-      if(!intakeActiveKey || !INTAKE_STATE[intakeActiveKey]){
+      if(!intakeActiveKey || !INTAKE_STATE[intakeActiveKey] || !INTAKE_VALUE_FIELDS[intakeActiveKey]){
         toast('Select an intake item to resolve');
         return;
       }
-      if(!statusEl.value){
-        field.classList.add('has-error');
-        statusEl.setAttribute('aria-invalid', 'true');
-        statusEl.focus();
+      const cfg = INTAKE_VALUE_FIELDS[intakeActiveKey];
+      const inputEl = document.getElementById(cfg.inputId);
+      const fieldEl = document.getElementById(cfg.fieldId);
+      const value = (inputEl.value || '').trim();
+      if(!value){
+        fieldEl.classList.add('has-error');
+        inputEl.setAttribute('aria-invalid', 'true');
+        inputEl.focus();
+        return;
+      }
+      if(intakeActiveKey === 'claimantEmail' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)){
+        fieldEl.classList.add('has-error');
+        inputEl.setAttribute('aria-invalid', 'true');
+        inputEl.focus();
         return;
       }
       clearIntakeResolveError();
-      const status = statusEl.value;
       const note = document.getElementById('intakeResolveNote').value.trim();
       const fieldName = INTAKE_ITEMS[intakeActiveKey].field;
       INTAKE_STATE[intakeActiveKey].resolved = true;
-      INTAKE_STATE[intakeActiveKey].status = status;
+      INTAKE_STATE[intakeActiveKey].value = value;
       INTAKE_STATE[intakeActiveKey].note = note;
-      toast(fieldName + ' — ' + status);
+      toast(fieldName + ' — ' + value);
       closeTriageDialog();
       renderApp();
     }
   }
   document.getElementById('assignToSelect').addEventListener('change', clearAssignToError);
-  document.getElementById('intakeResolveStatus').addEventListener('change', clearIntakeResolveError);
+  ['intakeResolveEmail', 'intakeResolveAirbag', 'intakeResolveTreatment'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', clearIntakeResolveError);
+    document.getElementById(id).addEventListener('change', clearIntakeResolveError);
+  });
   document.getElementById('siuDecisionStatus').addEventListener('change', syncSiuReasonVisibility);
   Object.values(TRIAGE_DIALOGS).forEach(root=>{
     root.addEventListener('click', (e)=>{
