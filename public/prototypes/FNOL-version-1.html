@@ -203,7 +203,11 @@
   .titlebar .title-cell{min-width:0;}
   .titlebar .actions-cell{justify-self:end;display:flex;align-items:center;}
   .titlebar h1{font-family:var(--font-display);font-weight:400;font-size:24px;line-height:32px;margin:0;color:var(--text-primary);}
-  .titlebar .sub{margin:4px 0 0;color:var(--text-secondary);font-size:12.5px;max-width:520px;line-height:1.5;}
+  .titlebar .sub,.titlebar-sub{
+    margin:4px 0 0;color:var(--text-secondary);font-size:14px;line-height:20px;max-width:640px;
+    font-family:var(--font-body);font-weight:400;text-align:left;
+  }
+  .titlebar-sub[hidden]{display:none !important;}
   /* ---- Horizontal page stepper (FNOL · Triage · Review) ---- */
   /* Majesco One stepper: done = blue + check, current = blue + number, upcoming = gray */
   .hstepper{display:flex;align-items:center;gap:12px;justify-self:center;}
@@ -958,26 +962,26 @@
   }
   .mui-dialog-actions .btn{min-width:72px;}
   body.mui-dialog-open{overflow:hidden;}
-  /* Version 2 confirmation pattern — centered hero + zebra detail rows */
+  /* Review confirmation — left-aligned heading row + full-width zebra summary */
   .review-confirm{
-    display:flex;flex-direction:column;align-items:center;text-align:center;
-    padding:28px 0 12px;max-width:920px;width:100%;margin:0 auto;box-sizing:border-box;
+    display:flex;flex-direction:column;align-items:stretch;text-align:left;
+    padding:4px 0 12px;max-width:none;width:100%;margin:0;box-sizing:border-box;
+  }
+  .review-confirm-heading{
+    display:flex;align-items:center;gap:12px;text-align:left;
   }
   .review-confirm-icon{
-    width:48px;height:48px;border-radius:var(--radius);display:grid;place-items:center;
-    background:var(--success-bg);color:var(--success-main);margin-bottom:16px;
+    width:32px;height:32px;border-radius:var(--radius);display:grid;place-items:center;
+    background:var(--success-bg);color:var(--success-main);margin:0;flex:0 0 auto;
   }
-  .review-confirm-icon svg{width:28px;height:28px;}
+  .review-confirm-icon svg{width:20px;height:20px;}
   .review-confirm-title{
-    font-family:var(--font-display);font-size:18px;font-weight:500;line-height:28px;color:var(--text-primary);margin:0;
+    font-family:var(--font-display);font-size:18px;font-weight:500;line-height:28px;color:var(--text-primary);margin:0;text-align:left;
   }
   .review-confirm-body{
-    font-family:var(--font-body);font-size:15px;font-weight:400;line-height:22px;color:var(--text-secondary);margin:8px 0 0;max-width:520px;
+    font-family:var(--font-body);font-size:15px;font-weight:400;line-height:22px;color:var(--text-secondary);margin:8px 0 0;max-width:none;text-align:left;
   }
-  .review-confirm-claim{
-    font-family:var(--font-display);font-size:18px;font-weight:500;line-height:28px;color:var(--text-primary);margin:10px 0 0;
-  }
-  .confirm-stripe-list{width:100%;margin-top:28px;text-align:left;}
+  .confirm-stripe-list{width:100%;margin-top:24px;text-align:left;}
   .confirm-stripe-row{
     display:flex;align-items:flex-start;gap:16px;
     padding:14px 18px;border-radius:5px;min-height:48px;box-sizing:border-box;
@@ -1022,6 +1026,10 @@
   .submit-confirm-paper .mui-dialog-actions .btn-text{
     padding:7px 8px;line-height:24px;
   }
+  .page.claims-view .titlebar{
+    grid-template-columns:1fr auto;align-items:start;
+  }
+  .page.claims-view .titlebar .actions-cell{align-self:center;}
   .page.claims-view .hstepper,
   .page.claims-view .subheader,
   .page.claims-view .fnol-party-inline-host,
@@ -1030,6 +1038,12 @@
   .claims-table-wrap{padding-top:4px;}
   .claims-table-wrap .datagrid{margin-top:0;}
   .claims-table-wrap .datagrid tbody tr{cursor:default;}
+  .claims-table-wrap .datagrid td.claim-status{
+    vertical-align:middle;
+  }
+  .claims-table-wrap .datagrid td.claim-status .label-chip{
+    display:inline-flex;align-items:center;vertical-align:middle;
+  }
   @media (prefers-reduced-motion:reduce){
     .mui-dialog-backdrop,.mui-dialog-paper,.mui-dialog-root.is-open .mui-dialog-backdrop,.mui-dialog-root.is-open .mui-dialog-paper{
       transition:none !important;
@@ -1201,6 +1215,7 @@
         <div class="titlebar">
           <div class="title-cell">
             <h1 id="pageTitle">First notice of loss</h1>
+            <p class="titlebar-sub" id="pageSub" hidden></p>
           </div>
           <div class="hstepper">
             <div class="hstep" id="hstep-fnol" data-key="fnol" role="button" tabindex="0"><span class="num">1</span><span class="lbl">FNOL</span></div>
@@ -2243,7 +2258,7 @@
       <td>${escHtml(c.insured)}</td>
       <td>${escHtml(c.product)}</td>
       <td>${escHtml(c.dateOfLoss)}</td>
-      <td>${claimStatusChip(c.status)}</td>
+      <td class="claim-status">${claimStatusChip(c.status)}</td>
       <td>${escHtml(c.assignedTo)}</td>
     </tr>`).join('');
     return `<div class="plain-section claims-table-wrap">
@@ -2314,12 +2329,14 @@
     ].join('');
   }
   function reviewConfirmIcon(){
-    return `<div class="review-confirm-icon" aria-hidden="true">${mi('check_circle',28)}</div>`;
+    return `<div class="review-confirm-icon" aria-hidden="true">${mi('check_circle',20)}</div>`;
   }
   function reviewSummary(){
     return `<div class="review-confirm">
-      ${reviewConfirmIcon()}
-      <h2 class="review-confirm-title">Ready to submit</h2>
+      <div class="review-confirm-heading">
+        ${reviewConfirmIcon()}
+        <h2 class="review-confirm-title">Ready to submit</h2>
+      </div>
       <p class="review-confirm-body">Confirm the details below, then submit this claim.</p>
       <div class="confirm-stripe-list">${reviewStripeRowsHtml()}</div>
     </div>`;
@@ -2755,8 +2772,13 @@
     const onClaims = STATE.screen === 'claims';
     if(page) page.classList.toggle('claims-view', onClaims);
 
+    const pageSub = document.getElementById('pageSub');
     if(onClaims){
       document.getElementById('pageTitle').textContent = 'Claims';
+      if(pageSub){
+        pageSub.hidden = false;
+        pageSub.textContent = 'Open and recently submitted claims across your book of business.';
+      }
       STEP_ORDER.forEach(key=>{
         const el = document.getElementById('hstep-'+key);
         el.classList.remove('current','done');
@@ -2780,6 +2802,7 @@
     }
 
     document.getElementById('pageTitle').textContent = TITLES[STATE.stepper];
+    if(pageSub){ pageSub.hidden = true; pageSub.textContent = ''; }
     document.getElementById('continueBtn').hidden = false;
     document.getElementById('saveDraftBtn').hidden = false;
     document.getElementById('backLink').hidden = false;
