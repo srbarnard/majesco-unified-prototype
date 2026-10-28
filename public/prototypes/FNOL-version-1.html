@@ -994,8 +994,18 @@
   .substep-rail[hidden]{display:none !important;}
   .content-row.review-only .main-scroll{flex:1 1 auto;}
   /* Submit confirmation — review-confirm content inside standard MUI dialog */
-  .mui-dialog-paper.submit-confirm-paper{max-width:440px;}
-  .mui-dialog-content .review-confirm.submit-confirm{padding:8px 0 4px;max-width:none;}
+  .mui-dialog-paper.submit-confirm-paper{max-width:560px;width:calc(100% - 64px);}
+  .mui-dialog-content .review-confirm.submit-confirm{padding:16px 8px 12px;max-width:none;}
+  .submit-confirm .review-confirm-icon{
+    width:72px;height:72px;margin-bottom:20px;
+  }
+  .submit-confirm .review-confirm-icon svg{width:36px;height:36px;}
+  .submit-confirm .review-confirm-title{margin:0 0 16px;}
+  .submit-confirm .review-confirm-body{margin:0;max-width:none;}
+  .submit-confirm .review-confirm-claim{margin:14px 0 0;}
+  .submit-confirm-paper .mui-dialog-actions{
+    justify-content:flex-end;gap:16px;padding:8px 24px 20px;
+  }
   .page.claims-view .hstepper,
   .page.claims-view .subheader,
   .page.claims-view .fnol-party-inline-host,
@@ -1592,7 +1602,7 @@
   <div class="mui-dialog-paper submit-confirm-paper" role="dialog" aria-modal="true" aria-labelledby="dialogSubmitConfirmTitle" tabindex="-1">
     <div class="mui-dialog-content">
       <div class="review-confirm submit-confirm">
-        <div class="review-confirm-icon" aria-hidden="true"><svg class="mi" width="28" height="28" viewBox="0 -960 960 960"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg></div>
+        <div class="review-confirm-icon" aria-hidden="true"><svg class="mi" width="36" height="36" viewBox="0 -960 960 960"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg></div>
         <h2 class="review-confirm-title" id="dialogSubmitConfirmTitle">Claim submitted</h2>
         <p class="review-confirm-body">FNOL intake is complete. Downstream work can continue under this claim number.</p>
         <p class="review-confirm-claim" id="submitSuccessClaimNo">CA141288</p>
