@@ -1848,10 +1848,12 @@
       + (TRIAGE_CARD_STATE.decisionRecorded ? 1 : 0);
   }
   function statusCountPills(openCount, resolvedCount){
-    const parts = [];
-    if(openCount > 0) parts.push(`<span class="pill-warning">${openCount} open</span>`);
+    if(openCount <= 0 && resolvedCount <= 0) return '';
+    if(openCount <= 0){
+      return `<span class="section-head-pills"><span class="pill-success">All resolved</span></span>`;
+    }
+    const parts = [`<span class="pill-warning">${openCount} open</span>`];
     if(resolvedCount > 0) parts.push(`<span class="pill-success">${resolvedCount} resolved</span>`);
-    if(!parts.length) return '';
     return `<span class="section-head-pills">${parts.join('')}</span>`;
   }
   function triageOpenPill(){
