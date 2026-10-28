@@ -846,7 +846,9 @@
   .mui-dialog-content .field{margin-bottom:16px;}
   .mui-dialog-content .field:last-child{margin-bottom:0;}
   .mui-dialog-content .field[hidden]{display:none !important;}
-  .mui-dialog-content .field label .req{color:var(--error-main);margin-left:2px;}
+  .mui-dialog-content .field label .lbl-optional{
+    margin-left:6px;font-size:12px;font-weight:400;line-height:16px;color:var(--text-secondary);
+  }
   .mui-dialog-content .field-error-text{
     display:none;margin-top:4px;font-size:12px;line-height:16px;color:var(--error-main);font-family:var(--font-body);
   }
@@ -1300,7 +1302,7 @@
     <h2 class="mui-dialog-title" id="dialogAssignOwnerTitle">Assign owner</h2>
     <div class="mui-dialog-content">
       <div class="field" id="assignToField">
-        <label for="assignToSelect">Assign To<span class="req" aria-hidden="true">*</span></label>
+        <label for="assignToSelect">Assign To</label>
         <select class="ctrl" id="assignToSelect" required aria-required="true">
           <option value="">Please select</option>
           <option value="casey-morgan">Casey Morgan — SIU examiner</option>
@@ -1387,7 +1389,7 @@
         </select>
       </div>
       <div class="field">
-        <label for="siuDecisionDate">Decision date <span style="color:var(--text-secondary);font-weight:400;">(optional)</span></label>
+        <label for="siuDecisionDate">Decision date<span class="lbl-optional">Optional</span></label>
         <input class="ctrl" type="date" id="siuDecisionDate">
       </div>
     </div>
