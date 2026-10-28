@@ -1698,7 +1698,7 @@
   /* =========================================================
      TRIAGE — Decisions & handover
      ========================================================= */
-  const TRIAGE_CARD_STATE = {ownerAssigned:false, assignedOwnerName:'', decisionRecorded:false};
+  const TRIAGE_CARD_STATE = {ownerAssigned:false, assignedOwnerName:'', assignedOwnerValue:'', decisionRecorded:false};
   function triageOpenCount(){
     return (TRIAGE_CARD_STATE.ownerAssigned ? 0 : 1) + (TRIAGE_CARD_STATE.decisionRecorded ? 0 : 1);
   }
@@ -1709,12 +1709,11 @@
   }
   function triageOwnerCard(){
     if(TRIAGE_CARD_STATE.ownerAssigned){
-      const ownerLabel = TRIAGE_CARD_STATE.assignedOwnerName
-        ? `Owner assigned — ${TRIAGE_CARD_STATE.assignedOwnerName}`
-        : 'Owner assigned';
+      const name = TRIAGE_CARD_STATE.assignedOwnerName || 'owner';
       return `<div class="status-row-card done" data-triage-card="assignOwner">
           <span class="icon">${mi('check_circle',20)}</span>
-          <div><div class="title">${ownerLabel}</div></div>
+          <div><div class="title">Owner assigned</div></div>
+          <button type="button" class="btn btn-text card-cta" data-open-dialog="assignOwner">Assigned to ${name} — change.</button>
         </div>`;
     }
     return `<div class="status-row-card attention" data-triage-card="assignOwner">
@@ -2416,7 +2415,7 @@
       openDialogKey = '';
     }
     if(key === 'assignOwner'){
-      document.getElementById('assignToSelect').value = '';
+      document.getElementById('assignToSelect').value = TRIAGE_CARD_STATE.assignedOwnerValue || '';
       clearAssignToError();
     }
     if(key === 'recordDecision'){
@@ -2453,6 +2452,7 @@
       const name = select.options[select.selectedIndex].textContent.split('—')[0].trim();
       TRIAGE_CARD_STATE.ownerAssigned = true;
       TRIAGE_CARD_STATE.assignedOwnerName = name;
+      TRIAGE_CARD_STATE.assignedOwnerValue = select.value;
       toast('Owner assigned — ' + name);
       closeTriageDialog();
       renderApp();
