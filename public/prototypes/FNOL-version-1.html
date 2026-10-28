@@ -990,17 +990,39 @@
   .confirm-stripe-value{
     flex:1 1 auto;min-width:0;font-family:var(--font-body);font-size:15px;font-weight:400;line-height:22px;color:var(--text-primary);word-break:break-word;
   }
-  .review-confirm-actions{width:100%;display:flex;justify-content:center;margin-top:28px;}
-  .mui-dialog-paper.review-submit-paper{max-width:720px;}
-  .mui-dialog-content .confirm-stripe-list{margin-top:8px;}
-  .mui-dialog-content .review-confirm{padding:8px 0 0;max-width:none;}
   .edit-mode-link[hidden]{display:none !important;}
   .substep-rail[hidden]{display:none !important;}
-  #submitConfirmView[hidden],
-  #submitSuccessView[hidden],
-  #submitConfirmActions[hidden],
-  #submitSuccessActions[hidden]{display:none !important;}
   .content-row.review-only .main-scroll{flex:1 1 auto;}
+  /* Apple-style submit success alert */
+  .mui-dialog-paper.apple-alert{
+    max-width:280px;margin:32px;border-radius:14px;overflow:hidden;
+    box-shadow:0 8px 28px rgba(0,0,0,.18);
+  }
+  .mui-dialog-paper.apple-alert .mui-dialog-content{
+    padding:22px 20px 16px;text-align:center;
+  }
+  .apple-alert-icon{
+    width:36px;height:36px;border-radius:50%;margin:0 auto 10px;
+    display:grid;place-items:center;background:rgba(15,92,41,.12);color:var(--success-main);
+  }
+  .apple-alert-icon svg{width:20px;height:20px;}
+  .apple-alert-title{
+    margin:0;font-family:var(--font-display);font-size:17px;font-weight:600;line-height:22px;color:var(--text-primary);
+  }
+  .apple-alert-body{
+    margin:6px 0 0;font-family:var(--font-body);font-size:13px;font-weight:400;line-height:18px;color:var(--text-secondary);
+  }
+  .apple-alert-claim{
+    margin:10px 0 0;font-family:var(--font-display);font-size:15px;font-weight:500;line-height:20px;color:var(--text-primary);
+  }
+  .mui-dialog-paper.apple-alert .mui-dialog-actions{
+    padding:0;border-top:1px solid var(--divider);justify-content:stretch;
+  }
+  .mui-dialog-paper.apple-alert .mui-dialog-actions .btn{
+    flex:1 1 auto;width:100%;min-width:0;height:44px;margin:0;border-radius:0;
+    font-size:16px;font-weight:600;justify-content:center;
+  }
+  .mui-dialog-paper.apple-alert .mui-dialog-actions .btn:hover{background:var(--primary-hover-bg);}
   @media (prefers-reduced-motion:reduce){
     .mui-dialog-backdrop,.mui-dialog-paper,.mui-dialog-root.is-open .mui-dialog-backdrop,.mui-dialog-root.is-open .mui-dialog-paper{
       transition:none !important;
@@ -1586,27 +1608,15 @@
 
 <div class="mui-dialog-root" id="dialogSubmitConfirm" role="presentation" aria-hidden="true" data-dialog="submitConfirm">
   <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
-  <div class="mui-dialog-paper wide review-submit-paper" role="dialog" aria-modal="true" aria-labelledby="dialogSubmitConfirmTitle" tabindex="-1">
-    <h2 class="mui-dialog-title" id="dialogSubmitConfirmTitle">Submit claim</h2>
+  <div class="mui-dialog-paper apple-alert" role="dialog" aria-modal="true" aria-labelledby="dialogSubmitConfirmTitle" tabindex="-1">
     <div class="mui-dialog-content">
-      <div id="submitConfirmView">
-        <p style="margin:0 0 8px;font-family:var(--font-body);font-size:15px;line-height:22px;color:var(--text-secondary);">Confirm the following will be submitted.</p>
-        <div class="confirm-stripe-list" id="submitConfirmSummary"></div>
-      </div>
-      <div id="submitSuccessView" class="review-confirm" hidden>
-        <div class="review-confirm-icon" aria-hidden="true"><svg class="mi" width="28" height="28" viewBox="0 -960 960 960"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg></div>
-        <h3 class="review-confirm-title">Claim submitted</h3>
-        <p class="review-confirm-body">FNOL intake is complete. Downstream work can continue under this claim number.</p>
-        <p class="review-confirm-claim" id="submitSuccessClaimNo">CA141288</p>
-        <div class="confirm-stripe-list" id="submitSuccessSummary"></div>
-      </div>
+      <div class="apple-alert-icon" aria-hidden="true"><svg class="mi" width="20" height="20" viewBox="0 -960 960 960"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg></div>
+      <h2 class="apple-alert-title" id="dialogSubmitConfirmTitle">Claim submitted</h2>
+      <p class="apple-alert-body">FNOL intake is complete. Downstream work can continue under this claim number.</p>
+      <p class="apple-alert-claim" id="submitSuccessClaimNo">CA141288</p>
     </div>
-    <div class="mui-dialog-actions" id="submitConfirmActions">
-      <button type="button" class="btn btn-text" data-dialog-dismiss>Cancel</button>
-      <button type="button" class="btn btn-primary" data-dialog-save="submitConfirm">Confirm</button>
-    </div>
-    <div class="mui-dialog-actions" id="submitSuccessActions" hidden>
-      <button type="button" class="btn btn-primary" data-dialog-dismiss>Close</button>
+    <div class="mui-dialog-actions">
+      <button type="button" class="btn btn-text" data-dialog-dismiss>OK</button>
     </div>
   </div>
 </div>
@@ -2776,19 +2786,6 @@
     resolveIntake: document.getElementById('dialogResolveIntake'),
     submitConfirm: document.getElementById('dialogSubmitConfirm')
   };
-  function setSubmitDialogMode(mode){
-    const confirmView = document.getElementById('submitConfirmView');
-    const successView = document.getElementById('submitSuccessView');
-    const confirmActions = document.getElementById('submitConfirmActions');
-    const successActions = document.getElementById('submitSuccessActions');
-    const title = document.getElementById('dialogSubmitConfirmTitle');
-    const isSuccess = mode === 'success';
-    confirmView.hidden = isSuccess;
-    successView.hidden = !isSuccess;
-    confirmActions.hidden = isSuccess;
-    successActions.hidden = !isSuccess;
-    title.textContent = isSuccess ? 'Submission complete' : 'Submit claim';
-  }
   let openDialogKey = '';
   function syncSiuReasonVisibility(){
     const status = document.getElementById('siuDecisionStatus').value;
@@ -2876,11 +2873,12 @@
       clearIntakeResolveError();
     }
     if(key === 'submitConfirm'){
-      const rows = reviewStripeRowsHtml();
-      document.getElementById('submitConfirmSummary').innerHTML = rows;
-      document.getElementById('submitSuccessSummary').innerHTML = rows;
+      if(!REVIEW_STATE.submitted){
+        REVIEW_STATE.submitted = true;
+        REVIEW_STATE.claimNumber = REVIEW_CLAIM_NUMBER;
+        toast('Claim ' + REVIEW_STATE.claimNumber + ' submitted');
+      }
       document.getElementById('submitSuccessClaimNo').textContent = REVIEW_STATE.claimNumber || REVIEW_CLAIM_NUMBER;
-      setSubmitDialogMode(REVIEW_STATE.submitted ? 'success' : 'confirm');
     }
     clearTimeout(dialogCloseTimer);
     openDialogKey = key;
@@ -2985,14 +2983,6 @@
       closeTriageDialog();
       renderApp();
       return;
-    }
-    if(key === 'submitConfirm'){
-      REVIEW_STATE.submitted = true;
-      REVIEW_STATE.claimNumber = REVIEW_CLAIM_NUMBER;
-      document.getElementById('submitSuccessClaimNo').textContent = REVIEW_STATE.claimNumber;
-      document.getElementById('submitSuccessSummary').innerHTML = reviewStripeRowsHtml();
-      setSubmitDialogMode('success');
-      toast('Claim ' + REVIEW_STATE.claimNumber + ' submitted');
     }
   }
   document.getElementById('assignToSelect').addEventListener('change', clearAssignToError);
