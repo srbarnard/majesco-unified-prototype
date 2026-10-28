@@ -1698,24 +1698,54 @@
   /* =========================================================
      TRIAGE — Decisions & handover
      ========================================================= */
-  function triageDecisions(){
-    return sectionOpen('Triage decisions', '<span class="pill-warning">2 open</span>') + `
-      <div class="triage-decisions-grid">
-        <div class="status-row-card attention">
+  const TRIAGE_CARD_STATE = {ownerAssigned:false, decisionRecorded:false};
+  function triageOpenCount(){
+    return (TRIAGE_CARD_STATE.ownerAssigned ? 0 : 1) + (TRIAGE_CARD_STATE.decisionRecorded ? 0 : 1);
+  }
+  function triageOpenPill(){
+    const n = triageOpenCount();
+    if(n === 0) return '<span class="pill-muted">0 open</span>';
+    return `<span class="pill-warning">${n} open</span>`;
+  }
+  function triageOwnerCard(){
+    if(TRIAGE_CARD_STATE.ownerAssigned){
+      return `<div class="status-row-card done" data-triage-card="assignOwner">
+          <span class="icon">${mi('check_circle',20)}</span>
+          <div><div class="title">Owner assigned</div></div>
+        </div>`;
+    }
+    return `<div class="status-row-card attention" data-triage-card="assignOwner">
           <span class="icon">${mi('warning',20)}</span>
           <div><div class="title">Set the claim owner</div><div class="desc">Assignment establishes ownership and starts downstream service expectations.</div></div>
           <button type="button" class="btn btn-text card-cta" data-open-dialog="assignOwner">Assign owner</button>
-        </div>
-        <div class="status-row-card done">
+        </div>`;
+  }
+  function triageReferralCard(){
+    return `<div class="status-row-card done" data-triage-card="viewReferral">
           <span class="icon">${mi('check_circle',20)}</span>
           <div><div class="title">Coverage question routed</div><div class="desc">Driver schedule mismatch remains unresolved from FNOL.</div></div>
           <button type="button" class="btn btn-text card-cta" data-open-dialog="viewReferral">View referral</button>
-        </div>
-        <div class="status-row-card attention">
+        </div>`;
+  }
+  function triageDecisionCard(){
+    if(TRIAGE_CARD_STATE.decisionRecorded){
+      return `<div class="status-row-card done" data-triage-card="recordDecision">
+          <span class="icon">${mi('check_circle',20)}</span>
+          <div><div class="title">Decision recorded</div></div>
+        </div>`;
+    }
+    return `<div class="status-row-card attention" data-triage-card="recordDecision">
           <span class="icon">${mi('warning',20)}</span>
           <div><div class="title">Record SIU decision</div><div class="desc">Claim score is above the review threshold.</div></div>
           <button type="button" class="btn btn-text card-cta" data-open-dialog="recordDecision">Record decision</button>
-        </div>
+        </div>`;
+  }
+  function triageDecisions(){
+    return sectionOpen('Triage decisions', triageOpenPill()) + `
+      <div class="triage-decisions-grid">
+        ${triageOwnerCard()}
+        ${triageReferralCard()}
+        ${triageDecisionCard()}
       </div>
     ` + sectionClose +
 
@@ -2418,8 +2448,10 @@
       }
       clearAssignToError();
       const name = select.options[select.selectedIndex].textContent.split('—')[0].trim();
+      TRIAGE_CARD_STATE.ownerAssigned = true;
       toast('Owner assigned — ' + name);
       closeTriageDialog();
+      renderApp();
       return;
     }
     if(key === 'recordDecision'){
@@ -2431,8 +2463,10 @@
         return;
       }
       const label = status === 'Returned' ? 'Returned to examiner' : status;
+      TRIAGE_CARD_STATE.decisionRecorded = true;
       toast('SIU decision recorded — ' + label);
       closeTriageDialog();
+      renderApp();
     }
   }
   document.getElementById('assignToSelect').addEventListener('change', clearAssignToError);
