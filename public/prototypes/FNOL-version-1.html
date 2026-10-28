@@ -809,6 +809,64 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+  /* ---- MUI-style dialogs (Majesco One tokens) ---- */
+  .mui-dialog-root{
+    position:fixed;inset:0;z-index:1200;display:none;align-items:center;justify-content:center;
+  }
+  .mui-dialog-root.is-open{display:flex;}
+  .mui-dialog-backdrop{
+    position:absolute;inset:0;background:rgba(0,0,0,.5);border:none;padding:0;cursor:pointer;
+  }
+  .mui-dialog-paper{
+    position:relative;z-index:1;width:100%;max-width:444px;margin:32px;
+    background:var(--surface);border-radius:var(--radius);box-shadow:0 11px 15px -7px rgba(0,0,0,.2),0 24px 38px 3px rgba(0,0,0,.14),0 9px 46px 8px rgba(0,0,0,.12);
+    display:flex;flex-direction:column;max-height:calc(100% - 64px);outline:none;
+  }
+  .mui-dialog-paper.wide{max-width:520px;}
+  .mui-dialog-title{
+    margin:0;padding:16px 24px 8px;font-family:var(--font-display);font-size:18px;font-weight:600;
+    line-height:28px;color:var(--text-primary);
+  }
+  .mui-dialog-content{
+    padding:8px 24px 16px;overflow-y:auto;font-family:var(--font-body);font-size:14px;
+    line-height:20px;color:var(--text-primary);
+  }
+  .mui-dialog-content .field{margin-bottom:16px;}
+  .mui-dialog-content .field:last-child{margin-bottom:0;}
+  .mui-dialog-content .field[hidden]{display:none !important;}
+  .mui-dialog-content .field label .req{color:var(--error-main);margin-left:2px;}
+  .mui-dialog-content .field-error-text{
+    display:none;margin-top:4px;font-size:12px;line-height:16px;color:var(--error-main);font-family:var(--font-body);
+  }
+  .mui-dialog-content .field.has-error .ctrl{border-color:var(--error-main);box-shadow:none;}
+  .mui-dialog-content .field.has-error .field-error-text{display:block;}
+  /* Dialog controls stay editable even when claim editing mode is off. */
+  .mui-dialog-root .ctrl:not([readonly]),
+  body:not(.editing-active) .mui-dialog-root .ctrl:not([readonly]){
+    background:var(--field-fill);border:1px solid var(--border);pointer-events:auto;box-shadow:none;color:var(--text-primary);
+  }
+  body:not(.editing-active) .mui-dialog-root select.ctrl:not([readonly]){
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236B6F76'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center;
+  }
+  body:not(.editing-active) .mui-dialog-root input[type="date"].ctrl:not([readonly])::-webkit-calendar-picker-indicator{opacity:1;}
+  .mui-dialog-root .ctrl:not([readonly]):focus{
+    outline:none;border-color:var(--primary-main);box-shadow:0 0 0 3px var(--primary-selected-bg);
+  }
+  .mui-dialog-summary{display:flex;flex-direction:column;gap:12px;}
+  .mui-dialog-summary-row{display:grid;grid-template-columns:140px 1fr;gap:8px 12px;align-items:start;}
+  .mui-dialog-summary-label{font-family:var(--font-body);font-size:12px;font-weight:400;line-height:16px;color:var(--text-secondary);}
+  .mui-dialog-summary-value{font-family:var(--font-body);font-size:14px;font-weight:400;line-height:20px;color:var(--text-primary);}
+  .mui-dialog-actions{
+    display:flex;align-items:center;justify-content:flex-end;gap:8px;
+    padding:8px 24px 20px;
+  }
+  .mui-dialog-actions .btn{min-width:72px;}
+  body.mui-dialog-open{overflow:hidden;}
+  @media (prefers-reduced-motion:reduce){
+    .mui-dialog-root,.mui-dialog-paper{transition:none !important;}
+  }
+
   svg{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 </style>
 </head>
@@ -1221,6 +1279,111 @@
 </div>
 </div>
 
+<!-- ===== Triage decision dialogs (MUI-style, Majesco One) ===== -->
+<div class="mui-dialog-root" id="dialogAssignOwner" role="presentation" aria-hidden="true" data-dialog="assignOwner">
+  <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
+  <div class="mui-dialog-paper" role="dialog" aria-modal="true" aria-labelledby="dialogAssignOwnerTitle" tabindex="-1">
+    <h2 class="mui-dialog-title" id="dialogAssignOwnerTitle">Assign owner</h2>
+    <div class="mui-dialog-content">
+      <div class="field" id="assignToField">
+        <label for="assignToSelect">Assign To<span class="req" aria-hidden="true">*</span></label>
+        <select class="ctrl" id="assignToSelect" required aria-required="true">
+          <option value="">Please select</option>
+          <option value="casey-morgan">Casey Morgan — SIU examiner</option>
+          <option value="riley-santos">Riley Santos — SIU examiner</option>
+          <option value="jordan-quinn">Jordan Quinn — SIU examiner</option>
+          <option value="avery-patel">Avery Patel — SIU senior examiner</option>
+          <option value="morgan-ellis">Morgan Ellis — SIU examiner</option>
+        </select>
+        <div class="field-error-text" id="assignToError">Assign To is required.</div>
+      </div>
+    </div>
+    <div class="mui-dialog-actions">
+      <button type="button" class="btn btn-text" data-dialog-dismiss>Cancel</button>
+      <button type="button" class="btn btn-primary" data-dialog-save="assignOwner">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="mui-dialog-root" id="dialogViewReferral" role="presentation" aria-hidden="true" data-dialog="viewReferral">
+  <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
+  <div class="mui-dialog-paper wide" role="dialog" aria-modal="true" aria-labelledby="dialogViewReferralTitle" tabindex="-1">
+    <h2 class="mui-dialog-title" id="dialogViewReferralTitle">SIU referral</h2>
+    <div class="mui-dialog-content">
+      <div class="mui-dialog-summary">
+        <div class="mui-dialog-summary-row">
+          <div class="mui-dialog-summary-label">Assignee</div>
+          <div class="mui-dialog-summary-value">Casey Morgan — SIU examiner</div>
+        </div>
+        <div class="mui-dialog-summary-row">
+          <div class="mui-dialog-summary-label">Claim impact</div>
+          <div class="mui-dialog-summary-value">Score 62 exceeds SIU review threshold (50). Commercial Auto rear-end with schedule mismatch and elevated reserve exposure.</div>
+        </div>
+        <div class="mui-dialog-summary-row">
+          <div class="mui-dialog-summary-label">SIU flag</div>
+          <div class="mui-dialog-summary-value">Active — claim score threshold</div>
+        </div>
+        <div class="mui-dialog-summary-row">
+          <div class="mui-dialog-summary-label">Referral created</div>
+          <div class="mui-dialog-summary-value">Oct 27, 2026 · 10:14 AM</div>
+        </div>
+        <div class="mui-dialog-summary-row">
+          <div class="mui-dialog-summary-label">Assigned</div>
+          <div class="mui-dialog-summary-value">Oct 27, 2026 · 11:02 AM</div>
+        </div>
+        <div class="mui-dialog-summary-row">
+          <div class="mui-dialog-summary-label">Due for review</div>
+          <div class="mui-dialog-summary-value">Oct 30, 2026</div>
+        </div>
+        <div class="mui-dialog-summary-row">
+          <div class="mui-dialog-summary-label">Status</div>
+          <div class="mui-dialog-summary-value">Pending SIU decision</div>
+        </div>
+      </div>
+    </div>
+    <div class="mui-dialog-actions">
+      <button type="button" class="btn btn-primary" data-dialog-dismiss>Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="mui-dialog-root" id="dialogRecordDecision" role="presentation" aria-hidden="true" data-dialog="recordDecision">
+  <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
+  <div class="mui-dialog-paper" role="dialog" aria-modal="true" aria-labelledby="dialogRecordDecisionTitle" tabindex="-1">
+    <h2 class="mui-dialog-title" id="dialogRecordDecisionTitle">Record SIU decision</h2>
+    <div class="mui-dialog-content">
+      <div class="field">
+        <label for="siuDecisionStatus">Status</label>
+        <select class="ctrl" id="siuDecisionStatus">
+          <option value="Accepted" selected>Accepted</option>
+          <option value="Rejected">Rejected</option>
+          <option value="Returned">Returned to examiner</option>
+        </select>
+      </div>
+      <div class="field" id="siuDecisionReasonField" hidden>
+        <label for="siuDecisionReason">Reason</label>
+        <select class="ctrl" id="siuDecisionReason">
+          <option value="">Please select</option>
+          <option value="insufficient-indicators">Insufficient fraud indicators</option>
+          <option value="coverage-dispute">Coverage dispute — return to examiner</option>
+          <option value="documentation-incomplete">Documentation incomplete</option>
+          <option value="outside-siu-scope">Outside SIU scope</option>
+          <option value="duplicate-referral">Duplicate referral</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="siuDecisionDate">Decision date <span style="color:var(--text-secondary);font-weight:400;">(optional)</span></label>
+        <input class="ctrl" type="date" id="siuDecisionDate">
+      </div>
+    </div>
+    <div class="mui-dialog-actions">
+      <button type="button" class="btn btn-text" data-dialog-dismiss>Cancel</button>
+      <button type="button" class="btn btn-primary" data-dialog-save="recordDecision">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1525,17 +1688,17 @@
         <div class="status-row-card attention">
           <span class="icon">${mi('warning',20)}</span>
           <div><div class="title">Set the claim owner</div><div class="desc">Assignment establishes ownership and starts downstream service expectations.</div></div>
-          <button type="button" class="btn btn-text card-cta" data-goto-sub="1" data-goto-msg="Pick an owner in Claim assignment">Assign owner</button>
+          <button type="button" class="btn btn-text card-cta" data-open-dialog="assignOwner">Assign owner</button>
         </div>
         <div class="status-row-card done">
           <span class="icon">${mi('check_circle',20)}</span>
           <div><div class="title">Coverage question routed</div><div class="desc">Driver schedule mismatch remains unresolved from FNOL.</div></div>
-          <button type="button" class="btn btn-text card-cta" data-goto-sub="1" data-goto-msg="Coverage Examiner referral is in Routing &amp; referrals">View referral</button>
+          <button type="button" class="btn btn-text card-cta" data-open-dialog="viewReferral">View referral</button>
         </div>
         <div class="status-row-card attention">
           <span class="icon">${mi('warning',20)}</span>
           <div><div class="title">Record SIU decision</div><div class="desc">Claim score is above the review threshold.</div></div>
-          <button type="button" class="btn btn-text card-cta" data-goto-sub="1" data-goto-msg="Record the SIU decision in Routing &amp; referrals">Record decision</button>
+          <button type="button" class="btn btn-text card-cta" data-open-dialog="recordDecision">Record decision</button>
         </div>
       </div>
     ` + sectionClose +
@@ -2007,12 +2170,8 @@
         row.querySelectorAll('.candidate-card').forEach(c=>c.classList.toggle('selected', c.contains(radio)));
       });
     });
-    document.querySelectorAll('[data-goto-sub]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        STATE.subIndex = Number(btn.dataset.gotoSub);
-        renderApp();
-        if(btn.dataset.gotoMsg) toast(btn.dataset.gotoMsg.replace('&amp;','&'));
-      });
+    document.querySelectorAll('[data-open-dialog]').forEach(btn=>{
+      btn.addEventListener('click', ()=> openTriageDialog(btn.dataset.openDialog));
     });
     wireEvidence();
     document.querySelectorAll('[data-add-target]').forEach(btn=>{
@@ -2163,6 +2322,94 @@
 
   renderApp();
 
+  /* Triage decision dialogs — Assign owner / View referral / Record decision. */
+  const TRIAGE_DIALOGS = {
+    assignOwner: document.getElementById('dialogAssignOwner'),
+    viewReferral: document.getElementById('dialogViewReferral'),
+    recordDecision: document.getElementById('dialogRecordDecision')
+  };
+  let openDialogKey = '';
+  function syncSiuReasonVisibility(){
+    const status = document.getElementById('siuDecisionStatus').value;
+    const reasonField = document.getElementById('siuDecisionReasonField');
+    const needsReason = status === 'Rejected' || status === 'Returned';
+    reasonField.hidden = !needsReason;
+    if(!needsReason) document.getElementById('siuDecisionReason').value = '';
+  }
+  function clearAssignToError(){
+    document.getElementById('assignToField').classList.remove('has-error');
+    document.getElementById('assignToSelect').removeAttribute('aria-invalid');
+  }
+  function closeTriageDialog(){
+    if(!openDialogKey) return;
+    const root = TRIAGE_DIALOGS[openDialogKey];
+    if(root){
+      root.classList.remove('is-open');
+      root.setAttribute('aria-hidden', 'true');
+    }
+    openDialogKey = '';
+    document.body.classList.remove('mui-dialog-open');
+  }
+  function openTriageDialog(key){
+    const root = TRIAGE_DIALOGS[key];
+    if(!root) return;
+    if(openDialogKey && openDialogKey !== key) closeTriageDialog();
+    if(key === 'assignOwner'){
+      document.getElementById('assignToSelect').value = '';
+      clearAssignToError();
+    }
+    if(key === 'recordDecision'){
+      document.getElementById('siuDecisionStatus').value = 'Accepted';
+      document.getElementById('siuDecisionReason').value = '';
+      document.getElementById('siuDecisionDate').value = '';
+      syncSiuReasonVisibility();
+    }
+    openDialogKey = key;
+    root.classList.add('is-open');
+    root.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('mui-dialog-open');
+    const paper = root.querySelector('.mui-dialog-paper');
+    if(paper) paper.focus();
+  }
+  function saveTriageDialog(key){
+    if(key === 'assignOwner'){
+      const select = document.getElementById('assignToSelect');
+      const field = document.getElementById('assignToField');
+      if(!select.value){
+        field.classList.add('has-error');
+        select.setAttribute('aria-invalid', 'true');
+        select.focus();
+        return;
+      }
+      clearAssignToError();
+      const name = select.options[select.selectedIndex].textContent.split('—')[0].trim();
+      toast('Owner assigned — ' + name);
+      closeTriageDialog();
+      return;
+    }
+    if(key === 'recordDecision'){
+      const status = document.getElementById('siuDecisionStatus').value;
+      const reason = document.getElementById('siuDecisionReason').value;
+      if((status === 'Rejected' || status === 'Returned') && !reason){
+        toast('Select a reason for this decision');
+        document.getElementById('siuDecisionReason').focus();
+        return;
+      }
+      const label = status === 'Returned' ? 'Returned to examiner' : status;
+      toast('SIU decision recorded — ' + label);
+      closeTriageDialog();
+    }
+  }
+  document.getElementById('assignToSelect').addEventListener('change', clearAssignToError);
+  document.getElementById('siuDecisionStatus').addEventListener('change', syncSiuReasonVisibility);
+  Object.values(TRIAGE_DIALOGS).forEach(root=>{
+    root.addEventListener('click', (e)=>{
+      if(e.target.closest('[data-dialog-dismiss]')){ e.preventDefault(); closeTriageDialog(); return; }
+      const saveBtn = e.target.closest('[data-dialog-save]');
+      if(saveBtn){ e.preventDefault(); saveTriageDialog(saveBtn.dataset.dialogSave); }
+    });
+  });
+
   /* Left rail drawers — Activity / Favorites (claim-oriented), under app bar. */
   const railDrawer = document.getElementById('railDrawer');
   const railDrawerTitle = document.getElementById('railDrawerTitle');
@@ -2228,6 +2475,7 @@
   document.getElementById('copilotDrawerClose').addEventListener('click', ()=> setCopilotOpen(false));
   document.addEventListener('keydown', (e)=>{
     if(e.key !== 'Escape') return;
+    if(openDialogKey){ closeTriageDialog(); return; }
     if(copilotBtn.getAttribute('aria-expanded') === 'true'){ setCopilotOpen(false); return; }
     if(railPanel) setRailDrawer('');
   });
