@@ -1698,7 +1698,7 @@
   /* =========================================================
      TRIAGE — Decisions & handover
      ========================================================= */
-  const TRIAGE_CARD_STATE = {ownerAssigned:false, decisionRecorded:false};
+  const TRIAGE_CARD_STATE = {ownerAssigned:false, assignedOwnerName:'', decisionRecorded:false};
   function triageOpenCount(){
     return (TRIAGE_CARD_STATE.ownerAssigned ? 0 : 1) + (TRIAGE_CARD_STATE.decisionRecorded ? 0 : 1);
   }
@@ -1709,9 +1709,12 @@
   }
   function triageOwnerCard(){
     if(TRIAGE_CARD_STATE.ownerAssigned){
+      const ownerLabel = TRIAGE_CARD_STATE.assignedOwnerName
+        ? `Owner assigned — ${TRIAGE_CARD_STATE.assignedOwnerName}`
+        : 'Owner assigned';
       return `<div class="status-row-card done" data-triage-card="assignOwner">
           <span class="icon">${mi('check_circle',20)}</span>
-          <div><div class="title">Owner assigned</div></div>
+          <div><div class="title">${ownerLabel}</div></div>
         </div>`;
     }
     return `<div class="status-row-card attention" data-triage-card="assignOwner">
@@ -2449,6 +2452,7 @@
       clearAssignToError();
       const name = select.options[select.selectedIndex].textContent.split('—')[0].trim();
       TRIAGE_CARD_STATE.ownerAssigned = true;
+      TRIAGE_CARD_STATE.assignedOwnerName = name;
       toast('Owner assigned — ' + name);
       closeTriageDialog();
       renderApp();
