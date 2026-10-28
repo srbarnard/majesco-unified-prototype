@@ -995,6 +995,12 @@
   .mui-dialog-content .confirm-stripe-list{margin-top:8px;}
   .mui-dialog-content .review-confirm{padding:8px 0 0;max-width:none;}
   .edit-mode-link[hidden]{display:none !important;}
+  .substep-rail[hidden]{display:none !important;}
+  #submitConfirmView[hidden],
+  #submitSuccessView[hidden],
+  #submitConfirmActions[hidden],
+  #submitSuccessActions[hidden]{display:none !important;}
+  .content-row.review-only .main-scroll{flex:1 1 auto;}
   @media (prefers-reduced-motion:reduce){
     .mui-dialog-backdrop,.mui-dialog-paper,.mui-dialog-root.is-open .mui-dialog-backdrop,.mui-dialog-root.is-open .mui-dialog-paper{
       transition:none !important;
@@ -2248,9 +2254,6 @@
       <h2 class="review-confirm-title">Ready to submit</h2>
       <p class="review-confirm-body">Confirm the details below, then submit this claim.</p>
       <div class="confirm-stripe-list">${reviewStripeRowsHtml()}</div>
-      <div class="review-confirm-actions">
-        <button type="button" class="btn btn-primary" id="reviewSubmitBtn">Submit</button>
-      </div>
     </div>`;
   }
 
@@ -2653,18 +2656,15 @@
 
     const list = RAIL[STATE.stepper];
     const onReview = STATE.stepper==='review';
+    const railEl = document.getElementById('substepRail');
+    const contentRow = document.querySelector('.content-row');
+    if(railEl) railEl.hidden = onReview;
+    if(contentRow) contentRow.classList.toggle('review-only', onReview);
     document.getElementById('mainCol').innerHTML = onReview
       ? reviewSummary()
       : list[STATE.subIndex].body();
     document.getElementById('mainScroll').scrollTop = 0;
     wireBodyEvents();
-    const reviewSubmitBtn = document.getElementById('reviewSubmitBtn');
-    if(reviewSubmitBtn){
-      reviewSubmitBtn.addEventListener('click', ()=>{
-        if(REVIEW_STATE.submitted) return;
-        openTriageDialog('submitConfirm');
-      });
-    }
 
     const isFirst = STATE.stepper==='fnol' && STATE.subIndex===0;
     const isLastOfStepper = onReview || STATE.subIndex === list.length-1;
@@ -2680,8 +2680,8 @@
     backLink.disabled = isFirst;
     const continueBtn = document.getElementById('continueBtn');
     continueBtn.innerHTML = nextLabel;
-    continueBtn.disabled = false;
-    continueBtn.hidden = onReview;
+    continueBtn.disabled = onReview && REVIEW_STATE.submitted;
+    continueBtn.hidden = false;
     const editModeLink = document.getElementById('editModeLink');
     if(editModeLink) editModeLink.hidden = onReview;
     if(onReview) document.body.classList.remove('editing-active');
