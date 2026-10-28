@@ -1356,9 +1356,19 @@
           <div class="mui-dialog-summary-value">Pending SIU decision</div>
         </div>
       </div>
+      <div class="field" style="margin-top:16px;">
+        <label for="coverageReferralDecision">Decision</label>
+        <select class="ctrl" id="coverageReferralDecision">
+          <option value="">Please select</option>
+          <option value="Resolved">Resolved</option>
+          <option value="Returned">Returned to examiner</option>
+          <option value="Needs follow-up">Needs follow-up</option>
+        </select>
+      </div>
     </div>
     <div class="mui-dialog-actions">
-      <button type="button" class="btn btn-primary" data-dialog-dismiss>Close</button>
+      <button type="button" class="btn btn-text" data-dialog-dismiss>Cancel</button>
+      <button type="button" class="btn btn-primary" data-dialog-save="viewReferral">Save</button>
     </div>
   </div>
 </div>
@@ -1700,10 +1710,13 @@
      ========================================================= */
   const TRIAGE_CARD_STATE = {
     ownerAssigned:false, assignedOwnerName:'', assignedOwnerValue:'',
+    referralResolved:false, referralDecision:'',
     decisionRecorded:false, decisionStatus:'', decisionStatusLabel:'', decisionReason:'', decisionDate:''
   };
   function triageOpenCount(){
-    return (TRIAGE_CARD_STATE.ownerAssigned ? 0 : 1) + (TRIAGE_CARD_STATE.decisionRecorded ? 0 : 1);
+    return (TRIAGE_CARD_STATE.ownerAssigned ? 0 : 1)
+      + (TRIAGE_CARD_STATE.referralResolved ? 0 : 1)
+      + (TRIAGE_CARD_STATE.decisionRecorded ? 0 : 1);
   }
   function triageOpenPill(){
     const n = triageOpenCount();
@@ -1726,8 +1739,15 @@
         </div>`;
   }
   function triageReferralCard(){
-    return `<div class="status-row-card done" data-triage-card="viewReferral">
+    if(TRIAGE_CARD_STATE.referralResolved){
+      return `<div class="status-row-card done" data-triage-card="viewReferral">
           <span class="icon">${mi('check_circle',20)}</span>
+          <div><div class="title">Coverage question resolved</div><div class="desc">Driver schedule mismatch remains unresolved from FNOL.</div></div>
+          <button type="button" class="btn btn-text card-cta" data-open-dialog="viewReferral">Change decision</button>
+        </div>`;
+    }
+    return `<div class="status-row-card attention" data-triage-card="viewReferral">
+          <span class="icon">${mi('warning',20)}</span>
           <div><div class="title">Coverage question routed</div><div class="desc">Driver schedule mismatch remains unresolved from FNOL.</div></div>
           <button type="button" class="btn btn-text card-cta" data-open-dialog="viewReferral">View referral</button>
         </div>`;
@@ -2423,6 +2443,9 @@
       document.getElementById('assignToSelect').value = TRIAGE_CARD_STATE.assignedOwnerValue || '';
       clearAssignToError();
     }
+    if(key === 'viewReferral'){
+      document.getElementById('coverageReferralDecision').value = TRIAGE_CARD_STATE.referralDecision || '';
+    }
     if(key === 'recordDecision'){
       document.getElementById('siuDecisionStatus').value = TRIAGE_CARD_STATE.decisionStatus || 'Accepted';
       document.getElementById('siuDecisionReason').value = TRIAGE_CARD_STATE.decisionReason || '';
@@ -2459,6 +2482,20 @@
       TRIAGE_CARD_STATE.assignedOwnerName = name;
       TRIAGE_CARD_STATE.assignedOwnerValue = select.value;
       toast('Owner assigned — ' + name);
+      closeTriageDialog();
+      renderApp();
+      return;
+    }
+    if(key === 'viewReferral'){
+      const decision = document.getElementById('coverageReferralDecision');
+      if(!decision.value){
+        toast('Select a decision for this referral');
+        decision.focus();
+        return;
+      }
+      TRIAGE_CARD_STATE.referralResolved = true;
+      TRIAGE_CARD_STATE.referralDecision = decision.value;
+      toast('Coverage question resolved — ' + decision.value);
       closeTriageDialog();
       renderApp();
       return;
