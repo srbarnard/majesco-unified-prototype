@@ -800,25 +800,32 @@
   .candidate-card .kpi-value.tone-success{color:var(--success-main);}
   .candidate-card .kpi-value.tone-warning{color:var(--warning-main);}
   .candidate-card .kpi-value.tone-error{color:var(--error-main);}
-  .candidate-card .kpi-label{font-size:14px;color:var(--gray-dark);}
-  .candidate-card .cc-specialty-wrap{position:relative;display:inline-flex;align-items:baseline;outline:none;}
+  .candidate-card .kpi-label{font-size:14px;color:var(--gray-dark);display:inline-flex;align-items:center;gap:4px;}
+  .candidate-card .cc-specialty-info{
+    position:relative;display:inline-flex;align-items:center;justify-content:center;
+    width:16px;height:16px;padding:0;border:none;border-radius:50%;background:transparent;
+    color:var(--text-secondary);cursor:help;flex:0 0 auto;outline:none;
+  }
+  .candidate-card .cc-specialty-info:hover,
+  .candidate-card .cc-specialty-info:focus-visible{color:var(--primary-main);}
+  .candidate-card .cc-specialty-info svg{width:14px;height:14px;display:block;}
   .candidate-card .cc-specialty-pop{
-    position:absolute;left:0;top:calc(100% + 6px);z-index:40;width:220px;box-sizing:border-box;
+    position:absolute;left:50%;top:calc(100% + 6px);z-index:40;width:220px;box-sizing:border-box;
     padding:8px 10px;background:var(--surface);border:1px solid var(--divider);border-radius:var(--radius);
     font-family:var(--font-body);font-size:12px;font-weight:400;line-height:1.45;color:var(--text-primary);
     white-space:normal;text-align:left;box-shadow:0 4px 12px rgba(0,0,0,.08);
-    opacity:0;visibility:hidden;pointer-events:none;
+    opacity:0;visibility:hidden;pointer-events:none;transform:translateX(-50%);
     transition:opacity 150ms ease,visibility 0s linear 150ms;
   }
-  .candidate-card:last-child .cc-specialty-pop{left:auto;right:0;}
-  .candidate-card .cc-specialty-wrap:hover .cc-specialty-pop,
-  .candidate-card .cc-specialty-wrap:focus-within .cc-specialty-pop{
+  .candidate-card:last-child .cc-specialty-pop{left:auto;right:0;transform:none;}
+  .candidate-card .cc-specialty-info:hover .cc-specialty-pop,
+  .candidate-card .cc-specialty-info:focus-visible .cc-specialty-pop{
     opacity:1;visibility:visible;transition:opacity 150ms ease,visibility 0s;
   }
   @media (prefers-reduced-motion:reduce){
     .candidate-card .cc-specialty-pop,
-    .candidate-card .cc-specialty-wrap:hover .cc-specialty-pop,
-    .candidate-card .cc-specialty-wrap:focus-within .cc-specialty-pop{transition:none !important;}
+    .candidate-card .cc-specialty-info:hover .cc-specialty-pop,
+    .candidate-card .cc-specialty-info:focus-visible .cc-specialty-pop{transition:none !important;}
   }
 
   .no-match-note{font-size:11.5px;font-style:italic;color:var(--text-secondary);padding:6px 0 0;}
@@ -1846,11 +1853,13 @@
           <div class="cc-kpis">
             <div class="cc-kpi"><span class="kpi-value">${c.openClaims}</span><span class="kpi-label">Open claims</span></div>
             <div class="cc-kpi">
-              <span class="cc-specialty-wrap" tabindex="0" aria-describedby="specialtyPop-${key}">
-                <span class="kpi-value ${c.specialtyTone}">${c.specialty}</span>
-                <span class="cc-specialty-pop" role="tooltip" id="specialtyPop-${key}">Based on loss type, product, and prior claim experience.</span>
+              <span class="kpi-value ${c.specialtyTone}">${c.specialty}</span>
+              <span class="kpi-label">Specialty match
+                <span class="cc-specialty-info" tabindex="0" role="button" aria-label="About Specialty match" aria-describedby="specialtyPop-${key}">
+                  ${mi('info',14)}
+                  <span class="cc-specialty-pop" role="tooltip" id="specialtyPop-${key}">Based on loss type, product, and prior claim experience.</span>
+                </span>
               </span>
-              <span class="kpi-label">Specialty match</span>
             </div>
           </div>
         </label>`;
