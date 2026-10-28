@@ -1698,7 +1698,10 @@
   /* =========================================================
      TRIAGE — Decisions & handover
      ========================================================= */
-  const TRIAGE_CARD_STATE = {ownerAssigned:false, assignedOwnerName:'', assignedOwnerValue:'', decisionRecorded:false};
+  const TRIAGE_CARD_STATE = {
+    ownerAssigned:false, assignedOwnerName:'', assignedOwnerValue:'',
+    decisionRecorded:false, decisionStatus:'', decisionStatusLabel:'', decisionReason:'', decisionDate:''
+  };
   function triageOpenCount(){
     return (TRIAGE_CARD_STATE.ownerAssigned ? 0 : 1) + (TRIAGE_CARD_STATE.decisionRecorded ? 0 : 1);
   }
@@ -1731,9 +1734,11 @@
   }
   function triageDecisionCard(){
     if(TRIAGE_CARD_STATE.decisionRecorded){
+      const statusLabel = TRIAGE_CARD_STATE.decisionStatusLabel || 'recorded';
       return `<div class="status-row-card done" data-triage-card="recordDecision">
           <span class="icon">${mi('check_circle',20)}</span>
-          <div><div class="title">Decision recorded</div></div>
+          <div><div class="title">SIU decision is ${statusLabel}</div><div class="desc">Claim score is above the review threshold.</div></div>
+          <button type="button" class="btn btn-text card-cta" data-open-dialog="recordDecision">Change decision</button>
         </div>`;
     }
     return `<div class="status-row-card attention" data-triage-card="recordDecision">
@@ -2419,9 +2424,9 @@
       clearAssignToError();
     }
     if(key === 'recordDecision'){
-      document.getElementById('siuDecisionStatus').value = 'Accepted';
-      document.getElementById('siuDecisionReason').value = '';
-      document.getElementById('siuDecisionDate').value = '';
+      document.getElementById('siuDecisionStatus').value = TRIAGE_CARD_STATE.decisionStatus || 'Accepted';
+      document.getElementById('siuDecisionReason').value = TRIAGE_CARD_STATE.decisionReason || '';
+      document.getElementById('siuDecisionDate').value = TRIAGE_CARD_STATE.decisionDate || '';
       syncSiuReasonVisibility();
     }
     clearTimeout(dialogCloseTimer);
@@ -2468,6 +2473,10 @@
       }
       const label = status === 'Returned' ? 'Returned to examiner' : status;
       TRIAGE_CARD_STATE.decisionRecorded = true;
+      TRIAGE_CARD_STATE.decisionStatus = status;
+      TRIAGE_CARD_STATE.decisionStatusLabel = label;
+      TRIAGE_CARD_STATE.decisionReason = reason;
+      TRIAGE_CARD_STATE.decisionDate = document.getElementById('siuDecisionDate').value;
       toast('SIU decision recorded — ' + label);
       closeTriageDialog();
       renderApp();
