@@ -1275,7 +1275,7 @@
   .claims-table-shell .datagrid{margin:0;width:100%;}
   .claims-table-shell .datagrid thead th{
     background:#fff;color:var(--text-secondary);
-    font-size:13px;font-weight:500;padding:10px 12px;border-bottom:1px solid var(--divider);
+    font-size:13px;font-weight:500;padding:10px 12px;border-bottom:none;
   }
   .claims-table-shell .datagrid tbody td{
     padding:14px 12px;border-bottom:1px solid var(--divider);vertical-align:middle;
@@ -2777,9 +2777,12 @@
         </div>
         <div class="claims-metrics">${metrics}</div>
       </section>
-      <section class="claims-table-section" aria-label="Claims">
+      <section class="claims-table-section" aria-labelledby="recentClaimsTitle">
+        <div class="claims-section-head">
+          <h3 class="claims-section-title" id="recentClaimsTitle">Recent claims</h3>
+        </div>
         <div class="claims-table-shell">
-          <table class="datagrid" aria-label="Claims">
+          <table class="datagrid" aria-label="Recent claims">
             <thead>
               <tr>
                 <th>Claim number</th>
