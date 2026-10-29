@@ -66,6 +66,9 @@
     --radius-lg:4px;
     --radius-pill:100px;
 
+    /* Majesco Patterns / MUI elevation 1 — card drop shadow */
+    --elevation-1:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
+
     --font-display:'Poppins',sans-serif;
     --font-body:'Open Sans',sans-serif;
   }
@@ -376,7 +379,7 @@
   .copilot-chat-item .chat-ic svg{width:18px;height:18px;}
   .copilot-chat-item .chat-label{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .copilot-prompt-card{
-    border:1px solid var(--divider);border-radius:var(--radius);padding:12px;background:var(--surface);
+    border:1px solid var(--divider);border-radius:var(--radius);padding:12px;background:var(--surface);box-shadow:var(--elevation-1);
     display:flex;flex-direction:column;gap:6px;cursor:pointer;text-align:left;width:100%;
     font:inherit;color:inherit;box-sizing:border-box;
   }
@@ -671,7 +674,7 @@
   .alert .alert-action{margin-left:auto;flex:0 0 auto;font-weight:700;font-size:13px;white-space:nowrap;}
 
   .signal-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;}
-  .signal-card{background:var(--surface-subtle);border:1px solid var(--divider);border-radius:var(--radius-sm);padding:12px 14px;}
+  .signal-card{background:var(--surface-subtle);border:1px solid var(--divider);border-radius:var(--radius-sm);padding:12px 14px;box-shadow:var(--elevation-1);}
   .signal-card .k{font-size:11.5px;color:var(--text-secondary);font-weight:600;margin-bottom:4px;}
   .signal-card .v{font-size:13.5px;font-weight:700;color:var(--text-primary);}
   .signal-card .v.good{color:var(--success-main);}
@@ -844,7 +847,7 @@
   /* ---- Column doc card (FNOL-4 / reference key pattern) ---- */
   .doc-card-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;}
   .doc-card-row.cols-4{grid-template-columns:repeat(4,1fr);}
-  .doc-card{border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;}
+  .doc-card{border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;box-shadow:var(--elevation-1);}
   .doc-card .dc-head{display:flex;align-items:center;gap:8px;}
   .doc-card .dc-head svg{flex:0 0 auto;}   /* file icon colour is set by .dc-file-ic; trash colour by .trash-btn */
   .doc-card .dc-head .dc-file-ic{color:var(--gray-dark);width:20px;height:20px;}
@@ -874,7 +877,7 @@
   .triage-decisions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;}
   
   /* ---- Status row card (Column Doc Card typography / spacing) ---- */
-  .status-row-card{display:flex;flex-direction:column;gap:0;border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;}
+  .status-row-card{display:flex;flex-direction:column;gap:0;border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;box-shadow:var(--elevation-1);}
   .status-row-card>div{display:flex;flex-direction:column;gap:5px;}
   .status-row-card .icon{
     width:32px;height:32px;border-radius:4px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
@@ -924,14 +927,14 @@
 
   /* ---- Checkbox card (Triage-2 routing & referrals pattern) ---- */
   .checkbox-card-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-  .checkbox-card{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;cursor:pointer;}
+  .checkbox-card{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;cursor:pointer;box-shadow:var(--elevation-1);}
   .checkbox-card input{margin-top:2px;accent-color:var(--primary-main);width:16px;height:16px;flex:0 0 auto;}
   .checkbox-card .title{font-size:14px;font-weight:400;color:var(--text-primary);}
   .checkbox-card .desc{font-size:12px;color:var(--text-secondary);margin-top:3px;line-height:1.4;}
 
   /* ---- Candidate / assignment card (Triage-2 claim assignment pattern) ---- */
   .candidate-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:4px;}
-  .candidate-card{border:1px solid #D8D8D8;border-radius:4px;padding:20px;cursor:pointer;background:#fff;text-align:left;font-family:var(--font-body);display:grid;grid-template-columns:auto 1fr auto;column-gap:12px;row-gap:4px;align-items:start;position:relative;}
+  .candidate-card{border:1px solid #D8D8D8;border-radius:4px;padding:20px;cursor:pointer;background:#fff;text-align:left;font-family:var(--font-body);display:grid;grid-template-columns:auto 1fr auto;column-gap:12px;row-gap:4px;align-items:start;position:relative;box-shadow:var(--elevation-1);}
   .candidate-card:hover{border-color:var(--primary-main);}
   .candidate-card.selected{border:2px solid var(--primary-main);padding:19px;}
   .candidate-card input[type=radio]{grid-row:1 / span 2;width:20px;height:20px;margin:2px 0 0;accent-color:var(--primary-main);cursor:pointer;}
@@ -986,7 +989,7 @@
 
   /* ---- KPI Card (Majesco Patterns) ---- */
   .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
-  .kpi-card{background:#fff;border:1px solid var(--divider);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:8px;}
+  .kpi-card{background:#fff;border:1px solid var(--divider);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--elevation-1);}
   .kpi-card .kpi-label{font-size:12px;font-family:var(--font-body);color:rgba(0,0,0,.6);}
   .kpi-card .kpi-value{font-size:14px;font-family:var(--font-display);font-weight:600;color:rgba(0,0,0,.87);}
   .kpi-card .kpi-value.tone-success{color:var(--success-main);}
@@ -1240,7 +1243,7 @@
   }
   .claims-metric-card{
     border:1px solid var(--divider);border-radius:var(--radius);background:#fff;
-    padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0;
+    padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0;box-shadow:var(--elevation-1);
   }
   .claims-metric-label{
     font-family:var(--font-display);font-size:13px;font-weight:500;line-height:18px;
