@@ -814,10 +814,24 @@
   /* ---- Inline add-row inputs (FNOL repeating tables) ---- */
   tr.new-row td,
   .datagrid tbody tr.new-row td,
-  .mini-table tbody tr.new-row td{background:var(--info-bg);border:none;vertical-align:middle;padding:6px 10px;}
+  .mini-table tbody tr.new-row td{background:var(--info-bg);border:none;vertical-align:middle;padding:14px 10px;}
   .row-input{height:32px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 9px;font-size:14px;color:var(--text-primary);background:#fff;font-family:var(--font-body);width:100%;}
   .row-input:focus{outline:none;border-color:var(--primary-main);box-shadow:0 0 0 3px var(--primary-selected-bg);}
   select.row-input{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236B6F76'/></svg>");background-repeat:no-repeat;background-position:right 9px center;padding-right:24px;}
+  .typeahead{position:relative;width:100%;}
+  .typeahead-list{
+    position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:30;
+    margin:0;padding:4px 0;list-style:none;box-sizing:border-box;
+    background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:0 4px 12px rgba(0,0,0,.08);max-height:180px;overflow:auto;
+  }
+  .typeahead-list[hidden]{display:none !important;}
+  .typeahead-option{
+    display:block;width:100%;padding:8px 10px;border:none;background:transparent;
+    text-align:left;font-family:var(--font-body);font-size:14px;line-height:20px;
+    color:var(--text-primary);cursor:pointer;box-sizing:border-box;
+  }
+  .typeahead-option:hover,.typeahead-option.is-active{background:var(--action-hover);}
 
   /* ---- Upload dropzone (FNOL-4 / reference key pattern) ---- */
   .upload-dropzone{display:flex;flex-direction:column;align-items:center;gap:0;border:2px dashed #D9D9D9;border-radius:var(--radius);padding:28px 24px;text-align:center;background:#fff;transition:background .15s ease,border-color .15s ease;}
@@ -1928,6 +1942,12 @@
     </label>`;
   }
   const VEHICLE_TYPE_OPTIONS = ['Insured vehicle', 'Third-party vehicle'];
+  const VEHICLE_YMM_OPTIONS = [
+    '2023 Isuzu NPR HD',
+    '2021 Toyota Camry',
+    '2024 Toyota Tacoma',
+    '2022 Ford F-150'
+  ];
   function vehicleTypeSelect(selected, opts){
     const o = opts || {};
     const val = String(selected || '');
@@ -1939,6 +1959,12 @@
     ).join('');
     return `<select class="row-input" data-field="vehicleType" aria-label="Type">${placeholder}${options}</select>`;
   }
+  function vehicleDescInput(value){
+    return `<div class="typeahead" data-vehicle-typeahead>
+      <input class="row-input" data-field="desc" placeholder="Year / Make / Model" value="${escHtml(value || '')}" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-label="Year / Make / Model">
+      <ul class="typeahead-list" hidden role="listbox"></ul>
+    </div>`;
+  }
   function vehicleCells(v, editable){
     const typeVal = v.vehicleType || '';
     const typeCell = editable
@@ -1947,7 +1973,7 @@
     const driveCell = editable
       ? drivableSwitch(isDrivableYes(v.drivable))
       : `<span data-drivable-text>${drivableViewText(v.drivable)}</span>`;
-    return `<td><input class="row-input" data-field="desc" placeholder="Year / Make / Model" value="${escHtml(v.desc || '')}"></td>
+    return `<td>${vehicleDescInput(v.desc || '')}</td>
       <td>${typeCell}</td>
       <td><input class="row-input" data-field="vin" placeholder="VIN" value="${escHtml(v.vin || '')}"></td>
       <td><input class="row-input" data-field="damage" placeholder="Damage" value="${escHtml(v.damage || '')}"></td>
@@ -2872,7 +2898,7 @@
   function buildNewRowHtml(type){
     if(type==='vehicles'){
       return `<tr class="new-row">
-        <td><input class="row-input" data-field="desc" placeholder="Year / Make / Model"></td>
+        <td>${vehicleDescInput('')}</td>
         <td>${vehicleTypeSelect('', {placeholder:true})}</td>
         <td><input class="row-input" data-field="vin" placeholder="VIN"></td>
         <td><input class="row-input" data-field="damage" placeholder="Damage"></td>
@@ -2919,6 +2945,8 @@
     tr.addEventListener('focusout', (e)=>{
       if(settled) return;
       const next = e.relatedTarget;
+      const openTypeahead = tr.querySelector('[data-vehicle-typeahead] .typeahead-list:not([hidden])');
+      if(openTypeahead && (!next || openTypeahead.contains(next) || tr.contains(next))) return;
       if(!next || !tr.contains(next)){
         if(type==='vehicles'){
           const desc = tr.querySelector('[data-field="desc"]')?.value.trim();
@@ -2927,6 +2955,47 @@
         saveRow();
       }
     });
+  }
+  function filterVehicleYmm(query){
+    const q = String(query || '').trim().toLowerCase();
+    if(!q) return VEHICLE_YMM_OPTIONS.slice();
+    return VEHICLE_YMM_OPTIONS.filter(opt => opt.toLowerCase().includes(q));
+  }
+  function closeVehicleTypeahead(wrap){
+    if(!wrap) return;
+    const list = wrap.querySelector('.typeahead-list');
+    const input = wrap.querySelector('[data-field="desc"]');
+    if(list){ list.hidden = true; list.innerHTML = ''; }
+    if(input) input.setAttribute('aria-expanded', 'false');
+    wrap.dataset.activeIndex = '';
+  }
+  function openVehicleTypeahead(wrap, query){
+    if(!wrap) return;
+    const list = wrap.querySelector('.typeahead-list');
+    const input = wrap.querySelector('[data-field="desc"]');
+    if(!list || !input || input.disabled || getComputedStyle(input).pointerEvents === 'none'){
+      closeVehicleTypeahead(wrap);
+      return;
+    }
+    const items = filterVehicleYmm(query);
+    if(!items.length){ closeVehicleTypeahead(wrap); return; }
+    const active = Math.min(Number(wrap.dataset.activeIndex || 0), items.length - 1);
+    wrap.dataset.activeIndex = String(active < 0 ? 0 : active);
+    list.innerHTML = items.map((opt, i)=>
+      `<li role="presentation"><button type="button" class="typeahead-option${i===Number(wrap.dataset.activeIndex)?' is-active':''}" role="option" data-value="${escHtml(opt)}">${escHtml(opt)}</button></li>`
+    ).join('');
+    list.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+  }
+  function selectVehicleTypeahead(wrap, value){
+    if(!wrap) return;
+    const input = wrap.querySelector('[data-field="desc"]');
+    if(input){
+      input.value = value;
+      input.dispatchEvent(new Event('input', {bubbles:true}));
+      input.focus();
+    }
+    closeVehicleTypeahead(wrap);
   }
   function addNewRow(targetId){
     const type = TBODY_TYPE_MAP[targetId];
@@ -3283,8 +3352,25 @@
     }
   }
 
-  // Delegated: remove table rows and evidence documents
+  // Delegated: remove table rows, vehicle typeahead, and evidence documents
+  document.getElementById('mainCol').addEventListener('mousedown', (e)=>{
+    const opt = e.target.closest('[data-vehicle-typeahead] .typeahead-option');
+    if(opt){
+      /* Keep input focus so new-row focusout does not cancel before selection. */
+      e.preventDefault();
+    }
+  });
   document.getElementById('mainCol').addEventListener('click', (e)=>{
+    const typeaheadOpt = e.target.closest('[data-vehicle-typeahead] .typeahead-option');
+    if(typeaheadOpt){
+      e.preventDefault();
+      selectVehicleTypeahead(typeaheadOpt.closest('[data-vehicle-typeahead]'), typeaheadOpt.dataset.value || typeaheadOpt.textContent.trim());
+      return;
+    }
+    const openWrap = e.target.closest('[data-vehicle-typeahead]');
+    document.querySelectorAll('#vehiclesTbody [data-vehicle-typeahead]').forEach(wrap=>{
+      if(wrap !== openWrap) closeVehicleTypeahead(wrap);
+    });
     const newClaimBtn = e.target.closest('[data-new-claim]');
     if(newClaimBtn){ e.preventDefault(); startNewFnol(); return; }
     const rowBtn = e.target.closest('[data-row-remove]');
@@ -3325,6 +3411,54 @@
     if(!drive) return;
     const label = drive.closest('.row-switch')?.querySelector('.row-switch-label');
     if(label) label.textContent = drive.checked ? 'Yes' : 'No';
+  });
+  document.getElementById('mainCol').addEventListener('input', (e)=>{
+    const input = e.target.closest('[data-vehicle-typeahead] [data-field="desc"]');
+    if(!input) return;
+    const wrap = input.closest('[data-vehicle-typeahead]');
+    wrap.dataset.activeIndex = '0';
+    openVehicleTypeahead(wrap, input.value);
+  });
+  document.getElementById('mainCol').addEventListener('focusin', (e)=>{
+    const input = e.target.closest('[data-vehicle-typeahead] [data-field="desc"]');
+    if(!input) return;
+    if(getComputedStyle(input).pointerEvents === 'none') return;
+    openVehicleTypeahead(input.closest('[data-vehicle-typeahead]'), input.value);
+  });
+  document.getElementById('mainCol').addEventListener('keydown', (e)=>{
+    const input = e.target.closest('[data-vehicle-typeahead] [data-field="desc"]');
+    if(!input) return;
+    const wrap = input.closest('[data-vehicle-typeahead]');
+    const list = wrap.querySelector('.typeahead-list');
+    if(!list || list.hidden){
+      if(e.key === 'ArrowDown'){ e.preventDefault(); openVehicleTypeahead(wrap, input.value); }
+      return;
+    }
+    const options = [...list.querySelectorAll('.typeahead-option')];
+    if(!options.length) return;
+    let active = Number(wrap.dataset.activeIndex || 0);
+    if(e.key === 'ArrowDown'){
+      e.preventDefault();
+      active = (active + 1) % options.length;
+      wrap.dataset.activeIndex = String(active);
+      openVehicleTypeahead(wrap, input.value);
+    } else if(e.key === 'ArrowUp'){
+      e.preventDefault();
+      active = (active - 1 + options.length) % options.length;
+      wrap.dataset.activeIndex = String(active);
+      openVehicleTypeahead(wrap, input.value);
+    } else if(e.key === 'Enter'){
+      e.preventDefault();
+      const opt = options[active] || options[0];
+      if(opt) selectVehicleTypeahead(wrap, opt.dataset.value || opt.textContent.trim());
+    } else if(e.key === 'Escape'){
+      e.preventDefault();
+      closeVehicleTypeahead(wrap);
+    }
+  });
+  document.addEventListener('click', (e)=>{
+    if(e.target.closest('[data-vehicle-typeahead]')) return;
+    document.querySelectorAll('#vehiclesTbody [data-vehicle-typeahead]').forEach(closeVehicleTypeahead);
   });
 
   function setDashboardRailActive(on){
