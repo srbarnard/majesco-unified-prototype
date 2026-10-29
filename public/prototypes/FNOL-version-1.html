@@ -874,7 +874,7 @@
   .doc-card .dc-action:hover{text-decoration:underline;}
 
   /* ---- Triage Decisions grid ---- */
-  .triage-decisions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;}
+  .triage-decisions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-bottom:14px;}
   
   /* ---- Status row card (Column Doc Card typography / spacing) ---- */
   .status-row-card{display:flex;flex-direction:column;gap:0;border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;box-shadow:var(--elevation-1);}
@@ -933,7 +933,7 @@
   .checkbox-card .desc{font-size:12px;color:var(--text-secondary);margin-top:3px;line-height:1.4;}
 
   /* ---- Candidate / assignment card (Triage-2 claim assignment pattern) ---- */
-  .candidate-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:4px;}
+  .candidate-row{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:4px;}
   .candidate-card{border:1px solid #D8D8D8;border-radius:4px;padding:20px;cursor:pointer;background:#fff;text-align:left;font-family:var(--font-body);display:grid;grid-template-columns:auto 1fr auto;column-gap:12px;row-gap:4px;align-items:start;position:relative;box-shadow:var(--elevation-1);}
   .candidate-card:hover{border-color:var(--primary-main);}
   .candidate-card.selected{border:2px solid var(--primary-main);padding:19px;}
@@ -1254,7 +1254,7 @@
     color:var(--text-primary);
   }
   .claims-table-section{margin:0;}
-  .claims-table-shell{width:100%;overflow:auto;border:1px solid var(--divider);border-radius:var(--radius);}
+  .claims-table-shell{width:100%;overflow:auto;border-top:1px solid var(--divider);border-bottom:1px solid var(--divider);border-left:none;border-right:none;border-radius:0;}
   .claims-table-shell .datagrid{margin:0;width:100%;}
   .claims-table-shell .datagrid thead th{
     background:#fff;color:var(--text-secondary);
