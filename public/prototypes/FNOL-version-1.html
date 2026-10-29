@@ -585,6 +585,30 @@
   /* Add vehicle / Add location only make sense once editing is on.
      Persistent Add party in the subheader is available on every FNOL substep (view or edit). */
   body:not(.editing-active) .repeat-toolbar.edit-only{display:none;}
+  /* Vehicle table fields follow the same view/edit lock as .ctrl */
+  body:not(.editing-active) #vehiclesTbody .row-input{
+    background:var(--action-disabled-bg);border-color:transparent;color:var(--text-primary);
+    pointer-events:none;box-shadow:none;
+  }
+  body:not(.editing-active) #vehiclesTbody .row-switch{pointer-events:none;}
+  .row-switch{
+    position:relative;display:inline-flex;align-items:center;gap:8px;
+    cursor:pointer;user-select:none;font-family:var(--font-body);font-size:14px;color:var(--text-primary);
+  }
+  .row-switch input{position:absolute;opacity:0;width:0;height:0;}
+  .row-switch .track{
+    width:36px;height:20px;border-radius:10px;background:#BDBDBD;flex:0 0 auto;
+    transition:background .15s ease;position:relative;
+  }
+  .row-switch .track::after{
+    content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .15s ease;
+  }
+  .row-switch input:checked + .track{background:var(--primary-main);}
+  .row-switch input:checked + .track::after{transform:translateX(16px);}
+  .row-switch .row-switch-label{min-width:1.5em;}
+  #vehiclesTbody td{vertical-align:middle;}
+  #vehiclesTbody .row-input{width:100%;box-sizing:border-box;}
 
   .field.flagged{
     border:1px solid var(--warning-border);background:var(--warning-bg);border-radius:var(--radius);
@@ -1868,20 +1892,45 @@
       <button type="button" class="dc-action">View details</button>
     </div>`;
   }
-  function vehicleRowActions(desc){
-    const label = escHtml(desc || 'vehicle');
-    return `<div class="row-icons">
-      <button type="button" class="fnol-party-edit-btn" title="Edit ${label}" aria-label="Edit ${label}" data-vehicle-row-edit>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-      </button>
-      <button class="trash-btn" type="button" title="Remove ${label}" aria-label="Remove ${label}" data-row-remove>${mi('delete',20)}</button>
-    </div>`;
+  function isDrivableYes(v){
+    if(typeof v === 'boolean') return v;
+    return /^(y|yes|true|1)$/i.test(String(v == null ? '' : v).trim());
   }
-  function vehicleSavedCells(v){
-    return `<td class="cov-name">${escHtml(v.desc || '—')}</td><td>${escHtml(v.vehicleType || '—')}</td><td>${escHtml(v.vin || '—')}</td><td>${escHtml(v.damage || '—')}</td><td>${escHtml(v.drivable || '—')}</td>`;
+  function drivableSwitch(checked){
+    const on = !!checked;
+    return `<label class="row-switch">
+      <input type="checkbox" data-field="drivable"${on?' checked':''} aria-label="Drivable">
+      <span class="track" aria-hidden="true"></span>
+      <span class="row-switch-label">${on?'Yes':'No'}</span>
+    </label>`;
   }
-  function vehicleTableRow(v){
-    return `<tr>${vehicleSavedCells(v)}<td>${vehicleRowActions(v.desc)}</td></tr>`;
+  function vehicleEditCells(v){
+    return `<td><input class="row-input" data-field="desc" placeholder="Year / Make / Model" value="${escHtml(v.desc || '')}"></td>
+      <td><input class="row-input" data-field="vehicleType" placeholder="Type" value="${escHtml(v.vehicleType || '')}"></td>
+      <td><input class="row-input" data-field="vin" placeholder="VIN" value="${escHtml(v.vin || '')}"></td>
+      <td><input class="row-input" data-field="damage" placeholder="Damage" value="${escHtml(v.damage || '')}"></td>
+      <td>${drivableSwitch(isDrivableYes(v.drivable))}</td>`;
+  }
+  function vehicleTableRow(v, index){
+    return `<tr data-vehicle-index="${index}">${vehicleEditCells(v)}<td>${rowIcons()}</td></tr>`;
+  }
+  function readVehicleRowValues(tr){
+    const drive = tr.querySelector('[data-field="drivable"]');
+    return {
+      desc: (tr.querySelector('[data-field="desc"]')?.value || '').trim(),
+      vehicleType: (tr.querySelector('[data-field="vehicleType"]')?.value || '').trim(),
+      vin: (tr.querySelector('[data-field="vin"]')?.value || '').trim(),
+      damage: (tr.querySelector('[data-field="damage"]')?.value || '').trim(),
+      drivable: !!(drive && drive.checked)
+    };
+  }
+  function syncVehiclesFromDom(){
+    const tbody = document.getElementById('vehiclesTbody');
+    if(!tbody) return;
+    const rows = [...tbody.querySelectorAll('tr:not(.new-row)')];
+    if(!rows.length) return;
+    if(!tbody.querySelector('tr:not(.new-row) [data-field="desc"]')) return;
+    VEHICLES = rows.map(readVehicleRowValues);
   }
   function kpiCard(label, value, tone){
     const cls = tone ? ' tone-'+tone : '';
@@ -1995,6 +2044,10 @@
   /* =========================================================
      FNOL — Vehicles & damages
      ========================================================= */
+  let VEHICLES = [
+    {desc:'2023 Isuzu NPR HD', vehicleType:'Insured vehicle', vin:'JALE5W163P7K01422', damage:'Front bumper, grille and radiator support', drivable:false},
+    {desc:'2021 Toyota Camry', vehicleType:'Third-party vehicle', vin:'4T1G11AK7MU521884', damage:'Rear bumper, deck lid and frame rail', drivable:false}
+  ];
   /* Shared party list — managed only from the subheader Add party toggle. */
   const PARTIES = [
     {name:'Continental Delivery LLC', roleType:'Named insured · Organization', contact:'502-555-0178', type:'organization', injured:false, injury:{injuryType:'', bodyPart:'', treatmentStatus:'', notes:''}},
@@ -2079,19 +2132,18 @@
     </div>`;
   }
   function fnolParties(){
-    return sectionOpen('Vehicle details', pillPopulated) + addToolbar('Add vehicle', 'vehiclesTbody') + `
+    return sectionOpen('Vehicle details', pillPopulated) + addToolbar('Add vehicle', 'vehiclesTbody', true) + `
       <table class="mini-table" aria-label="Vehicles">
         <thead><tr>
           <th>Year / Make / Model</th>
           <th style="width:16%">Type</th>
           <th style="width:18%">VIN</th>
           <th>Damage</th>
-          <th style="width:10%">Drivable</th>
-          <th style="width:88px;"></th>
+          <th style="width:12%">Drivable</th>
+          <th style="width:56px;"></th>
         </tr></thead>
         <tbody id="vehiclesTbody">
-          ${vehicleTableRow({desc:'2023 Isuzu NPR HD', vehicleType:'Insured vehicle', vin:'JALE5W163P7K01422', damage:'Front bumper, grille and radiator support', drivable:'No'})}
-          ${vehicleTableRow({desc:'2021 Toyota Camry', vehicleType:'Third-party vehicle', vin:'4T1G11AK7MU521884', damage:'Rear bumper, deck lid and frame rail', drivable:'No'})}
+          ${VEHICLES.map((v,i)=>vehicleTableRow(v,i)).join('')}
         </tbody>
       </table>
     ` + sectionClose +
@@ -2753,14 +2805,7 @@
      (Vehicle Details, Loss Location)
      ========================================================= */
   const ROW_CONFIGS = {
-    locations:{fields:[{key:'location',ph:'Location'},{key:'type',ph:'Type'},{key:'jurisdiction',ph:'Jurisdiction'},{key:'source',ph:'Source'}]},
-    vehicles:{fields:[
-      {key:'desc',ph:'Year / Make / Model'},
-      {key:'vehicleType',ph:'Type'},
-      {key:'vin',ph:'VIN'},
-      {key:'damage',ph:'Damage'},
-      {key:'drivable',ph:'Drivable'}
-    ]}
+    locations:{fields:[{key:'location',ph:'Location'},{key:'type',ph:'Type'},{key:'jurisdiction',ph:'Jurisdiction'},{key:'source',ph:'Source'}]}
   };
   const TBODY_TYPE_MAP = {locationsTbody:'locations', vehiclesTbody:'vehicles'};
 
@@ -2770,43 +2815,50 @@
       <button type="button" class="row-cancel" title="Cancel"><svg width="15" height="15" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>`;
   }
-  function buildNewRowHtml(type, seed){
+  function buildNewRowHtml(type){
+    if(type==='vehicles'){
+      return `<tr class="new-row">
+        <td><input class="row-input" data-field="desc" placeholder="Year / Make / Model"></td>
+        <td><input class="row-input" data-field="vehicleType" placeholder="Type"></td>
+        <td><input class="row-input" data-field="vin" placeholder="VIN"></td>
+        <td><input class="row-input" data-field="damage" placeholder="Damage"></td>
+        <td>${drivableSwitch(false)}</td>
+        <td>${newRowActionIcons()}</td>
+      </tr>`;
+    }
     const cfg = ROW_CONFIGS[type];
-    const s = seed || {};
-    const cells = cfg.fields.map(f=>`<td><input class="row-input" data-field="${f.key}" placeholder="${f.ph}" value="${escHtml(s[f.key]||'')}"></td>`).join('');
+    const cells = cfg.fields.map(f=>`<td><input class="row-input" data-field="${f.key}" placeholder="${f.ph}"></td>`).join('');
     return `<tr class="new-row">${cells}<td>${newRowActionIcons()}</td></tr>`;
   }
   function savedRowCells(type, v){
     const nameClass = (type==='locations') ? 'name' : 'cov-name';
     if(type==='locations') return `<td class="${nameClass}">${escHtml(v.location||'—')}</td><td>${escHtml(v.type||'—')}</td><td>${escHtml(v.jurisdiction||'—')}</td><td>${escHtml(v.source||'—')}</td>`;
-    if(type==='vehicles') return vehicleSavedCells(v);
+    if(type==='vehicles') return vehicleEditCells(v);
     return '';
   }
-  function rowActionsForType(type, values){
-    if(type==='vehicles') return vehicleRowActions(values && values.desc);
-    return rowIcons();
-  }
-  function wireNewRow(tr, type, opts){
-    const o = opts || {};
+  function wireNewRow(tr, type){
     let settled = false;
     function cancelRow(){
       if(settled) return;
       settled = true;
-      if(o.previous){
-        tr.classList.remove('new-row', 'edit-row');
-        tr.innerHTML = savedRowCells(type, o.previous) + `<td>${rowActionsForType(type, o.previous)}</td>`;
-        return;
-      }
       tr.remove();
     }
     function saveRow(){
       if(settled) return;
       settled = true;
+      if(type==='vehicles'){
+        const values = readVehicleRowValues(tr);
+        if(!values.desc) values.desc = 'Unnamed vehicle';
+        VEHICLES.push(values);
+        tr.innerHTML = vehicleEditCells(values) + `<td>${rowIcons()}</td>`;
+        tr.classList.remove('new-row');
+        tr.dataset.vehicleIndex = String(VEHICLES.length - 1);
+        return;
+      }
       const values = {};
       tr.querySelectorAll('[data-field]').forEach(inp=>{ values[inp.dataset.field] = inp.value.trim(); });
-      if(type==='vehicles' && !values.desc) values.desc = 'Unnamed vehicle';
-      tr.innerHTML = savedRowCells(type, values) + `<td>${rowActionsForType(type, values)}</td>`;
-      tr.classList.remove('new-row', 'edit-row');
+      tr.innerHTML = savedRowCells(type, values) + `<td>${rowIcons()}</td>`;
+      tr.classList.remove('new-row');
     }
     tr.querySelector('.row-save').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); saveRow(); });
     tr.querySelector('.row-cancel').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); cancelRow(); });
@@ -2814,7 +2866,7 @@
       if(settled) return;
       const next = e.relatedTarget;
       if(!next || !tr.contains(next)){
-        if(type==='vehicles' && !o.previous){
+        if(type==='vehicles'){
           const desc = tr.querySelector('[data-field="desc"]')?.value.trim();
           if(!desc){ cancelRow(); return; }
         }
@@ -2831,23 +2883,6 @@
     tbody.insertAdjacentHTML('beforeend', buildNewRowHtml(type));
     const tr = tbody.lastElementChild;
     wireNewRow(tr, type);
-    tr.querySelector('.row-input')?.focus();
-  }
-  function startVehicleRowEdit(tr){
-    if(!tr || tr.classList.contains('new-row')) return;
-    const cells = tr.querySelectorAll('td');
-    const previous = {
-      desc: (cells[0]?.textContent || '').trim(),
-      vehicleType: (cells[1]?.textContent || '').trim(),
-      vin: (cells[2]?.textContent || '').trim(),
-      damage: (cells[3]?.textContent || '').trim(),
-      drivable: (cells[4]?.textContent || '').trim()
-    };
-    const cfg = ROW_CONFIGS.vehicles;
-    const inputs = cfg.fields.map(f=>`<td><input class="row-input" data-field="${f.key}" placeholder="${f.ph}" value="${escHtml(previous[f.key]||'')}"></td>`).join('');
-    tr.classList.add('new-row', 'edit-row');
-    tr.innerHTML = inputs + `<td>${newRowActionIcons()}</td>`;
-    wireNewRow(tr, 'vehicles', {previous});
     tr.querySelector('.row-input')?.focus();
   }
 
@@ -3194,23 +3229,29 @@
     }
   }
 
-  // Delegated: remove/edit table rows and evidence documents
+  // Delegated: remove table rows and evidence documents
   document.getElementById('mainCol').addEventListener('click', (e)=>{
     const newClaimBtn = e.target.closest('[data-new-claim]');
     if(newClaimBtn){ e.preventDefault(); startNewFnol(); return; }
-    const vehicleEdit = e.target.closest('[data-vehicle-row-edit]');
-    if(vehicleEdit){
-      e.preventDefault();
-      startVehicleRowEdit(vehicleEdit.closest('tr'));
-      return;
-    }
     const rowBtn = e.target.closest('[data-row-remove]');
     if(rowBtn){
       e.preventDefault();
       const tr = rowBtn.closest('tr');
       if(tr){
-        const name = tr.querySelector('.cov-name, .name')?.textContent?.trim() || 'Row';
+        const tbody = tr.closest('#vehiclesTbody');
+        let name = 'Row';
+        if(tbody){
+          syncVehiclesFromDom();
+          const idx = [...tbody.querySelectorAll('tr:not(.new-row)')].indexOf(tr);
+          name = (tr.querySelector('[data-field="desc"]')?.value || '').trim() || 'Vehicle';
+          if(idx > -1) VEHICLES.splice(idx, 1);
+        } else {
+          name = tr.querySelector('.cov-name, .name')?.textContent?.trim() || 'Row';
+        }
         tr.remove();
+        if(tbody){
+          tbody.querySelectorAll('tr:not(.new-row)').forEach((r,i)=>{ r.dataset.vehicleIndex = String(i); });
+        }
         toast(`${name} removed`);
       }
       return;
@@ -3224,6 +3265,12 @@
     }
     const docLink = e.target.closest('[data-doc-open]');
     if(docLink){ e.preventDefault(); toast(`Opening ${docLink.textContent} (prototype)`); }
+  });
+  document.getElementById('mainCol').addEventListener('change', (e)=>{
+    const drive = e.target.closest('#vehiclesTbody .row-switch input[data-field="drivable"]');
+    if(!drive) return;
+    const label = drive.closest('.row-switch')?.querySelector('.row-switch-label');
+    if(label) label.textContent = drive.checked ? 'Yes' : 'No';
   });
 
   function setDashboardRailActive(on){
@@ -3290,6 +3337,7 @@
     if(pageHost && btn.parentElement !== pageHost) pageHost.appendChild(btn);
   }
   function renderApp(){
+    syncVehiclesFromDom();
     const page = document.querySelector('.page');
     const onClaims = STATE.screen === 'claims';
     if(page) page.classList.toggle('claims-view', onClaims);
