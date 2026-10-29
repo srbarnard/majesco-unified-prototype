@@ -188,7 +188,7 @@
   .rail-drawer-item-row{display:flex;align-items:center;gap:8px;width:100%;min-width:0;}
   .rail-drawer-item-row .rail-drawer-item-primary{flex:1 1 auto;min-width:0;}
   .rail-status-chip{
-    flex:0 0 auto;font-family:var(--font-body);font-size:11px;font-weight:500;line-height:16px;
+    flex:0 0 auto;font-family:var(--font-body);font-size:11px;font-weight:400;line-height:16px;
     padding:2px 8px;border-radius:var(--radius);background:var(--info-bg);color:var(--info-main);
   }
   .rail-status-chip.tone-success{background:var(--success-bg);color:var(--success-main);}
@@ -540,7 +540,7 @@
   .reporter-line{font-size:14px;line-height:1.5;color:var(--text-primary);margin:0 0 22px;}
   .reporter-line .sep{color:var(--text-secondary);margin:0 6px;}
   .plain-section.no-divider{border-bottom:none;}
-  .pill-muted{font-family:var(--font-display);font-size:13px;font-weight:400;color:var(--text-secondary);}
+  .pill-muted{font-family:var(--font-body);font-size:13px;font-weight:400;color:var(--text-secondary);}
   .section-head-pills{display:inline-flex;align-items:center;flex-wrap:wrap;gap:8px;}
   .pill-warning,.pill-success{
     display:inline-flex;align-items:center;font-family:var(--font-body);font-size:14px;font-weight:400;line-height:21px;
@@ -566,7 +566,7 @@
   .field{display:flex;flex-direction:column;gap:5px;min-width:0;}
   .field label{font-size:14px;font-weight:400;color:var(--text-primary);font-family:var(--font-body);display:flex;align-items:center;gap:6px;}
   /* Status label chip (Majesco One status chip colours: success / warning / error / neutral) */
-  .label-chip{display:inline-block;font-family:var(--font-display);font-size:12px;font-weight:400;padding:2px 8px;border-radius:var(--radius-pill);line-height:1.5;white-space:nowrap;}
+  .label-chip{display:inline-block;font-family:var(--font-body);font-size:12px;font-weight:400;padding:2px 8px;border-radius:var(--radius-pill);line-height:1.5;white-space:nowrap;}
   .label-chip.success{background:#EDF7ED;color:#004718;}
   .label-chip.warning{background:#FFF4E5;color:#663C00;}
   .label-chip.error{background:#FDEDED;color:#851C1C;}
@@ -574,7 +574,7 @@
   /* Evidence confidence chip popover (hover + keyboard focus) */
   .conf-wrap{position:relative;display:inline-block;margin-top:8px;}
   .conf-wrap .label-chip{cursor:default;}
-  .conf-tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-body);font-size:13px;line-height:20px;padding:2px 10px;}
+  .conf-tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-body);font-size:13px;font-weight:400;line-height:20px;padding:2px 10px;}
   .conf-tag svg{width:14px;height:14px;flex:0 0 auto;stroke:none;}
   .conf-pop{position:absolute;left:0;top:calc(100% + 8px);width:240px;box-sizing:border-box;padding:8px 10px;background:#fff;border:1px solid var(--divider);border-radius:4px;font-family:var(--font-body);font-size:12px;font-weight:400;line-height:1.5;color:var(--text-primary);white-space:normal;text-align:left;z-index:30;
     opacity:0;transform:scale(.95);transform-origin:top center;visibility:hidden;pointer-events:none;
@@ -672,7 +672,7 @@
   .datagrid tbody td.cov-name{font-weight:400;}
   .status-error{display:inline-flex;align-items:center;gap:6px;color:var(--error-main);font-weight:400;}
   .status-error svg{width:18px;height:18px;flex:0 0 auto;}
-  .status-chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:11px;display:inline-flex;align-items:center;gap:5px;}
+  .status-chip{font-family:var(--font-body);font-size:11px;font-weight:400;padding:3px 9px;border-radius:11px;display:inline-flex;align-items:center;gap:5px;}
   .status-chip.required{background:var(--success-bg);color:var(--success-main);}
   .status-chip.rejected{background:var(--error-bg);color:var(--error-main);}
   .status-chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
@@ -776,7 +776,7 @@
   .fnol-party-line-actions{display:flex;align-items:center;gap:4px;flex:0 0 auto;margin-left:auto;}
   .fnol-party-injured-chip{
     height:28px;padding:0 10px;border-radius:var(--radius-pill);border:1px solid var(--border);
-    background:#fff;color:var(--text-secondary);font-family:var(--font-display);font-size:12px;font-weight:500;
+    background:#fff;color:var(--text-secondary);font-family:var(--font-body);font-size:12px;font-weight:400;
     line-height:1;white-space:nowrap;display:inline-flex;align-items:center;cursor:pointer;
   }
   .fnol-party-injured-chip:hover{background:var(--action-hover);color:var(--text-primary);}
@@ -878,7 +878,7 @@
   .doc-card .dc-name{font-size:14px;font-weight:400;color:var(--text-primary);word-break:break-word;}
   .doc-card .dc-subtitle{font-size:12px;color:var(--text-secondary);margin-top:5px;line-height:1.4;}
   .doc-card .dc-meta{font-size:12px;color:var(--text-secondary);margin-top:6px;line-height:1.5;}
-  .doc-card .dc-chip{display:inline-block;margin-top:8px;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:var(--radius-pill);background:var(--doc-chip-bg);color:var(--doc-chip-fg);}
+  .doc-card .dc-chip{display:inline-block;margin-top:8px;font-family:var(--font-body);font-size:10.5px;font-weight:400;padding:2px 8px;border-radius:var(--radius-pill);background:var(--doc-chip-bg);color:var(--doc-chip-fg);}
   .doc-card .dc-icon,.fnol-party-line .dc-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--info-bg);border-radius:4px;color:var(--info-main);flex:0 0 auto;}
   .doc-card .dc-icon{margin-bottom:8px;}
   .doc-card .dc-icon svg,.fnol-party-line .dc-icon svg{flex:0 0 auto;}
@@ -957,7 +957,7 @@
   .candidate-card input[type=radio]{grid-row:1 / span 2;width:20px;height:20px;margin:2px 0 0;accent-color:var(--primary-main);cursor:pointer;}
   .candidate-card .cc-name{font-family:var(--font-display);font-size:16px;font-weight:400;line-height:24px;color:var(--text-primary);}
   .candidate-card .cc-role{grid-column:2;font-size:14px;color:var(--gray-dark);}
-  .candidate-card .cc-tag{grid-column:3;grid-row:1;font-size:13px;line-height:20px;padding:2px 10px;border-radius:var(--radius-pill);background:#fff;border:1px solid #D8D8D8;color:var(--text-primary);white-space:nowrap;}
+  .candidate-card .cc-tag{grid-column:3;grid-row:1;font-family:var(--font-body);font-size:13px;font-weight:400;line-height:20px;padding:2px 10px;border-radius:var(--radius-pill);background:#fff;border:1px solid #D8D8D8;color:var(--text-primary);white-space:nowrap;}
   /* Quote-pattern Recommended chip: light blue fill, Copilot mark, regular blue text */
   .candidate-card .cc-recommend{
     display:inline-flex;align-items:center;gap:6px;grid-column:3;grid-row:1;
