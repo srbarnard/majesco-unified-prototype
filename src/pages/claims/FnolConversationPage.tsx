@@ -1368,8 +1368,6 @@ export function FnolConversationPage() {
             minHeight: 0,
             display: conversationVisible ? 'flex' : 'none',
             flexDirection: 'column',
-            borderRight: stacked ? 0 : 1,
-            borderColor: 'divider',
           }}
         >
           {stacked ? null : pageHeader}

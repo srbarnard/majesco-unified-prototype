@@ -701,17 +701,10 @@ const ACCORDION_INSET = 5
 
 type DraftAccordionTone = 'known' | 'attention' | 'considerations'
 
-function accordionSurface(tone: DraftAccordionTone | undefined, theme: Theme) {
-  if (!tone) return undefined
-  const isLight = theme.palette.mode === 'light'
-  if (tone === 'attention') {
-    // Soft warning — amber/orange, not the rail's light-red selection chip.
-    return isLight ? theme.figmaPalette.orange[50] : theme.figmaPalette.orange[900]
-  }
-  if (tone === 'known') {
-    return isLight ? theme.figmaPalette.green[50] : theme.figmaPalette.green[900]
-  }
-  return isLight ? theme.figmaPalette.grey[100] : theme.figmaPalette.grey[800]
+const ACCORDION_COUNT_STATUS: Record<DraftAccordionTone, StatusChipProps['status']> = {
+  known: 'success',
+  attention: 'warning',
+  considerations: 'default',
 }
 
 function DraftAccordion({
@@ -720,26 +713,34 @@ function DraftAccordion({
   open,
   onToggle,
   tone,
+  elevated = false,
   children,
 }: {
   label: string
   count: number
   open: boolean
   onToggle: () => void
-  /** Soft status wash for the whole section (FNOL Version 2 tally). */
+  /** Status color on the count badge (FNOL Version 2 tally). */
   tone?: DraftAccordionTone
+  /** Paper card with design-system elevation (FNOL Version 2 tally). */
+  elevated?: boolean
   children: ReactNode
 }) {
   if (count === 0) return null
-  const tinted = Boolean(tone)
+  const countStatus = tone ? ACCORDION_COUNT_STATUS[tone] : 'default'
   return (
     <Box
       sx={(theme) => ({
-        borderBottom: tinted ? 0 : 1,
+        borderBottom: elevated ? 0 : 1,
         borderColor: 'divider',
-        bgcolor: accordionSurface(tone, theme),
-        borderRadius: tinted ? `${figmaBorderRadius.borderRadius}px` : 0,
-        overflow: tinted ? 'hidden' : 'visible',
+        bgcolor: elevated ? 'background.paper' : 'transparent',
+        borderRadius: elevated ? `${figmaBorderRadius.borderRadius}px` : 0,
+        overflow: elevated ? 'hidden' : 'visible',
+        boxShadow: elevated
+          ? theme.palette.mode === 'dark'
+            ? 'none'
+            : layoutTokens.cardShadow
+          : 'none',
       })}
     >
       <Box
@@ -769,7 +770,7 @@ function DraftAccordion({
         <Typography variant="body2" sx={{ fontFamily: figmaFontFamilyStack.heading, fontWeight: 600 }}>
           {label}
         </Typography>
-        <StatusChip status="default" label={count} sx={{ ml: 0.75, height: 20, minWidth: 24 }} />
+        <StatusChip status={countStatus} label={count} sx={{ ml: 0.75, height: 20, minWidth: 24 }} />
       </Box>
       <Collapse in={open} unmountOnExit>
         {children}
@@ -783,8 +784,8 @@ function DraftAccordion({
  * the groups every create drawer shows. Rows keep their status icons and open their editor in place.
  * A collapsed group opens while one of its rows is being edited.
  *
- * `variant="statusSections"` (FNOL Version 2): soft section backgrounds, no per-item status icons,
- * chevron headers; Needs attention stays the only section open by default.
+ * `variant="statusSections"` (FNOL Version 2): elevated accordion cards, status-colored count
+ * badges, no per-item status icons; Needs attention stays the only section open by default.
  */
 export function DraftAccordions<F extends string>({
   known,
@@ -812,7 +813,7 @@ export function DraftAccordions<F extends string>({
   onGroupToggle?: () => void
   /** Leave out Known facts (e.g. once the record is filed). */
   hideKnown?: boolean
-  /** `statusSections` = soft status washes, no row icons (FNOL Running tally V2). */
+  /** `statusSections` = elevated cards, status count badges, no row icons (FNOL Running tally V2). */
   variant?: 'default' | 'statusSections'
 }) {
   const [knownOpenState, setKnownOpenState] = useState(false)
@@ -847,7 +848,7 @@ export function DraftAccordions<F extends string>({
 
   return (
     <Stack
-      spacing={statusSections ? 1 : 0}
+      spacing={statusSections ? 1.5 : 0}
       sx={{ mx: statusSections ? 0 : -draftPanelPx, mb: 2 }}
     >
       {hideKnown ? null : (
@@ -856,6 +857,7 @@ export function DraftAccordions<F extends string>({
           count={known.length}
           open={knownOpen}
           tone={statusSections ? 'known' : undefined}
+          elevated={statusSections}
           onToggle={() => {
             const next = !knownOpen
             setKnownOpenState(next)
@@ -871,6 +873,7 @@ export function DraftAccordions<F extends string>({
         count={attention.length}
         open={showAttention}
         tone={statusSections ? 'attention' : undefined}
+        elevated={statusSections}
         onToggle={() => {
           setAttentionOpen(!showAttention)
           onGroupToggle?.()
@@ -883,6 +886,7 @@ export function DraftAccordions<F extends string>({
         count={considerations.length}
         open={showConsiderations}
         tone={statusSections ? 'considerations' : undefined}
+        elevated={statusSections}
         onToggle={() => {
           setConsiderationsOpen(!showConsiderations)
           onGroupToggle?.()
