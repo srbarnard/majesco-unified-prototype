@@ -710,36 +710,58 @@
   .fnol-party-name{min-width:0;color:var(--text-primary);font-weight:400;font-size:14px;line-height:20px;}
   .fnol-party-meta{color:var(--text-secondary);font-weight:400;font-size:14px;line-height:20px;}
   .fnol-party-line-actions{display:flex;align-items:center;gap:4px;flex:0 0 auto;margin-left:auto;}
-  .fnol-party-injured-toggle{
+  .fnol-party-injured-chip{
     height:28px;padding:0 10px;border-radius:var(--radius-pill);border:1px solid var(--border);
     background:#fff;color:var(--text-secondary);font-family:var(--font-display);font-size:12px;font-weight:500;
-    line-height:1;white-space:nowrap;
+    line-height:1;white-space:nowrap;display:inline-flex;align-items:center;cursor:pointer;
   }
-  .fnol-party-injured-toggle:hover{background:var(--action-hover);color:var(--text-primary);}
-  .fnol-party-injured-toggle[aria-pressed="true"]{
+  .fnol-party-injured-chip:hover{background:var(--action-hover);color:var(--text-primary);}
+  .fnol-party-injured-chip[aria-pressed="true"],
+  .fnol-party-injured-chip.is-on{
     border-color:var(--warning-border);background:var(--warning-bg);color:var(--warning-main);
   }
-  .fnol-party-injury-line{
-    display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;
-    margin:4px 0 0 44px;min-width:0;
+  .fnol-party-injured-chip[disabled]{cursor:default;opacity:1;}
+  .fnol-party-form{
+    display:flex;flex-direction:column;gap:12px;width:100%;
   }
-  .fnol-party-injury-chip{
-    display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:var(--radius-pill);
-    background:var(--warning-bg);color:var(--warning-main);font-family:var(--font-display);
-    font-size:11px;font-weight:500;line-height:1;white-space:nowrap;
+  .fnol-party-form-main{
+    display:flex;flex-wrap:nowrap;align-items:flex-end;gap:16px;width:100%;box-sizing:border-box;
   }
-  .fnol-party-injury-summary{
-    min-width:0;flex:1 1 auto;font-size:12px;line-height:16px;color:var(--text-secondary);
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  .fnol-party-form-main .field{flex:1 1 0;min-width:0;gap:5px;}
+  .fnol-party-form-main .field .row-input{flex:none;width:100%;min-width:0;}
+  .fnol-party-form-main .fnol-party-injured-wrap{
+    flex:0 0 auto;display:flex;flex-direction:column;gap:5px;align-self:flex-end;padding-bottom:0;
   }
-  .fnol-party-injury-link{
-    flex:0 0 auto;border:none;background:transparent;padding:0;margin:0;
-    font-family:var(--font-display);font-size:12px;font-weight:500;line-height:16px;
-    color:var(--primary-main);cursor:pointer;
+  .fnol-party-form-main .fnol-party-injured-wrap .chip-label{
+    font-size:12px;line-height:16px;color:var(--text-secondary);font-family:var(--font-body);
   }
-  .fnol-party-injury-link:hover{text-decoration:underline;}
-  #dialogTreatmentDetails .mui-dialog-content .field{margin-bottom:12px;}
-  #dialogTreatmentDetails textarea.ctrl{height:auto;min-height:72px;padding:9px 11px;resize:vertical;}
+  .fnol-party-form-main .row-icons{flex:0 0 auto;margin-left:0;align-self:flex-end;}
+  .fnol-party-injury-fields{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 16px;
+    padding-top:2px;
+  }
+  .fnol-party-injury-fields[hidden]{display:none !important;}
+  .fnol-party-injury-fields .field{margin:0;gap:5px;min-width:0;}
+  .fnol-party-injury-fields .field .row-input{width:100%;}
+  .fnol-party-injury-fields textarea.row-input{
+    height:auto;min-height:32px;padding:6px 9px;resize:vertical;line-height:1.4;
+  }
+  .fnol-party-card.is-editing{
+    padding:12px;background:rgba(255,255,255,.9);border:1px solid var(--divider);
+    border-radius:var(--radius);margin:4px 0;
+  }
+  .fnol-party-card.is-editing + .fnol-party-card,
+  .fnol-party-card + .fnol-party-card.is-editing{border-top:none;}
+  .fnol-party-edit-btn{
+    width:32px;height:32px;padding:0;border:none;background:transparent;border-radius:var(--radius);
+    color:var(--gray-dark);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  .fnol-party-edit-btn:hover{background:var(--action-hover);color:var(--primary-main);}
+  .fnol-party-edit-btn svg{width:18px;height:18px;}
+  @media (max-width:1100px){
+    .fnol-party-form-main{flex-wrap:wrap;}
+    .fnol-party-injury-fields{grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
   @media (prefers-reduced-motion:reduce){
     .fnol-party-inline-host,.add-party-toggle-ic,.fnol-party-card{transition:none !important;}
     .add-party-toggle[aria-expanded="true"] .add-party-toggle-ic{transform:none;}
@@ -1788,32 +1810,6 @@
   </div>
 </div>
 
-<div class="mui-dialog-root" id="dialogTreatmentDetails" role="presentation" aria-hidden="true" data-dialog="treatmentDetails">
-  <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
-  <div class="mui-dialog-paper" role="dialog" aria-modal="true" aria-labelledby="dialogTreatmentDetailsTitle" tabindex="-1">
-    <h2 class="mui-dialog-title" id="dialogTreatmentDetailsTitle">Treatment details</h2>
-    <div class="mui-dialog-content">
-      <p class="mui-dialog-lead" id="dialogTreatmentPartyName" style="margin:0 0 12px;font-size:14px;color:var(--text-secondary);"></p>
-      <div class="field" id="treatmentBodyPartField">
-        <label for="treatmentBodyPart">Body part</label>
-        <input class="ctrl" id="treatmentBodyPart" type="text" placeholder="e.g. Neck / back">
-      </div>
-      <div class="field" id="treatmentStatusField">
-        <label for="treatmentStatus">Treatment status</label>
-        <input class="ctrl" id="treatmentStatus" type="text" placeholder="e.g. Transported by ground ambulance">
-      </div>
-      <div class="field">
-        <label for="treatmentNotes">Notes</label>
-        <textarea class="ctrl" id="treatmentNotes" rows="3" placeholder="Optional notes"></textarea>
-      </div>
-    </div>
-    <div class="mui-dialog-actions">
-      <button type="button" class="btn btn-text" data-dialog-dismiss>Cancel</button>
-      <button type="button" class="btn btn-primary" data-dialog-save="treatmentDetails">Save</button>
-    </div>
-  </div>
-</div>
-
 <div class="mui-dialog-root" id="dialogSubmitConfirm" role="presentation" aria-hidden="true" data-dialog="submitConfirm">
   <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
   <div class="mui-dialog-paper submit-confirm-paper" role="dialog" aria-modal="true" aria-labelledby="dialogSubmitConfirmTitle" tabindex="-1">
@@ -2032,52 +2028,85 @@
      ========================================================= */
   /* Shared party list — managed only from the subheader Add party toggle. */
   const PARTIES = [
-    {name:'Continental Delivery LLC', roleType:'Named insured · Organization', contact:'502-555-0178', type:'organization', injured:false, injury:{bodyPart:'', treatmentStatus:'', notes:''}},
-    {name:'Dario Vasquez', roleType:'Insured driver · Person', contact:'502-555-0142', type:'person', injured:false, injury:{bodyPart:'', treatmentStatus:'', notes:''}},
-    {name:'Marcus Aurelio Reyes', roleType:'Claimant · Person', contact:'', type:'person', injured:true, injury:{bodyPart:'Neck / back', treatmentStatus:'Transported by ground ambulance', notes:'Neck/back pain reported at scene'}},
-    {name:'Alexis Monroe', roleType:'Witness · Person', contact:'502-555-0191', type:'person', injured:false, injury:{bodyPart:'', treatmentStatus:'', notes:''}}
+    {name:'Continental Delivery LLC', roleType:'Named insured · Organization', contact:'502-555-0178', type:'organization', injured:false, injury:{injuryType:'', bodyPart:'', treatmentStatus:'', notes:''}},
+    {name:'Dario Vasquez', roleType:'Insured driver · Person', contact:'502-555-0142', type:'person', injured:false, injury:{injuryType:'', bodyPart:'', treatmentStatus:'', notes:''}},
+    {name:'Marcus Aurelio Reyes', roleType:'Claimant · Person', contact:'', type:'person', injured:true, injury:{injuryType:'Soft tissue', bodyPart:'Neck / back', treatmentStatus:'Transported by ground ambulance', notes:'Neck/back pain reported at scene'}},
+    {name:'Alexis Monroe', roleType:'Witness · Person', contact:'502-555-0191', type:'person', injured:false, injury:{injuryType:'', bodyPart:'', treatmentStatus:'', notes:''}}
   ];
-  function emptyInjury(){ return {bodyPart:'', treatmentStatus:'', notes:''}; }
+  let partyEditingIndex = -1;
+  const INJURY_TYPE_OPTIONS = ['Soft tissue', 'Fracture', 'Laceration', 'Head injury', 'Other'];
+  function emptyInjury(){ return {injuryType:'', bodyPart:'', treatmentStatus:'', notes:''}; }
+  function partyRoleValue(roleType){
+    return String(roleType || '').split('·')[0].trim();
+  }
+  function partyTypeValue(type){
+    return type === 'organization' ? 'Organization' : 'Person';
+  }
   function partyFromInlineValues(v){
     const isOrg = /org/i.test(v.type||'');
     const type = isOrg ? 'organization' : 'person';
     const typeLabel = isOrg ? 'Organization' : 'Person';
+    const injured = type === 'person' && (v.injured === true || v.injured === 'true');
+    const injury = injured ? {
+      injuryType: v.injuryType || '',
+      bodyPart: v.bodyPart || '',
+      treatmentStatus: v.treatmentStatus || '',
+      notes: v.notes || ''
+    } : emptyInjury();
     return {
       name: v.name || 'Unnamed party',
       roleType: `${v.role || 'Party'} · ${typeLabel}`,
       contact: v.contact || '',
       type,
-      injured: false,
-      injury: emptyInjury()
+      injured,
+      injury
     };
+  }
+  function readPartyFormValues(root){
+    const v = {};
+    root.querySelectorAll('[data-field]').forEach(inp=>{
+      if(inp.type === 'checkbox') v[inp.dataset.field] = inp.checked;
+      else v[inp.dataset.field] = inp.value.trim();
+    });
+    const injuredBtn = root.querySelector('[data-injured-chip]');
+    if(injuredBtn) v.injured = injuredBtn.getAttribute('aria-pressed') === 'true';
+    return v;
   }
   function commitParty(v){
     const party = partyFromInlineValues(v);
     PARTIES.push(party);
     return party;
   }
-  let treatmentPartyIndex = -1;
-  function partyInjuryComplete(p){
-    if(!p || !p.injured) return false;
-    const inj = p.injury || emptyInjury();
-    return Boolean(inj.bodyPart && inj.treatmentStatus);
+  function injuredChipHtml(pressed, opts){
+    const o = opts || {};
+    const id = o.id ? ` id="${o.id}"` : '';
+    const data = o.dataAttr || 'data-injured-chip';
+    const disabled = o.disabled ? ' disabled' : '';
+    return `<button type="button" class="fnol-party-injured-chip${pressed?' is-on':''}"${id} ${data} aria-pressed="${pressed?'true':'false'}"${disabled}>Injured</button>`;
   }
-  function partyInjurySummary(p){
-    const inj = p.injury || emptyInjury();
-    if(partyInjuryComplete(p)){
-      const bits = [inj.bodyPart, inj.treatmentStatus].filter(Boolean);
-      return bits.join(' · ');
-    }
-    return 'Treatment details needed';
-  }
-  function partyInjuryCompactHtml(p, index){
-    if(!p.injured) return '';
-    const done = partyInjuryComplete(p);
-    const linkLabel = done ? 'Edit treatment' : 'Add treatment';
-    return `<div class="fnol-party-injury-line">
-      <span class="fnol-party-injury-chip">Injured</span>
-      <span class="fnol-party-injury-summary">${escHtml(partyInjurySummary(p))}</span>
-      <button type="button" class="fnol-party-injury-link" data-party-treatment="${index}">${linkLabel}</button>
+  function partyInjuryFieldsHtml(injury, idPrefix){
+    const inj = injury || emptyInjury();
+    const opts = INJURY_TYPE_OPTIONS.map(opt=>`<option value="${escHtml(opt)}"${inj.injuryType===opt?' selected':''}>${escHtml(opt)}</option>`).join('');
+    return `<div class="fnol-party-injury-fields" data-injury-fields>
+      <div class="field">
+        <label for="${idPrefix}-injuryType">Injury type</label>
+        <select class="row-input" id="${idPrefix}-injuryType" data-field="injuryType">
+          <option value="">Please select</option>
+          ${opts}
+        </select>
+      </div>
+      <div class="field">
+        <label for="${idPrefix}-bodyPart">Body part</label>
+        <input class="row-input" id="${idPrefix}-bodyPart" data-field="bodyPart" value="${escHtml(inj.bodyPart||'')}" placeholder="e.g. Neck / back">
+      </div>
+      <div class="field">
+        <label for="${idPrefix}-treatmentStatus">Treatment status</label>
+        <input class="row-input" id="${idPrefix}-treatmentStatus" data-field="treatmentStatus" value="${escHtml(inj.treatmentStatus||'')}" placeholder="e.g. Transported by ambulance">
+      </div>
+      <div class="field">
+        <label for="${idPrefix}-notes">Notes</label>
+        <input class="row-input" id="${idPrefix}-notes" data-field="notes" value="${escHtml(inj.notes||'')}" placeholder="Optional notes">
+      </div>
     </div>`;
   }
   function fnolParties(){
@@ -2806,36 +2835,53 @@
      existing cards (same pattern as Add location); on save it
      appends a card and the row disappears.
      ========================================================= */
-  function buildPartyInlineRow(){
-    return `<div class="inline-add-row" data-row-type="party">
-      <div class="field">
-        <label for="addPartyName">Name</label>
-        <input class="row-input" id="addPartyName" data-field="name" placeholder="">
+  function partyRoleOptions(selected){
+    return ['Named insured','Insured driver','Claimant','Witness','Other'].map(r=>
+      `<option value="${r}"${selected===r?' selected':''}>${r}</option>`
+    ).join('');
+  }
+  function buildPartyInlineRow(seed, opts){
+    const o = opts || {};
+    const p = seed || {};
+    const prefix = o.idPrefix || 'addParty';
+    const injured = Boolean(p.injured);
+    const typeVal = p.type ? partyTypeValue(p.type) : (p.typeLabel || '');
+    const roleVal = p.role || partyRoleValue(p.roleType || '');
+    const canInjure = typeVal !== 'Organization';
+    return `<div class="fnol-party-form" data-row-type="party" data-party-form="${o.mode || 'add'}">
+      <div class="fnol-party-form-main">
+        <div class="field">
+          <label for="${prefix}Name">Name</label>
+          <input class="row-input" id="${prefix}Name" data-field="name" value="${escHtml(p.name||'')}" placeholder="">
+        </div>
+        <div class="field">
+          <label for="${prefix}Role">Role</label>
+          <select class="row-input" id="${prefix}Role" data-field="role">
+            <option value=""${!roleVal?' selected':''} disabled>Please select</option>
+            ${partyRoleOptions(roleVal)}
+          </select>
+        </div>
+        <div class="field">
+          <label for="${prefix}Type">Type</label>
+          <select class="row-input" id="${prefix}Type" data-field="type">
+            <option value=""${!typeVal?' selected':''} disabled>Please select</option>
+            <option value="Person"${typeVal==='Person'?' selected':''}>Person</option>
+            <option value="Organization"${typeVal==='Organization'?' selected':''}>Organization</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="${prefix}Contact">Contact phone or email</label>
+          <input class="row-input" id="${prefix}Contact" data-field="contact" value="${escHtml(p.contact||'')}" placeholder="">
+        </div>
+        <div class="fnol-party-injured-wrap" data-injured-wrap${canInjure?'':' hidden'}>
+          <span class="chip-label">Status</span>
+          ${injuredChipHtml(injured && canInjure, {id: prefix + 'Injured'})}
+        </div>
+        ${newRowActionIcons()}
       </div>
-      <div class="field">
-        <label for="addPartyRole">Role</label>
-        <select class="row-input" id="addPartyRole" data-field="role">
-          <option value="" selected disabled>Please select</option>
-          <option value="Named insured">Named insured</option>
-          <option value="Insured driver">Insured driver</option>
-          <option value="Claimant">Claimant</option>
-          <option value="Witness">Witness</option>
-          <option value="Other">Other</option>
-        </select>
+      <div data-injury-host${injured && canInjure?'':' hidden'}>
+        ${partyInjuryFieldsHtml(p.injury, prefix)}
       </div>
-      <div class="field">
-        <label for="addPartyType">Type</label>
-        <select class="row-input" id="addPartyType" data-field="type">
-          <option value="" selected disabled>Please select</option>
-          <option value="Person">Person</option>
-          <option value="Organization">Organization</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="addPartyContact">Contact phone or email</label>
-        <input class="row-input" id="addPartyContact" data-field="contact" placeholder="">
-      </div>
-      ${newRowActionIcons()}
     </div>`;
   }
   function buildVehicleInlineRow(){
@@ -2904,8 +2950,15 @@
     return `<section class="fnol-party-section">
       <h3 class="fnol-party-section-subhead">Existing parties</h3>
       <ul class="fnol-party-list" role="list">${PARTIES.map((p,i)=>{
+        if(partyEditingIndex === i){
+          return `<li class="fnol-party-card is-editing" data-party-card="${i}">
+            ${buildPartyInlineRow(p, {mode:'edit', idPrefix:'editParty'+i})}
+          </li>`;
+        }
         const canInjure = p.type === 'person';
-        const injuredToggle = canInjure ? `<button type="button" class="fnol-party-injured-toggle" data-party-injured="${i}" aria-pressed="${p.injured?'true':'false'}">Injured</button>` : '';
+        const injuredChip = canInjure
+          ? injuredChipHtml(Boolean(p.injured), {dataAttr:`data-party-injured="${i}"`})
+          : '';
         return `<li class="fnol-party-card${i===highlightIndex?' is-entering':''}" data-party-card="${i}">
         <div class="fnol-party-line">
           ${partyTypeIcon(p.type)}
@@ -2914,41 +2967,111 @@
             <span class="fnol-party-meta">${escHtml(p.roleType)}</span>
           </span>
           <span class="fnol-party-line-actions">
-            ${injuredToggle}
+            ${injuredChip}
+            <button type="button" class="fnol-party-edit-btn" title="Edit ${escHtml(p.name)}" aria-label="Edit ${escHtml(p.name)}" data-party-edit="${i}">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </button>
             <button type="button" class="trash-btn" title="Remove ${escHtml(p.name)}" aria-label="Remove ${escHtml(p.name)}" data-party-remove="${i}">${mi('delete',20)}</button>
           </span>
         </div>
-        ${canInjure ? partyInjuryCompactHtml(p, i) : ''}
       </li>`;
       }).join('')}</ul>
     </section>`;
   }
+  function syncPartyFormInjuredUI(form){
+    if(!form) return;
+    const typeSel = form.querySelector('[data-field="type"]');
+    const isOrg = /org/i.test(typeSel && typeSel.value || '');
+    const wrap = form.querySelector('[data-injured-wrap]');
+    const chip = form.querySelector('[data-injured-chip]');
+    const host = form.querySelector('[data-injury-host]');
+    if(wrap) wrap.hidden = isOrg;
+    if(isOrg){
+      if(chip){
+        chip.setAttribute('aria-pressed', 'false');
+        chip.classList.remove('is-on');
+      }
+      if(host) host.hidden = true;
+      return;
+    }
+    const pressed = chip && chip.getAttribute('aria-pressed') === 'true';
+    if(host) host.hidden = !pressed;
+  }
+  function wirePartyFormInjured(form){
+    const chip = form.querySelector('[data-injured-chip]');
+    const typeSel = form.querySelector('[data-field="type"]');
+    if(chip){
+      chip.addEventListener('click', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const typeVal = form.querySelector('[data-field="type"]')?.value || '';
+        if(/org/i.test(typeVal)) return;
+        const next = chip.getAttribute('aria-pressed') !== 'true';
+        chip.setAttribute('aria-pressed', String(next));
+        chip.classList.toggle('is-on', next);
+        syncPartyFormInjuredUI(form);
+      });
+    }
+    if(typeSel){
+      typeSel.addEventListener('change', ()=> syncPartyFormInjuredUI(form));
+    }
+    syncPartyFormInjuredUI(form);
+  }
   function wirePersistentPartyRow(row){
     let settled = false;
+    const form = row.classList.contains('fnol-party-form') ? row : row.querySelector('.fnol-party-form');
+    if(!form) return;
+    wirePartyFormInjured(form);
     function saveRow(){
       if(settled) return;
       settled = true;
-      const v = {};
-      row.querySelectorAll('[data-field]').forEach(inp=>{ v[inp.dataset.field] = inp.value.trim(); });
+      const v = readPartyFormValues(form);
       commitParty(v);
+      partyEditingIndex = -1;
       renderPersistentPartyPanel(true, PARTIES.length - 1);
     }
     function cancelRow(){
       if(settled) return;
       settled = true;
+      partyEditingIndex = -1;
       renderPersistentPartyPanel(true);
     }
-    row.querySelector('.row-save').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); saveRow(); });
-    row.querySelector('.row-cancel').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); cancelRow(); });
-    row.addEventListener('focusout', (e)=>{
+    form.querySelector('.row-save').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); saveRow(); });
+    form.querySelector('.row-cancel').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); cancelRow(); });
+    form.addEventListener('focusout', (e)=>{
       if(settled) return;
       const next = e.relatedTarget;
-      if(!next || !row.contains(next)){
-        /* Only auto-save when at least one field has a value; otherwise leave the blank row. */
-        const hasValue = [...row.querySelectorAll('[data-field]')].some(inp=>inp.value.trim());
-        if(hasValue) saveRow();
+      if(!next || !form.contains(next)){
+        const name = (form.querySelector('[data-field="name"]')?.value || '').trim();
+        /* Require a name before auto-save so partial add-form focus changes do not create parties. */
+        if(name) saveRow();
       }
     });
+  }
+  function wirePersistentPartyEditForm(host, index){
+    const card = host.querySelector(`.fnol-party-card.is-editing[data-party-card="${index}"]`);
+    if(!card) return;
+    const form = card.querySelector('.fnol-party-form');
+    if(!form) return;
+    let settled = false;
+    wirePartyFormInjured(form);
+    function saveEdit(){
+      if(settled) return;
+      settled = true;
+      const v = readPartyFormValues(form);
+      PARTIES[index] = partyFromInlineValues(v);
+      partyEditingIndex = -1;
+      toast(`${PARTIES[index].name} updated`);
+      renderPersistentPartyPanel(false);
+    }
+    function cancelEdit(){
+      if(settled) return;
+      settled = true;
+      partyEditingIndex = -1;
+      renderPersistentPartyPanel(false);
+    }
+    form.querySelector('.row-save').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); saveEdit(); });
+    form.querySelector('.row-cancel').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); cancelEdit(); });
   }
   function wirePersistentPartyList(host){
     host.querySelectorAll('[data-party-remove]').forEach(btn=>{
@@ -2958,8 +3081,21 @@
         const i = Number(btn.dataset.partyRemove);
         if(Number.isNaN(i) || i<0 || i>=PARTIES.length) return;
         const [removed] = PARTIES.splice(i, 1);
+        if(partyEditingIndex === i) partyEditingIndex = -1;
+        else if(partyEditingIndex > i) partyEditingIndex -= 1;
         toast(`${removed.name} removed`);
         renderPersistentPartyPanel(true);
+      });
+    });
+    host.querySelectorAll('[data-party-edit]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const i = Number(btn.dataset.partyEdit);
+        if(Number.isNaN(i) || i<0 || i>=PARTIES.length) return;
+        partyEditingIndex = i;
+        renderPersistentPartyPanel(false);
+        host.querySelector(`#editParty${i}Name`)?.focus();
       });
     });
     host.querySelectorAll('[data-party-injured]').forEach(btn=>{
@@ -2972,20 +3108,14 @@
         if(party.type !== 'person') return;
         party.injured = !party.injured;
         if(!party.injury) party.injury = emptyInjury();
+        if(!party.injured) party.injury = emptyInjury();
+        partyEditingIndex = i;
         toast(party.injured ? `${party.name} marked injured` : `${party.name} marked not injured`);
         renderPersistentPartyPanel(false);
-        if(party.injured && !partyInjuryComplete(party)) openTreatmentDialog(i);
+        if(party.injured) host.querySelector(`#editParty${i}-injuryType`)?.focus();
       });
     });
-    host.querySelectorAll('[data-party-treatment]').forEach(btn=>{
-      btn.addEventListener('click', (e)=>{
-        e.preventDefault();
-        e.stopPropagation();
-        const i = Number(btn.dataset.partyTreatment);
-        if(Number.isNaN(i) || i<0 || i>=PARTIES.length) return;
-        openTreatmentDialog(i);
-      });
-    });
+    if(partyEditingIndex > -1) wirePersistentPartyEditForm(host, partyEditingIndex);
   }
   function finishEnteringPartyLines(host){
     const entering = host.querySelectorAll('.fnol-party-card.is-entering');
@@ -3002,12 +3132,12 @@
     host.innerHTML = `<div class="fnol-party-panel-clip"><div class="fnol-party-panel-stack">
       <section class="fnol-party-section">
         <h3 class="fnol-party-section-subhead">Add party</h3>
-        ${buildPartyInlineRow()}
+        ${buildPartyInlineRow(null, {mode:'add', idPrefix:'addParty'})}
       </section>
       ${partiesListHtml(highlightIndex)}
     </div></div>`;
-    const row = host.querySelector('.inline-add-row');
-    wirePersistentPartyRow(row);
+    const addForm = host.querySelector('.fnol-party-section .fnol-party-form[data-party-form="add"]');
+    wirePersistentPartyRow(addForm);
     wirePersistentPartyList(host);
     finishEnteringPartyLines(host);
     if(alreadyOpen){
@@ -3017,10 +3147,11 @@
         requestAnimationFrame(()=>{ host.classList.add('is-open'); });
       });
     }
-    if(focusInput) row.querySelector('.row-input')?.focus();
+    if(focusInput) addForm?.querySelector('.row-input')?.focus();
   }
   function closePersistentPartyInline(immediate){
     addPartyOpen = false;
+    partyEditingIndex = -1;
     renderAddPartyToggle();
     const host = document.getElementById('persistentPartyInlineHost');
     if(!host) return;
@@ -3363,19 +3494,9 @@
     viewReferral: document.getElementById('dialogViewReferral'),
     recordDecision: document.getElementById('dialogRecordDecision'),
     resolveIntake: document.getElementById('dialogResolveIntake'),
-    treatmentDetails: document.getElementById('dialogTreatmentDetails'),
     submitConfirm: document.getElementById('dialogSubmitConfirm')
   };
   let openDialogKey = '';
-  function openTreatmentDialog(index){
-    if(Number.isNaN(index) || index<0 || index>=PARTIES.length) return;
-    const party = PARTIES[index];
-    if(!party || party.type !== 'person') return;
-    party.injured = true;
-    if(!party.injury) party.injury = emptyInjury();
-    treatmentPartyIndex = index;
-    openTriageDialog('treatmentDetails');
-  }
   function syncSiuReasonVisibility(){
     const status = document.getElementById('siuDecisionStatus').value;
     const reasonField = document.getElementById('siuDecisionReasonField');
@@ -3461,17 +3582,6 @@
       document.getElementById('intakeResolveNote').value = st.note || '';
       clearIntakeResolveError();
     }
-    if(key === 'treatmentDetails'){
-      const party = PARTIES[treatmentPartyIndex];
-      const inj = (party && party.injury) || emptyInjury();
-      document.getElementById('dialogTreatmentDetailsTitle').textContent = 'Treatment details';
-      document.getElementById('dialogTreatmentPartyName').textContent = party
-        ? `${party.name} · ${party.roleType}`
-        : '';
-      document.getElementById('treatmentBodyPart').value = inj.bodyPart || '';
-      document.getElementById('treatmentStatus').value = inj.treatmentStatus || '';
-      document.getElementById('treatmentNotes').value = inj.notes || '';
-    }
     if(key === 'submitConfirm'){
       if(!REVIEW_STATE.submitted){
         REVIEW_STATE.submitted = true;
@@ -3550,28 +3660,6 @@
       toast('SIU decision recorded — ' + label);
       closeTriageDialog();
       renderApp();
-      return;
-    }
-    if(key === 'treatmentDetails'){
-      const party = PARTIES[treatmentPartyIndex];
-      if(!party){
-        toast('Select a party');
-        return;
-      }
-      const bodyPart = document.getElementById('treatmentBodyPart').value.trim();
-      const treatmentStatus = document.getElementById('treatmentStatus').value.trim();
-      const notes = document.getElementById('treatmentNotes').value.trim();
-      if(!bodyPart || !treatmentStatus){
-        toast('Enter body part and treatment status');
-        if(!bodyPart) document.getElementById('treatmentBodyPart').focus();
-        else document.getElementById('treatmentStatus').focus();
-        return;
-      }
-      party.injured = true;
-      party.injury = {bodyPart, treatmentStatus, notes};
-      toast(`Treatment saved for ${party.name}`);
-      closeTriageDialog();
-      if(addPartyOpen) renderPersistentPartyPanel(false);
       return;
     }
     if(key === 'resolveIntake'){
