@@ -582,7 +582,7 @@
   body:not(.editing-active) input[type="time"].ctrl:not([readonly])::-webkit-calendar-picker-indicator{opacity:0;}
   body:not(.editing-active) .field.with-icon .icon-inline{display:none;}
   body:not(.editing-active) .field.with-icon .ctrl:not([readonly]){padding-right:11px;}
-  /* Add vehicle / Add injured party / Add location only make sense once editing is on.
+  /* Add vehicle / Add location only make sense once editing is on.
      Persistent Add party in the subheader is available on every FNOL substep (view or edit). */
   body:not(.editing-active) .repeat-toolbar.edit-only{display:none;}
 
@@ -694,21 +694,44 @@
   }
   .fnol-party-inline-host .inline-add-row .row-icons{flex:0 0 auto;margin-left:0;align-self:flex-end;padding-bottom:0;}
   .fnol-party-list{
-    list-style:none;margin:0;padding:0;background:transparent;
+    list-style:none;margin:0;padding:0;background:transparent;display:flex;flex-direction:column;gap:0;
   }
-  .fnol-party-line{
-    display:flex;align-items:center;gap:12px;padding:8px 0;
-    border-bottom:1px solid var(--divider);font-family:var(--font-body);font-size:14px;line-height:20px;
+  .fnol-party-card{
+    border-bottom:1px solid var(--divider);padding:8px 0 10px;
     opacity:1;transition:opacity 200ms ease-out;
   }
-  .fnol-party-line.is-entering{opacity:0;}
-  .fnol-party-line:last-child{border-bottom:none;}
+  .fnol-party-card.is-entering{opacity:0;}
+  .fnol-party-card:last-child{border-bottom:none;padding-bottom:0;}
+  .fnol-party-line{
+    display:flex;align-items:center;gap:12px;padding:0;
+    font-family:var(--font-body);font-size:14px;line-height:20px;
+  }
   .fnol-party-main{display:flex;flex-direction:column;align-items:flex-start;gap:2px;flex:1 1 auto;min-width:0;}
   .fnol-party-name{min-width:0;color:var(--text-primary);font-weight:400;font-size:14px;line-height:20px;}
   .fnol-party-meta{color:var(--text-secondary);font-weight:400;font-size:14px;line-height:20px;}
-  .fnol-party-line .trash-btn{flex:0 0 auto;margin-left:auto;align-self:center;}
+  .fnol-party-line-actions{display:flex;align-items:center;gap:4px;flex:0 0 auto;margin-left:auto;}
+  .fnol-party-injured-toggle{
+    height:28px;padding:0 10px;border-radius:var(--radius-pill);border:1px solid var(--border);
+    background:#fff;color:var(--text-secondary);font-family:var(--font-display);font-size:12px;font-weight:500;
+    line-height:1;white-space:nowrap;
+  }
+  .fnol-party-injured-toggle:hover{background:var(--action-hover);color:var(--text-primary);}
+  .fnol-party-injured-toggle[aria-pressed="true"]{
+    border-color:var(--warning-border);background:var(--warning-bg);color:var(--warning-main);
+  }
+  .fnol-party-card .status-row-card{margin-top:10px;}
+  .fnol-party-treatment-fields{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+  .fnol-party-treatment-fields .field{margin:0;}
+  .fnol-party-treatment-fields .field label{font-size:12px;}
+  .fnol-party-treatment-fields .row-input,
+  .fnol-party-treatment-fields textarea.row-input{
+    height:32px;width:100%;box-sizing:border-box;
+  }
+  .fnol-party-treatment-fields textarea.row-input{
+    height:auto;min-height:56px;padding:8px 9px;resize:vertical;line-height:1.4;
+  }
   @media (prefers-reduced-motion:reduce){
-    .fnol-party-inline-host,.add-party-toggle-ic,.fnol-party-line{transition:none !important;}
+    .fnol-party-inline-host,.add-party-toggle-ic,.fnol-party-card{transition:none !important;}
     .add-party-toggle[aria-expanded="true"] .add-party-toggle-ic{transform:none;}
   }
 
@@ -1950,11 +1973,12 @@
      ========================================================= */
   /* Shared party list — managed only from the subheader Add party toggle. */
   const PARTIES = [
-    {name:'Continental Delivery LLC', roleType:'Named insured · Organization', contact:'502-555-0178', type:'organization'},
-    {name:'Dario Vasquez', roleType:'Insured driver · Person', contact:'502-555-0142', type:'person'},
-    {name:'Marcus Aurelio Reyes', roleType:'Claimant · Person', contact:'', type:'person'},
-    {name:'Alexis Monroe', roleType:'Witness · Person', contact:'502-555-0191', type:'person'}
+    {name:'Continental Delivery LLC', roleType:'Named insured · Organization', contact:'502-555-0178', type:'organization', injured:false, injury:{bodyPart:'', treatmentStatus:'', notes:''}},
+    {name:'Dario Vasquez', roleType:'Insured driver · Person', contact:'502-555-0142', type:'person', injured:false, injury:{bodyPart:'', treatmentStatus:'', notes:''}},
+    {name:'Marcus Aurelio Reyes', roleType:'Claimant · Person', contact:'', type:'person', injured:true, injury:{bodyPart:'Neck / back', treatmentStatus:'Transported by ground ambulance', notes:'Neck/back pain reported at scene'}},
+    {name:'Alexis Monroe', roleType:'Witness · Person', contact:'502-555-0191', type:'person', injured:false, injury:{bodyPart:'', treatmentStatus:'', notes:''}}
   ];
+  function emptyInjury(){ return {bodyPart:'', treatmentStatus:'', notes:''}; }
   function partyFromInlineValues(v){
     const isOrg = /org/i.test(v.type||'');
     const type = isOrg ? 'organization' : 'person';
@@ -1963,7 +1987,9 @@
       name: v.name || 'Unnamed party',
       roleType: `${v.role || 'Party'} · ${typeLabel}`,
       contact: v.contact || '',
-      type
+      type,
+      injured: false,
+      injury: emptyInjury()
     };
   }
   function commitParty(v){
@@ -1971,21 +1997,51 @@
     PARTIES.push(party);
     return party;
   }
+  function partyInjuryComplete(p){
+    if(!p || !p.injured) return false;
+    const inj = p.injury || emptyInjury();
+    return Boolean(inj.bodyPart && inj.treatmentStatus);
+  }
+  function partyTreatmentCardHtml(p, index){
+    const inj = p.injury || emptyInjury();
+    const done = partyInjuryComplete(p);
+    const tone = done ? 'done' : 'attention';
+    const icon = done ? mi('check_circle',20) : mi('warning',20);
+    const title = done ? 'Treatment details captured' : 'Capture treatment details';
+    const desc = done
+      ? `${escHtml(inj.bodyPart)} · ${escHtml(inj.treatmentStatus)}`
+      : 'Body part, treatment status, and notes stay with this party.';
+    const cta = done ? 'Edit treatment' : 'Add treatment details';
+    const expanded = Boolean(p.injuryExpanded) || !done;
+    return `<div class="status-row-card ${tone}" data-party-treatment="${index}">
+      <span class="icon">${icon}</span>
+      <div>
+        <div class="title">${title}</div>
+        <div class="desc">${desc}</div>
+        ${expanded ? `<div class="fnol-party-treatment-fields">
+          <div class="field">
+            <label for="partyBodyPart-${index}">Body part</label>
+            <input class="row-input" id="partyBodyPart-${index}" data-party-injury-field="bodyPart" data-party-index="${index}" value="${escHtml(inj.bodyPart)}" placeholder="e.g. Neck / back">
+          </div>
+          <div class="field">
+            <label for="partyTreatmentStatus-${index}">Treatment status</label>
+            <input class="row-input" id="partyTreatmentStatus-${index}" data-party-injury-field="treatmentStatus" data-party-index="${index}" value="${escHtml(inj.treatmentStatus)}" placeholder="e.g. Transported by ground ambulance">
+          </div>
+          <div class="field">
+            <label for="partyInjuryNotes-${index}">Notes</label>
+            <textarea class="row-input" id="partyInjuryNotes-${index}" data-party-injury-field="notes" data-party-index="${index}" rows="2" placeholder="Optional notes">${escHtml(inj.notes)}</textarea>
+          </div>
+        </div>` : ''}
+      </div>
+      <button type="button" class="btn btn-text card-cta" data-party-treatment-cta="${index}">${expanded && !done ? 'Save treatment' : cta}</button>
+    </div>`;
+  }
   function fnolParties(){
     return sectionOpen('Vehicle details', pillPopulated) + addToolbar('Add vehicle', 'vehiclesCards') + `
       <div class="doc-card-row" id="vehiclesCards">
         ${vehicleDocCard('2023 Isuzu NPR HD','Insured vehicle','JALE5W163P7K01422','Front bumper, grille and radiator support','No')}
         ${vehicleDocCard('2021 Toyota Camry','Third-party vehicle','4T1G11AK7MU521884','Rear bumper, deck lid and frame rail','No')}
       </div>
-    ` + sectionClose +
-
-    sectionOpen('Injured parties', pillPopulated) + addToolbar('Add injured party', 'injuredTbody') + `
-      <table class="datagrid">
-        <thead><tr><th>Injured party</th><th>Employee of insured</th><th>Injury details</th><th>Treatment</th><th style="width:80px;"></th></tr></thead>
-        <tbody id="injuredTbody">
-          <tr><td class="cov-name">Marcus Aurelio Reyes</td><td>No</td><td>Neck/back pain reported at scene</td><td>Transported by ground ambulance</td><td>${rowIcons()}</td></tr>
-        </tbody>
-      </table>
     ` + sectionClose +
 
     sectionOpen('Property damage details', pillPopulated) + `
@@ -2145,7 +2201,7 @@
   const INTAKE_ITEMS = {
     claimantEmail: {field:'Claimant email', module:'Parties', why:'Not in any source', impact:'Follow-up after assignment'},
     airbag: {field:'Airbag deployment', module:'Vehicle details', why:'Not stated or visible in photos', impact:'Follow-up after assignment'},
-    treatment: {field:'Treatment received', module:'Injured parties', why:'No medical record yet', impact:'Follow-up after assignment'}
+    treatment: {field:'Treatment received', module:'Parties', why:'No medical record yet', impact:'Follow-up after assignment'}
   };
   const INTAKE_ITEM_ORDER = ['claimantEmail', 'airbag', 'treatment'];
   const INTAKE_STATE = {
@@ -2642,13 +2698,12 @@
 
   /* =========================================================
      Inline "Add row" behavior for FNOL repeating tables
-     (Parties, Vehicle Details, Injured Parties, Loss Location)
+     (Vehicle Details, Loss Location)
      ========================================================= */
   const ROW_CONFIGS = {
-    injured:  {fields:[{key:'name',ph:'Injured party'},{key:'employee',ph:'Employee of insured'},{key:'injury',ph:'Injury details'},{key:'treatment',ph:'Treatment'}]},
     locations:{fields:[{key:'location',ph:'Location'},{key:'type',ph:'Type'},{key:'jurisdiction',ph:'Jurisdiction'},{key:'source',ph:'Source'}]}
   };
-  const TBODY_TYPE_MAP = {injuredTbody:'injured', locationsTbody:'locations'};
+  const TBODY_TYPE_MAP = {locationsTbody:'locations'};
   const CARD_TARGET_MAP = {vehiclesCards:'vehicle'};
 
   function newRowActionIcons(){
@@ -2664,7 +2719,6 @@
   }
   function savedRowCells(type, v){
     const nameClass = (type==='locations') ? 'name' : 'cov-name';
-    if(type==='injured')  return `<td class="${nameClass}">${v.name||'—'}</td><td>${v.employee||'—'}</td><td>${v.injury||'—'}</td><td>${v.treatment||'—'}</td>`;
     if(type==='locations')return `<td class="${nameClass}">${v.location||'—'}</td><td>${v.type||'—'}</td><td>${v.jurisdiction||'—'}</td><td>${v.source||'—'}</td>`;
   }
   function wireNewRow(tr, type){
@@ -2805,15 +2859,25 @@
     if(!PARTIES.length) return '';
     return `<section class="fnol-party-section">
       <h3 class="fnol-party-section-subhead">Existing parties</h3>
-      <ul class="fnol-party-list" role="list">${PARTIES.map((p,i)=>`
-      <li class="fnol-party-line${i===highlightIndex?' is-entering':''}">
-        ${partyTypeIcon(p.type)}
-        <span class="fnol-party-main">
-          <span class="fnol-party-name">${escHtml(p.name)}</span>
-          <span class="fnol-party-meta">${escHtml(p.roleType)}</span>
-        </span>
-        <button type="button" class="trash-btn" title="Remove ${escHtml(p.name)}" aria-label="Remove ${escHtml(p.name)}" data-party-remove="${i}">${mi('delete',20)}</button>
-      </li>`).join('')}</ul>
+      <ul class="fnol-party-list" role="list">${PARTIES.map((p,i)=>{
+        const canInjure = p.type === 'person';
+        const injuredToggle = canInjure ? `<button type="button" class="fnol-party-injured-toggle" data-party-injured="${i}" aria-pressed="${p.injured?'true':'false'}">Injured</button>` : '';
+        const treatment = (canInjure && p.injured) ? partyTreatmentCardHtml(p, i) : '';
+        return `<li class="fnol-party-card${i===highlightIndex?' is-entering':''}" data-party-card="${i}">
+        <div class="fnol-party-line">
+          ${partyTypeIcon(p.type)}
+          <span class="fnol-party-main">
+            <span class="fnol-party-name">${escHtml(p.name)}</span>
+            <span class="fnol-party-meta">${escHtml(p.roleType)}${p.injured ? ' · Injured' : ''}</span>
+          </span>
+          <span class="fnol-party-line-actions">
+            ${injuredToggle}
+            <button type="button" class="trash-btn" title="Remove ${escHtml(p.name)}" aria-label="Remove ${escHtml(p.name)}" data-party-remove="${i}">${mi('delete',20)}</button>
+          </span>
+        </div>
+        ${treatment}
+      </li>`;
+      }).join('')}</ul>
     </section>`;
   }
   function wirePersistentPartyRow(row){
@@ -2855,9 +2919,58 @@
         renderPersistentPartyPanel(true);
       });
     });
+    host.querySelectorAll('[data-party-injured]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const i = Number(btn.dataset.partyInjured);
+        if(Number.isNaN(i) || i<0 || i>=PARTIES.length) return;
+        const party = PARTIES[i];
+        if(party.type !== 'person') return;
+        party.injured = !party.injured;
+        if(!party.injury) party.injury = emptyInjury();
+        party.injuryExpanded = party.injured;
+        toast(party.injured ? `${party.name} marked injured` : `${party.name} marked not injured`);
+        renderPersistentPartyPanel(false);
+      });
+    });
+    host.querySelectorAll('[data-party-treatment-cta]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const i = Number(btn.dataset.partyTreatmentCta);
+        if(Number.isNaN(i) || i<0 || i>=PARTIES.length) return;
+        const party = PARTIES[i];
+        if(!party.injured) return;
+        if(!party.injury) party.injury = emptyInjury();
+        const card = host.querySelector(`[data-party-treatment="${i}"]`);
+        const fieldsOpen = Boolean(card && card.querySelector('.fnol-party-treatment-fields'));
+        if(fieldsOpen){
+          card.querySelectorAll('[data-party-injury-field]').forEach(inp=>{
+            party.injury[inp.dataset.partyInjuryField] = inp.value.trim();
+          });
+          party.injuryExpanded = !partyInjuryComplete(party);
+          toast(partyInjuryComplete(party) ? 'Treatment details saved' : 'Add body part and treatment status');
+        } else {
+          party.injuryExpanded = true;
+        }
+        renderPersistentPartyPanel(false);
+        if(party.injuryExpanded){
+          host.querySelector(`#partyBodyPart-${i}`)?.focus();
+        }
+      });
+    });
+    host.querySelectorAll('[data-party-injury-field]').forEach(inp=>{
+      inp.addEventListener('change', ()=>{
+        const i = Number(inp.dataset.partyIndex);
+        if(Number.isNaN(i) || i<0 || i>=PARTIES.length) return;
+        if(!PARTIES[i].injury) PARTIES[i].injury = emptyInjury();
+        PARTIES[i].injury[inp.dataset.partyInjuryField] = inp.value.trim();
+      });
+    });
   }
   function finishEnteringPartyLines(host){
-    const entering = host.querySelectorAll('.fnol-party-line.is-entering');
+    const entering = host.querySelectorAll('.fnol-party-card.is-entering');
     if(!entering.length) return;
     requestAnimationFrame(()=>{
       entering.forEach(el=>{ void el.offsetWidth; el.classList.remove('is-entering'); });
