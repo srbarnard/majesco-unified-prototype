@@ -585,12 +585,21 @@
   /* Add vehicle / Add location only make sense once editing is on.
      Persistent Add party in the subheader is available on every FNOL substep (view or edit). */
   body:not(.editing-active) .repeat-toolbar.edit-only{display:none;}
-  /* Vehicle table fields follow the same view/edit lock as .ctrl */
-  body:not(.editing-active) #vehiclesTbody .row-input{
-    background:var(--action-disabled-bg);border-color:transparent;color:var(--text-primary);
-    pointer-events:none;box-shadow:none;
+  /* Vehicle table: clean cells in both modes — no grey read-only chrome.
+     View mode locks interaction; edit mode reveals field borders. */
+  #vehiclesTbody td{vertical-align:middle;}
+  #vehiclesTbody .row-input{
+    width:100%;box-sizing:border-box;background:transparent;border-color:transparent;
+    color:var(--text-primary);box-shadow:none;padding-left:0;padding-right:0;
   }
-  body:not(.editing-active) #vehiclesTbody .row-switch{pointer-events:none;}
+  body.editing-active #vehiclesTbody tr:not(.new-row) .row-input{
+    background:#fff;border-color:var(--border);padding-left:9px;padding-right:9px;
+  }
+  body.editing-active #vehiclesTbody tr:not(.new-row) .row-input:focus{
+    border-color:var(--primary-main);box-shadow:0 0 0 3px var(--primary-selected-bg);
+  }
+  body:not(.editing-active) #vehiclesTbody tr:not(.new-row) .row-input{pointer-events:none;cursor:default;}
+  body:not(.editing-active) #vehiclesTbody tr:not(.new-row) .row-switch{pointer-events:none;cursor:default;}
   .row-switch{
     position:relative;display:inline-flex;align-items:center;gap:8px;
     cursor:pointer;user-select:none;font-family:var(--font-body);font-size:14px;color:var(--text-primary);
@@ -607,8 +616,10 @@
   .row-switch input:checked + .track{background:var(--primary-main);}
   .row-switch input:checked + .track::after{transform:translateX(16px);}
   .row-switch .row-switch-label{min-width:1.5em;}
-  #vehiclesTbody td{vertical-align:middle;}
-  #vehiclesTbody .row-input{width:100%;box-sizing:border-box;}
+  /* New-row inputs stay bordered even before global edit chrome applies */
+  #vehiclesTbody tr.new-row .row-input{
+    background:#fff;border-color:var(--border);padding-left:9px;padding-right:9px;
+  }
 
   .field.flagged{
     border:1px solid var(--warning-border);background:var(--warning-bg);border-radius:var(--radius);
@@ -2132,7 +2143,7 @@
     </div>`;
   }
   function fnolParties(){
-    return sectionOpen('Vehicle details', pillPopulated) + addToolbar('Add vehicle', 'vehiclesTbody', true) + `
+    return sectionOpen('Vehicle details', pillPopulated) + addToolbar('Add vehicle', 'vehiclesTbody') + `
       <table class="mini-table" aria-label="Vehicles">
         <thead><tr>
           <th>Year / Make / Model</th>
