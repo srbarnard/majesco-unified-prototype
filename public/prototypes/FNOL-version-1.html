@@ -599,7 +599,7 @@
     border-color:var(--primary-main);box-shadow:0 0 0 3px var(--primary-selected-bg);
   }
   body:not(.editing-active) #vehiclesTbody tr:not(.new-row) .row-input{pointer-events:none;cursor:default;}
-  body:not(.editing-active) #vehiclesTbody tr:not(.new-row) .row-switch{pointer-events:none;cursor:default;}
+  #vehiclesTbody [data-drivable-text]{font-family:var(--font-body);font-size:14px;color:var(--text-primary);}
   .row-switch{
     position:relative;display:inline-flex;align-items:center;gap:8px;
     cursor:pointer;user-select:none;font-family:var(--font-body);font-size:14px;color:var(--text-primary);
@@ -1907,6 +1907,9 @@
     if(typeof v === 'boolean') return v;
     return /^(y|yes|true|1)$/i.test(String(v == null ? '' : v).trim());
   }
+  function drivableViewText(v){
+    return isDrivableYes(v) ? 'Yes' : 'No';
+  }
   function drivableSwitch(checked){
     const on = !!checked;
     return `<label class="row-switch">
@@ -1915,24 +1918,32 @@
       <span class="row-switch-label">${on?'Yes':'No'}</span>
     </label>`;
   }
-  function vehicleEditCells(v){
+  function vehicleCells(v, editable){
+    const driveCell = editable
+      ? drivableSwitch(isDrivableYes(v.drivable))
+      : `<span data-drivable-text>${drivableViewText(v.drivable)}</span>`;
     return `<td><input class="row-input" data-field="desc" placeholder="Year / Make / Model" value="${escHtml(v.desc || '')}"></td>
       <td><input class="row-input" data-field="vehicleType" placeholder="Type" value="${escHtml(v.vehicleType || '')}"></td>
       <td><input class="row-input" data-field="vin" placeholder="VIN" value="${escHtml(v.vin || '')}"></td>
       <td><input class="row-input" data-field="damage" placeholder="Damage" value="${escHtml(v.damage || '')}"></td>
-      <td>${drivableSwitch(isDrivableYes(v.drivable))}</td>`;
+      <td>${driveCell}</td>`;
   }
+  function vehicleEditCells(v){ return vehicleCells(v, true); }
   function vehicleTableRow(v, index){
-    return `<tr data-vehicle-index="${index}">${vehicleEditCells(v)}<td>${rowIcons()}</td></tr>`;
+    return `<tr data-vehicle-index="${index}">${vehicleCells(v, editingMode)}<td>${rowIcons()}</td></tr>`;
   }
   function readVehicleRowValues(tr){
     const drive = tr.querySelector('[data-field="drivable"]');
+    const driveText = tr.querySelector('[data-drivable-text]');
+    let drivable = false;
+    if(drive) drivable = drive.checked;
+    else if(driveText) drivable = isDrivableYes(driveText.textContent);
     return {
       desc: (tr.querySelector('[data-field="desc"]')?.value || '').trim(),
       vehicleType: (tr.querySelector('[data-field="vehicleType"]')?.value || '').trim(),
       vin: (tr.querySelector('[data-field="vin"]')?.value || '').trim(),
       damage: (tr.querySelector('[data-field="damage"]')?.value || '').trim(),
-      drivable: !!(drive && drive.checked)
+      drivable
     };
   }
   function syncVehiclesFromDom(){
@@ -2844,7 +2855,7 @@
   function savedRowCells(type, v){
     const nameClass = (type==='locations') ? 'name' : 'cov-name';
     if(type==='locations') return `<td class="${nameClass}">${escHtml(v.location||'—')}</td><td>${escHtml(v.type||'—')}</td><td>${escHtml(v.jurisdiction||'—')}</td><td>${escHtml(v.source||'—')}</td>`;
-    if(type==='vehicles') return vehicleEditCells(v);
+    if(type==='vehicles') return vehicleCells(v, editingMode);
     return '';
   }
   function wireNewRow(tr, type){
@@ -2861,7 +2872,7 @@
         const values = readVehicleRowValues(tr);
         if(!values.desc) values.desc = 'Unnamed vehicle';
         VEHICLES.push(values);
-        tr.innerHTML = vehicleEditCells(values) + `<td>${rowIcons()}</td>`;
+        tr.innerHTML = vehicleCells(values, editingMode) + `<td>${rowIcons()}</td>`;
         tr.classList.remove('new-row');
         tr.dataset.vehicleIndex = String(VEHICLES.length - 1);
         return;
