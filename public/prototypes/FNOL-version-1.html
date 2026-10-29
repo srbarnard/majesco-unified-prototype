@@ -817,12 +817,30 @@
   .doc-card .dc-icon.tone-warning{background:var(--warning-bg);color:var(--warning-main);}
   .doc-card .dc-action{display:block;width:100%;margin:12px 0 0;padding:10px 0 0;text-align:left;border:none;border-top:1px solid var(--divider);border-radius:0;font-size:12.5px;font-weight:500;color:var(--primary-main);background:none;cursor:pointer;font-family:var(--font-display);}
   .doc-card .dc-action:hover{text-decoration:underline;}
+  /* Majesco One card footer — pipe-separated text actions under a divider */
+  .doc-card .dc-actions{
+    display:flex;align-items:center;flex-wrap:wrap;gap:0;
+    margin:12px 0 0;padding:10px 0 0;border-top:1px solid var(--divider);
+  }
+  .doc-card .dc-actions .dc-action{
+    display:inline;width:auto;margin:0;padding:0;border:none;border-radius:0;
+    font-size:12.5px;font-weight:500;line-height:18px;color:var(--primary-main);
+    background:none;cursor:pointer;font-family:var(--font-display);
+  }
+  .doc-card .dc-actions .dc-action:hover{text-decoration:underline;}
+  .doc-card .dc-actions .dc-action-sep{
+    width:1px;height:12px;margin:0 10px;background:var(--primary-main);opacity:.45;flex:0 0 auto;
+  }
+  /* Vehicle cards — icon + title, secondary details, actions pinned to bottom */
   .doc-card.doc-card-vehicle{display:flex;flex-direction:column;align-items:stretch;min-height:100%;}
-  .doc-card.doc-card-vehicle .dc-name{margin-top:0;}
+  .doc-card.doc-card-vehicle .dc-icon{margin-bottom:8px;}
+  .doc-card.doc-card-vehicle .dc-name{
+    margin-top:0;font-family:var(--font-display);font-size:14px;font-weight:500;line-height:20px;color:var(--text-primary);
+  }
   .doc-card.doc-card-vehicle .dc-subtitle{margin-top:5px;}
-  .doc-card.doc-card-vehicle .dc-meta{margin-top:6px;}
-  .doc-card.doc-card-vehicle .dc-chip-row{margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .doc-card.doc-card-vehicle .dc-action{margin-top:auto;}
+  .doc-card.doc-card-vehicle .dc-meta{margin-top:4px;}
+  .doc-card.doc-card-vehicle .dc-meta + .dc-meta{margin-top:2px;}
+  .doc-card.doc-card-vehicle .dc-actions{margin-top:auto;}
 
   /* ---- Triage Decisions grid ---- */
   .triage-decisions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;}
@@ -1880,38 +1898,48 @@
       <button type="button" class="dc-action">View details</button>
     </div>`;
   }
-  function drivableTone(v){
-    const t=String(v||'').trim().toLowerCase();
-    return t==='no' ? 'error' : t==='yes' ? 'success' : 'neutral';
-  }
   function inferVehicleKind(yearMakeModel, vehicleType){
     const hay = `${yearMakeModel || ''} ${vehicleType || ''}`.toLowerCase();
     if(/suv|utility|crossover|jeep|tahoe|explorer/.test(hay)) return 'suv';
-    if(/truck|box|cargo|van|npr|isuzu|freight|semi|pickup|lorry/.test(hay)) return 'truck';
+    if(/van|cargo van|sprinter|transit/.test(hay)) return 'van';
+    if(/truck|box|cargo|npr|isuzu|freight|semi|pickup|lorry/.test(hay)) return 'truck';
     return 'sedan';
   }
   function vehicleTypeIcon(kind){
-    const sedan = `<svg width="18" height="18" viewBox="0 0 24 24"><path d="M5 16l1.5-4.5A3 3 0 0 1 9.4 9.5h5.2a3 3 0 0 1 2.9 2L19 16"/><path d="M3 16h18"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/><path d="M7 12h10"/></svg>`;
-    const suv = `<svg width="18" height="18" viewBox="0 0 24 24"><path d="M4 16l1.2-3.8A3 3 0 0 1 8.1 10h7.2a3 3 0 0 1 2.9 2.1L20 16"/><path d="M3 16h18"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/><path d="M8 10V8.5A1.5 1.5 0 0 1 9.5 7h5A1.5 1.5 0 0 1 16 8.5V10"/></svg>`;
-    const truck = `<svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 16V8h9v8"/><path d="M12 11h5l3 3v2h-8"/><path d="M3 16h18"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/></svg>`;
+    const sedan = `<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16l1.5-4.5A3 3 0 0 1 9.4 9.5h5.2a3 3 0 0 1 2.9 2L19 16"/><path d="M3 16h18"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/><path d="M7 12h10"/></svg>`;
+    const suv = `<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16l1.2-3.8A3 3 0 0 1 8.1 10h7.2a3 3 0 0 1 2.9 2.1L20 16"/><path d="M3 16h18"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/><path d="M8 10V8.5A1.5 1.5 0 0 1 9.5 7h5A1.5 1.5 0 0 1 16 8.5V10"/></svg>`;
+    const truck = `<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16V8h9v8"/><path d="M12 11h5l3 3v2h-8"/><path d="M3 16h18"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/></svg>`;
+    const van = `<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16V7h11v9"/><path d="M14 10h4l3 3v3h-7"/><path d="M3 16h18"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/></svg>`;
+    /* Colored icon backgrounds mirror party person/org tones (info / secondary / success / warning). */
     const map = {
-      sedan: {icon:sedan, tone:'tone-secondary', label:'Sedan'},
-      suv: {icon:suv, tone:'tone-success', label:'SUV'},
+      sedan: {icon:sedan, tone:'', label:'Sedan'},
+      suv: {icon:suv, tone:'tone-secondary', label:'SUV'},
+      van: {icon:van, tone:'tone-success', label:'Van'},
       truck: {icon:truck, tone:'tone-warning', label:'Truck'}
     };
     const cfg = map[kind] || map.sedan;
-    return `<div class="dc-icon ${cfg.tone}" title="${cfg.label}" aria-hidden="true">${cfg.icon}</div>`;
+    const toneCls = cfg.tone ? ` ${cfg.tone}` : '';
+    return `<div class="dc-icon${toneCls}" title="${cfg.label}" aria-hidden="true">${cfg.icon}</div>`;
   }
   function vehicleDocCard(yearMakeModel, vehicleType, vin, damage, drivable){
     const kind = inferVehicleKind(yearMakeModel, vehicleType);
+    const kindLabel = ({sedan:'Sedan', suv:'SUV', van:'Van', truck:'Truck'})[kind] || 'Vehicle';
+    const typeLine = [vehicleType || 'Vehicle', kindLabel].filter(Boolean).join(' · ');
+    const vinPart = vin ? `VIN ${vin}` : 'VIN —';
+    const drivePart = drivable ? `Drivable: ${drivable}` : '';
+    const metaLine = [vinPart, drivePart].filter(Boolean).join(' · ');
+    const damageLine = damage ? `<div class="dc-meta">${escHtml(damage)}</div>` : '';
     return `<div class="doc-card doc-card-vehicle">
       ${vehicleTypeIcon(kind)}
       <div class="dc-name">${escHtml(yearMakeModel || 'Unnamed vehicle')}</div>
-      <div class="dc-subtitle">${escHtml(vehicleType || 'Vehicle')}</div>
-      <div class="dc-meta">VIN ${escHtml(vin || '—')}</div>
-      <div class="dc-meta">${escHtml(damage || '—')}</div>
-      <div class="dc-chip-row"><span class="label-chip ${drivableTone(drivable)}">Drivable: ${escHtml(drivable || '—')}</span></div>
-      <button type="button" class="dc-action">View details</button>
+      <div class="dc-subtitle">${escHtml(typeLine)}</div>
+      <div class="dc-meta">${escHtml(metaLine)}</div>
+      ${damageLine}
+      <div class="dc-actions">
+        <button type="button" class="dc-action" data-vehicle-edit>Edit</button>
+        <span class="dc-action-sep" aria-hidden="true"></span>
+        <button type="button" class="dc-action" data-vehicle-remove>Remove</button>
+      </div>
     </div>`;
   }
   function kpiCard(label, value, tone){
@@ -3229,12 +3257,29 @@
     }
   }
 
-  // Delegated: remove table rows (editing mode) and evidence documents
+  // Delegated: remove table rows (editing mode), vehicle card actions, evidence documents
   document.getElementById('mainCol').addEventListener('click', (e)=>{
     const newClaimBtn = e.target.closest('[data-new-claim]');
     if(newClaimBtn){ e.preventDefault(); startNewFnol(); return; }
     const rowBtn = e.target.closest('[data-row-remove]');
     if(rowBtn){ e.preventDefault(); const tr=rowBtn.closest('tr'); if(tr){ tr.remove(); toast('Row removed'); } return; }
+    const vehicleEdit = e.target.closest('[data-vehicle-edit]');
+    if(vehicleEdit){
+      e.preventDefault();
+      const card = vehicleEdit.closest('.doc-card-vehicle');
+      const name = card?.querySelector('.dc-name')?.textContent?.trim() || 'Vehicle';
+      toast(`Edit ${name} (prototype)`);
+      return;
+    }
+    const vehicleRemove = e.target.closest('[data-vehicle-remove]');
+    if(vehicleRemove){
+      e.preventDefault();
+      const card = vehicleRemove.closest('.doc-card-vehicle');
+      const name = card?.querySelector('.dc-name')?.textContent?.trim() || 'Vehicle';
+      if(card) card.remove();
+      toast(`${name} removed`);
+      return;
+    }
     const docBtn = e.target.closest('[data-doc-remove]');
     if(docBtn){
       e.preventDefault();
