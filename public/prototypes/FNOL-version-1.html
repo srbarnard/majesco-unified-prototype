@@ -68,6 +68,8 @@
 
     /* Majesco Patterns / MUI elevation 1 — card drop shadow */
     --elevation-1:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
+    /* Majesco One / MUI button elevation */
+    --elevation-button:0 1px 2px rgba(0,0,0,.12);
 
     --font-display:'Poppins',sans-serif;
     --font-body:'Open Sans',sans-serif;
@@ -479,13 +481,13 @@
     display:inline-flex;align-items:center;gap:8px;line-height:24px;height:40px;box-sizing:border-box;font-family:var(--font-display);
   }
   .btn svg{width:20px;height:20px;flex:0 0 auto;}
-  .btn-primary{background:var(--primary-main);color:#fff;}
+  .btn-primary{background:var(--primary-main);color:#fff;box-shadow:var(--elevation-button);}
   .btn-primary:hover{background:var(--primary-dark);}
-  .btn-outlined:disabled{background:#fff;border-color:var(--action-disabled-bg);color:var(--text-disabled);cursor:not-allowed;}
-  .btn-primary:disabled{background:var(--action-disabled-bg);color:var(--text-disabled);cursor:not-allowed;}
-  .btn-outlined{background:#fff;border-color:var(--primary-main);color:var(--primary-main);}
+  .btn-outlined:disabled{background:#fff;border-color:var(--action-disabled-bg);color:var(--text-disabled);cursor:not-allowed;box-shadow:none;}
+  .btn-primary:disabled{background:var(--action-disabled-bg);color:var(--text-disabled);cursor:not-allowed;box-shadow:none;}
+  .btn-outlined{background:#fff;border-color:var(--primary-main);color:var(--primary-main);box-shadow:var(--elevation-button);}
   .btn-outlined:hover{background:var(--primary-hover-bg);}
-  .btn-text{background:transparent;color:var(--primary-main);padding:7px 8px;}
+  .btn-text{background:transparent;color:var(--primary-main);padding:7px 8px;box-shadow:none;}
   .btn-text:hover{background:var(--action-hover);}
 
   /* ---- Content shell: sub-step rail + main content ---- */
