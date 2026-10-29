@@ -1516,6 +1516,7 @@ export function FnolConversationPage() {
             {policyLookupWhere === 'tally' ? <Box sx={{ px: 2, pb: 1.5 }}>{policyLookup()}</Box> : null}
             <Box sx={{ px: draftPanelPx }}>
               <DraftAccordions
+                variant="statusSections"
                 known={tally.known}
                 attention={tally.attention}
                 considerations={tally.considerations}

@@ -496,6 +496,7 @@ function NeededItem<F extends string>({
   row,
   expanded,
   openRowStyle,
+  hideBadge = false,
   onToggle,
   sx,
   children,
@@ -503,6 +504,8 @@ function NeededItem<F extends string>({
   row: DraftNeededRow<F>
   expanded: boolean
   openRowStyle: DraftOpenRowStyle
+  /** Drop the colored status/category icon; section tone carries status instead. */
+  hideBadge?: boolean
   onToggle?: () => void
   sx?: SxProps<Theme>
   children?: ReactNode
@@ -514,6 +517,7 @@ function NeededItem<F extends string>({
   const missing = row.value == null
   // An empty hint ('') means the row shows its title only.
   const subtitle = missing ? (row.hint ?? 'still needed') : row.value
+  const indentPl = hideBadge ? 2 : 7.25
   const onTogglePointerDown = () => {
     const editor = editorRef.current
     const active = document.activeElement
@@ -528,7 +532,7 @@ function NeededItem<F extends string>({
   }
   const line = (
     <>
-      {row.badge ? (
+      {hideBadge ? null : row.badge ? (
         <CategoryBadge badge={row.badge} />
       ) : (
         <NeededStatusBadge tone={row.tone ?? (missing ? 'empty' : 'success')} />
@@ -585,7 +589,7 @@ function NeededItem<F extends string>({
           listStyle: 'none',
           borderBottom: 1,
           borderColor: 'divider',
-          bgcolor: 'background.paper',
+          bgcolor: hideBadge ? 'transparent' : 'background.paper',
           boxShadow: (theme) =>
             !expanded || openRowStyle === 'none'
               ? 'none'
@@ -621,10 +625,10 @@ function NeededItem<F extends string>({
         <Box sx={{ ...lineSx, color: 'text.primary' }}>{line}</Box>
       )}
       {row.extra ? (
-        <Box sx={{ pl: 7.25, pr: 2, pb: 2, pt: 0.5 }}>{row.extra}</Box>
+        <Box sx={{ pl: indentPl, pr: 2, pb: 2, pt: 0.5 }}>{row.extra}</Box>
       ) : null}
       <Collapse in={Boolean(children)} appear unmountOnExit>
-        <Box ref={editorRef} sx={{ pl: 7.25, pr: 2, pb: 2, pt: row.extra ? 0 : 0.5 }}>
+        <Box ref={editorRef} sx={{ pl: indentPl, pr: 2, pb: 2, pt: row.extra ? 0 : 0.5 }}>
           {children}
         </Box>
       </Collapse>
@@ -637,6 +641,7 @@ export function DraftNeededList<F extends string>({
   rows,
   editingField,
   openRowStyle = 'bar',
+  hideBadges = false,
   onToggle,
   renderEditor,
   rowSx,
@@ -644,6 +649,7 @@ export function DraftNeededList<F extends string>({
   rows: DraftNeededRow<F>[]
   editingField: F | null
   openRowStyle?: DraftOpenRowStyle
+  hideBadges?: boolean
   onToggle: (field: F) => void
   renderEditor: (field: F) => ReactNode
   /** Per-row extra styles (e.g. staggered entrance). */
@@ -651,7 +657,7 @@ export function DraftNeededList<F extends string>({
 }) {
   if (rows.length === 0) return null
   return (
-    <Box component="ul" sx={{ m: 0, p: 0, mx: -draftPanelPx, mb: 2 }}>
+    <Box component="ul" sx={{ m: 0, p: 0, mx: hideBadges ? 0 : -draftPanelPx, mb: hideBadges ? 0 : 2 }}>
       {rows.map((row, index) => {
         const field = row.field
         const expanded = field != null && editingField === field
@@ -661,6 +667,7 @@ export function DraftNeededList<F extends string>({
             row={row}
             expanded={expanded}
             openRowStyle={openRowStyle}
+            hideBadge={hideBadges}
             onToggle={field ? () => onToggle(field) : undefined}
             sx={rowSx?.(index)}
           >
@@ -692,22 +699,49 @@ export function splitDraftRows<F extends string>(rows: DraftNeededRow<F>[]) {
 /** Accordion header padding + chevron + gap: where the label (and the group's content) starts. */
 const ACCORDION_INSET = 5
 
+type DraftAccordionTone = 'known' | 'attention' | 'considerations'
+
+function accordionSurface(tone: DraftAccordionTone | undefined, theme: Theme) {
+  if (!tone) return undefined
+  const isLight = theme.palette.mode === 'light'
+  if (tone === 'attention') {
+    // Soft warning — amber/orange, not the rail's light-red selection chip.
+    return isLight ? theme.figmaPalette.orange[50] : theme.figmaPalette.orange[900]
+  }
+  if (tone === 'known') {
+    return isLight ? theme.figmaPalette.green[50] : theme.figmaPalette.green[900]
+  }
+  return isLight ? theme.figmaPalette.grey[100] : theme.figmaPalette.grey[800]
+}
+
 function DraftAccordion({
   label,
   count,
   open,
   onToggle,
+  tone,
   children,
 }: {
   label: string
   count: number
   open: boolean
   onToggle: () => void
+  /** Soft status wash for the whole section (FNOL Version 2 tally). */
+  tone?: DraftAccordionTone
   children: ReactNode
 }) {
   if (count === 0) return null
+  const tinted = Boolean(tone)
   return (
-    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+    <Box
+      sx={(theme) => ({
+        borderBottom: tinted ? 0 : 1,
+        borderColor: 'divider',
+        bgcolor: accordionSurface(tone, theme),
+        borderRadius: tinted ? `${figmaBorderRadius.borderRadius}px` : 0,
+        overflow: tinted ? 'hidden' : 'visible',
+      })}
+    >
       <Box
         component="button"
         type="button"
@@ -748,6 +782,9 @@ function DraftAccordion({
  * Known facts (collapsed), Needs attention (open, blockers only), Considerations (collapsed, warnings):
  * the groups every create drawer shows. Rows keep their status icons and open their editor in place.
  * A collapsed group opens while one of its rows is being edited.
+ *
+ * `variant="statusSections"` (FNOL Version 2): soft section backgrounds, no per-item status icons,
+ * chevron headers; Needs attention stays the only section open by default.
  */
 export function DraftAccordions<F extends string>({
   known,
@@ -760,6 +797,7 @@ export function DraftAccordions<F extends string>({
   onKnownOpenChange,
   onGroupToggle,
   hideKnown = false,
+  variant = 'default',
 }: {
   known: DraftNeededRow<F>[]
   attention: DraftNeededRow<F>[]
@@ -774,6 +812,8 @@ export function DraftAccordions<F extends string>({
   onGroupToggle?: () => void
   /** Leave out Known facts (e.g. once the record is filed). */
   hideKnown?: boolean
+  /** `statusSections` = soft status washes, no row icons (FNOL Running tally V2). */
+  variant?: 'default' | 'statusSections'
 }) {
   const [knownOpenState, setKnownOpenState] = useState(false)
   const [attentionOpen, setAttentionOpen] = useState(true)
@@ -782,13 +822,14 @@ export function DraftAccordions<F extends string>({
   const knownOpen = (knownOpenProp ?? knownOpenState) || editingIn(known)
   const showAttention = attentionOpen || editingIn(attention)
   const showConsiderations = considerationsOpen || editingIn(considerations)
+  const statusSections = variant === 'statusSections'
   if (known.length === 0 && attention.length === 0 && considerations.length === 0) return null
 
   const rowList = (rows: DraftNeededRow<F>[]) => (
     <Box
       sx={{
         // Rows pad their content by draftPanelPx; shift them so it lands on the label's left edge.
-        pl: ACCORDION_INSET - draftPanelPx,
+        pl: statusSections ? 0 : ACCORDION_INSET - draftPanelPx,
         '& > ul': { mb: 0, mx: 0 },
         '& > ul > li:last-of-type': { borderBottom: 0 },
       }}
@@ -797,6 +838,7 @@ export function DraftAccordions<F extends string>({
         rows={rows}
         editingField={editingField}
         openRowStyle="none"
+        hideBadges={statusSections}
         onToggle={onToggle}
         renderEditor={renderEditor}
       />
@@ -804,12 +846,16 @@ export function DraftAccordions<F extends string>({
   )
 
   return (
-    <Stack sx={{ mx: -draftPanelPx, mb: 2 }}>
+    <Stack
+      spacing={statusSections ? 1 : 0}
+      sx={{ mx: statusSections ? 0 : -draftPanelPx, mb: 2 }}
+    >
       {hideKnown ? null : (
         <DraftAccordion
           label="Known facts"
           count={known.length}
           open={knownOpen}
+          tone={statusSections ? 'known' : undefined}
           onToggle={() => {
             const next = !knownOpen
             setKnownOpenState(next)
@@ -824,6 +870,7 @@ export function DraftAccordions<F extends string>({
         label="Needs attention"
         count={attention.length}
         open={showAttention}
+        tone={statusSections ? 'attention' : undefined}
         onToggle={() => {
           setAttentionOpen(!showAttention)
           onGroupToggle?.()
@@ -835,6 +882,7 @@ export function DraftAccordions<F extends string>({
         label="Considerations"
         count={considerations.length}
         open={showConsiderations}
+        tone={statusSections ? 'considerations' : undefined}
         onToggle={() => {
           setConsiderationsOpen(!showConsiderations)
           onGroupToggle?.()
