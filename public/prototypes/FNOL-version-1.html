@@ -593,13 +593,22 @@
     color:var(--text-primary);box-shadow:none;padding-left:0;padding-right:0;
   }
   body.editing-active #vehiclesTbody tr:not(.new-row) .row-input{
-    background:#fff;border-color:var(--border);padding-left:9px;padding-right:9px;
+    background-color:#fff;border-color:var(--border);padding-left:9px;padding-right:9px;
   }
   body.editing-active #vehiclesTbody tr:not(.new-row) .row-input:focus{
     border-color:var(--primary-main);box-shadow:0 0 0 3px var(--primary-selected-bg);
   }
+  body.editing-active #vehiclesTbody tr:not(.new-row) select.row-input,
+  #vehiclesTbody tr.new-row select.row-input{
+    background-color:#fff;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236B6F76'/></svg>");
+    background-repeat:no-repeat;background-position:right 9px center;padding-right:24px;
+  }
   body:not(.editing-active) #vehiclesTbody tr:not(.new-row) .row-input{pointer-events:none;cursor:default;}
-  #vehiclesTbody [data-drivable-text]{font-family:var(--font-body);font-size:14px;color:var(--text-primary);}
+  #vehiclesTbody [data-drivable-text],
+  #vehiclesTbody [data-vehicle-type-text]{font-family:var(--font-body);font-size:14px;color:var(--text-primary);}
+  /* Avoid mini-table margin stacking on top of section padding before the next subtitle */
+  .plain-section > .mini-table{margin-bottom:0;}
   .row-switch{
     position:relative;display:inline-flex;align-items:center;gap:8px;
     cursor:pointer;user-select:none;font-family:var(--font-body);font-size:14px;color:var(--text-primary);
@@ -618,7 +627,7 @@
   .row-switch .row-switch-label{min-width:1.5em;}
   /* New-row inputs stay bordered even before global edit chrome applies */
   #vehiclesTbody tr.new-row .row-input{
-    background:#fff;border-color:var(--border);padding-left:9px;padding-right:9px;
+    background-color:#fff;border-color:var(--border);padding-left:9px;padding-right:9px;
   }
 
   .field.flagged{
@@ -1918,12 +1927,28 @@
       <span class="row-switch-label">${on?'Yes':'No'}</span>
     </label>`;
   }
+  const VEHICLE_TYPE_OPTIONS = ['Insured vehicle', 'Third-party vehicle'];
+  function vehicleTypeSelect(selected, opts){
+    const o = opts || {};
+    const val = String(selected || '');
+    const placeholder = o.placeholder
+      ? `<option value=""${!val?' selected':''} disabled>Please select</option>`
+      : '';
+    const options = VEHICLE_TYPE_OPTIONS.map(opt=>
+      `<option value="${escHtml(opt)}"${val===opt?' selected':''}>${escHtml(opt)}</option>`
+    ).join('');
+    return `<select class="row-input" data-field="vehicleType" aria-label="Type">${placeholder}${options}</select>`;
+  }
   function vehicleCells(v, editable){
+    const typeVal = v.vehicleType || '';
+    const typeCell = editable
+      ? vehicleTypeSelect(typeVal)
+      : `<span data-vehicle-type-text>${escHtml(typeVal || '—')}</span>`;
     const driveCell = editable
       ? drivableSwitch(isDrivableYes(v.drivable))
       : `<span data-drivable-text>${drivableViewText(v.drivable)}</span>`;
     return `<td><input class="row-input" data-field="desc" placeholder="Year / Make / Model" value="${escHtml(v.desc || '')}"></td>
-      <td><input class="row-input" data-field="vehicleType" placeholder="Type" value="${escHtml(v.vehicleType || '')}"></td>
+      <td>${typeCell}</td>
       <td><input class="row-input" data-field="vin" placeholder="VIN" value="${escHtml(v.vin || '')}"></td>
       <td><input class="row-input" data-field="damage" placeholder="Damage" value="${escHtml(v.damage || '')}"></td>
       <td>${driveCell}</td>`;
@@ -1938,9 +1963,16 @@
     let drivable = false;
     if(drive) drivable = drive.checked;
     else if(driveText) drivable = isDrivableYes(driveText.textContent);
+    const typeSel = tr.querySelector('select[data-field="vehicleType"]');
+    const typeText = tr.querySelector('[data-vehicle-type-text]');
+    const typeInput = tr.querySelector('input[data-field="vehicleType"]');
+    let vehicleType = '';
+    if(typeSel) vehicleType = typeSel.value.trim();
+    else if(typeText) vehicleType = typeText.textContent.trim();
+    else if(typeInput) vehicleType = typeInput.value.trim();
     return {
       desc: (tr.querySelector('[data-field="desc"]')?.value || '').trim(),
-      vehicleType: (tr.querySelector('[data-field="vehicleType"]')?.value || '').trim(),
+      vehicleType,
       vin: (tr.querySelector('[data-field="vin"]')?.value || '').trim(),
       damage: (tr.querySelector('[data-field="damage"]')?.value || '').trim(),
       drivable
@@ -2841,7 +2873,7 @@
     if(type==='vehicles'){
       return `<tr class="new-row">
         <td><input class="row-input" data-field="desc" placeholder="Year / Make / Model"></td>
-        <td><input class="row-input" data-field="vehicleType" placeholder="Type"></td>
+        <td>${vehicleTypeSelect('', {placeholder:true})}</td>
         <td><input class="row-input" data-field="vin" placeholder="VIN"></td>
         <td><input class="row-input" data-field="damage" placeholder="Damage"></td>
         <td>${drivableSwitch(false)}</td>
