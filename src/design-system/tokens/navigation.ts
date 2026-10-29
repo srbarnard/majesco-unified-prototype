@@ -25,6 +25,8 @@ export type NavItem = {
   copilotIcon?: boolean
   panel?: SecondaryPanel
   matchPaths?: string[]
+  /** When true, only the exact path is active (e.g. Claims list, not FNOL `/claims/new`). */
+  exact?: boolean
   hidden?: boolean
 }
 
@@ -62,7 +64,8 @@ export const claimsOnlyShellNavItems: NavItem[] = [
   { label: 'Activity', icon: HistoryOutlinedIcon, panel: 'activity' },
   { label: 'Favorites', icon: StarBorderOutlinedIcon, panel: 'favorites' },
   { label: 'Tasks', path: '/tasks', icon: ChecklistRtlOutlinedIcon },
-  { label: 'Claims', path: '/claims', icon: FileCopyOutlinedIcon },
+  // Exact: stay inactive on FNOL (`/claims/new`) and claim details.
+  { label: 'Claims', path: '/claims', icon: FileCopyOutlinedIcon, exact: true },
 ]
 
 /** Legacy nav items used by dashboard-style pages. */

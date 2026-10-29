@@ -123,11 +123,14 @@ function moveNavItem(order: NavOrder, key: string, list: NavListId, targetKey: s
   return next
 }
 
-function isRouteActive(pathname: string, path: string, matchPaths?: string[]) {
+function isRouteActive(pathname: string, path: string, matchPaths?: string[], exact?: boolean) {
   if (matchPaths) {
     return matchPaths.some((prefix) => pathname.startsWith(prefix))
   }
-  return path === '/' ? pathname === '/' : pathname.startsWith(path)
+  if (path === '/' || exact) {
+    return pathname === path || pathname === `${path}/`
+  }
+  return pathname.startsWith(path)
 }
 
 function MobileNavDrawerShell({
@@ -333,7 +336,7 @@ function SidebarContent({
     const list = navList
     const isPanelActive = item.panel ? secondaryPanel === item.panel : false
     const isRouteItemActive = item.path
-      ? !isSecondaryPanelOpen && isRouteActive(location.pathname, item.path, item.matchPaths)
+      ? !isSecondaryPanelOpen && isRouteActive(location.pathname, item.path, item.matchPaths, item.exact)
       : false
     const active = navigable && (isPanelActive || isRouteItemActive)
     const drag = list ? dragHandlers(item.label, list) : { draggable: false }
@@ -416,7 +419,7 @@ function SidebarContent({
         {...drag}
         component={NavLink}
         to={item.path!}
-        end={item.path === '/'}
+        end={item.path === '/' || Boolean(item.exact)}
         onClick={handleRouteNavClick}
         data-nav-active={active ? 'true' : undefined}
         sx={{ ...itemSx(active), ...dragSx }}
@@ -434,7 +437,7 @@ function SidebarContent({
   const moreItems = resolveItems(navOrder.more)
   const moreHasActiveRoute =
     !isSecondaryPanelOpen &&
-    moreItems.some((item) => item.path && isRouteActive(location.pathname, item.path, item.matchPaths))
+    moreItems.some((item) => item.path && isRouteActive(location.pathname, item.path, item.matchPaths, item.exact))
 
   return (
     <Box
