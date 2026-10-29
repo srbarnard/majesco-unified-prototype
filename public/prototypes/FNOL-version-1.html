@@ -66,6 +66,11 @@
     --radius-lg:4px;
     --radius-pill:100px;
 
+    /* Majesco Patterns / MUI elevation 1 — card drop shadow */
+    --elevation-1:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
+    /* Majesco One / MUI button elevation */
+    --elevation-button:0 1px 2px rgba(0,0,0,.12);
+
     --font-display:'Poppins',sans-serif;
     --font-body:'Open Sans',sans-serif;
   }
@@ -183,7 +188,7 @@
   .rail-drawer-item-row{display:flex;align-items:center;gap:8px;width:100%;min-width:0;}
   .rail-drawer-item-row .rail-drawer-item-primary{flex:1 1 auto;min-width:0;}
   .rail-status-chip{
-    flex:0 0 auto;font-family:var(--font-body);font-size:11px;font-weight:500;line-height:16px;
+    flex:0 0 auto;font-family:var(--font-body);font-size:11px;font-weight:400;line-height:16px;
     padding:2px 8px;border-radius:var(--radius);background:var(--info-bg);color:var(--info-main);
   }
   .rail-status-chip.tone-success{background:var(--success-bg);color:var(--success-main);}
@@ -203,7 +208,11 @@
   .titlebar .title-cell{min-width:0;}
   .titlebar .actions-cell{justify-self:end;display:flex;align-items:center;}
   .titlebar h1{font-family:var(--font-display);font-weight:400;font-size:24px;line-height:32px;margin:0;color:var(--text-primary);}
-  .titlebar .sub{margin:4px 0 0;color:var(--text-secondary);font-size:12.5px;max-width:520px;line-height:1.5;}
+  .titlebar .sub,.titlebar-sub{
+    margin:4px 0 0;color:var(--text-secondary);font-size:14px;line-height:20px;max-width:640px;
+    font-family:var(--font-body);font-weight:400;text-align:left;
+  }
+  .titlebar-sub[hidden]{display:none !important;}
   /* ---- Horizontal page stepper (FNOL · Triage · Review) ---- */
   /* Majesco One stepper: done = blue + check, current = blue + number, upcoming = gray */
   .hstepper{display:flex;align-items:center;gap:12px;justify-self:center;}
@@ -372,7 +381,7 @@
   .copilot-chat-item .chat-ic svg{width:18px;height:18px;}
   .copilot-chat-item .chat-label{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .copilot-prompt-card{
-    border:1px solid var(--divider);border-radius:var(--radius);padding:12px;background:var(--surface);
+    border:1px solid var(--divider);border-radius:var(--radius);padding:12px;background:var(--surface);box-shadow:var(--elevation-1);
     display:flex;flex-direction:column;gap:6px;cursor:pointer;text-align:left;width:100%;
     font:inherit;color:inherit;box-sizing:border-box;
   }
@@ -472,14 +481,29 @@
     display:inline-flex;align-items:center;gap:8px;line-height:24px;height:40px;box-sizing:border-box;font-family:var(--font-display);
   }
   .btn svg{width:20px;height:20px;flex:0 0 auto;}
-  .btn-primary{background:var(--primary-main);color:#fff;}
+  .btn-primary{background:var(--primary-main);color:#fff;box-shadow:var(--elevation-button);position:relative;overflow:hidden;}
   .btn-primary:hover{background:var(--primary-dark);}
-  .btn-outlined:disabled{background:#fff;border-color:var(--action-disabled-bg);color:var(--text-disabled);cursor:not-allowed;}
-  .btn-primary:disabled{background:var(--action-disabled-bg);color:var(--text-disabled);cursor:not-allowed;}
-  .btn-outlined{background:#fff;border-color:var(--primary-main);color:var(--primary-main);}
+  .btn-outlined:disabled{background:#fff;border-color:var(--action-disabled-bg);color:var(--text-disabled);cursor:not-allowed;box-shadow:none;}
+  .btn-primary:disabled{background:var(--action-disabled-bg);color:var(--text-disabled);cursor:not-allowed;box-shadow:none;}
+  .btn-outlined{background:#fff;border-color:var(--primary-main);color:var(--primary-main);box-shadow:var(--elevation-button);position:relative;overflow:hidden;}
   .btn-outlined:hover{background:var(--primary-hover-bg);}
-  .btn-text{background:transparent;color:var(--primary-main);padding:6px 8px;}
+  .btn-text{background:transparent;color:var(--primary-main);padding:7px 8px;box-shadow:none;}
   .btn-text:hover{background:var(--action-hover);}
+  /* MUI-style ripple — primary / outlined only */
+  .btn-ripple{
+    position:absolute;border-radius:50%;transform:scale(0);pointer-events:none;
+    opacity:.35;animation:btn-ripple 480ms ease-out forwards;z-index:0;
+  }
+  .btn-primary .btn-ripple{background:rgba(255,255,255,.55);opacity:1;}
+  .btn-outlined .btn-ripple{background:rgba(0,93,191,.28);opacity:1;}
+  .btn-primary > *:not(.btn-ripple),
+  .btn-outlined > *:not(.btn-ripple){position:relative;z-index:1;}
+  @keyframes btn-ripple{
+    to{transform:scale(1);opacity:0;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .btn-ripple{animation-duration:1ms;opacity:0;}
+  }
 
   /* ---- Content shell: sub-step rail + main content ---- */
   .content-row{flex:1 1 auto;display:flex;align-items:stretch;gap:0;margin-top:0;padding:0;min-height:0;overflow:hidden;}
@@ -516,7 +540,7 @@
   .reporter-line{font-size:14px;line-height:1.5;color:var(--text-primary);margin:0 0 22px;}
   .reporter-line .sep{color:var(--text-secondary);margin:0 6px;}
   .plain-section.no-divider{border-bottom:none;}
-  .pill-muted{font-family:var(--font-display);font-size:13px;font-weight:400;color:var(--text-secondary);}
+  .pill-muted{font-family:var(--font-body);font-size:13px;font-weight:400;color:var(--text-secondary);}
   .section-head-pills{display:inline-flex;align-items:center;flex-wrap:wrap;gap:8px;}
   .pill-warning,.pill-success{
     display:inline-flex;align-items:center;font-family:var(--font-body);font-size:14px;font-weight:400;line-height:21px;
@@ -536,13 +560,13 @@
   .row-edit-btn{position:absolute;right:0;top:8px;background:transparent;border:none;color:var(--text-secondary);padding:4px;border-radius:4px;}
   .row-edit-btn:hover{background:var(--action-hover);}
 
-  .field-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 16px;margin-bottom:18px;}
+  .field-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin-bottom:18px;}
   .field-grid.cols-3{grid-template-columns:repeat(3,1fr);}
   .field-grid.cols-2{grid-template-columns:repeat(2,1fr);}
   .field{display:flex;flex-direction:column;gap:5px;min-width:0;}
   .field label{font-size:14px;font-weight:400;color:var(--text-primary);font-family:var(--font-body);display:flex;align-items:center;gap:6px;}
   /* Status label chip (Majesco One status chip colours: success / warning / error / neutral) */
-  .label-chip{display:inline-block;font-family:var(--font-display);font-size:12px;font-weight:400;padding:2px 8px;border-radius:var(--radius-pill);line-height:1.5;white-space:nowrap;}
+  .label-chip{display:inline-block;font-family:var(--font-body);font-size:12px;font-weight:400;padding:2px 8px;border-radius:var(--radius-pill);line-height:1.5;white-space:nowrap;}
   .label-chip.success{background:#EDF7ED;color:#004718;}
   .label-chip.warning{background:#FFF4E5;color:#663C00;}
   .label-chip.error{background:#FDEDED;color:#851C1C;}
@@ -550,7 +574,7 @@
   /* Evidence confidence chip popover (hover + keyboard focus) */
   .conf-wrap{position:relative;display:inline-block;margin-top:8px;}
   .conf-wrap .label-chip{cursor:default;}
-  .conf-tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-body);font-size:13px;line-height:20px;padding:2px 10px;}
+  .conf-tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-body);font-size:13px;font-weight:400;line-height:20px;padding:2px 10px;}
   .conf-tag svg{width:14px;height:14px;flex:0 0 auto;stroke:none;}
   .conf-pop{position:absolute;left:0;top:calc(100% + 8px);width:240px;box-sizing:border-box;padding:8px 10px;background:#fff;border:1px solid var(--divider);border-radius:4px;font-family:var(--font-body);font-size:12px;font-weight:400;line-height:1.5;color:var(--text-primary);white-space:normal;text-align:left;z-index:30;
     opacity:0;transform:scale(.95);transform-origin:top center;visibility:hidden;pointer-events:none;
@@ -578,9 +602,53 @@
   body:not(.editing-active) input[type="time"].ctrl:not([readonly])::-webkit-calendar-picker-indicator{opacity:0;}
   body:not(.editing-active) .field.with-icon .icon-inline{display:none;}
   body:not(.editing-active) .field.with-icon .ctrl:not([readonly]){padding-right:11px;}
-  /* Add vehicle / Add injured party / Add location only make sense once editing is on.
+  /* Add vehicle / Add location only make sense once editing is on.
      Persistent Add party in the subheader is available on every FNOL substep (view or edit). */
   body:not(.editing-active) .repeat-toolbar.edit-only{display:none;}
+  /* Vehicle table: clean cells in both modes — no grey read-only chrome.
+     View mode locks interaction; edit mode reveals field borders. */
+  #vehiclesTbody td{vertical-align:middle;}
+  #vehiclesTbody .row-input{
+    width:100%;box-sizing:border-box;background:transparent;border-color:transparent;
+    color:var(--text-primary);box-shadow:none;padding-left:0;padding-right:0;
+  }
+  body.editing-active #vehiclesTbody tr:not(.new-row) .row-input{
+    background-color:#fff;border-color:var(--border);padding-left:9px;padding-right:9px;
+  }
+  body.editing-active #vehiclesTbody tr:not(.new-row) .row-input:focus{
+    border-color:var(--primary-main);box-shadow:0 0 0 3px var(--primary-selected-bg);
+  }
+  body.editing-active #vehiclesTbody tr:not(.new-row) select.row-input,
+  #vehiclesTbody tr.new-row select.row-input{
+    background-color:#fff;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236B6F76'/></svg>");
+    background-repeat:no-repeat;background-position:right 9px center;padding-right:24px;
+  }
+  body:not(.editing-active) #vehiclesTbody tr:not(.new-row) .row-input{pointer-events:none;cursor:default;}
+  #vehiclesTbody [data-drivable-text],
+  #vehiclesTbody [data-vehicle-type-text]{font-family:var(--font-body);font-size:14px;color:var(--text-primary);}
+  /* Avoid mini-table margin stacking on top of section padding before the next subtitle */
+  .plain-section > .mini-table{margin-bottom:0;}
+  .row-switch{
+    position:relative;display:inline-flex;align-items:center;gap:8px;
+    cursor:pointer;user-select:none;font-family:var(--font-body);font-size:14px;color:var(--text-primary);
+  }
+  .row-switch input{position:absolute;opacity:0;width:0;height:0;}
+  .row-switch .track{
+    width:36px;height:20px;border-radius:10px;background:#BDBDBD;flex:0 0 auto;
+    transition:background .15s ease;position:relative;
+  }
+  .row-switch .track::after{
+    content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .15s ease;
+  }
+  .row-switch input:checked + .track{background:var(--primary-main);}
+  .row-switch input:checked + .track::after{transform:translateX(16px);}
+  .row-switch .row-switch-label{min-width:1.5em;}
+  /* New-row inputs stay bordered even before global edit chrome applies */
+  #vehiclesTbody tr.new-row .row-input{
+    background-color:#fff;border-color:var(--border);padding-left:9px;padding-right:9px;
+  }
 
   .field.flagged{
     border:1px solid var(--warning-border);background:var(--warning-bg);border-radius:var(--radius);
@@ -604,7 +672,7 @@
   .datagrid tbody td.cov-name{font-weight:400;}
   .status-error{display:inline-flex;align-items:center;gap:6px;color:var(--error-main);font-weight:400;}
   .status-error svg{width:18px;height:18px;flex:0 0 auto;}
-  .status-chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:11px;display:inline-flex;align-items:center;gap:5px;}
+  .status-chip{font-family:var(--font-body);font-size:11px;font-weight:400;padding:3px 9px;border-radius:11px;display:inline-flex;align-items:center;gap:5px;}
   .status-chip.required{background:var(--success-bg);color:var(--success-main);}
   .status-chip.rejected{background:var(--error-bg);color:var(--error-main);}
   .status-chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
@@ -623,7 +691,7 @@
   .alert .alert-action{margin-left:auto;flex:0 0 auto;font-weight:700;font-size:13px;white-space:nowrap;}
 
   .signal-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;}
-  .signal-card{background:var(--surface-subtle);border:1px solid var(--divider);border-radius:var(--radius-sm);padding:12px 14px;}
+  .signal-card{background:var(--surface-subtle);border:1px solid var(--divider);border-radius:var(--radius-sm);padding:12px 14px;box-shadow:var(--elevation-1);}
   .signal-card .k{font-size:11.5px;color:var(--text-secondary);font-weight:600;margin-bottom:4px;}
   .signal-card .v{font-size:13.5px;font-weight:700;color:var(--text-primary);}
   .signal-card .v.good{color:var(--success-main);}
@@ -690,37 +758,100 @@
   }
   .fnol-party-inline-host .inline-add-row .row-icons{flex:0 0 auto;margin-left:0;align-self:flex-end;padding-bottom:0;}
   .fnol-party-list{
-    list-style:none;margin:0;padding:0;background:transparent;
+    list-style:none;margin:0;padding:0;background:transparent;display:flex;flex-direction:column;gap:0;
   }
-  .fnol-party-line{
-    display:flex;align-items:center;gap:12px;padding:8px 0;
-    border-bottom:1px solid var(--divider);font-family:var(--font-body);font-size:14px;line-height:20px;
+  .fnol-party-card{
+    border-bottom:1px solid var(--divider);padding:8px 0 10px;
     opacity:1;transition:opacity 200ms ease-out;
   }
-  .fnol-party-line.is-entering{opacity:0;}
-  .fnol-party-line:last-child{border-bottom:none;}
+  .fnol-party-card.is-entering{opacity:0;}
+  .fnol-party-card:last-child{border-bottom:none;padding-bottom:0;}
+  .fnol-party-line{
+    display:flex;align-items:center;gap:12px;padding:0;
+    font-family:var(--font-body);font-size:14px;line-height:20px;
+  }
   .fnol-party-main{display:flex;flex-direction:column;align-items:flex-start;gap:2px;flex:1 1 auto;min-width:0;}
   .fnol-party-name{min-width:0;color:var(--text-primary);font-weight:400;font-size:14px;line-height:20px;}
   .fnol-party-meta{color:var(--text-secondary);font-weight:400;font-size:14px;line-height:20px;}
-  .fnol-party-line .trash-btn{flex:0 0 auto;margin-left:auto;align-self:center;}
+  .fnol-party-line-actions{display:flex;align-items:center;gap:4px;flex:0 0 auto;margin-left:auto;}
+  .fnol-party-injured-chip{
+    height:28px;padding:0 10px;border-radius:var(--radius-pill);border:1px solid var(--border);
+    background:#fff;color:var(--text-secondary);font-family:var(--font-body);font-size:12px;font-weight:400;
+    line-height:1;white-space:nowrap;display:inline-flex;align-items:center;cursor:pointer;
+  }
+  .fnol-party-injured-chip:hover{background:var(--action-hover);color:var(--text-primary);}
+  .fnol-party-injured-chip[aria-pressed="true"],
+  .fnol-party-injured-chip.is-on{
+    border-color:var(--warning-border);background:var(--warning-bg);color:var(--warning-main);
+  }
+  .fnol-party-injured-chip[disabled]{cursor:default;opacity:1;}
+  .fnol-party-form{
+    display:flex;flex-direction:column;gap:12px;width:100%;
+  }
+  .fnol-party-form-main{
+    display:flex;flex-wrap:nowrap;align-items:flex-end;gap:16px;width:100%;box-sizing:border-box;
+  }
+  .fnol-party-form-main .field{flex:1 1 0;min-width:0;gap:5px;}
+  .fnol-party-form-main .field .row-input{flex:none;width:100%;min-width:0;}
+  .fnol-party-form-main .fnol-party-injured-wrap{
+    flex:0 0 auto;display:flex;flex-direction:column;gap:5px;align-self:flex-end;padding-bottom:0;
+  }
+  .fnol-party-form-main .fnol-party-injured-wrap .chip-label{
+    font-size:12px;line-height:16px;color:var(--text-secondary);font-family:var(--font-body);
+  }
+  .fnol-party-form-main .row-icons{flex:0 0 auto;margin-left:0;align-self:flex-end;}
+  .fnol-party-injury-fields{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;
+    padding-top:2px;
+  }
+  .fnol-party-injury-fields[hidden]{display:none !important;}
+  .fnol-party-injury-fields .field{margin:0;gap:5px;min-width:0;}
+  .fnol-party-injury-fields .field .row-input{width:100%;}
+  .fnol-party-injury-fields textarea.row-input{
+    height:auto;min-height:32px;padding:6px 9px;resize:vertical;line-height:1.4;
+  }
+  .fnol-party-card.is-editing{
+    padding:12px;background:rgba(255,255,255,.9);border:1px solid var(--divider);
+    border-radius:var(--radius);margin:4px 0;
+  }
+  .fnol-party-card.is-editing + .fnol-party-card,
+  .fnol-party-card + .fnol-party-card.is-editing{border-top:none;}
+  .fnol-party-edit-btn{
+    width:32px;height:32px;padding:0;border:none;background:transparent;border-radius:var(--radius);
+    color:var(--gray-dark);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  .fnol-party-edit-btn:hover{background:var(--action-hover);color:var(--primary-main);}
+  .fnol-party-edit-btn svg{width:18px;height:18px;}
+  @media (max-width:1100px){
+    .fnol-party-form-main{flex-wrap:wrap;}
+    .fnol-party-injury-fields{grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
   @media (prefers-reduced-motion:reduce){
-    .fnol-party-inline-host,.add-party-toggle-ic,.fnol-party-line{transition:none !important;}
+    .fnol-party-inline-host,.add-party-toggle-ic,.fnol-party-card{transition:none !important;}
     .add-party-toggle[aria-expanded="true"] .add-party-toggle-ic{transform:none;}
   }
 
   /* ---- Inline add-row inputs (FNOL repeating tables) ---- */
   tr.new-row td,
   .datagrid tbody tr.new-row td,
-  .mini-table tbody tr.new-row td{background:var(--info-bg);border:none;vertical-align:middle;padding:6px 10px;}
+  .mini-table tbody tr.new-row td{background:var(--info-bg);border:none;vertical-align:middle;padding:14px 10px;}
   .row-input{height:32px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 9px;font-size:14px;color:var(--text-primary);background:#fff;font-family:var(--font-body);width:100%;}
   .row-input:focus{outline:none;border-color:var(--primary-main);box-shadow:0 0 0 3px var(--primary-selected-bg);}
   select.row-input{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236B6F76'/></svg>");background-repeat:no-repeat;background-position:right 9px center;padding-right:24px;}
-
-  /* ---- Inline add-row under card grids (Parties, Vehicle Details) ---- */
-  .inline-add-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;background:var(--info-bg);border:none;border-radius:var(--radius);}
-  .inline-add-row .row-input{flex:1 1 150px;min-width:120px;}
-  .inline-add-row .row-input.drivable-input{flex:0 1 120px;}
-  .inline-add-row .row-icons{flex:0 0 auto;margin-left:auto;}
+  .typeahead{position:relative;width:100%;}
+  .typeahead-list{
+    position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:30;
+    margin:0;padding:4px 0;list-style:none;box-sizing:border-box;
+    background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:0 4px 12px rgba(0,0,0,.08);max-height:180px;overflow:auto;
+  }
+  .typeahead-list[hidden]{display:none !important;}
+  .typeahead-option{
+    display:block;width:100%;padding:8px 10px;border:none;background:transparent;
+    text-align:left;font-family:var(--font-body);font-size:14px;line-height:20px;
+    color:var(--text-primary);cursor:pointer;box-sizing:border-box;
+  }
+  .typeahead-option:hover,.typeahead-option.is-active{background:var(--action-hover);}
 
   /* ---- Upload dropzone (FNOL-4 / reference key pattern) ---- */
   .upload-dropzone{display:flex;flex-direction:column;align-items:center;gap:0;border:2px dashed #D9D9D9;border-radius:var(--radius);padding:28px 24px;text-align:center;background:#fff;transition:background .15s ease,border-color .15s ease;}
@@ -731,9 +862,9 @@
   .upload-dropzone .btn{margin-top:12px;}
 
   /* ---- Column doc card (FNOL-4 / reference key pattern) ---- */
-  .doc-card-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;}
+  .doc-card-row{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:14px;}
   .doc-card-row.cols-4{grid-template-columns:repeat(4,1fr);}
-  .doc-card{border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;}
+  .doc-card{border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;box-shadow:var(--elevation-1);}
   .doc-card .dc-head{display:flex;align-items:center;gap:8px;}
   .doc-card .dc-head svg{flex:0 0 auto;}   /* file icon colour is set by .dc-file-ic; trash colour by .trash-btn */
   .doc-card .dc-head .dc-file-ic{color:var(--gray-dark);width:20px;height:20px;}
@@ -747,7 +878,7 @@
   .doc-card .dc-name{font-size:14px;font-weight:400;color:var(--text-primary);word-break:break-word;}
   .doc-card .dc-subtitle{font-size:12px;color:var(--text-secondary);margin-top:5px;line-height:1.4;}
   .doc-card .dc-meta{font-size:12px;color:var(--text-secondary);margin-top:6px;line-height:1.5;}
-  .doc-card .dc-chip{display:inline-block;margin-top:8px;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:var(--radius-pill);background:var(--doc-chip-bg);color:var(--doc-chip-fg);}
+  .doc-card .dc-chip{display:inline-block;margin-top:8px;font-family:var(--font-body);font-size:10.5px;font-weight:400;padding:2px 8px;border-radius:var(--radius-pill);background:var(--doc-chip-bg);color:var(--doc-chip-fg);}
   .doc-card .dc-icon,.fnol-party-line .dc-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--info-bg);border-radius:4px;color:var(--info-main);flex:0 0 auto;}
   .doc-card .dc-icon{margin-bottom:8px;}
   .doc-card .dc-icon svg,.fnol-party-line .dc-icon svg{flex:0 0 auto;}
@@ -755,17 +886,15 @@
   .doc-card .dc-icon.tone-secondary,.fnol-party-line .dc-icon.tone-secondary{background:#E6F0EF;color:var(--secondary-main);}
   /* Organization: neutral gray (not info blue) so blue is not the org identifier; person stays tone-secondary */
   .doc-card .dc-icon.tone-info,.fnol-party-line .dc-icon.tone-info{background:var(--action-disabled-bg);color:var(--gray-dark);}
+  .doc-card .dc-icon.tone-warning{background:var(--warning-bg);color:var(--warning-main);}
   .doc-card .dc-action{display:block;width:100%;margin:12px 0 0;padding:10px 0 0;text-align:left;border:none;border-top:1px solid var(--divider);border-radius:0;font-size:12.5px;font-weight:500;color:var(--primary-main);background:none;cursor:pointer;font-family:var(--font-display);}
   .doc-card .dc-action:hover{text-decoration:underline;}
-  .doc-card .dc-vehicle-head{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:4px 8px;}
-  .doc-card .dc-vehicle-head .dc-name{min-width:0;}
-  .doc-card .dc-vehicle-head .label-chip{flex:0 0 auto;}
 
   /* ---- Triage Decisions grid ---- */
-  .triage-decisions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;}
+  .triage-decisions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-bottom:14px;}
   
   /* ---- Status row card (Column Doc Card typography / spacing) ---- */
-  .status-row-card{display:flex;flex-direction:column;gap:0;border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;}
+  .status-row-card{display:flex;flex-direction:column;gap:0;border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;box-shadow:var(--elevation-1);}
   .status-row-card>div{display:flex;flex-direction:column;gap:5px;}
   .status-row-card .icon{
     width:32px;height:32px;border-radius:4px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
@@ -814,21 +943,21 @@
   #intakeTreatmentSelected .btn{height:32px;padding:4px 8px;margin-left:-4px;font-size:13px;}
 
   /* ---- Checkbox card (Triage-2 routing & referrals pattern) ---- */
-  .checkbox-card-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-  .checkbox-card{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;cursor:pointer;}
+  .checkbox-card-row{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
+  .checkbox-card{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--divider);border-radius:var(--radius);padding:12px 14px;background:#fff;cursor:pointer;box-shadow:var(--elevation-1);}
   .checkbox-card input{margin-top:2px;accent-color:var(--primary-main);width:16px;height:16px;flex:0 0 auto;}
   .checkbox-card .title{font-size:14px;font-weight:400;color:var(--text-primary);}
   .checkbox-card .desc{font-size:12px;color:var(--text-secondary);margin-top:3px;line-height:1.4;}
 
   /* ---- Candidate / assignment card (Triage-2 claim assignment pattern) ---- */
-  .candidate-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:4px;}
-  .candidate-card{border:1px solid #D8D8D8;border-radius:4px;padding:20px;cursor:pointer;background:#fff;text-align:left;font-family:var(--font-body);display:grid;grid-template-columns:auto 1fr auto;column-gap:12px;row-gap:4px;align-items:start;position:relative;}
+  .candidate-row{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:4px;}
+  .candidate-card{border:1px solid #D8D8D8;border-radius:4px;padding:20px;cursor:pointer;background:#fff;text-align:left;font-family:var(--font-body);display:grid;grid-template-columns:auto 1fr auto;column-gap:12px;row-gap:4px;align-items:start;position:relative;box-shadow:var(--elevation-1);}
   .candidate-card:hover{border-color:var(--primary-main);}
   .candidate-card.selected{border:2px solid var(--primary-main);padding:19px;}
   .candidate-card input[type=radio]{grid-row:1 / span 2;width:20px;height:20px;margin:2px 0 0;accent-color:var(--primary-main);cursor:pointer;}
   .candidate-card .cc-name{font-family:var(--font-display);font-size:16px;font-weight:400;line-height:24px;color:var(--text-primary);}
   .candidate-card .cc-role{grid-column:2;font-size:14px;color:var(--gray-dark);}
-  .candidate-card .cc-tag{grid-column:3;grid-row:1;font-size:13px;line-height:20px;padding:2px 10px;border-radius:var(--radius-pill);background:#fff;border:1px solid #D8D8D8;color:var(--text-primary);white-space:nowrap;}
+  .candidate-card .cc-tag{grid-column:3;grid-row:1;font-family:var(--font-body);font-size:13px;font-weight:400;line-height:20px;padding:2px 10px;border-radius:var(--radius-pill);background:#fff;border:1px solid #D8D8D8;color:var(--text-primary);white-space:nowrap;}
   /* Quote-pattern Recommended chip: light blue fill, Copilot mark, regular blue text */
   .candidate-card .cc-recommend{
     display:inline-flex;align-items:center;gap:6px;grid-column:3;grid-row:1;
@@ -876,8 +1005,8 @@
   .no-match-note{font-size:11.5px;font-style:italic;color:var(--text-secondary);padding:6px 0 0;}
 
   /* ---- KPI Card (Majesco Patterns) ---- */
-  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
-  .kpi-card{background:#fff;border:1px solid var(--divider);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:8px;}
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin-bottom:14px;}
+  .kpi-card{background:#fff;border:1px solid var(--divider);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--elevation-1);}
   .kpi-card .kpi-label{font-size:12px;font-family:var(--font-body);color:rgba(0,0,0,.6);}
   .kpi-card .kpi-value{font-size:14px;font-family:var(--font-display);font-weight:600;color:rgba(0,0,0,.87);}
   .kpi-card .kpi-value.tone-success{color:var(--success-main);}
@@ -958,6 +1087,211 @@
   }
   .mui-dialog-actions .btn{min-width:72px;}
   body.mui-dialog-open{overflow:hidden;}
+  /* Review confirmation — left-aligned heading row + full-width zebra summary */
+  .review-confirm{
+    display:flex;flex-direction:column;align-items:stretch;text-align:left;
+    padding:4px 0 12px;max-width:none;width:100%;margin:0;box-sizing:border-box;
+  }
+  .review-confirm-heading{
+    display:flex;align-items:center;gap:12px;text-align:left;
+  }
+  .review-confirm-icon{
+    width:32px;height:32px;border-radius:var(--radius);display:grid;place-items:center;
+    background:var(--success-bg);color:var(--success-main);margin:0;flex:0 0 auto;
+  }
+  .review-confirm-icon svg{width:20px;height:20px;}
+  .review-confirm-title{
+    font-family:var(--font-display);font-size:18px;font-weight:500;line-height:28px;color:var(--text-primary);margin:0;text-align:left;
+  }
+  .review-confirm-body{
+    font-family:var(--font-body);font-size:15px;font-weight:400;line-height:22px;color:var(--text-secondary);margin:8px 0 0;max-width:none;text-align:left;
+  }
+  .confirm-stripe-list{width:100%;margin-top:24px;text-align:left;}
+  .confirm-stripe-row{
+    display:flex;align-items:flex-start;gap:16px;
+    padding:14px 18px;border-radius:5px;min-height:48px;box-sizing:border-box;
+  }
+  .confirm-stripe-row:nth-child(odd){background:var(--action-hover);}
+  .confirm-stripe-row:nth-child(even){background:var(--surface);}
+  .confirm-stripe-term{
+    flex:0 0 148px;width:148px;font-family:var(--font-body);font-size:14px;font-weight:600;line-height:22px;color:var(--text-primary);
+  }
+  .confirm-stripe-value{
+    flex:1 1 auto;min-width:0;font-family:var(--font-body);font-size:15px;font-weight:400;line-height:22px;color:var(--text-primary);word-break:break-word;
+  }
+  .edit-mode-link[hidden]{display:none !important;}
+  .substep-rail[hidden]{display:none !important;}
+  .content-row.review-only .main-scroll{flex:1 1 auto;}
+  /* Submit confirmation dialog — success check icon, left-aligned copy, right-aligned actions */
+  .mui-dialog-paper.submit-confirm-paper{max-width:640px;width:calc(100% - 64px);}
+  .mui-dialog-content .submit-confirm{padding:8px 0 4px;max-width:none;}
+  .submit-confirm{
+    display:flex;flex-direction:column;align-items:flex-start;text-align:left;
+  }
+  .submit-confirm-icon{
+    width:48px;height:48px;border-radius:var(--radius);display:grid;place-items:center;
+    background:var(--success-bg);color:var(--success-main);margin:0 0 20px;
+  }
+  .submit-confirm-icon svg{width:28px;height:28px;}
+  .submit-confirm-title{
+    margin:0 0 16px;font-family:var(--font-display);font-size:18px;font-weight:500;line-height:28px;color:var(--text-primary);text-align:left;
+  }
+  .submit-confirm-body{
+    margin:0;font-family:var(--font-body);font-size:15px;font-weight:400;line-height:22px;color:var(--text-secondary);max-width:none;text-align:left;
+  }
+  .submit-confirm-claim{
+    margin:14px 0 0;font-family:var(--font-display);font-size:18px;font-weight:500;line-height:28px;color:var(--text-primary);text-align:left;
+  }
+  .submit-confirm-paper .mui-dialog-actions{
+    display:flex;justify-content:flex-end;align-items:center;padding:8px 24px 20px;
+  }
+  .submit-confirm-actions{
+    display:inline-flex;align-items:center;gap:16px;
+  }
+  .submit-confirm-actions .btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    box-sizing:border-box;height:40px;min-height:40px;margin:0;
+    padding:7px 16px;font-size:16px;font-weight:500;line-height:24px;
+    font-family:var(--font-display);border:1px solid transparent;border-radius:var(--radius-sm);
+  }
+  .submit-confirm-actions .btn-text{
+    padding:7px 8px;background:transparent;color:var(--primary-main);
+  }
+  .submit-confirm-actions .btn-primary{
+    background:var(--primary-main);color:#fff;
+  }
+  .page.claims-view .page-head{display:none !important;}
+  .page.claims-view .hstepper,
+  .page.claims-view .subheader,
+  .page.claims-view .fnol-party-inline-host,
+  .page.claims-view .substep-rail,
+  .page.claims-view .footer{display:none !important;}
+  .page.claims-view .content-row{background:#fff;}
+  .page.claims-view .main-panel{background:#fff;}
+  .page.claims-view .main-col{padding:24px 32px 40px;background:#fff;gap:0;}
+  .claims-home{display:flex;flex-direction:column;width:100%;min-width:0;gap:0;}
+  .claims-top-row{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    margin:0 0 16px;min-width:0;
+  }
+  .claims-greeting{
+    margin:0;font-family:var(--font-display);font-size:28px;font-weight:600;
+    line-height:36px;letter-spacing:0;color:var(--text-primary);min-width:0;
+  }
+  .claims-copilot-host{flex:0 0 auto;display:flex;align-items:center;}
+  .claims-actions{margin:0 0 24px;}
+  .claims-actions .btn svg{width:20px;height:20px;}
+  .claims-section{margin:0 0 24px;}
+  .claims-section-head{
+    display:flex;align-items:center;gap:12px;min-height:40px;margin:0 0 12px;flex-wrap:wrap;
+  }
+  .claims-section-title{
+    margin:0;font-family:var(--font-display);font-size:20px;font-weight:600;line-height:28px;color:var(--text-primary);
+  }
+  .claims-brief{
+    padding:16px;border:1px solid var(--divider);border-radius:var(--radius);
+    background:var(--primary-hover-bg);
+  }
+  .claims-brief-grid{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 24px;
+  }
+  .claims-brief-col{min-width:0;padding:0 8px;}
+  .claims-brief-subtitle{
+    margin:0 0 8px;font-family:var(--font-display);font-size:16px;font-weight:600;
+    line-height:24px;color:var(--text-primary);
+  }
+  .claims-health-body{display:flex;align-items:center;gap:16px;}
+  .claims-health-donut{
+    position:relative;width:80px;height:80px;flex:0 0 80px;
+  }
+  .claims-health-donut-svg{
+    width:80px;height:80px;display:block;transform:rotate(-90deg);
+  }
+  .claims-health-donut-svg .track,
+  .claims-health-donut-svg .value{
+    fill:none;stroke-linecap:butt;stroke-width:12;
+  }
+  .claims-health-donut-svg .track{stroke:#E0E0E0;}
+  .claims-health-donut-svg .value{
+    stroke:#57B7C3;
+    stroke-dasharray:201.06;
+    stroke-dashoffset:201.06;
+  }
+  .claims-health-donut-svg .value.is-animated{
+    transition:stroke-dashoffset 800ms ease-out;
+  }
+  .claims-health-donut-pct{
+    position:absolute;inset:0;display:grid;place-items:center;
+    font-family:var(--font-display);font-size:18px;font-weight:700;
+    line-height:24px;color:var(--text-primary);pointer-events:none;
+  }
+  @media (prefers-reduced-motion:reduce){
+    .claims-health-donut-svg .value.is-animated{transition:none;}
+  }
+  .claims-brief-list{
+    margin:0;padding:0 0 0 18px;display:flex;flex-direction:column;gap:8px;min-width:0;
+  }
+  .claims-brief-list li{
+    font-family:var(--font-body);font-size:14px;line-height:20px;color:var(--text-primary);
+  }
+  .claims-brief-list b{font-weight:700;}
+  .claims-overnight-list,
+  .claims-attention-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;}
+  .claims-overnight-row{
+    display:flex;align-items:flex-start;gap:8px;
+    font-family:var(--font-body);font-size:14px;line-height:20px;color:var(--text-primary);
+  }
+  .claims-overnight-ic{
+    flex:0 0 auto;width:20px;height:20px;margin-top:0;color:var(--primary-main);
+  }
+  .claims-overnight-ic svg{width:20px;height:20px;display:block;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .claims-attention-row{
+    display:flex;align-items:baseline;gap:8px;
+    font-family:var(--font-body);font-size:14px;line-height:20px;
+  }
+  .claims-attention-claim{
+    flex:0 0 auto;font-family:var(--font-display);font-weight:600;font-size:14px;
+    color:var(--primary-main);text-decoration:none;
+  }
+  .claims-attention-claim:hover{text-decoration:underline;}
+  .claims-attention-reason{flex:1 1 auto;min-width:0;color:var(--text-primary);}
+  .claims-metrics{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;
+  }
+  .claims-metric-card{
+    border:1px solid var(--divider);border-radius:var(--radius);background:#fff;
+    padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0;box-shadow:var(--elevation-1);
+  }
+  .claims-metric-label{
+    font-family:var(--font-display);font-size:13px;font-weight:500;line-height:18px;
+    color:var(--text-secondary);
+  }
+  .claims-metric-value{
+    font-family:var(--font-display);font-size:28px;font-weight:600;line-height:36px;
+    color:var(--text-primary);
+  }
+  .claims-table-section{margin:0;}
+  .claims-table-shell{width:100%;overflow:auto;border:none;border-radius:0;}
+  .claims-table-shell .datagrid{margin:0;width:100%;}
+  .claims-table-shell .datagrid thead th{
+    background:#fff;color:var(--text-secondary);
+    font-size:13px;font-weight:500;padding:10px 12px;border-bottom:1px solid var(--divider);
+  }
+  .claims-table-shell .datagrid tbody td{
+    padding:14px 12px;border-bottom:1px solid var(--divider);vertical-align:middle;
+  }
+  .claims-table-shell .datagrid tbody tr{cursor:default;}
+  .claims-table-shell .datagrid tbody tr:last-child td{border-bottom:1px solid var(--divider);}
+  .claims-table-shell .datagrid tbody tr:hover td{background:var(--action-hover);}
+  .claims-table-shell .datagrid td.claim-status .label-chip{
+    display:inline-flex;align-items:center;vertical-align:middle;
+  }
+  .claims-table-shell .datagrid td.cov-name{font-weight:600;color:var(--text-primary);}
+  @media (max-width:1100px){
+    .claims-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .claims-brief-grid{grid-template-columns:1fr;}
+    .claims-brief-col{padding:0;}
+  }
   @media (prefers-reduced-motion:reduce){
     .mui-dialog-backdrop,.mui-dialog-paper,.mui-dialog-root.is-open .mui-dialog-backdrop,.mui-dialog-root.is-open .mui-dialog-paper{
       transition:none !important;
@@ -1016,7 +1350,7 @@
           <button class="iconbtn" title="Voice search"><svg class="mi" width="20" height="20" viewBox="0 -960 960 960"><path d="M395-435q-35-35-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35q-50 0-85-35Zm85-205Zm-40 520v-123q-104-14-172-93t-68-184h80q0 83 58.5 141.5T480-320q83 0 141.5-58.5T680-520h80q0 105-68 184t-172 93v123h-80Zm68.5-371.5Q520-503 520-520v-240q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760v240q0 17 11.5 28.5T480-480q17 0 28.5-11.5Z"/></svg></button>
         </div>
       </div>
-      <button class="btn-create">Create new</button>
+      <button type="button" class="btn-create" id="createNewBtn">Create new</button>
     </div>
     <div class="right-group">
       <button class="iconbtn" title="Notifications"><svg class="mi" width="22" height="22" viewBox="0 -960 960 960"><path d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z"/></svg></button>
@@ -1033,7 +1367,7 @@
       <button type="button" class="rail-item" id="railActivityBtn" data-rail="activity" aria-controls="railDrawer" aria-expanded="false"><svg class="ic mi" viewBox="0 -960 960 960"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480h80q0 134 93 227t227 93q134 0 227-93t93-227q0-134-93-227t-227-93q-69 0-129 32t-101 88h120v80H120v-240h80v94q51-64 124.5-103T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm112-192L440-440v-240h80v206l128 128-56 56Z"/></svg><span class="lbl">Activity</span></button>
       <button type="button" class="rail-item" id="railFavoritesBtn" data-rail="favorites" aria-controls="railDrawer" aria-expanded="false"><svg class="ic mi" viewBox="0 -960 960 960"><path d="m354-287 126-76 126 77-33-144 111-96-146-13-58-136-58 135-146 13 111 97-33 143ZM233-120l65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Zm247-350Z"/></svg><span class="lbl">Favorites</span></button>
       <button type="button" class="rail-item" data-rail="tasks"><svg class="ic mi" viewBox="0 -960 960 960"><path d="M655-200 513-342l56-56 85 85 170-170 56 57-225 226Zm0-320L513-662l56-56 85 85 170-170 56 57-225 226ZM80-280v-80h360v80H80Zm0-320v-80h360v80H80Z"/></svg><span class="lbl">Tasks</span></button>
-      <button type="button" class="rail-item" data-rail="claims"><svg class="ic mi" viewBox="0 -960 960 960"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg><span class="lbl">Claims</span></button>
+      <button type="button" class="rail-item" id="railClaimsBtn" data-rail="claims"><svg class="ic mi" viewBox="0 -960 960 960"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg><span class="lbl">Claims</span></button>
       <div class="rail-spacer"></div>
       <button type="button" class="rail-item rail-item-wide" title="Customize sidebar">
         <svg class="ic mi" viewBox="0 -960 960 960"><path d="M440-120v-240h80v80h240v80H520v80h-80Zm-320-80v-80h240v80H120Zm160-160v-80H120v-80h160v-80h80v240h-80Zm160-80v-80h400v80H440Zm160-160v-240h80v80h160v80H680v80h-80Zm-480-80v-80h400v80H120Z"/></svg>
@@ -1124,11 +1458,12 @@
     </aside>
 
     <!-- ===== PAGE ===== -->
-    <div class="page">
+    <div class="page claims-view">
       <div class="page-head">
         <div class="titlebar">
           <div class="title-cell">
-            <h1 id="pageTitle">First notice of loss</h1>
+            <h1 id="pageTitle">Claims</h1>
+            <p class="titlebar-sub" id="pageSub">Review open work and recently submitted claims across your book of business.</p>
           </div>
           <div class="hstepper">
             <div class="hstep" id="hstep-fnol" data-key="fnol" role="button" tabindex="0"><span class="num">1</span><span class="lbl">FNOL</span></div>
@@ -1137,7 +1472,7 @@
             <span class="hstep-line"></span>
             <div class="hstep" id="hstep-review" data-key="review" role="button" tabindex="0"><span class="num">3</span><span class="lbl">Review</span></div>
           </div>
-          <div class="actions-cell">
+          <div class="actions-cell" id="pageCopilotHost">
             <button type="button" class="copilot-btn" id="copilotBtn" aria-expanded="false" aria-controls="copilotDrawer" data-drawer="copilot">
               <!-- Copilot line icons: copilot-line.svg (inactive) / copilot-line-active.svg (open) -->
               <svg class="copilot-ic copilot-ic-default" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path fill="none" d="M16.8,8.8s0,0,0,0c-.7-1-1.6-2-2.6-3-1-1-2-1.9-3-2.6.7-.5,1.5-.8,2.2-1.1.9-.3,1.8-.5,2.5-.5s1.5.2,1.9.7c.8.8.9,2.4.1,4.4-.3.7-.6,1.4-1,2.1,0,0,0,0,0,0h0Z"/><path fill="none" d="M11.2,3.2c.7-.4,1.4-.8,2.1-1,.9-.3,1.8-.5,2.5-.5s1.4.2,1.9.6c.8.8.8,2.4.1,4.4-.3.7-.6,1.4-1,2.1-.7-1-1.6-2-2.6-3s-2-1.9-3-2.6Z"/><path fill="none" d="M4.2,18.4c-.8,0-1.5-.2-1.9-.7-1.1-1.1-.8-3.7.9-6.6.8,1.1,1.7,2.1,2.7,3,1,1,2,1.8,3,2.6-1.7,1.1-3.4,1.6-4.7,1.6Z"/><path fill="none" d="M8.8,16.8c-2.9,1.7-5.5,2-6.5.9s-.8-3.6.9-6.5c.7,1,1.6,2.1,2.6,3,1,1,2,1.9,3,2.6Z"/><path fill="#595959" d="M15.8,19.7c-.9,0-1.9-.2-3-.6-1-.4-1.9-.8-2.9-1.4-2.1,1.3-4.1,2-5.8,2s-2.1-.3-2.8-1c-.7-.7-1-1.6-1-2.8,0-1.7.7-3.7,2-5.9-.6-.9-1.1-1.9-1.4-2.8C0,4.6.1,2.6,1.3,1.3c.7-.7,1.6-1,2.8-1,1.7,0,3.7.7,5.9,2,.9-.6,1.9-1.1,2.8-1.4,1.1-.4,2.1-.6,3-.6s2.1.3,2.8,1c1.2,1.2,1.4,3.3.4,5.8-.4,1-.8,1.9-1.4,2.9,2.3,3.6,2.7,7,1,8.6-.7.7-1.6,1-2.8,1ZM3.2,11.3c-1.6,2.8-1.9,5.3-.9,6.4.4.4,1,.6,1.8.6,1.3,0,2.9-.5,4.6-1.5-1.1-.7-2.1-1.5-3.1-2.5-.9-.9-1.8-2-2.6-3ZM4.2,1.7c-.8,0-1.4.2-1.8.6-.8.8-.8,2.4-.1,4.3.3.7.6,1.4,1,2.1.2.4.5.8.7,1.2.8,1.1,1.7,2.2,2.8,3.3,1.1,1.1,2.2,2,3.3,2.8.4.3.8.5,1.2.7.7.4,1.4.8,2.1,1,.9.3,1.8.5,2.5.5s1.4-.2,1.8-.6c.4-.4.6-1,.6-1.8,0-1.3-.5-2.9-1.5-4.6-.2-.4-.5-.8-.7-1.2-.8-1.1-1.7-2.2-2.8-3.3s-2.2-2-3.3-2.8c-.4-.3-.8-.5-1.2-.7-1.7-1-3.3-1.5-4.6-1.5ZM15.8,1.7c-.7,0-1.6.2-2.5.5-.7.3-1.4.6-2.1,1,1,.6,2,1.5,3,2.5,1,1,1.9,2,2.6,3,.3-.7.7-1.4.9-2.1.7-2,.7-3.5-.1-4.3-.4-.4-1.1-.6-1.8-.6Z"/><path fill="#595959" d="M19,7.1c.9-2.5.8-4.5-.4-5.7S15.4,0,12.9,1c-1,.3-1.9.8-2.9,1.4C7.9,1.1,5.8.4,4.2.4s-2.1.3-2.8,1C.2,2.6,0,4.6,1,7.1c.3,1,.8,1.9,1.4,2.9C1.1,12.1.4,14.2.4,15.8s.3,2.1,1,2.8,1.7,1,2.8,1c1.7,0,3.7-.7,5.8-2,1,.6,1.9,1.1,2.9,1.4,1.1.4,2.1.6,3,.6s2.1-.3,2.8-1c1.7-1.7,1.2-5.1-1-8.6.6-1,1.1-1.9,1.4-2.9ZM2.3,17.7c-1.1-1.1-.8-3.6.9-6.5.7,1,1.6,2.1,2.6,3,1,1,2,1.9,3,2.6-2.9,1.7-5.5,2-6.5.9ZM18.3,15.8c0,.8-.2,1.5-.6,1.9-.8.8-2.4.8-4.4.1-.7-.3-1.4-.6-2.1-1-.4-.2-.8-.5-1.2-.7-1.1-.8-2.3-1.7-3.3-2.8s-2-2.2-2.8-3.3c-.3-.4-.5-.8-.7-1.2-.4-.7-.8-1.4-1-2.1-.7-2-.7-3.6.1-4.4.4-.4,1.1-.6,1.9-.6,1.2,0,2.9.5,4.7,1.5.4.2.8.5,1.2.8,1.1.7,2.2,1.7,3.3,2.8s2,2.2,2.8,3.3c.3.4.5.8.8,1.2,1,1.8,1.5,3.4,1.5,4.7ZM14.2,5.8c-1-1-2-1.9-3-2.6.7-.4,1.4-.8,2.1-1,.9-.3,1.8-.5,2.5-.5s1.4.2,1.9.6c.8.8.8,2.4.1,4.4-.3.7-.6,1.4-1,2.1-.7-1-1.6-2-2.6-3Z"/><path fill="#595959" d="M10,13.6c-2,0-3.6-1.6-3.6-3.6s1.6-3.6,3.6-3.6,3.6,1.6,3.6,3.6-1.6,3.6-3.6,3.6ZM10,7.8c-1.2,0-2.2,1-2.2,2.2s1,2.2,2.2,2.2,2.2-1,2.2-2.2-1-2.2-2.2-2.2Z"/><path fill="#595959" d="M10,13.5c-2,0-3.5-1.6-3.5-3.5s1.6-3.5,3.5-3.5,3.5,1.6,3.5,3.5-1.6,3.5-3.5,3.5ZM10,7.8c-1.2,0-2.2,1-2.2,2.2s1,2.2,2.2,2.2,2.2-1,2.2-2.2-1-2.2-2.2-2.2Z"/></svg>
@@ -1541,6 +1876,26 @@
   </div>
 </div>
 
+<div class="mui-dialog-root" id="dialogSubmitConfirm" role="presentation" aria-hidden="true" data-dialog="submitConfirm">
+  <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
+  <div class="mui-dialog-paper submit-confirm-paper" role="dialog" aria-modal="true" aria-labelledby="dialogSubmitConfirmTitle" tabindex="-1">
+    <div class="mui-dialog-content">
+      <div class="submit-confirm">
+        <div class="submit-confirm-icon" aria-hidden="true"><svg class="mi" width="28" height="28" viewBox="0 -960 960 960"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg></div>
+        <h2 class="submit-confirm-title" id="dialogSubmitConfirmTitle">Claim submitted</h2>
+        <p class="submit-confirm-body">FNOL intake is complete. Downstream work can continue under this claim number.</p>
+        <p class="submit-confirm-claim" id="submitSuccessClaimNo">CA141288</p>
+      </div>
+    </div>
+    <div class="mui-dialog-actions">
+      <div class="submit-confirm-actions">
+        <button type="button" class="btn btn-text" data-submit-action="createAnother">Create another claim</button>
+        <button type="button" class="btn btn-primary" data-submit-action="ok">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1591,20 +1946,91 @@
       <button type="button" class="dc-action">View details</button>
     </div>`;
   }
-  function drivableTone(v){
-    const t=String(v||'').trim().toLowerCase();
-    return t==='no' ? 'error' : t==='yes' ? 'success' : 'neutral';
+  function isDrivableYes(v){
+    if(typeof v === 'boolean') return v;
+    return /^(y|yes|true|1)$/i.test(String(v == null ? '' : v).trim());
   }
-  function vehicleDocCard(yearMakeModel, vehicleType, vin, damage, drivable){
-    return `<div class="doc-card">
-      <div class="dc-vehicle-head">
-        <div class="dc-name">${yearMakeModel}</div>
-        <span class="label-chip ${drivableTone(drivable)}">Drivable: ${drivable || '—'}</span>
-      </div>
-      <div class="dc-subtitle">${vehicleType}</div>
-      <div class="dc-meta">VIN ${vin || '—'}</div>
-      <div class="dc-meta">${damage || '—'}</div>
+  function drivableViewText(v){
+    return isDrivableYes(v) ? 'Yes' : 'No';
+  }
+  function drivableSwitch(checked){
+    const on = !!checked;
+    return `<label class="row-switch">
+      <input type="checkbox" data-field="drivable"${on?' checked':''} aria-label="Drivable">
+      <span class="track" aria-hidden="true"></span>
+      <span class="row-switch-label">${on?'Yes':'No'}</span>
+    </label>`;
+  }
+  const VEHICLE_TYPE_OPTIONS = ['Insured vehicle', 'Third-party vehicle'];
+  const VEHICLE_YMM_OPTIONS = [
+    '2023 Isuzu NPR HD',
+    '2021 Toyota Camry',
+    '2024 Toyota Tacoma',
+    '2022 Ford F-150'
+  ];
+  function vehicleTypeSelect(selected, opts){
+    const o = opts || {};
+    const val = String(selected || '');
+    const placeholder = o.placeholder
+      ? `<option value=""${!val?' selected':''} disabled>Please select</option>`
+      : '';
+    const options = VEHICLE_TYPE_OPTIONS.map(opt=>
+      `<option value="${escHtml(opt)}"${val===opt?' selected':''}>${escHtml(opt)}</option>`
+    ).join('');
+    return `<select class="row-input" data-field="vehicleType" aria-label="Type">${placeholder}${options}</select>`;
+  }
+  function vehicleDescInput(value){
+    return `<div class="typeahead" data-vehicle-typeahead>
+      <input class="row-input" data-field="desc" placeholder="Year / Make / Model" value="${escHtml(value || '')}" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-label="Year / Make / Model">
+      <ul class="typeahead-list" hidden role="listbox"></ul>
     </div>`;
+  }
+  function vehicleCells(v, editable){
+    const typeVal = v.vehicleType || '';
+    const typeCell = editable
+      ? vehicleTypeSelect(typeVal)
+      : `<span data-vehicle-type-text>${escHtml(typeVal || '—')}</span>`;
+    const driveCell = editable
+      ? drivableSwitch(isDrivableYes(v.drivable))
+      : `<span data-drivable-text>${drivableViewText(v.drivable)}</span>`;
+    return `<td>${vehicleDescInput(v.desc || '')}</td>
+      <td>${typeCell}</td>
+      <td><input class="row-input" data-field="vin" placeholder="VIN" value="${escHtml(v.vin || '')}"></td>
+      <td><input class="row-input" data-field="damage" placeholder="Damage" value="${escHtml(v.damage || '')}"></td>
+      <td>${driveCell}</td>`;
+  }
+  function vehicleEditCells(v){ return vehicleCells(v, true); }
+  function vehicleTableRow(v, index){
+    return `<tr data-vehicle-index="${index}">${vehicleCells(v, editingMode)}<td>${rowIcons()}</td></tr>`;
+  }
+  function readVehicleRowValues(tr){
+    const drive = tr.querySelector('[data-field="drivable"]');
+    const driveText = tr.querySelector('[data-drivable-text]');
+    let drivable = false;
+    if(drive) drivable = drive.checked;
+    else if(driveText) drivable = isDrivableYes(driveText.textContent);
+    const typeSel = tr.querySelector('select[data-field="vehicleType"]');
+    const typeText = tr.querySelector('[data-vehicle-type-text]');
+    const typeInput = tr.querySelector('input[data-field="vehicleType"]');
+    let vehicleType = '';
+    if(typeSel) vehicleType = typeSel.value.trim();
+    else if(typeText) vehicleType = typeText.textContent.trim();
+    else if(typeInput) vehicleType = typeInput.value.trim();
+    return {
+      desc: (tr.querySelector('[data-field="desc"]')?.value || '').trim(),
+      vehicleType,
+      vin: (tr.querySelector('[data-field="vin"]')?.value || '').trim(),
+      damage: (tr.querySelector('[data-field="damage"]')?.value || '').trim(),
+      drivable
+    };
+  }
+  function syncVehiclesFromDom(){
+    const tbody = document.getElementById('vehiclesTbody');
+    if(!tbody) return;
+    const rows = [...tbody.querySelectorAll('tr:not(.new-row)')];
+    if(!rows.length) return;
+    if(!tbody.querySelector('tr:not(.new-row) [data-field="desc"]')) return;
+    VEHICLES = rows.map(readVehicleRowValues);
   }
   function kpiCard(label, value, tone){
     const cls = tone ? ' tone-'+tone : '';
@@ -1718,42 +2144,106 @@
   /* =========================================================
      FNOL — Vehicles & damages
      ========================================================= */
+  let VEHICLES = [
+    {desc:'2023 Isuzu NPR HD', vehicleType:'Insured vehicle', vin:'JALE5W163P7K01422', damage:'Front bumper, grille and radiator support', drivable:false},
+    {desc:'2021 Toyota Camry', vehicleType:'Third-party vehicle', vin:'4T1G11AK7MU521884', damage:'Rear bumper, deck lid and frame rail', drivable:false}
+  ];
   /* Shared party list — managed only from the subheader Add party toggle. */
   const PARTIES = [
-    {name:'Continental Delivery LLC', roleType:'Named insured · Organization', contact:'502-555-0178', type:'organization'},
-    {name:'Dario Vasquez', roleType:'Insured driver · Person', contact:'502-555-0142', type:'person'},
-    {name:'Marcus Aurelio Reyes', roleType:'Claimant · Person', contact:'', type:'person'},
-    {name:'Alexis Monroe', roleType:'Witness · Person', contact:'502-555-0191', type:'person'}
+    {name:'Continental Delivery LLC', roleType:'Named insured · Organization', contact:'502-555-0178', type:'organization', injured:false, injury:{injuryType:'', bodyPart:'', treatmentStatus:'', notes:''}},
+    {name:'Dario Vasquez', roleType:'Insured driver · Person', contact:'502-555-0142', type:'person', injured:false, injury:{injuryType:'', bodyPart:'', treatmentStatus:'', notes:''}},
+    {name:'Marcus Aurelio Reyes', roleType:'Claimant · Person', contact:'', type:'person', injured:true, injury:{injuryType:'Soft tissue', bodyPart:'Neck / back', treatmentStatus:'Transported by ground ambulance', notes:'Neck/back pain reported at scene'}},
+    {name:'Alexis Monroe', roleType:'Witness · Person', contact:'502-555-0191', type:'person', injured:false, injury:{injuryType:'', bodyPart:'', treatmentStatus:'', notes:''}}
   ];
+  let partyEditingIndex = -1;
+  const INJURY_TYPE_OPTIONS = ['Soft tissue', 'Fracture', 'Laceration', 'Head injury', 'Other'];
+  function emptyInjury(){ return {injuryType:'', bodyPart:'', treatmentStatus:'', notes:''}; }
+  function partyRoleValue(roleType){
+    return String(roleType || '').split('·')[0].trim();
+  }
+  function partyTypeValue(type){
+    return type === 'organization' ? 'Organization' : 'Person';
+  }
   function partyFromInlineValues(v){
     const isOrg = /org/i.test(v.type||'');
     const type = isOrg ? 'organization' : 'person';
     const typeLabel = isOrg ? 'Organization' : 'Person';
+    const injured = type === 'person' && (v.injured === true || v.injured === 'true');
+    const injury = injured ? {
+      injuryType: v.injuryType || '',
+      bodyPart: v.bodyPart || '',
+      treatmentStatus: v.treatmentStatus || '',
+      notes: v.notes || ''
+    } : emptyInjury();
     return {
       name: v.name || 'Unnamed party',
       roleType: `${v.role || 'Party'} · ${typeLabel}`,
       contact: v.contact || '',
-      type
+      type,
+      injured,
+      injury
     };
+  }
+  function readPartyFormValues(root){
+    const v = {};
+    root.querySelectorAll('[data-field]').forEach(inp=>{
+      if(inp.type === 'checkbox') v[inp.dataset.field] = inp.checked;
+      else v[inp.dataset.field] = inp.value.trim();
+    });
+    const injuredBtn = root.querySelector('[data-injured-chip]');
+    if(injuredBtn) v.injured = injuredBtn.getAttribute('aria-pressed') === 'true';
+    return v;
   }
   function commitParty(v){
     const party = partyFromInlineValues(v);
     PARTIES.push(party);
     return party;
   }
-  function fnolParties(){
-    return sectionOpen('Vehicle details', pillPopulated) + addToolbar('Add vehicle', 'vehiclesCards') + `
-      <div class="doc-card-row" id="vehiclesCards">
-        ${vehicleDocCard('2023 Isuzu NPR HD','Insured vehicle','JALE5W163P7K01422','Front bumper, grille and radiator support','No')}
-        ${vehicleDocCard('2021 Toyota Camry','Third-party vehicle','4T1G11AK7MU521884','Rear bumper, deck lid and frame rail','No')}
+  function injuredChipHtml(pressed, opts){
+    const o = opts || {};
+    const id = o.id ? ` id="${o.id}"` : '';
+    const data = o.dataAttr || 'data-injured-chip';
+    const disabled = o.disabled ? ' disabled' : '';
+    return `<button type="button" class="fnol-party-injured-chip${pressed?' is-on':''}"${id} ${data} aria-pressed="${pressed?'true':'false'}"${disabled}>Injured</button>`;
+  }
+  function partyInjuryFieldsHtml(injury, idPrefix){
+    const inj = injury || emptyInjury();
+    const opts = INJURY_TYPE_OPTIONS.map(opt=>`<option value="${escHtml(opt)}"${inj.injuryType===opt?' selected':''}>${escHtml(opt)}</option>`).join('');
+    return `<div class="fnol-party-injury-fields" data-injury-fields>
+      <div class="field">
+        <label for="${idPrefix}-injuryType">Injury type</label>
+        <select class="row-input" id="${idPrefix}-injuryType" data-field="injuryType">
+          <option value="">Please select</option>
+          ${opts}
+        </select>
       </div>
-    ` + sectionClose +
-
-    sectionOpen('Injured parties', pillPopulated) + addToolbar('Add injured party', 'injuredTbody') + `
-      <table class="datagrid">
-        <thead><tr><th>Injured party</th><th>Employee of insured</th><th>Injury details</th><th>Treatment</th><th style="width:80px;"></th></tr></thead>
-        <tbody id="injuredTbody">
-          <tr><td class="cov-name">Marcus Aurelio Reyes</td><td>No</td><td>Neck/back pain reported at scene</td><td>Transported by ground ambulance</td><td>${rowIcons()}</td></tr>
+      <div class="field">
+        <label for="${idPrefix}-bodyPart">Body part</label>
+        <input class="row-input" id="${idPrefix}-bodyPart" data-field="bodyPart" value="${escHtml(inj.bodyPart||'')}" placeholder="e.g. Neck / back">
+      </div>
+      <div class="field">
+        <label for="${idPrefix}-treatmentStatus">Treatment status</label>
+        <input class="row-input" id="${idPrefix}-treatmentStatus" data-field="treatmentStatus" value="${escHtml(inj.treatmentStatus||'')}" placeholder="e.g. Transported by ambulance">
+      </div>
+      <div class="field">
+        <label for="${idPrefix}-notes">Notes</label>
+        <input class="row-input" id="${idPrefix}-notes" data-field="notes" value="${escHtml(inj.notes||'')}" placeholder="Optional notes">
+      </div>
+    </div>`;
+  }
+  function fnolParties(){
+    return sectionOpen('Vehicle details', pillPopulated) + addToolbar('Add vehicle', 'vehiclesTbody') + `
+      <table class="mini-table" aria-label="Vehicles">
+        <thead><tr>
+          <th>Year / Make / Model</th>
+          <th style="width:16%">Type</th>
+          <th style="width:18%">VIN</th>
+          <th>Damage</th>
+          <th style="width:12%">Drivable</th>
+          <th style="width:56px;"></th>
+        </tr></thead>
+        <tbody id="vehiclesTbody">
+          ${VEHICLES.map((v,i)=>vehicleTableRow(v,i)).join('')}
         </tbody>
       </table>
     ` + sectionClose +
@@ -1915,7 +2405,7 @@
   const INTAKE_ITEMS = {
     claimantEmail: {field:'Claimant email', module:'Parties', why:'Not in any source', impact:'Follow-up after assignment'},
     airbag: {field:'Airbag deployment', module:'Vehicle details', why:'Not stated or visible in photos', impact:'Follow-up after assignment'},
-    treatment: {field:'Treatment received', module:'Injured parties', why:'No medical record yet', impact:'Follow-up after assignment'}
+    treatment: {field:'Treatment received', module:'Parties', why:'No medical record yet', impact:'Follow-up after assignment'}
   };
   const INTAKE_ITEM_ORDER = ['claimantEmail', 'airbag', 'treatment'];
   const INTAKE_STATE = {
@@ -2111,21 +2601,267 @@
   }
 
   /* =========================================================
-     REVIEW — stub
+     REVIEW — Version 2 confirmation pattern
      ========================================================= */
-  function reviewStub(){
-    return sectionOpen('Claim review', '') + `
-      <div class="alert success">
-        <svg class="mi" width="20" height="20" viewBox="0 -960 960 960"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
-        <div><div class="alert-title">CA141288 is ready for review</div>This is a confirmation stub — the full Review experience will be built as its own step.</div>
+  const REVIEW_STATE = {submitted:false, claimNumber:''};
+  let REVIEW_CLAIM_NUMBER = 'CA141288';
+  let REVIEW_CLAIM_SEQ = 141288;
+  const CLAIMS_SEED = [
+    {claimNumber:'CA140912', insured:'Metro Freight Partners', product:'Commercial Auto', dateOfLoss:'Jul 02, 2026', status:'Open', assignedTo:'Casey Morgan'},
+    {claimNumber:'CA140771', insured:'Blue Harbor Logistics Inc.', product:'Commercial Auto', dateOfLoss:'Jun 28, 2026', status:'Assigned', assignedTo:'Riley Santos'},
+    {claimNumber:'GL140660', insured:'Northstar Facilities Group', product:'General Liability', dateOfLoss:'Jun 22, 2026', status:'In review', assignedTo:'Jordan Blake'},
+    {claimNumber:'CA140540', insured:'Summit Parcel Group', product:'Commercial Auto', dateOfLoss:'Jun 18, 2026', status:'Open', assignedTo:'Avery Patel'},
+    {claimNumber:'WC140488', insured:'Keystone Warehouse Co.', product:"Workers' Compensation", dateOfLoss:'Jun 11, 2026', status:'Open', assignedTo:'Morgan Ellis'},
+    {claimNumber:'CA139540', insured:'Harborview Transit Partners', product:'Commercial Auto', dateOfLoss:'Jun 04, 2026', status:'SIU review', assignedTo:'Casey Morgan'},
+    {claimNumber:'CP139210', insured:'Lakeside Retail Holdings', product:'Commercial Property', dateOfLoss:'May 27, 2026', status:'Assigned', assignedTo:'Priya Shah'},
+    {claimNumber:'CA138904', insured:'Riverbend Distributing LLC', product:'Commercial Auto', dateOfLoss:'May 14, 2026', status:'Closed', assignedTo:'Riley Santos'}
+  ];
+  let CLAIMS_LIST = CLAIMS_SEED.map(c=>({...c}));
+  function nextClaimNumber(){
+    REVIEW_CLAIM_SEQ += 1;
+    REVIEW_CLAIM_NUMBER = 'CA' + String(REVIEW_CLAIM_SEQ);
+    return REVIEW_CLAIM_NUMBER;
+  }
+  function claimStatusChip(status){
+    const s = String(status || '');
+    let tone = 'neutral';
+    if(/siu|review/i.test(s)) tone = 'warning';
+    else if(/assign|closed/i.test(s)) tone = 'success';
+    else if(/open|reported/i.test(s)) tone = 'neutral';
+    return `<span class="label-chip ${tone}">${escHtml(s)}</span>`;
+  }
+  function ensureSubmittedClaimInList(){
+    const num = REVIEW_STATE.claimNumber || REVIEW_CLAIM_NUMBER;
+    const assigned = ASSIGNMENT_STATE.name || reviewTriageOwnerLabel();
+    const row = {
+      claimNumber: num,
+      insured: 'Continental Delivery LLC',
+      product: 'Commercial Auto',
+      dateOfLoss: reviewDateOfLossLabel(),
+      status: 'Open',
+      assignedTo: assigned === 'Not set' ? 'Unassigned' : assigned
+    };
+    CLAIMS_LIST = CLAIMS_LIST.filter(c=>c.claimNumber !== num);
+    CLAIMS_LIST.unshift(row);
+  }
+  const NEEDS_ATTENTION = [
+    {claim:'CL-23456789-064', reason:'Attorney representation was received more than 30 days after the claim opened.'},
+    {claim:'CL-90345612-221', reason:'Projected injury exposure is approaching the available policy limit.'},
+    {claim:'CL-88213045-207', reason:'A newly ingested insured email contains language consistent with a service complaint.'}
+  ];
+  const OVERNIGHT_ACTIVITY = [
+    {icon:'plus', bold:'6 new claims', rest:' were reported overnight; 2 are still unassigned'},
+    {icon:'storm', bold:'1 CAT event update', rest:' added 4 potentially affected claims'},
+    {icon:'payments', bold:'3 material reserve/payment changes', rest:' exceeded review thresholds'},
+    {icon:'gavel', bold:'2 new litigation/SIU signals', rest:' were generated for supervisor review'}
+  ];
+  const KEY_METRICS = [
+    {label:'Avg claim per adjuster', value:'18.5'},
+    {label:'Avg claim per lifecycle', value:'42 days'},
+    {label:'Open claims', value:'74'},
+    {label:'Claims past target lifecycle', value:'11'}
+  ];
+  function claimsGreeting(){
+    try{
+      const hour = Number(new Intl.DateTimeFormat('en-US', {hour:'numeric', hour12:false, timeZone:'America/New_York'}).format(new Date()));
+      if(hour < 12) return 'Good morning, Jordan';
+      if(hour < 17) return 'Good afternoon, Jordan';
+      return 'Good evening, Jordan';
+    }catch(_){
+      return 'Good afternoon, Jordan';
+    }
+  }
+  function overnightIcon(kind){
+    const icons = {
+      plus:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+      storm:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-2.8 2.4-4 5-4 7.5A4 4 0 0 0 12 15a4 4 0 0 0 4-4.5C16 8 14.8 5.4 12 3Z"/><path d="M10 15l-1.5 3M13 16l-1 3M16 15.5l-1 2.5"/></svg>',
+      payments:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>',
+      gavel:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 4 6 6"/><path d="m12.5 5.5 6 6"/><path d="m5 15 6-6"/><path d="M4 20h8"/><path d="m8 11 5 5"/></svg>'
+    };
+    return `<span class="claims-overnight-ic">${icons[kind] || icons.plus}</span>`;
+  }
+  const CLAIMS_HEALTH_PCT = 68;
+  const CLAIMS_HEALTH_DONUT_R = 32;
+  const CLAIMS_HEALTH_DONUT_C = +(2 * Math.PI * CLAIMS_HEALTH_DONUT_R).toFixed(2); // 201.06
+  function claimsHealthDonutHtml(){
+    return `<div class="claims-health-donut" role="img" aria-label="Claims health ${CLAIMS_HEALTH_PCT} percent">
+      <svg class="claims-health-donut-svg" viewBox="0 0 80 80" aria-hidden="true">
+        <circle class="track" cx="40" cy="40" r="${CLAIMS_HEALTH_DONUT_R}"></circle>
+        <circle class="value" cx="40" cy="40" r="${CLAIMS_HEALTH_DONUT_R}"
+          stroke-dasharray="${CLAIMS_HEALTH_DONUT_C}"
+          stroke-dashoffset="${CLAIMS_HEALTH_DONUT_C}"></circle>
+      </svg>
+      <span class="claims-health-donut-pct">${CLAIMS_HEALTH_PCT}%</span>
+    </div>`;
+  }
+  function animateClaimsHealthDonut(){
+    const ring = document.querySelector('.claims-health-donut-svg .value');
+    if(!ring) return;
+    const target = CLAIMS_HEALTH_DONUT_C * (1 - CLAIMS_HEALTH_PCT / 100);
+    ring.style.strokeDasharray = String(CLAIMS_HEALTH_DONUT_C);
+    ring.style.strokeDashoffset = String(CLAIMS_HEALTH_DONUT_C);
+    ring.classList.remove('is-animated');
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce){
+      ring.style.strokeDashoffset = String(target);
+      return;
+    }
+    // Force first paint at empty, then ease-out to 68%.
+    void ring.getBoundingClientRect();
+    requestAnimationFrame(()=>{
+      ring.classList.add('is-animated');
+      ring.style.strokeDashoffset = String(target);
+    });
+  }
+  function claimsDashboardHtml(){
+    const rows = CLAIMS_LIST.map(c=>`<tr>
+      <td class="cov-name">${escHtml(c.claimNumber)}</td>
+      <td>${escHtml(c.insured)}</td>
+      <td>${escHtml(c.product)}</td>
+      <td>${escHtml(c.dateOfLoss)}</td>
+      <td class="claim-status">${claimStatusChip(c.status)}</td>
+      <td>${escHtml(c.assignedTo)}</td>
+    </tr>`).join('');
+    const overnight = OVERNIGHT_ACTIVITY.map(o=>`<li class="claims-overnight-row">
+      ${overnightIcon(o.icon)}
+      <span><b>${escHtml(o.bold)}</b>${escHtml(o.rest)}</span>
+    </li>`).join('');
+    const attention = NEEDS_ATTENTION.map(a=>`<li class="claims-attention-row">
+      <span class="claims-attention-claim">${escHtml(a.claim)}</span>
+      <span class="claims-attention-reason">${escHtml(a.reason)}</span>
+    </li>`).join('');
+    const metrics = KEY_METRICS.map(m=>`<div class="claims-metric-card">
+      <div class="claims-metric-label">${escHtml(m.label)}</div>
+      <div class="claims-metric-value">${escHtml(m.value)}</div>
+    </div>`).join('');
+    return `<div class="claims-home">
+      <div class="claims-top-row">
+        <h2 class="claims-greeting">${escHtml(claimsGreeting())}</h2>
+        <div class="claims-copilot-host" id="claimsCopilotHost"></div>
       </div>
-      <div class="field-grid" style="margin-top:16px;">
-        ${fieldRO('Claim','CA141288')}
-        ${fieldRO('Insured','Continental Delivery LLC')}
-        ${fieldRO('Assigned to','Jordan Blake')}
-        ${fieldRO('Status','Triage complete')}
+      <div class="claims-actions">
+        <button type="button" class="btn btn-outlined" id="newClaimBtn" data-new-claim>
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          New Claim
+        </button>
       </div>
-    ` + sectionClose;
+      <section class="claims-section claims-brief" aria-labelledby="dailyBriefTitle">
+        <div class="claims-section-head">
+          <h3 class="claims-section-title" id="dailyBriefTitle">Daily Brief</h3>
+        </div>
+        <div class="claims-brief-grid">
+          <div class="claims-brief-col" aria-labelledby="claimsHealthTitle">
+            <h4 class="claims-brief-subtitle" id="claimsHealthTitle">Claims Health</h4>
+            <div class="claims-health-body">
+              ${claimsHealthDonutHtml()}
+              <ul class="claims-brief-list">
+                <li>Open inventory is <b>3 claims higher</b> than last week.</li>
+                <li><b>11 claims</b> are past target lifecycle; 3 need near-term review.</li>
+                <li>Large-loss exposure is concentrated in <b>6 claims</b>.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="claims-brief-col" aria-labelledby="overnightTitle">
+            <h4 class="claims-brief-subtitle" id="overnightTitle">Overnight activity (4)</h4>
+            <ul class="claims-overnight-list">${overnight}</ul>
+          </div>
+          <div class="claims-brief-col" aria-labelledby="needsAttentionTitle">
+            <h4 class="claims-brief-subtitle" id="needsAttentionTitle">Needs attention (3)</h4>
+            <ul class="claims-attention-list">${attention}</ul>
+          </div>
+        </div>
+      </section>
+      <section class="claims-section" aria-labelledby="keyMetricsTitle">
+        <div class="claims-section-head">
+          <h3 class="claims-section-title" id="keyMetricsTitle">Key Metrics</h3>
+        </div>
+        <div class="claims-metrics">${metrics}</div>
+      </section>
+      <section class="claims-table-section" aria-labelledby="recentClaimsTitle">
+        <div class="claims-section-head">
+          <h3 class="claims-section-title" id="recentClaimsTitle">Recent claims</h3>
+        </div>
+        <div class="claims-table-shell">
+          <table class="datagrid" aria-label="Recent claims">
+            <thead>
+              <tr>
+                <th>Claim number</th>
+                <th>Insured</th>
+                <th>Product</th>
+                <th>Date of loss</th>
+                <th>Status</th>
+                <th>Assigned to</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </section>
+    </div>`;
+  }
+  function reviewDash(v){
+    const t = (v == null ? '' : String(v)).trim();
+    return t ? escHtml(t) : 'Not set';
+  }
+  function reviewDateOfLossLabel(){ return 'Jul 14, 2026'; }
+  function reviewPartyNames(){
+    if(!PARTIES.length) return 'None';
+    return PARTIES.map(p=>escHtml(p.name)).join(', ');
+  }
+  function reviewTriageOwnerLabel(){
+    return TRIAGE_CARD_STATE.ownerAssigned
+      ? (TRIAGE_CARD_STATE.assignedOwnerName || 'Assigned')
+      : 'Not set';
+  }
+  function reviewCoverageLabel(){
+    return TRIAGE_CARD_STATE.referralResolved
+      ? (TRIAGE_CARD_STATE.referralDecisionLabel || TRIAGE_CARD_STATE.referralDecision || 'Resolved')
+      : 'Not set';
+  }
+  function reviewSiuLabel(){
+    return TRIAGE_CARD_STATE.decisionRecorded
+      ? (TRIAGE_CARD_STATE.decisionStatusLabel || TRIAGE_CARD_STATE.decisionStatus || 'Recorded')
+      : 'Not set';
+  }
+  function reviewIntakeValue(){
+    return INTAKE_ITEM_ORDER.map(key=>{
+      const meta = INTAKE_ITEMS[key];
+      const st = INTAKE_STATE[key];
+      if(!st.resolved) return `${escHtml(meta.field)} — Not set`;
+      let line = `${escHtml(meta.field)} — ${escHtml(st.value)}`;
+      if(st.fileName) line += ` (${escHtml(st.fileName)})`;
+      return line;
+    }).join('; ');
+  }
+  function reviewStripeRow(term, value){
+    return `<div class="confirm-stripe-row">
+      <div class="confirm-stripe-term">${term}</div>
+      <div class="confirm-stripe-value">${value}</div>
+    </div>`;
+  }
+  function reviewStripeRowsHtml(){
+    const evidenceCount = EVIDENCE_DOCS.length;
+    return [
+      reviewStripeRow('Policy', `${reviewDash('Continental Delivery LLC')} · ${reviewDash('01-CA-000041792-0')} · ${reviewDash(reviewDateOfLossLabel())}`),
+      reviewStripeRow('Parties', `${PARTIES.length} — ${reviewPartyNames()}`),
+      reviewStripeRow('Evidence', `${evidenceCount} file${evidenceCount===1?'':'s'}${evidenceCount ? ' · ' + EVIDENCE_DOCS.map(d=>escHtml(d.name)).join(', ') : ''}`),
+      reviewStripeRow('Triage decisions', `Owner: ${reviewDash(reviewTriageOwnerLabel())}; Coverage: ${reviewDash(reviewCoverageLabel())}; SIU: ${reviewDash(reviewSiuLabel())}`),
+      reviewStripeRow('Intake', reviewIntakeValue()),
+      reviewStripeRow('Assignment', reviewDash(ASSIGNMENT_STATE.name))
+    ].join('');
+  }
+  function reviewConfirmIcon(){
+    return `<div class="review-confirm-icon" aria-hidden="true">${mi('check_circle',20)}</div>`;
+  }
+  function reviewSummary(){
+    return `<div class="review-confirm">
+      <div class="review-confirm-heading">
+        ${reviewConfirmIcon()}
+        <h2 class="review-confirm-title">Ready to submit</h2>
+      </div>
+      <p class="review-confirm-body">Confirm the details below, then submit this claim.</p>
+      <div class="confirm-stripe-list">${reviewStripeRowsHtml()}</div>
+    </div>`;
   }
 
   /* =========================================================
@@ -2145,12 +2881,10 @@
       {label:'Assignment, features &amp; routing', body:triageAssignment},
       {label:'Loss file', body:triageLossFile}
     ],
-    review: [
-      {label:'Confirmation', body:reviewStub}
-    ]
+    review: []
   };
 
-  const STATE = {stepper:'fnol', subIndex:0};
+  const STATE = {screen:'claims', stepper:'fnol', subIndex:0};
 
   const RAIL_TITLES = {fnol:'FNOL', triage:'TRIAGE', review:'REVIEW'};
   function renderRail(){
@@ -2171,14 +2905,12 @@
 
   /* =========================================================
      Inline "Add row" behavior for FNOL repeating tables
-     (Parties, Vehicle Details, Injured Parties, Loss Location)
+     (Vehicle Details, Loss Location)
      ========================================================= */
   const ROW_CONFIGS = {
-    injured:  {fields:[{key:'name',ph:'Injured party'},{key:'employee',ph:'Employee of insured'},{key:'injury',ph:'Injury details'},{key:'treatment',ph:'Treatment'}]},
     locations:{fields:[{key:'location',ph:'Location'},{key:'type',ph:'Type'},{key:'jurisdiction',ph:'Jurisdiction'},{key:'source',ph:'Source'}]}
   };
-  const TBODY_TYPE_MAP = {injuredTbody:'injured', locationsTbody:'locations'};
-  const CARD_TARGET_MAP = {vehiclesCards:'vehicle'};
+  const TBODY_TYPE_MAP = {locationsTbody:'locations', vehiclesTbody:'vehicles'};
 
   function newRowActionIcons(){
     return `<div class="row-icons">
@@ -2187,14 +2919,25 @@
     </div>`;
   }
   function buildNewRowHtml(type){
+    if(type==='vehicles'){
+      return `<tr class="new-row">
+        <td>${vehicleDescInput('')}</td>
+        <td>${vehicleTypeSelect('', {placeholder:true})}</td>
+        <td><input class="row-input" data-field="vin" placeholder="VIN"></td>
+        <td><input class="row-input" data-field="damage" placeholder="Damage"></td>
+        <td>${drivableSwitch(false)}</td>
+        <td>${newRowActionIcons()}</td>
+      </tr>`;
+    }
     const cfg = ROW_CONFIGS[type];
     const cells = cfg.fields.map(f=>`<td><input class="row-input" data-field="${f.key}" placeholder="${f.ph}"></td>`).join('');
     return `<tr class="new-row">${cells}<td>${newRowActionIcons()}</td></tr>`;
   }
   function savedRowCells(type, v){
     const nameClass = (type==='locations') ? 'name' : 'cov-name';
-    if(type==='injured')  return `<td class="${nameClass}">${v.name||'—'}</td><td>${v.employee||'—'}</td><td>${v.injury||'—'}</td><td>${v.treatment||'—'}</td>`;
-    if(type==='locations')return `<td class="${nameClass}">${v.location||'—'}</td><td>${v.type||'—'}</td><td>${v.jurisdiction||'—'}</td><td>${v.source||'—'}</td>`;
+    if(type==='locations') return `<td class="${nameClass}">${escHtml(v.location||'—')}</td><td>${escHtml(v.type||'—')}</td><td>${escHtml(v.jurisdiction||'—')}</td><td>${escHtml(v.source||'—')}</td>`;
+    if(type==='vehicles') return vehicleCells(v, editingMode);
+    return '';
   }
   function wireNewRow(tr, type){
     let settled = false;
@@ -2206,6 +2949,15 @@
     function saveRow(){
       if(settled) return;
       settled = true;
+      if(type==='vehicles'){
+        const values = readVehicleRowValues(tr);
+        if(!values.desc) values.desc = 'Unnamed vehicle';
+        VEHICLES.push(values);
+        tr.innerHTML = vehicleCells(values, editingMode) + `<td>${rowIcons()}</td>`;
+        tr.classList.remove('new-row');
+        tr.dataset.vehicleIndex = String(VEHICLES.length - 1);
+        return;
+      }
       const values = {};
       tr.querySelectorAll('[data-field]').forEach(inp=>{ values[inp.dataset.field] = inp.value.trim(); });
       tr.innerHTML = savedRowCells(type, values) + `<td>${rowIcons()}</td>`;
@@ -2216,8 +2968,57 @@
     tr.addEventListener('focusout', (e)=>{
       if(settled) return;
       const next = e.relatedTarget;
-      if(!next || !tr.contains(next)) saveRow();
+      const openTypeahead = tr.querySelector('[data-vehicle-typeahead] .typeahead-list:not([hidden])');
+      if(openTypeahead && (!next || openTypeahead.contains(next) || tr.contains(next))) return;
+      if(!next || !tr.contains(next)){
+        if(type==='vehicles'){
+          const desc = tr.querySelector('[data-field="desc"]')?.value.trim();
+          if(!desc){ cancelRow(); return; }
+        }
+        saveRow();
+      }
     });
+  }
+  function filterVehicleYmm(query){
+    const q = String(query || '').trim().toLowerCase();
+    if(!q) return VEHICLE_YMM_OPTIONS.slice();
+    return VEHICLE_YMM_OPTIONS.filter(opt => opt.toLowerCase().includes(q));
+  }
+  function closeVehicleTypeahead(wrap){
+    if(!wrap) return;
+    const list = wrap.querySelector('.typeahead-list');
+    const input = wrap.querySelector('[data-field="desc"]');
+    if(list){ list.hidden = true; list.innerHTML = ''; }
+    if(input) input.setAttribute('aria-expanded', 'false');
+    wrap.dataset.activeIndex = '';
+  }
+  function openVehicleTypeahead(wrap, query){
+    if(!wrap) return;
+    const list = wrap.querySelector('.typeahead-list');
+    const input = wrap.querySelector('[data-field="desc"]');
+    if(!list || !input || input.disabled || getComputedStyle(input).pointerEvents === 'none'){
+      closeVehicleTypeahead(wrap);
+      return;
+    }
+    const items = filterVehicleYmm(query);
+    if(!items.length){ closeVehicleTypeahead(wrap); return; }
+    const active = Math.min(Number(wrap.dataset.activeIndex || 0), items.length - 1);
+    wrap.dataset.activeIndex = String(active < 0 ? 0 : active);
+    list.innerHTML = items.map((opt, i)=>
+      `<li role="presentation"><button type="button" class="typeahead-option${i===Number(wrap.dataset.activeIndex)?' is-active':''}" role="option" data-value="${escHtml(opt)}">${escHtml(opt)}</button></li>`
+    ).join('');
+    list.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+  }
+  function selectVehicleTypeahead(wrap, value){
+    if(!wrap) return;
+    const input = wrap.querySelector('[data-field="desc"]');
+    if(input){
+      input.value = value;
+      input.dispatchEvent(new Event('input', {bubbles:true}));
+      input.focus();
+    }
+    closeVehicleTypeahead(wrap);
   }
   function addNewRow(targetId){
     const type = TBODY_TYPE_MAP[targetId];
@@ -2232,96 +3033,57 @@
   }
 
   /* =========================================================
-     Inline "Add row" behavior for FNOL card grids
-     (Parties, Vehicle Details) — a plain input row sits under the
-     existing cards (same pattern as Add location); on save it
-     appends a card and the row disappears.
+     Inline Add party form (subheader panel)
      ========================================================= */
-  function buildPartyInlineRow(){
-    return `<div class="inline-add-row" data-row-type="party">
-      <div class="field">
-        <label for="addPartyName">Name</label>
-        <input class="row-input" id="addPartyName" data-field="name" placeholder="">
+  function partyRoleOptions(selected){
+    return ['Named insured','Insured driver','Claimant','Witness','Other'].map(r=>
+      `<option value="${r}"${selected===r?' selected':''}>${r}</option>`
+    ).join('');
+  }
+  function buildPartyInlineRow(seed, opts){
+    const o = opts || {};
+    const p = seed || {};
+    const prefix = o.idPrefix || 'addParty';
+    const injured = Boolean(p.injured);
+    const typeVal = p.type ? partyTypeValue(p.type) : (p.typeLabel || '');
+    const roleVal = p.role || partyRoleValue(p.roleType || '');
+    const canInjure = typeVal !== 'Organization';
+    return `<div class="fnol-party-form" data-row-type="party" data-party-form="${o.mode || 'add'}">
+      <div class="fnol-party-form-main">
+        <div class="field">
+          <label for="${prefix}Name">Name</label>
+          <input class="row-input" id="${prefix}Name" data-field="name" value="${escHtml(p.name||'')}" placeholder="">
+        </div>
+        <div class="field">
+          <label for="${prefix}Role">Role</label>
+          <select class="row-input" id="${prefix}Role" data-field="role">
+            <option value=""${!roleVal?' selected':''} disabled>Please select</option>
+            ${partyRoleOptions(roleVal)}
+          </select>
+        </div>
+        <div class="field">
+          <label for="${prefix}Type">Type</label>
+          <select class="row-input" id="${prefix}Type" data-field="type">
+            <option value=""${!typeVal?' selected':''} disabled>Please select</option>
+            <option value="Person"${typeVal==='Person'?' selected':''}>Person</option>
+            <option value="Organization"${typeVal==='Organization'?' selected':''}>Organization</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="${prefix}Contact">Contact phone or email</label>
+          <input class="row-input" id="${prefix}Contact" data-field="contact" value="${escHtml(p.contact||'')}" placeholder="">
+        </div>
+        <div class="fnol-party-injured-wrap" data-injured-wrap${canInjure?'':' hidden'}>
+          <span class="chip-label">Status</span>
+          ${injuredChipHtml(injured && canInjure, {id: prefix + 'Injured'})}
+        </div>
+        ${newRowActionIcons()}
       </div>
-      <div class="field">
-        <label for="addPartyRole">Role</label>
-        <select class="row-input" id="addPartyRole" data-field="role">
-          <option value="" selected disabled>Please select</option>
-          <option value="Named insured">Named insured</option>
-          <option value="Insured driver">Insured driver</option>
-          <option value="Claimant">Claimant</option>
-          <option value="Witness">Witness</option>
-          <option value="Other">Other</option>
-        </select>
+      <div data-injury-host${injured && canInjure?'':' hidden'}>
+        ${partyInjuryFieldsHtml(p.injury, prefix)}
       </div>
-      <div class="field">
-        <label for="addPartyType">Type</label>
-        <select class="row-input" id="addPartyType" data-field="type">
-          <option value="" selected disabled>Please select</option>
-          <option value="Person">Person</option>
-          <option value="Organization">Organization</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="addPartyContact">Contact phone or email</label>
-        <input class="row-input" id="addPartyContact" data-field="contact" placeholder="">
-      </div>
-      ${newRowActionIcons()}
     </div>`;
   }
-  function buildVehicleInlineRow(){
-    return `<div class="inline-add-row" data-row-type="vehicle">
-      <input class="row-input" data-field="desc" placeholder="Year / Make / Model">
-      <input class="row-input" data-field="vehicleType" placeholder="Type">
-      <input class="row-input" data-field="vin" placeholder="VIN">
-      <input class="row-input" data-field="damage" placeholder="Damage">
-      <input class="row-input drivable-input" data-field="drivable" placeholder="Drivable">
-      ${newRowActionIcons()}
-    </div>`;
-  }
-  function wireInlineRow(row, type, container, onSettle){
-    let settled = false;
-    function finish(){
-      if(typeof onSettle==='function') onSettle();
-    }
-    function cancelRow(){
-      if(settled) return;
-      settled = true;
-      row.remove();
-      finish();
-    }
-    function saveRow(){
-      if(settled) return;
-      settled = true;
-      const v = {};
-      row.querySelectorAll('[data-field]').forEach(inp=>{ v[inp.dataset.field] = inp.value.trim(); });
-      container.insertAdjacentHTML('beforeend', vehicleDocCard(v.desc || 'Unnamed vehicle', v.vehicleType, v.vin, v.damage, v.drivable));
-      row.remove();
-      finish();
-    }
-    row.querySelector('.row-save').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); saveRow(); });
-    row.querySelector('.row-cancel').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); cancelRow(); });
-    row.addEventListener('focusout', (e)=>{
-      if(settled) return;
-      const next = e.relatedTarget;
-      if(!next || !row.contains(next)) saveRow();
-    });
-  }
-  function addNewCard(targetId){
-    const type = CARD_TARGET_MAP[targetId];
-    const container = document.getElementById(targetId);
-    if(!type || !container) return;
-    const existingRow = container.nextElementSibling;
-    if(existingRow && existingRow.classList.contains('inline-add-row')){
-      existingRow.querySelector('.row-input')?.focus();
-      return;
-    }
-    container.insertAdjacentHTML('afterend', buildVehicleInlineRow());
-    const row = container.nextElementSibling;
-    wireInlineRow(row, type, container);
-    row.querySelector('.row-input')?.focus();
-  }
-
   /* Subheader Add party toggle — input row + compact party list under the subheader. */
   let addPartyOpen = false;
   let partyPanelCloseTimer = null;
@@ -2334,43 +3096,129 @@
     if(!PARTIES.length) return '';
     return `<section class="fnol-party-section">
       <h3 class="fnol-party-section-subhead">Existing parties</h3>
-      <ul class="fnol-party-list" role="list">${PARTIES.map((p,i)=>`
-      <li class="fnol-party-line${i===highlightIndex?' is-entering':''}">
-        ${partyTypeIcon(p.type)}
-        <span class="fnol-party-main">
-          <span class="fnol-party-name">${escHtml(p.name)}</span>
-          <span class="fnol-party-meta">${escHtml(p.roleType)}</span>
-        </span>
-        <button type="button" class="trash-btn" title="Remove ${escHtml(p.name)}" aria-label="Remove ${escHtml(p.name)}" data-party-remove="${i}">${mi('delete',20)}</button>
-      </li>`).join('')}</ul>
+      <ul class="fnol-party-list" role="list">${PARTIES.map((p,i)=>{
+        if(partyEditingIndex === i){
+          return `<li class="fnol-party-card is-editing" data-party-card="${i}">
+            ${buildPartyInlineRow(p, {mode:'edit', idPrefix:'editParty'+i})}
+          </li>`;
+        }
+        const canInjure = p.type === 'person';
+        const injuredChip = canInjure
+          ? injuredChipHtml(Boolean(p.injured), {dataAttr:`data-party-injured="${i}"`})
+          : '';
+        return `<li class="fnol-party-card${i===highlightIndex?' is-entering':''}" data-party-card="${i}">
+        <div class="fnol-party-line">
+          ${partyTypeIcon(p.type)}
+          <span class="fnol-party-main">
+            <span class="fnol-party-name">${escHtml(p.name)}</span>
+            <span class="fnol-party-meta">${escHtml(p.roleType)}</span>
+          </span>
+          <span class="fnol-party-line-actions">
+            ${injuredChip}
+            <button type="button" class="fnol-party-edit-btn" title="Edit ${escHtml(p.name)}" aria-label="Edit ${escHtml(p.name)}" data-party-edit="${i}">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </button>
+            <button type="button" class="trash-btn" title="Remove ${escHtml(p.name)}" aria-label="Remove ${escHtml(p.name)}" data-party-remove="${i}">${mi('delete',20)}</button>
+          </span>
+        </div>
+      </li>`;
+      }).join('')}</ul>
     </section>`;
+  }
+  function syncPartyFormInjuredUI(form){
+    if(!form) return;
+    const typeSel = form.querySelector('[data-field="type"]');
+    const isOrg = /org/i.test(typeSel && typeSel.value || '');
+    const wrap = form.querySelector('[data-injured-wrap]');
+    const chip = form.querySelector('[data-injured-chip]');
+    const host = form.querySelector('[data-injury-host]');
+    if(wrap) wrap.hidden = isOrg;
+    if(isOrg){
+      if(chip){
+        chip.setAttribute('aria-pressed', 'false');
+        chip.classList.remove('is-on');
+      }
+      if(host) host.hidden = true;
+      return;
+    }
+    const pressed = chip && chip.getAttribute('aria-pressed') === 'true';
+    if(host) host.hidden = !pressed;
+  }
+  function wirePartyFormInjured(form){
+    const chip = form.querySelector('[data-injured-chip]');
+    const typeSel = form.querySelector('[data-field="type"]');
+    if(chip){
+      chip.addEventListener('click', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const typeVal = form.querySelector('[data-field="type"]')?.value || '';
+        if(/org/i.test(typeVal)) return;
+        const next = chip.getAttribute('aria-pressed') !== 'true';
+        chip.setAttribute('aria-pressed', String(next));
+        chip.classList.toggle('is-on', next);
+        syncPartyFormInjuredUI(form);
+      });
+    }
+    if(typeSel){
+      typeSel.addEventListener('change', ()=> syncPartyFormInjuredUI(form));
+    }
+    syncPartyFormInjuredUI(form);
   }
   function wirePersistentPartyRow(row){
     let settled = false;
+    const form = row.classList.contains('fnol-party-form') ? row : row.querySelector('.fnol-party-form');
+    if(!form) return;
+    wirePartyFormInjured(form);
     function saveRow(){
       if(settled) return;
       settled = true;
-      const v = {};
-      row.querySelectorAll('[data-field]').forEach(inp=>{ v[inp.dataset.field] = inp.value.trim(); });
+      const v = readPartyFormValues(form);
       commitParty(v);
+      partyEditingIndex = -1;
       renderPersistentPartyPanel(true, PARTIES.length - 1);
     }
     function cancelRow(){
       if(settled) return;
       settled = true;
+      partyEditingIndex = -1;
       renderPersistentPartyPanel(true);
     }
-    row.querySelector('.row-save').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); saveRow(); });
-    row.querySelector('.row-cancel').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); cancelRow(); });
-    row.addEventListener('focusout', (e)=>{
+    form.querySelector('.row-save').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); saveRow(); });
+    form.querySelector('.row-cancel').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); cancelRow(); });
+    form.addEventListener('focusout', (e)=>{
       if(settled) return;
       const next = e.relatedTarget;
-      if(!next || !row.contains(next)){
-        /* Only auto-save when at least one field has a value; otherwise leave the blank row. */
-        const hasValue = [...row.querySelectorAll('[data-field]')].some(inp=>inp.value.trim());
-        if(hasValue) saveRow();
+      if(!next || !form.contains(next)){
+        const name = (form.querySelector('[data-field="name"]')?.value || '').trim();
+        /* Require a name before auto-save so partial add-form focus changes do not create parties. */
+        if(name) saveRow();
       }
     });
+  }
+  function wirePersistentPartyEditForm(host, index){
+    const card = host.querySelector(`.fnol-party-card.is-editing[data-party-card="${index}"]`);
+    if(!card) return;
+    const form = card.querySelector('.fnol-party-form');
+    if(!form) return;
+    let settled = false;
+    wirePartyFormInjured(form);
+    function saveEdit(){
+      if(settled) return;
+      settled = true;
+      const v = readPartyFormValues(form);
+      PARTIES[index] = partyFromInlineValues(v);
+      partyEditingIndex = -1;
+      toast(`${PARTIES[index].name} updated`);
+      renderPersistentPartyPanel(false);
+    }
+    function cancelEdit(){
+      if(settled) return;
+      settled = true;
+      partyEditingIndex = -1;
+      renderPersistentPartyPanel(false);
+    }
+    form.querySelector('.row-save').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); saveEdit(); });
+    form.querySelector('.row-cancel').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); cancelEdit(); });
   }
   function wirePersistentPartyList(host){
     host.querySelectorAll('[data-party-remove]').forEach(btn=>{
@@ -2380,13 +3228,44 @@
         const i = Number(btn.dataset.partyRemove);
         if(Number.isNaN(i) || i<0 || i>=PARTIES.length) return;
         const [removed] = PARTIES.splice(i, 1);
+        if(partyEditingIndex === i) partyEditingIndex = -1;
+        else if(partyEditingIndex > i) partyEditingIndex -= 1;
         toast(`${removed.name} removed`);
         renderPersistentPartyPanel(true);
       });
     });
+    host.querySelectorAll('[data-party-edit]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const i = Number(btn.dataset.partyEdit);
+        if(Number.isNaN(i) || i<0 || i>=PARTIES.length) return;
+        partyEditingIndex = i;
+        renderPersistentPartyPanel(false);
+        host.querySelector(`#editParty${i}Name`)?.focus();
+      });
+    });
+    host.querySelectorAll('[data-party-injured]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const i = Number(btn.dataset.partyInjured);
+        if(Number.isNaN(i) || i<0 || i>=PARTIES.length) return;
+        const party = PARTIES[i];
+        if(party.type !== 'person') return;
+        party.injured = !party.injured;
+        if(!party.injury) party.injury = emptyInjury();
+        if(!party.injured) party.injury = emptyInjury();
+        partyEditingIndex = i;
+        toast(party.injured ? `${party.name} marked injured` : `${party.name} marked not injured`);
+        renderPersistentPartyPanel(false);
+        if(party.injured) host.querySelector(`#editParty${i}-injuryType`)?.focus();
+      });
+    });
+    if(partyEditingIndex > -1) wirePersistentPartyEditForm(host, partyEditingIndex);
   }
   function finishEnteringPartyLines(host){
-    const entering = host.querySelectorAll('.fnol-party-line.is-entering');
+    const entering = host.querySelectorAll('.fnol-party-card.is-entering');
     if(!entering.length) return;
     requestAnimationFrame(()=>{
       entering.forEach(el=>{ void el.offsetWidth; el.classList.remove('is-entering'); });
@@ -2400,12 +3279,12 @@
     host.innerHTML = `<div class="fnol-party-panel-clip"><div class="fnol-party-panel-stack">
       <section class="fnol-party-section">
         <h3 class="fnol-party-section-subhead">Add party</h3>
-        ${buildPartyInlineRow()}
+        ${buildPartyInlineRow(null, {mode:'add', idPrefix:'addParty'})}
       </section>
       ${partiesListHtml(highlightIndex)}
     </div></div>`;
-    const row = host.querySelector('.inline-add-row');
-    wirePersistentPartyRow(row);
+    const addForm = host.querySelector('.fnol-party-section .fnol-party-form[data-party-form="add"]');
+    wirePersistentPartyRow(addForm);
     wirePersistentPartyList(host);
     finishEnteringPartyLines(host);
     if(alreadyOpen){
@@ -2415,10 +3294,11 @@
         requestAnimationFrame(()=>{ host.classList.add('is-open'); });
       });
     }
-    if(focusInput) row.querySelector('.row-input')?.focus();
+    if(focusInput) addForm?.querySelector('.row-input')?.focus();
   }
   function closePersistentPartyInline(immediate){
     addPartyOpen = false;
+    partyEditingIndex = -1;
     renderAddPartyToggle();
     const host = document.getElementById('persistentPartyInlineHost');
     if(!host) return;
@@ -2444,8 +3324,7 @@
   }
 
   function handleAddClick(targetId){
-    if(CARD_TARGET_MAP[targetId]) addNewCard(targetId);
-    else addNewRow(targetId);
+    addNewRow(targetId);
   }
 
   function wireBodyEvents(){
@@ -2475,7 +3354,7 @@
   }
 
   function syncFnolAddPartyChrome(){
-    const onFnol = STATE.stepper==='fnol';
+    const onFnol = STATE.screen!=='claims' && STATE.stepper==='fnol';
     const btn = document.getElementById('persistentAddPartyBtn');
     const divider = document.getElementById('addPartyDivider');
     if(btn) btn.hidden = !onFnol;
@@ -2496,10 +3375,50 @@
     }
   }
 
-  // Delegated: remove table rows (editing mode) and evidence documents
+  // Delegated: remove table rows, vehicle typeahead, and evidence documents
+  document.getElementById('mainCol').addEventListener('mousedown', (e)=>{
+    const opt = e.target.closest('[data-vehicle-typeahead] .typeahead-option');
+    if(opt){
+      /* Keep input focus so new-row focusout does not cancel before selection. */
+      e.preventDefault();
+    }
+  });
   document.getElementById('mainCol').addEventListener('click', (e)=>{
+    const typeaheadOpt = e.target.closest('[data-vehicle-typeahead] .typeahead-option');
+    if(typeaheadOpt){
+      e.preventDefault();
+      selectVehicleTypeahead(typeaheadOpt.closest('[data-vehicle-typeahead]'), typeaheadOpt.dataset.value || typeaheadOpt.textContent.trim());
+      return;
+    }
+    const openWrap = e.target.closest('[data-vehicle-typeahead]');
+    document.querySelectorAll('#vehiclesTbody [data-vehicle-typeahead]').forEach(wrap=>{
+      if(wrap !== openWrap) closeVehicleTypeahead(wrap);
+    });
+    const newClaimBtn = e.target.closest('[data-new-claim]');
+    if(newClaimBtn){ e.preventDefault(); startNewFnol(); return; }
     const rowBtn = e.target.closest('[data-row-remove]');
-    if(rowBtn){ e.preventDefault(); const tr=rowBtn.closest('tr'); if(tr){ tr.remove(); toast('Row removed'); } return; }
+    if(rowBtn){
+      e.preventDefault();
+      const tr = rowBtn.closest('tr');
+      if(tr){
+        const tbody = tr.closest('#vehiclesTbody');
+        let name = 'Row';
+        if(tbody){
+          syncVehiclesFromDom();
+          const idx = [...tbody.querySelectorAll('tr:not(.new-row)')].indexOf(tr);
+          name = (tr.querySelector('[data-field="desc"]')?.value || '').trim() || 'Vehicle';
+          if(idx > -1) VEHICLES.splice(idx, 1);
+        } else {
+          name = tr.querySelector('.cov-name, .name')?.textContent?.trim() || 'Row';
+        }
+        tr.remove();
+        if(tbody){
+          tbody.querySelectorAll('tr:not(.new-row)').forEach((r,i)=>{ r.dataset.vehicleIndex = String(i); });
+        }
+        toast(`${name} removed`);
+      }
+      return;
+    }
     const docBtn = e.target.closest('[data-doc-remove]');
     if(docBtn){
       e.preventDefault();
@@ -2510,9 +3429,186 @@
     const docLink = e.target.closest('[data-doc-open]');
     if(docLink){ e.preventDefault(); toast(`Opening ${docLink.textContent} (prototype)`); }
   });
+  document.getElementById('mainCol').addEventListener('change', (e)=>{
+    const drive = e.target.closest('#vehiclesTbody .row-switch input[data-field="drivable"]');
+    if(!drive) return;
+    const label = drive.closest('.row-switch')?.querySelector('.row-switch-label');
+    if(label) label.textContent = drive.checked ? 'Yes' : 'No';
+  });
+  document.getElementById('mainCol').addEventListener('input', (e)=>{
+    const input = e.target.closest('[data-vehicle-typeahead] [data-field="desc"]');
+    if(!input) return;
+    const wrap = input.closest('[data-vehicle-typeahead]');
+    wrap.dataset.activeIndex = '0';
+    openVehicleTypeahead(wrap, input.value);
+  });
+  document.getElementById('mainCol').addEventListener('focusin', (e)=>{
+    const input = e.target.closest('[data-vehicle-typeahead] [data-field="desc"]');
+    if(!input) return;
+    if(getComputedStyle(input).pointerEvents === 'none') return;
+    openVehicleTypeahead(input.closest('[data-vehicle-typeahead]'), input.value);
+  });
+  document.getElementById('mainCol').addEventListener('keydown', (e)=>{
+    const input = e.target.closest('[data-vehicle-typeahead] [data-field="desc"]');
+    if(!input) return;
+    const wrap = input.closest('[data-vehicle-typeahead]');
+    const list = wrap.querySelector('.typeahead-list');
+    if(!list || list.hidden){
+      if(e.key === 'ArrowDown'){ e.preventDefault(); openVehicleTypeahead(wrap, input.value); }
+      return;
+    }
+    const options = [...list.querySelectorAll('.typeahead-option')];
+    if(!options.length) return;
+    let active = Number(wrap.dataset.activeIndex || 0);
+    if(e.key === 'ArrowDown'){
+      e.preventDefault();
+      active = (active + 1) % options.length;
+      wrap.dataset.activeIndex = String(active);
+      openVehicleTypeahead(wrap, input.value);
+    } else if(e.key === 'ArrowUp'){
+      e.preventDefault();
+      active = (active - 1 + options.length) % options.length;
+      wrap.dataset.activeIndex = String(active);
+      openVehicleTypeahead(wrap, input.value);
+    } else if(e.key === 'Enter'){
+      e.preventDefault();
+      const opt = options[active] || options[0];
+      if(opt) selectVehicleTypeahead(wrap, opt.dataset.value || opt.textContent.trim());
+    } else if(e.key === 'Escape'){
+      e.preventDefault();
+      closeVehicleTypeahead(wrap);
+    }
+  });
+  document.addEventListener('click', (e)=>{
+    if(e.target.closest('[data-vehicle-typeahead]')) return;
+    document.querySelectorAll('#vehiclesTbody [data-vehicle-typeahead]').forEach(closeVehicleTypeahead);
+  });
 
+  /* MUI-style ripple: primary / outlined only (not text or icon-only) */
+  document.addEventListener('pointerdown', (e)=>{
+    if(e.button !== 0 && e.pointerType === 'mouse') return;
+    const btn = e.target.closest('.btn-primary, .btn-outlined');
+    if(!btn || btn.disabled || btn.classList.contains('btn-text')) return;
+    const rect = btn.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const size = Math.ceil(Math.hypot(Math.max(x, rect.width - x), Math.max(y, rect.height - y)) * 2);
+    const ripple = document.createElement('span');
+    ripple.className = 'btn-ripple';
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = (x - size / 2) + 'px';
+    ripple.style.top = (y - size / 2) + 'px';
+    btn.appendChild(ripple);
+    ripple.addEventListener('animationend', ()=> ripple.remove());
+  });
+
+  function setDashboardRailActive(on){
+    document.querySelectorAll('.apprail .rail-item[data-rail]').forEach(btn=>{
+      const key = btn.dataset.rail;
+      if(on) btn.classList.toggle('active', key === 'home');
+      else if(key === 'home') btn.classList.remove('active');
+    });
+  }
+  function showClaimsScreen(){
+    STATE.screen = 'claims';
+    if(typeof setRailDrawer === 'function') setRailDrawer('');
+    setDashboardRailActive(true);
+    renderApp();
+  }
+  function showWorkflowScreen(){
+    STATE.screen = 'workflow';
+    setDashboardRailActive(false);
+    if(typeof setRailActive === 'function') setRailActive('');
+    renderApp();
+  }
+  function resetFnolWorkflow(){
+    Object.assign(TRIAGE_CARD_STATE, {
+      ownerAssigned:false, assignedOwnerName:'', assignedOwnerValue:'',
+      referralResolved:false, referralDecision:'', referralDecisionLabel:'',
+      decisionRecorded:false, decisionStatus:'', decisionStatusLabel:'', decisionReason:'', decisionDate:''
+    });
+    INTAKE_ITEM_ORDER.forEach(key=>{
+      INTAKE_STATE[key].resolved = false;
+      INTAKE_STATE[key].value = '';
+      INTAKE_STATE[key].note = '';
+      if('fileName' in INTAKE_STATE[key]) INTAKE_STATE[key].fileName = '';
+    });
+    ASSIGNMENT_STATE.key = 'jordan';
+    ASSIGNMENT_STATE.name = ASSIGNMENT_CANDIDATES.jordan.name;
+    const bumpClaimNumber = REVIEW_STATE.submitted
+      || CLAIMS_LIST.some(c => c.claimNumber === REVIEW_CLAIM_NUMBER);
+    REVIEW_STATE.submitted = false;
+    REVIEW_STATE.claimNumber = '';
+    if(bumpClaimNumber) nextClaimNumber();
+    editingMode = false;
+    document.body.classList.remove('editing-active');
+    STATE.screen = 'workflow';
+    STATE.stepper = 'fnol';
+    STATE.subIndex = 0;
+    setDashboardRailActive(false);
+    if(typeof setRailActive === 'function') setRailActive('');
+  }
+  function startNewFnol(){
+    if(typeof setRailDrawer === 'function') setRailDrawer('');
+    resetFnolWorkflow();
+    renderApp();
+    toast('Starting new FNOL');
+  }
+  function placeCopilotBtn(onClaims){
+    const btn = document.getElementById('copilotBtn');
+    if(!btn) return;
+    const homeHost = document.getElementById('claimsCopilotHost');
+    const pageHost = document.getElementById('pageCopilotHost');
+    if(onClaims && homeHost){
+      if(btn.parentElement !== homeHost) homeHost.appendChild(btn);
+      return;
+    }
+    if(pageHost && btn.parentElement !== pageHost) pageHost.appendChild(btn);
+  }
   function renderApp(){
+    syncVehiclesFromDom();
+    const page = document.querySelector('.page');
+    const onClaims = STATE.screen === 'claims';
+    if(page) page.classList.toggle('claims-view', onClaims);
+
+    const pageSub = document.getElementById('pageSub');
+    if(onClaims){
+      document.getElementById('pageTitle').textContent = 'Claims';
+      if(pageSub){
+        pageSub.hidden = true;
+        pageSub.textContent = '';
+      }
+      STEP_ORDER.forEach(key=>{
+        const el = document.getElementById('hstep-'+key);
+        el.classList.remove('current','done');
+        el.querySelector('.num').textContent = String(STEP_ORDER.indexOf(key)+1);
+        el.removeAttribute('aria-current');
+      });
+      const railEl = document.getElementById('substepRail');
+      const contentRow = document.querySelector('.content-row');
+      if(railEl){ railEl.hidden = true; railEl.innerHTML = ''; }
+      if(contentRow) contentRow.classList.add('review-only');
+      placeCopilotBtn(false); // park outside mainCol before innerHTML replace
+      document.getElementById('mainCol').innerHTML = claimsDashboardHtml();
+      placeCopilotBtn(true);
+      animateClaimsHealthDonut();
+      document.getElementById('mainScroll').scrollTop = 0;
+      const editModeLink = document.getElementById('editModeLink');
+      if(editModeLink) editModeLink.hidden = true;
+      document.getElementById('continueBtn').hidden = true;
+      document.getElementById('saveDraftBtn').hidden = true;
+      document.getElementById('backLink').hidden = true;
+      syncFnolAddPartyChrome();
+      setDashboardRailActive(true);
+      return;
+    }
+
+    placeCopilotBtn(false);
     document.getElementById('pageTitle').textContent = TITLES[STATE.stepper];
+    if(pageSub){ pageSub.hidden = true; pageSub.textContent = ''; }
+    document.getElementById('continueBtn').hidden = false;
+    document.getElementById('saveDraftBtn').hidden = false;
+    document.getElementById('backLink').hidden = false;
 
     STEP_ORDER.forEach(key=>{
       const el = document.getElementById('hstep-'+key);
@@ -2528,30 +3624,50 @@
     syncFnolAddPartyChrome();
 
     const list = RAIL[STATE.stepper];
-    document.getElementById('mainCol').innerHTML = list[STATE.subIndex].body();
+    const onReview = STATE.stepper==='review';
+    const railEl = document.getElementById('substepRail');
+    const contentRow = document.querySelector('.content-row');
+    if(railEl) railEl.hidden = onReview;
+    if(contentRow) contentRow.classList.toggle('review-only', onReview);
+    document.getElementById('mainCol').innerHTML = onReview
+      ? reviewSummary()
+      : list[STATE.subIndex].body();
     document.getElementById('mainScroll').scrollTop = 0;
     wireBodyEvents();
 
     const isFirst = STATE.stepper==='fnol' && STATE.subIndex===0;
-    const isLastOfStepper = STATE.subIndex === list.length-1;
+    const isLastOfStepper = onReview || STATE.subIndex === list.length-1;
     let nextLabel;
     if(!isLastOfStepper) nextLabel = 'Next: '+list[STATE.subIndex+1].label;
     else if(STATE.stepper==='fnol') nextLabel = 'Continue to triage';
     else if(STATE.stepper==='triage') nextLabel = 'Complete triage';
-    else nextLabel = 'Finish';
+    else if(REVIEW_STATE.submitted) nextLabel = 'Submitted';
+    else nextLabel = 'Submit';
 
     const backLink = document.getElementById('backLink');
     backLink.classList.toggle('disabled', isFirst);
     backLink.disabled = isFirst;
-    document.getElementById('continueBtn').innerHTML = nextLabel;
+    const continueBtn = document.getElementById('continueBtn');
+    continueBtn.innerHTML = nextLabel;
+    continueBtn.disabled = onReview && REVIEW_STATE.submitted;
+    continueBtn.hidden = false;
+    const editModeLink = document.getElementById('editModeLink');
+    if(editModeLink) editModeLink.hidden = onReview;
+    if(onReview) document.body.classList.remove('editing-active');
+    else renderEditModeLink();
   }
 
   function goNext(){
     const list = RAIL[STATE.stepper];
+    if(STATE.stepper==='review'){
+      if(REVIEW_STATE.submitted) return;
+      openTriageDialog('submitConfirm');
+      return;
+    }
     if(STATE.subIndex < list.length-1){ STATE.subIndex++; }
     else if(STATE.stepper==='fnol'){ STATE.stepper='triage'; STATE.subIndex=0; }
-    else if(STATE.stepper==='triage'){ toast('Claim CA141288 triaged — moving to Review'); STATE.stepper='review'; STATE.subIndex=0; }
-    else { toast('Review is a confirmation stub in this prototype'); return; }
+    else if(STATE.stepper==='triage'){ toast('Claim '+REVIEW_CLAIM_NUMBER+' triaged — moving to Review'); STATE.stepper='review'; STATE.subIndex=0; }
+    else { return; }
     renderApp();
   }
   function goBack(){
@@ -2565,12 +3681,17 @@
   document.getElementById('continueBtn').addEventListener('click', goNext);
   document.getElementById('backLink').addEventListener('click', (e)=>{e.preventDefault(); goBack();});
   document.getElementById('saveDraftBtn').addEventListener('click', ()=>toast('Draft saved — FNOL-2026-00418'));
+  document.getElementById('createNewBtn').addEventListener('click', startNewFnol);
   document.getElementById('persistentAddPartyBtn').addEventListener('click', ()=>{
     togglePersistentPartyInline();
   });
   let editingMode = false;
   function renderEditModeLink(){
     const el = document.getElementById('editModeLink');
+    if(!el || el.hidden){
+      document.body.classList.toggle('editing-active', editingMode && STATE.stepper!=='review');
+      return;
+    }
     document.body.classList.toggle('editing-active', editingMode);
     if (editingMode){
       el.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg><span>Exit claim editing mode</span>';
@@ -2611,7 +3732,14 @@
   renderEditModeLink();
   STEP_ORDER.forEach(key=>{
     const stepEl = document.getElementById('hstep-'+key);
-    stepEl.addEventListener('click', ()=>{ STATE.stepper=key; STATE.subIndex=0; renderApp(); });
+    stepEl.addEventListener('click', ()=>{
+      STATE.screen = 'workflow';
+      STATE.stepper = key;
+      STATE.subIndex = 0;
+      setDashboardRailActive(false);
+      if(typeof setRailActive === 'function') setRailActive('');
+      renderApp();
+    });
     stepEl.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); stepEl.click(); } });
   });
 
@@ -2622,7 +3750,8 @@
     assignOwner: document.getElementById('dialogAssignOwner'),
     viewReferral: document.getElementById('dialogViewReferral'),
     recordDecision: document.getElementById('dialogRecordDecision'),
-    resolveIntake: document.getElementById('dialogResolveIntake')
+    resolveIntake: document.getElementById('dialogResolveIntake'),
+    submitConfirm: document.getElementById('dialogSubmitConfirm')
   };
   let openDialogKey = '';
   function syncSiuReasonVisibility(){
@@ -2657,6 +3786,7 @@
   let dialogCloseTimer = 0;
   function closeTriageDialog(){
     if(!openDialogKey) return;
+    const closingKey = openDialogKey;
     const root = TRIAGE_DIALOGS[openDialogKey];
     openDialogKey = '';
     if(root){
@@ -2666,6 +3796,7 @@
     clearTimeout(dialogCloseTimer);
     dialogCloseTimer = setTimeout(()=>{
       if(!openDialogKey) document.body.classList.remove('mui-dialog-open');
+      if(closingKey === 'submitConfirm' && REVIEW_STATE.submitted && STATE.screen === 'workflow') renderApp();
     }, DIALOG_EXIT_MS);
   }
   function openTriageDialog(key){
@@ -2707,6 +3838,17 @@
       document.getElementById('intakeTreatmentFileInput').value = '';
       document.getElementById('intakeResolveNote').value = st.note || '';
       clearIntakeResolveError();
+    }
+    if(key === 'submitConfirm'){
+      if(!REVIEW_STATE.submitted){
+        REVIEW_STATE.submitted = true;
+        REVIEW_STATE.claimNumber = REVIEW_CLAIM_NUMBER;
+        ensureSubmittedClaimInList();
+        toast('Claim ' + REVIEW_STATE.claimNumber + ' submitted');
+      } else {
+        ensureSubmittedClaimInList();
+      }
+      document.getElementById('submitSuccessClaimNo').textContent = REVIEW_STATE.claimNumber || REVIEW_CLAIM_NUMBER;
     }
     clearTimeout(dialogCloseTimer);
     openDialogKey = key;
@@ -2810,6 +3952,7 @@
       toast(fieldName + ' — ' + value);
       closeTriageDialog();
       renderApp();
+      return;
     }
   }
   document.getElementById('assignToSelect').addEventListener('change', clearAssignToError);
@@ -2845,6 +3988,18 @@
   document.getElementById('siuDecisionStatus').addEventListener('change', syncSiuReasonVisibility);
   Object.values(TRIAGE_DIALOGS).forEach(root=>{
     root.addEventListener('click', (e)=>{
+      const submitAction = e.target.closest('[data-submit-action]');
+      if(submitAction){
+        e.preventDefault();
+        const action = submitAction.dataset.submitAction;
+        closeTriageDialog();
+        if(action === 'ok'){
+          showClaimsScreen();
+        } else if(action === 'createAnother'){
+          startNewFnol();
+        }
+        return;
+      }
       if(e.target.closest('[data-dialog-dismiss]')){ e.preventDefault(); closeTriageDialog(); return; }
       const saveBtn = e.target.closest('[data-dialog-save]');
       if(saveBtn){ e.preventDefault(); saveTriageDialog(saveBtn.dataset.dialogSave); }
@@ -2863,7 +4018,9 @@
   function setRailActive(panel){
     document.querySelectorAll('.apprail .rail-item[data-rail]').forEach(btn=>{
       const key = btn.dataset.rail;
-      const on = panel ? key === panel : key === 'home';
+      let on = false;
+      if(panel) on = key === panel;
+      else if(STATE.screen === 'claims') on = key === 'home';
       btn.classList.toggle('active', on);
     });
     railActivityBtn.setAttribute('aria-expanded', String(panel === 'activity'));
@@ -2883,7 +4040,14 @@
   }
   railActivityBtn.addEventListener('click', ()=> setRailDrawer('activity'));
   railFavoritesBtn.addEventListener('click', ()=> setRailDrawer('favorites'));
-  railHomeBtn.addEventListener('click', ()=> setRailDrawer(''));
+  railHomeBtn.addEventListener('click', ()=>{
+    setRailDrawer('');
+    showClaimsScreen();
+  });
+  document.getElementById('railClaimsBtn').addEventListener('click', ()=>{
+    setRailDrawer('');
+    showClaimsScreen();
+  });
   document.getElementById('railDrawerClose').addEventListener('click', ()=> setRailDrawer(''));
 
   /* Copilot drawer — below app bar, pushes page; header toggles; left-edge resize. */
