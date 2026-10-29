@@ -719,17 +719,27 @@
   .fnol-party-injured-toggle[aria-pressed="true"]{
     border-color:var(--warning-border);background:var(--warning-bg);color:var(--warning-main);
   }
-  .fnol-party-card .status-row-card{margin-top:10px;}
-  .fnol-party-treatment-fields{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
-  .fnol-party-treatment-fields .field{margin:0;}
-  .fnol-party-treatment-fields .field label{font-size:12px;}
-  .fnol-party-treatment-fields .row-input,
-  .fnol-party-treatment-fields textarea.row-input{
-    height:32px;width:100%;box-sizing:border-box;
+  .fnol-party-injury-line{
+    display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;
+    margin:4px 0 0 44px;min-width:0;
   }
-  .fnol-party-treatment-fields textarea.row-input{
-    height:auto;min-height:56px;padding:8px 9px;resize:vertical;line-height:1.4;
+  .fnol-party-injury-chip{
+    display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:var(--radius-pill);
+    background:var(--warning-bg);color:var(--warning-main);font-family:var(--font-display);
+    font-size:11px;font-weight:500;line-height:1;white-space:nowrap;
   }
+  .fnol-party-injury-summary{
+    min-width:0;flex:1 1 auto;font-size:12px;line-height:16px;color:var(--text-secondary);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .fnol-party-injury-link{
+    flex:0 0 auto;border:none;background:transparent;padding:0;margin:0;
+    font-family:var(--font-display);font-size:12px;font-weight:500;line-height:16px;
+    color:var(--primary-main);cursor:pointer;
+  }
+  .fnol-party-injury-link:hover{text-decoration:underline;}
+  #dialogTreatmentDetails .mui-dialog-content .field{margin-bottom:12px;}
+  #dialogTreatmentDetails textarea.ctrl{height:auto;min-height:72px;padding:9px 11px;resize:vertical;}
   @media (prefers-reduced-motion:reduce){
     .fnol-party-inline-host,.add-party-toggle-ic,.fnol-party-card{transition:none !important;}
     .add-party-toggle[aria-expanded="true"] .add-party-toggle-ic{transform:none;}
@@ -782,11 +792,15 @@
   .doc-card .dc-icon.tone-secondary,.fnol-party-line .dc-icon.tone-secondary{background:#E6F0EF;color:var(--secondary-main);}
   /* Organization: neutral gray (not info blue) so blue is not the org identifier; person stays tone-secondary */
   .doc-card .dc-icon.tone-info,.fnol-party-line .dc-icon.tone-info{background:var(--action-disabled-bg);color:var(--gray-dark);}
+  .doc-card .dc-icon.tone-warning{background:var(--warning-bg);color:var(--warning-main);}
   .doc-card .dc-action{display:block;width:100%;margin:12px 0 0;padding:10px 0 0;text-align:left;border:none;border-top:1px solid var(--divider);border-radius:0;font-size:12.5px;font-weight:500;color:var(--primary-main);background:none;cursor:pointer;font-family:var(--font-display);}
   .doc-card .dc-action:hover{text-decoration:underline;}
-  .doc-card .dc-vehicle-head{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:4px 8px;}
-  .doc-card .dc-vehicle-head .dc-name{min-width:0;}
-  .doc-card .dc-vehicle-head .label-chip{flex:0 0 auto;}
+  .doc-card.doc-card-vehicle{display:flex;flex-direction:column;align-items:stretch;min-height:100%;}
+  .doc-card.doc-card-vehicle .dc-name{margin-top:0;}
+  .doc-card.doc-card-vehicle .dc-subtitle{margin-top:5px;}
+  .doc-card.doc-card-vehicle .dc-meta{margin-top:6px;}
+  .doc-card.doc-card-vehicle .dc-chip-row{margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .doc-card.doc-card-vehicle .dc-action{margin-top:auto;}
 
   /* ---- Triage Decisions grid ---- */
   .triage-decisions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;}
@@ -1774,6 +1788,32 @@
   </div>
 </div>
 
+<div class="mui-dialog-root" id="dialogTreatmentDetails" role="presentation" aria-hidden="true" data-dialog="treatmentDetails">
+  <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
+  <div class="mui-dialog-paper" role="dialog" aria-modal="true" aria-labelledby="dialogTreatmentDetailsTitle" tabindex="-1">
+    <h2 class="mui-dialog-title" id="dialogTreatmentDetailsTitle">Treatment details</h2>
+    <div class="mui-dialog-content">
+      <p class="mui-dialog-lead" id="dialogTreatmentPartyName" style="margin:0 0 12px;font-size:14px;color:var(--text-secondary);"></p>
+      <div class="field" id="treatmentBodyPartField">
+        <label for="treatmentBodyPart">Body part</label>
+        <input class="ctrl" id="treatmentBodyPart" type="text" placeholder="e.g. Neck / back">
+      </div>
+      <div class="field" id="treatmentStatusField">
+        <label for="treatmentStatus">Treatment status</label>
+        <input class="ctrl" id="treatmentStatus" type="text" placeholder="e.g. Transported by ground ambulance">
+      </div>
+      <div class="field">
+        <label for="treatmentNotes">Notes</label>
+        <textarea class="ctrl" id="treatmentNotes" rows="3" placeholder="Optional notes"></textarea>
+      </div>
+    </div>
+    <div class="mui-dialog-actions">
+      <button type="button" class="btn btn-text" data-dialog-dismiss>Cancel</button>
+      <button type="button" class="btn btn-primary" data-dialog-save="treatmentDetails">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="mui-dialog-root" id="dialogSubmitConfirm" role="presentation" aria-hidden="true" data-dialog="submitConfirm">
   <button type="button" class="mui-dialog-backdrop" data-dialog-dismiss aria-label="Close dialog" tabindex="-1"></button>
   <div class="mui-dialog-paper submit-confirm-paper" role="dialog" aria-modal="true" aria-labelledby="dialogSubmitConfirmTitle" tabindex="-1">
@@ -1848,15 +1888,34 @@
     const t=String(v||'').trim().toLowerCase();
     return t==='no' ? 'error' : t==='yes' ? 'success' : 'neutral';
   }
+  function inferVehicleKind(yearMakeModel, vehicleType){
+    const hay = `${yearMakeModel || ''} ${vehicleType || ''}`.toLowerCase();
+    if(/suv|utility|crossover|jeep|tahoe|explorer/.test(hay)) return 'suv';
+    if(/truck|box|cargo|van|npr|isuzu|freight|semi|pickup|lorry/.test(hay)) return 'truck';
+    return 'sedan';
+  }
+  function vehicleTypeIcon(kind){
+    const sedan = `<svg width="18" height="18" viewBox="0 0 24 24"><path d="M5 16l1.5-4.5A3 3 0 0 1 9.4 9.5h5.2a3 3 0 0 1 2.9 2L19 16"/><path d="M3 16h18"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/><path d="M7 12h10"/></svg>`;
+    const suv = `<svg width="18" height="18" viewBox="0 0 24 24"><path d="M4 16l1.2-3.8A3 3 0 0 1 8.1 10h7.2a3 3 0 0 1 2.9 2.1L20 16"/><path d="M3 16h18"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/><path d="M8 10V8.5A1.5 1.5 0 0 1 9.5 7h5A1.5 1.5 0 0 1 16 8.5V10"/></svg>`;
+    const truck = `<svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 16V8h9v8"/><path d="M12 11h5l3 3v2h-8"/><path d="M3 16h18"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/></svg>`;
+    const map = {
+      sedan: {icon:sedan, tone:'tone-secondary', label:'Sedan'},
+      suv: {icon:suv, tone:'tone-success', label:'SUV'},
+      truck: {icon:truck, tone:'tone-warning', label:'Truck'}
+    };
+    const cfg = map[kind] || map.sedan;
+    return `<div class="dc-icon ${cfg.tone}" title="${cfg.label}" aria-hidden="true">${cfg.icon}</div>`;
+  }
   function vehicleDocCard(yearMakeModel, vehicleType, vin, damage, drivable){
-    return `<div class="doc-card">
-      <div class="dc-vehicle-head">
-        <div class="dc-name">${yearMakeModel}</div>
-        <span class="label-chip ${drivableTone(drivable)}">Drivable: ${drivable || '—'}</span>
-      </div>
-      <div class="dc-subtitle">${vehicleType}</div>
-      <div class="dc-meta">VIN ${vin || '—'}</div>
-      <div class="dc-meta">${damage || '—'}</div>
+    const kind = inferVehicleKind(yearMakeModel, vehicleType);
+    return `<div class="doc-card doc-card-vehicle">
+      ${vehicleTypeIcon(kind)}
+      <div class="dc-name">${escHtml(yearMakeModel || 'Unnamed vehicle')}</div>
+      <div class="dc-subtitle">${escHtml(vehicleType || 'Vehicle')}</div>
+      <div class="dc-meta">VIN ${escHtml(vin || '—')}</div>
+      <div class="dc-meta">${escHtml(damage || '—')}</div>
+      <div class="dc-chip-row"><span class="label-chip ${drivableTone(drivable)}">Drivable: ${escHtml(drivable || '—')}</span></div>
+      <button type="button" class="dc-action">View details</button>
     </div>`;
   }
   function kpiCard(label, value, tone){
@@ -1997,43 +2056,28 @@
     PARTIES.push(party);
     return party;
   }
+  let treatmentPartyIndex = -1;
   function partyInjuryComplete(p){
     if(!p || !p.injured) return false;
     const inj = p.injury || emptyInjury();
     return Boolean(inj.bodyPart && inj.treatmentStatus);
   }
-  function partyTreatmentCardHtml(p, index){
+  function partyInjurySummary(p){
     const inj = p.injury || emptyInjury();
+    if(partyInjuryComplete(p)){
+      const bits = [inj.bodyPart, inj.treatmentStatus].filter(Boolean);
+      return bits.join(' · ');
+    }
+    return 'Treatment details needed';
+  }
+  function partyInjuryCompactHtml(p, index){
+    if(!p.injured) return '';
     const done = partyInjuryComplete(p);
-    const tone = done ? 'done' : 'attention';
-    const icon = done ? mi('check_circle',20) : mi('warning',20);
-    const title = done ? 'Treatment details captured' : 'Capture treatment details';
-    const desc = done
-      ? `${escHtml(inj.bodyPart)} · ${escHtml(inj.treatmentStatus)}`
-      : 'Body part, treatment status, and notes stay with this party.';
-    const cta = done ? 'Edit treatment' : 'Add treatment details';
-    const expanded = Boolean(p.injuryExpanded) || !done;
-    return `<div class="status-row-card ${tone}" data-party-treatment="${index}">
-      <span class="icon">${icon}</span>
-      <div>
-        <div class="title">${title}</div>
-        <div class="desc">${desc}</div>
-        ${expanded ? `<div class="fnol-party-treatment-fields">
-          <div class="field">
-            <label for="partyBodyPart-${index}">Body part</label>
-            <input class="row-input" id="partyBodyPart-${index}" data-party-injury-field="bodyPart" data-party-index="${index}" value="${escHtml(inj.bodyPart)}" placeholder="e.g. Neck / back">
-          </div>
-          <div class="field">
-            <label for="partyTreatmentStatus-${index}">Treatment status</label>
-            <input class="row-input" id="partyTreatmentStatus-${index}" data-party-injury-field="treatmentStatus" data-party-index="${index}" value="${escHtml(inj.treatmentStatus)}" placeholder="e.g. Transported by ground ambulance">
-          </div>
-          <div class="field">
-            <label for="partyInjuryNotes-${index}">Notes</label>
-            <textarea class="row-input" id="partyInjuryNotes-${index}" data-party-injury-field="notes" data-party-index="${index}" rows="2" placeholder="Optional notes">${escHtml(inj.notes)}</textarea>
-          </div>
-        </div>` : ''}
-      </div>
-      <button type="button" class="btn btn-text card-cta" data-party-treatment-cta="${index}">${expanded && !done ? 'Save treatment' : cta}</button>
+    const linkLabel = done ? 'Edit treatment' : 'Add treatment';
+    return `<div class="fnol-party-injury-line">
+      <span class="fnol-party-injury-chip">Injured</span>
+      <span class="fnol-party-injury-summary">${escHtml(partyInjurySummary(p))}</span>
+      <button type="button" class="fnol-party-injury-link" data-party-treatment="${index}">${linkLabel}</button>
     </div>`;
   }
   function fnolParties(){
@@ -2862,20 +2906,19 @@
       <ul class="fnol-party-list" role="list">${PARTIES.map((p,i)=>{
         const canInjure = p.type === 'person';
         const injuredToggle = canInjure ? `<button type="button" class="fnol-party-injured-toggle" data-party-injured="${i}" aria-pressed="${p.injured?'true':'false'}">Injured</button>` : '';
-        const treatment = (canInjure && p.injured) ? partyTreatmentCardHtml(p, i) : '';
         return `<li class="fnol-party-card${i===highlightIndex?' is-entering':''}" data-party-card="${i}">
         <div class="fnol-party-line">
           ${partyTypeIcon(p.type)}
           <span class="fnol-party-main">
             <span class="fnol-party-name">${escHtml(p.name)}</span>
-            <span class="fnol-party-meta">${escHtml(p.roleType)}${p.injured ? ' · Injured' : ''}</span>
+            <span class="fnol-party-meta">${escHtml(p.roleType)}</span>
           </span>
           <span class="fnol-party-line-actions">
             ${injuredToggle}
             <button type="button" class="trash-btn" title="Remove ${escHtml(p.name)}" aria-label="Remove ${escHtml(p.name)}" data-party-remove="${i}">${mi('delete',20)}</button>
           </span>
         </div>
-        ${treatment}
+        ${canInjure ? partyInjuryCompactHtml(p, i) : ''}
       </li>`;
       }).join('')}</ul>
     </section>`;
@@ -2929,43 +2972,18 @@
         if(party.type !== 'person') return;
         party.injured = !party.injured;
         if(!party.injury) party.injury = emptyInjury();
-        party.injuryExpanded = party.injured;
         toast(party.injured ? `${party.name} marked injured` : `${party.name} marked not injured`);
         renderPersistentPartyPanel(false);
+        if(party.injured && !partyInjuryComplete(party)) openTreatmentDialog(i);
       });
     });
-    host.querySelectorAll('[data-party-treatment-cta]').forEach(btn=>{
+    host.querySelectorAll('[data-party-treatment]').forEach(btn=>{
       btn.addEventListener('click', (e)=>{
         e.preventDefault();
         e.stopPropagation();
-        const i = Number(btn.dataset.partyTreatmentCta);
+        const i = Number(btn.dataset.partyTreatment);
         if(Number.isNaN(i) || i<0 || i>=PARTIES.length) return;
-        const party = PARTIES[i];
-        if(!party.injured) return;
-        if(!party.injury) party.injury = emptyInjury();
-        const card = host.querySelector(`[data-party-treatment="${i}"]`);
-        const fieldsOpen = Boolean(card && card.querySelector('.fnol-party-treatment-fields'));
-        if(fieldsOpen){
-          card.querySelectorAll('[data-party-injury-field]').forEach(inp=>{
-            party.injury[inp.dataset.partyInjuryField] = inp.value.trim();
-          });
-          party.injuryExpanded = !partyInjuryComplete(party);
-          toast(partyInjuryComplete(party) ? 'Treatment details saved' : 'Add body part and treatment status');
-        } else {
-          party.injuryExpanded = true;
-        }
-        renderPersistentPartyPanel(false);
-        if(party.injuryExpanded){
-          host.querySelector(`#partyBodyPart-${i}`)?.focus();
-        }
-      });
-    });
-    host.querySelectorAll('[data-party-injury-field]').forEach(inp=>{
-      inp.addEventListener('change', ()=>{
-        const i = Number(inp.dataset.partyIndex);
-        if(Number.isNaN(i) || i<0 || i>=PARTIES.length) return;
-        if(!PARTIES[i].injury) PARTIES[i].injury = emptyInjury();
-        PARTIES[i].injury[inp.dataset.partyInjuryField] = inp.value.trim();
+        openTreatmentDialog(i);
       });
     });
   }
@@ -3345,9 +3363,19 @@
     viewReferral: document.getElementById('dialogViewReferral'),
     recordDecision: document.getElementById('dialogRecordDecision'),
     resolveIntake: document.getElementById('dialogResolveIntake'),
+    treatmentDetails: document.getElementById('dialogTreatmentDetails'),
     submitConfirm: document.getElementById('dialogSubmitConfirm')
   };
   let openDialogKey = '';
+  function openTreatmentDialog(index){
+    if(Number.isNaN(index) || index<0 || index>=PARTIES.length) return;
+    const party = PARTIES[index];
+    if(!party || party.type !== 'person') return;
+    party.injured = true;
+    if(!party.injury) party.injury = emptyInjury();
+    treatmentPartyIndex = index;
+    openTriageDialog('treatmentDetails');
+  }
   function syncSiuReasonVisibility(){
     const status = document.getElementById('siuDecisionStatus').value;
     const reasonField = document.getElementById('siuDecisionReasonField');
@@ -3433,6 +3461,17 @@
       document.getElementById('intakeResolveNote').value = st.note || '';
       clearIntakeResolveError();
     }
+    if(key === 'treatmentDetails'){
+      const party = PARTIES[treatmentPartyIndex];
+      const inj = (party && party.injury) || emptyInjury();
+      document.getElementById('dialogTreatmentDetailsTitle').textContent = 'Treatment details';
+      document.getElementById('dialogTreatmentPartyName').textContent = party
+        ? `${party.name} · ${party.roleType}`
+        : '';
+      document.getElementById('treatmentBodyPart').value = inj.bodyPart || '';
+      document.getElementById('treatmentStatus').value = inj.treatmentStatus || '';
+      document.getElementById('treatmentNotes').value = inj.notes || '';
+    }
     if(key === 'submitConfirm'){
       if(!REVIEW_STATE.submitted){
         REVIEW_STATE.submitted = true;
@@ -3511,6 +3550,28 @@
       toast('SIU decision recorded — ' + label);
       closeTriageDialog();
       renderApp();
+      return;
+    }
+    if(key === 'treatmentDetails'){
+      const party = PARTIES[treatmentPartyIndex];
+      if(!party){
+        toast('Select a party');
+        return;
+      }
+      const bodyPart = document.getElementById('treatmentBodyPart').value.trim();
+      const treatmentStatus = document.getElementById('treatmentStatus').value.trim();
+      const notes = document.getElementById('treatmentNotes').value.trim();
+      if(!bodyPart || !treatmentStatus){
+        toast('Enter body part and treatment status');
+        if(!bodyPart) document.getElementById('treatmentBodyPart').focus();
+        else document.getElementById('treatmentStatus').focus();
+        return;
+      }
+      party.injured = true;
+      party.injury = {bodyPart, treatmentStatus, notes};
+      toast(`Treatment saved for ${party.name}`);
+      closeTriageDialog();
+      if(addPartyOpen) renderPersistentPartyPanel(false);
       return;
     }
     if(key === 'resolveIntake'){
