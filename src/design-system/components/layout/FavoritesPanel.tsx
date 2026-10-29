@@ -10,11 +10,13 @@ import ListItemText from '@mui/material/ListItemText'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { Link } from 'react-router'
+import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
 import {
   useFavorites,
   type FavoriteEntity,
 } from '@/app/contexts/FavoritesContext'
 import { useSidebar } from '@/app/contexts/SidebarContext'
+import { useClaims } from '@/pages/claims/data/claimsStore'
 import { EmergencyHomeIcon } from '@/design-system/components'
 import { filterHeadingSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
 import { surfacePanel } from '@/design-system/theme/themeSurfaces'
@@ -22,6 +24,70 @@ import { surfacePanel } from '@/design-system/theme/themeSurfaces'
 export function FavoritesPanel() {
   const { closeSecondaryPanel } = useSidebar()
   const { watchlist, renewals, highRisk, hrefFor } = useFavorites()
+  const claims = useClaims()
+  const claimFavorites = claims.filter((claim) => claim.hasAlert)
+
+  if (CLAIMS_ONLY) {
+    return (
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: (theme) => surfacePanel(theme) }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ px: 2, py: 1.5 }}
+        >
+          <Typography variant="subtitle1" component="h2" sx={filterHeadingSx}>
+            Favorites
+          </Typography>
+          <IconButton size="small" onClick={closeSecondaryPanel} aria-label="Close favorites panel">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+        <Box sx={{ flex: 1, overflowY: 'auto', py: 1 }}>
+          <ListItemButton sx={{ py: 0.75 }}>
+            <ListItemText
+              primary="Claims"
+              primaryTypographyProps={{ variant: 'subtitle2', fontWeight: 600 }}
+            />
+            <ExpandMoreIcon fontSize="small" color="action" />
+          </ListItemButton>
+          <List dense disablePadding>
+            {claimFavorites.length === 0 ? (
+              <ListItemText
+                primary="No claim favorites."
+                primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+                sx={{ px: 2.5, py: 0.75 }}
+              />
+            ) : (
+              claimFavorites.map((claim) => (
+                <ListItemButton
+                  key={claim.id}
+                  component={Link}
+                  to={`/claims/${encodeURIComponent(claim.claimNumber)}`}
+                  onClick={closeSecondaryPanel}
+                  sx={{
+                    py: 0.75,
+                    pl: 2.5,
+                    color: 'text.primary',
+                    textDecoration: 'none',
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    <StarIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={`${claim.claimNumber} · ${claim.insured}`}
+                    primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                  />
+                </ListItemButton>
+              ))
+            )}
+          </List>
+        </Box>
+      </Box>
+    )
+  }
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: (theme) => surfacePanel(theme) }}>

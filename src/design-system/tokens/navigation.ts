@@ -1,10 +1,8 @@
 import AccountBoxOutlinedIcon from '@mui/icons-material/AccountBoxOutlined'
 import ChecklistRtlOutlinedIcon from '@mui/icons-material/ChecklistRtlOutlined'
 import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined'
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
 import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined'
 import FormatQuoteOutlinedIcon from '@mui/icons-material/FormatQuoteOutlined'
-import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined'
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import MoveToInboxOutlinedIcon from '@mui/icons-material/MoveToInboxOutlined'
@@ -15,7 +13,6 @@ import SwitchAccountOutlinedIcon from '@mui/icons-material/SwitchAccountOutlined
 import type { SvgIconProps } from '@mui/material/SvgIcon'
 import type { ComponentType } from 'react'
 import type { SecondaryPanel } from '@/app/contexts/SidebarContext'
-import { CopilotMarkIcon } from '@/design-system/icons/CopilotMarkIcon'
 import { DemographyOutlinedIcon } from '@/design-system/icons/DemographyOutlined'
 import { SearchActivityOutlinedIcon } from '@/design-system/icons/SearchActivityOutlined'
 
@@ -28,6 +25,8 @@ export type NavItem = {
   copilotIcon?: boolean
   panel?: SecondaryPanel
   matchPaths?: string[]
+  /** When true, only the exact path is active (e.g. Claims list, not FNOL `/claims/new`). */
+  exact?: boolean
   hidden?: boolean
 }
 
@@ -59,17 +58,14 @@ export const moreMenuItems: MoreMenuItem[] = [
 
 export const visibleAppShellNavItems = appShellNavItems.filter((item) => !item.hidden)
 
-/** Patterns Dashboard rail. Claims opens the section landing; the rest stay visible. */
+/** FNOL rail. Home is the dashboard; Claims is the list. Activity and Favorites are panels. */
 export const claimsOnlyShellNavItems: NavItem[] = [
-  { label: 'Home', icon: HomeOutlinedIcon },
+  { label: 'Home', path: '/', icon: HomeOutlinedIcon },
   { label: 'Activity', icon: HistoryOutlinedIcon, panel: 'activity' },
   { label: 'Favorites', icon: StarBorderOutlinedIcon, panel: 'favorites' },
   { label: 'Tasks', path: '/tasks', icon: ChecklistRtlOutlinedIcon },
-  { label: 'Comms', icon: ForumOutlinedIcon },
-  { label: 'Submission', path: '/submissions', icon: MoveToInboxOutlinedIcon },
-  { label: 'Quotes', path: '/quotes', icon: DescriptionOutlinedIcon },
-  { label: 'Claims', path: '/claims', icon: FileCopyOutlinedIcon },
-  { label: 'Copilot', icon: CopilotMarkIcon },
+  // Exact: stay inactive on FNOL (`/claims/new`) and claim details.
+  { label: 'Claims', path: '/claims', icon: FileCopyOutlinedIcon, exact: true },
 ]
 
 /** Legacy nav items used by dashboard-style pages. */

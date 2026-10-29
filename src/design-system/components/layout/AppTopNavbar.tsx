@@ -23,6 +23,7 @@ import { type Theme } from '@mui/material/styles'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
+import { FNOL_PATH } from '@/pages/claims/data/fnolConversation'
 import { useRightToolDispatch, type RightToolId } from '@/app/contexts/RightToolContext'
 import { GlobalSearchField } from '@/design-system/components/GlobalSearch/GlobalSearchField'
 import { useBrowserHistoryNavigation } from '@/hooks/useBrowserHistoryNavigation'
@@ -58,10 +59,10 @@ const ALL_CREATE_MENU_ITEMS: CreateMenuItem[] = [
   { label: 'Submission', disabled: false, tool: 'newSubmission' },
   { label: 'Quote', disabled: false, tool: 'newQuote' },
   { label: 'Policy', disabled: true },
-  { label: 'Claim', disabled: false, tool: 'newClaim' },
+  { label: 'Claim', disabled: false, path: FNOL_PATH },
 ]
 
-const CREATE_MENU_ITEMS = ALL_CREATE_MENU_ITEMS.filter((item) => !CLAIMS_ONLY || item.tool === 'newClaim')
+const CREATE_MENU_ITEMS = ALL_CREATE_MENU_ITEMS.filter((item) => !CLAIMS_ONLY || item.path === FNOL_PATH)
 
 /** Prototype unread count for the notifications menu. */
 const UNREAD_NOTIFICATION_COUNT = 3

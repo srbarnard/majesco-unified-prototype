@@ -8,9 +8,11 @@ import ListItemText from '@mui/material/ListItemText'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { Link } from 'react-router'
+import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
 import { useSidebar } from '@/app/contexts/SidebarContext'
 import { filterHeadingSx } from '@/design-system/components/ListFilterPanel/filterPanelPrimitives'
 import { surfacePanel } from '@/design-system/theme/themeSurfaces'
+import { useClaims } from '@/pages/claims/data/claimsStore'
 import { insuredIdFromName } from '@/pages/shared/insuredId'
 
 type ActivityNavItem = {
@@ -49,6 +51,11 @@ const quotes: ActivityNavItem[] = [
 
 export function ActivityPanel() {
   const { closeSecondaryPanel } = useSidebar()
+  const claims = useClaims()
+  const claimItems: ActivityNavItem[] = claims.slice(0, 8).map((claim) => ({
+    label: `${claim.claimNumber} · ${claim.insured}`,
+    to: `/claims/${encodeURIComponent(claim.claimNumber)}`,
+  }))
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: (theme) => surfacePanel(theme) }}>
@@ -66,9 +73,21 @@ export function ActivityPanel() {
         </IconButton>
       </Stack>
       <Box sx={{ flex: 1, overflowY: 'auto', py: 1 }}>
-        <NavSection title="Insureds" items={insureds} onNavigate={closeSecondaryPanel} />
-        <NavSection title="Policies" items={policies} onNavigate={closeSecondaryPanel} />
-        <NavSection title="Quotes" items={quotes} onNavigate={closeSecondaryPanel} />
+        {CLAIMS_ONLY ? (
+          claimItems.length > 0 ? (
+            <NavSection title="Claims" items={claimItems} onNavigate={closeSecondaryPanel} />
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 1 }}>
+              No claim activity.
+            </Typography>
+          )
+        ) : (
+          <>
+            <NavSection title="Insureds" items={insureds} onNavigate={closeSecondaryPanel} />
+            <NavSection title="Policies" items={policies} onNavigate={closeSecondaryPanel} />
+            <NavSection title="Quotes" items={quotes} onNavigate={closeSecondaryPanel} />
+          </>
+        )}
       </Box>
     </Box>
   )

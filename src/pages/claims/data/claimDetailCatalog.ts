@@ -873,6 +873,19 @@ export function claimDetailFromStore(record: ClaimRecord): ClaimDetailModel {
     parties: [
       { name: record.insured, type: 'Organization', role: 'Insured', contact: '—', feature: 'Claim level' },
       { name: record.assignee, type: 'Person', role: 'Adjuster', contact: '—', feature: 'Claim level' },
+      ...(record.parties ?? [])
+        .filter(
+          (party) =>
+            !(party.role === 'Insured' && party.name === record.insured) &&
+            !(party.role === 'Adjuster' && party.name === record.assignee),
+        )
+        .map((party) => ({
+          name: party.name,
+          type: 'Person',
+          role: party.role,
+          contact: party.contact ?? '—',
+          feature: 'Claim level',
+        })),
     ],
     approvals: [],
   }

@@ -252,6 +252,7 @@ export function applyClaimText(draft: CreateClaimDraft, text: string): CreateCla
     else if (damaged) {
       const detail = propertyDamageDetail(damaged)
       if (detail) next.vehicles = [`${PROPERTY_DAMAGE_PREFIX}${detail}`]
+      else next.vehicles = [`${VEHICLE_DAMAGE_PREFIX}${damaged.replace(/[.]+$/g, '')}`]
     }
   }
   if (!email && !next.description && text.split(/\s+/).length >= 4) next.description = text

@@ -3,7 +3,9 @@ import Drawer from '@mui/material/Drawer'
 import Slide from '@mui/material/Slide'
 import { useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
+import { useLocation } from 'react-router'
 import { useGlobalSearch } from '@/app/contexts/GlobalSearchContext'
+import { FNOL_PATH } from '@/pages/claims/data/fnolConversation'
 import { useRightTool } from '@/app/contexts/RightToolContext'
 import { EmailToolPanel } from '@/design-system/components/layout/EmailToolPanel'
 import { NotesToolPanel } from '@/design-system/components/layout/NotesToolPanel'
@@ -36,6 +38,8 @@ function ToolPanelBody() {
     partiesContent,
   } = useRightTool()
   const { copilotView, agenticPrompt } = useGlobalSearch()
+  const location = useLocation()
+  const showClaimIntake = activeTool === 'newClaim' && location.pathname !== FNOL_PATH
 
   const contentKey =
     activeTool === 'copilot'
@@ -70,7 +74,7 @@ function ToolPanelBody() {
       {activeTool === 'newTask' ? <NewTaskToolPanel /> : null}
       {activeTool === 'newCustomer' ? <CreateCustomerToolPanel /> : null}
       {activeTool === 'newQuote' ? <CreateQuoteToolPanel /> : null}
-      {activeTool === 'newClaim' ? <CreateClaimToolPanel /> : null}
+      {showClaimIntake ? <CreateClaimToolPanel /> : null}
       {activeTool === 'newSubmission' ? <CreateSubmissionToolPanel /> : null}
     </Box>
     </CopilotContentTransition>

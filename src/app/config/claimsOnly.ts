@@ -1,8 +1,10 @@
 /**
- * Claims-only share build: Claims is the only nav item that navigates, and it opens
- * the Claims section landing (Daily Brief, Key Metrics, Schedule). Home, the other
- * rail items, and the More overflow (Customers, Insureds, Producers, Sub producers)
- * stay visible but do not navigate. Nav reorder stays available. Create new still
- * opens the claim drawer. The right rail keeps the full tool set.
+ * FNOL share build. Home (/) is the claims dashboard (Daily Brief, Key Metrics,
+ * Schedule). Claims (/claims) is the table list, and a row opens claim details.
+ * New Claim opens the conversational FNOL page. Home, Claims, and Tasks navigate.
+ * Activity and Favorites stay as side panels and list claims only. Submissions,
+ * Quotes, Policies, Studio/Copilot, and the More overflow are hidden. On the home
+ * dashboard the Assistant starts closed and the right rail hides create actions.
+ * On the FNOL page the rail is Notes, Email, and Tasks.
  */
 export const CLAIMS_ONLY = true

@@ -3,6 +3,7 @@ import { CLAIMS_ONLY } from '@/app/config/claimsOnly'
 import { AppLayout } from '@/app/layouts/AppLayout'
 import { ClaimDetails } from '@/pages/claims/ClaimDetails'
 import { ClaimsPage } from '@/pages/claims/ClaimsPage'
+import { FnolConversationPage } from '@/pages/claims/FnolConversationPage'
 import { CustomerDetails } from '@/pages/customers/CustomerDetails'
 import { CustomersPage } from '@/pages/customers/CustomersPage'
 import { ClaimsHomePage } from '@/app/pages/ClaimsHomePage'
@@ -23,11 +24,13 @@ import { SubmissionDetails } from '@/pages/submissions/SubmissionDetails'
 import { TasksPage } from '@/pages/tasks/TasksPage'
 
 const claimsOnlyRoutes = [
-  { index: true, element: <Navigate to="/claims" replace /> },
-  { path: 'claims', element: <ClaimsHomePage /> },
+  { index: true, element: <ClaimsHomePage /> },
+  { path: 'tasks', element: <TasksPage /> },
+  { path: 'claims', element: <ClaimsPage /> },
+  { path: 'claims/new', element: <FnolConversationPage /> },
   { path: 'claims/:claimNumber', element: <ClaimDetails /> },
   { path: 'claims/:claimNumber/documents/:docId', element: <DocumentViewerPage context="draft" /> },
-  { path: '*', element: <Navigate to="/claims" replace /> },
+  { path: '*', element: <Navigate to="/" replace /> },
 ]
 
 export const router = createBrowserRouter([
@@ -55,6 +58,7 @@ export const router = createBrowserRouter([
       { path: 'policies/:policyId', element: <PolicyDetails /> },
       { path: 'policies/:policyId/documents/:docId', element: <DocumentViewerPage context="policy" /> },
       { path: 'claims', element: <ClaimsPage /> },
+      { path: 'claims/new', element: <FnolConversationPage /> },
       { path: 'claims/:claimNumber', element: <ClaimDetails /> },
       { path: 'claims/:claimNumber/documents/:docId', element: <DocumentViewerPage context="draft" /> },
       { path: 'documents/:docId', element: <DocumentViewerPage context="draft" /> },
