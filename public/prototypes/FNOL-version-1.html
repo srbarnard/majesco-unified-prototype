@@ -481,14 +481,29 @@
     display:inline-flex;align-items:center;gap:8px;line-height:24px;height:40px;box-sizing:border-box;font-family:var(--font-display);
   }
   .btn svg{width:20px;height:20px;flex:0 0 auto;}
-  .btn-primary{background:var(--primary-main);color:#fff;box-shadow:var(--elevation-button);}
+  .btn-primary{background:var(--primary-main);color:#fff;box-shadow:var(--elevation-button);position:relative;overflow:hidden;}
   .btn-primary:hover{background:var(--primary-dark);}
   .btn-outlined:disabled{background:#fff;border-color:var(--action-disabled-bg);color:var(--text-disabled);cursor:not-allowed;box-shadow:none;}
   .btn-primary:disabled{background:var(--action-disabled-bg);color:var(--text-disabled);cursor:not-allowed;box-shadow:none;}
-  .btn-outlined{background:#fff;border-color:var(--primary-main);color:var(--primary-main);box-shadow:var(--elevation-button);}
+  .btn-outlined{background:#fff;border-color:var(--primary-main);color:var(--primary-main);box-shadow:var(--elevation-button);position:relative;overflow:hidden;}
   .btn-outlined:hover{background:var(--primary-hover-bg);}
   .btn-text{background:transparent;color:var(--primary-main);padding:7px 8px;box-shadow:none;}
   .btn-text:hover{background:var(--action-hover);}
+  /* MUI-style ripple — primary / outlined only */
+  .btn-ripple{
+    position:absolute;border-radius:50%;transform:scale(0);pointer-events:none;
+    opacity:.35;animation:btn-ripple 480ms ease-out forwards;z-index:0;
+  }
+  .btn-primary .btn-ripple{background:rgba(255,255,255,.55);opacity:1;}
+  .btn-outlined .btn-ripple{background:rgba(0,93,191,.28);opacity:1;}
+  .btn-primary > *:not(.btn-ripple),
+  .btn-outlined > *:not(.btn-ripple){position:relative;z-index:1;}
+  @keyframes btn-ripple{
+    to{transform:scale(1);opacity:0;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .btn-ripple{animation-duration:1ms;opacity:0;}
+  }
 
   /* ---- Content shell: sub-step rail + main content ---- */
   .content-row{flex:1 1 auto;display:flex;align-items:stretch;gap:0;margin-top:0;padding:0;min-height:0;overflow:hidden;}
@@ -3464,6 +3479,24 @@
   document.addEventListener('click', (e)=>{
     if(e.target.closest('[data-vehicle-typeahead]')) return;
     document.querySelectorAll('#vehiclesTbody [data-vehicle-typeahead]').forEach(closeVehicleTypeahead);
+  });
+
+  /* MUI-style ripple: primary / outlined only (not text or icon-only) */
+  document.addEventListener('pointerdown', (e)=>{
+    if(e.button !== 0 && e.pointerType === 'mouse') return;
+    const btn = e.target.closest('.btn-primary, .btn-outlined');
+    if(!btn || btn.disabled || btn.classList.contains('btn-text')) return;
+    const rect = btn.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const size = Math.ceil(Math.hypot(Math.max(x, rect.width - x), Math.max(y, rect.height - y)) * 2);
+    const ripple = document.createElement('span');
+    ripple.className = 'btn-ripple';
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = (x - size / 2) + 'px';
+    ripple.style.top = (y - size / 2) + 'px';
+    btn.appendChild(ripple);
+    ripple.addEventListener('animationend', ()=> ripple.remove());
   });
 
   function setDashboardRailActive(on){
